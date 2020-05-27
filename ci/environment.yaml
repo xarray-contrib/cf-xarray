@@ -1,0 +1,9 @@
+name: xcoare-test
+channels:
+  - conda-forge
+dependencies:
+  - pytest-cov
+  - pytest
+  - dask
+  - netcdf4
+  - xarray

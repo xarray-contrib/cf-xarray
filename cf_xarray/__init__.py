@@ -1,1 +1,1 @@
-from .accessor import CFDataArrayAccessor, CFDatasetAccessor
+from .accessor import CFAccessor

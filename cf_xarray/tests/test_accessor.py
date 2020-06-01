@@ -9,23 +9,29 @@ import cf_xarray  # noqa
 from . import raise_if_dask_computes
 
 mpl.use("Agg")
-ds = xr.tutorial.open_dataset("air_temperature").isel(time=slice(4))
+ds = xr.tutorial.open_dataset("air_temperature").isel(time=slice(4), lon=slice(50))
 datasets = [ds, ds.chunk({"lat": 5})]
 dataarrays = [ds.air, ds.air.chunk({"lat": 5})]
 objects = datasets + dataarrays
 
 
 @pytest.mark.parametrize("obj", objects)
-def test_wrapped_classes(obj):
+@pytest.mark.parametrize(
+    "attr, xrkwargs, cfkwargs",
+    (
+        ("resample", {"time": "M"}, {"T": "M"}),
+        ("rolling", {"lat": 5}, {"Y": 5}),
+        ("coarsen", {"lon": 2, "lat": 5}, {"X": 2, "Y": 5}),
+        # groupby
+        # groupby_bins
+        # weighted
+    ),
+)
+def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
     with raise_if_dask_computes():
-        expected = obj.resample(time="M").mean()
-        actual = obj.cf.resample(T="M").mean()
+        expected = getattr(obj, attr)(**xrkwargs).mean()
+        actual = getattr(obj.cf, attr)(**cfkwargs).mean()
     assert_identical(expected, actual)
-
-    # groupby
-    # rolling
-    # coarsen
-    # weighted
 
 
 @pytest.mark.parametrize("obj", objects)

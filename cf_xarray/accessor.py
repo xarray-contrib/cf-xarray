@@ -94,6 +94,7 @@ class _CFWrappedPlotMethods:
 
 
 @xr.register_dataarray_accessor("cf")
+@xr.register_dataset_accessor("cf")
 class CFAccessor:
     def __init__(self, da):
         self._obj = da

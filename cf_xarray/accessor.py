@@ -55,7 +55,7 @@ def _getattr(
 
 
 class _CFWrappedClass:
-    def __init__(self, obj: Union[DataArray, Dataset], towrap, accessor: "CFAccessor"):
+    def __init__(self, towrap, accessor: "CFAccessor"):
         """
 
         Parameters
@@ -66,7 +66,6 @@ class _CFWrappedClass:
             Instance of xarray class that is being wrapped.
         accessor : CFAccessor
         """
-        self._obj = obj
         self.wrapped = towrap
         self.accessor = accessor
 
@@ -74,7 +73,7 @@ class _CFWrappedClass:
         return "--- CF-xarray wrapped \n" + repr(self.wrapped)
 
     def __getattr__(self, attr):
-        return _getattr(obj=self._obj, attr=attr, accessor=self.accessor)
+        return _getattr(obj=self.wrapped, attr=attr, accessor=self.accessor)
 
 
 class _CFWrappedPlotMethods:

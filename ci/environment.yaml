@@ -1,4 +1,4 @@
-name: xcoare-test
+name: cf_xarray_test
 channels:
   - conda-forge
 dependencies:

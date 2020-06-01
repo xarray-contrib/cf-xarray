@@ -1,9 +1,9 @@
-import copy
-import inspect
 import functools
+import inspect
+from typing import Union
 
 import xarray as xr
-
+from xarray import DataArray, Dataset
 
 _WRAPPED_CLASSES = (
     xr.core.resample.Resample,
@@ -18,59 +18,80 @@ def _get_axis_name_mapping(da: xr.DataArray):
     return {"X": "lon", "Y": "lat", "T": "time"}
 
 
-class _CFWrapped:
-    def __init__(self, towrap, accessor):
+def _getattr(
+    obj: Union[DataArray, Dataset],
+    attr: str,
+    accessor: "CFAccessor",
+    wrap_classes=False,
+    keys=("dim",),
+):
+    """
+    Common getattr functionality.
+
+    Parameters
+    ----------
+
+    obj : DataArray, Dataset
+    attr : Name of attribute in obj that will be shadowed.
+    accessor : High level accessor object: CFAccessor
+    wrap_classes: bool
+        Should we wrap the return value with _CFWrappedClass?
+        Only True for the high level CFAccessor.
+        Facilitates code reuse for _CFWrappedClass and _CFWrapppedPlotMethods
+        For both of thos, wrap_classes is False.
+    """
+    func = getattr(obj, attr)
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        arguments = accessor._process_signature(func, args, kwargs, keys=keys)
+        rv = func(**arguments)
+        if wrap_classes and isinstance(rv, _WRAPPED_CLASSES):
+            return _CFWrappedClass(obj, rv, accessor)
+        else:
+            return rv
+
+    return wrapper
+
+
+class _CFWrappedClass:
+    def __init__(self, obj: Union[DataArray, Dataset], towrap, accessor: "CFAccessor"):
+        """
+
+        Parameters
+        ----------
+
+        obj : DataArray, Dataset
+        towrap : Resample, GroupBy, Coarsen, Rolling, Weighted
+            Instance of xarray class that is being wrapped.
+        accessor : CFAccessor
+        """
+        self._obj = obj
         self.wrapped = towrap
         self.accessor = accessor
-        self._can_wrap_classes = False
 
     def __repr__(self):
         return "--- CF-xarray wrapped \n" + repr(self.wrapped)
 
     def __getattr__(self, attr):
-        func = getattr(self.wrapped, attr)
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            arguments = self.accessor._process_signature(func, args, kwargs)
-            rv = func(**arguments)
-            return rv
-
-        return wrapper
+        return _getattr(obj=self._obj, attr=attr, accessor=self.accessor)
 
 
 class _CFWrappedPlotMethods:
     def __init__(self, obj, accessor):
         self._obj = obj
         self.accessor = accessor
-        self._can_wrap_classes = False
+        self._keys = ("x", "y", "hue", "col", "row")
 
     def __call__(self, *args, **kwargs):
-        func = self._obj.plot  # (*args, **kwargs)
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            arguments = self.accessor._process_signature(
-                func, args, kwargs, keys=("x", "y", "hue", "col", "row")
-            )
-            print(arguments)
-            rv = func(**arguments)
-            return rv
-
-        return wrapper(*args, **kwargs)
+        return _getattr(
+            obj=self._obj, attr="plot", accessor=self.accessor, keys=self._keys
+        )
 
     def __getattr__(self, attr):
-        func = getattr(self._obj.plot, attr)
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            arguments = self.accessor._process_signature(
-                func, args, kwargs, keys=("x", "y", "hue", "col", "row")
-            )
-            rv = func(**arguments)
-            return rv
-
-        return wrapper
+        return _getattr(
+            obj=self._obj.plot, attr=attr, accessor=self.accessor, keys=self._keys
+        )
 
 
 @xr.register_dataarray_accessor("cf")
@@ -78,9 +99,8 @@ class CFAccessor:
     def __init__(self, da):
         self._obj = da
         self._coords = _get_axis_name_mapping(da)
-        self._can_wrap_classes = True
 
-    def _process_signature(self, func, args, kwargs, keys=("dim",)):
+    def _process_signature(self, func, args, kwargs, keys):
         sig = inspect.signature(func, follow_wrapped=False)
 
         # Catch things like .isel(T=5).
@@ -101,6 +121,7 @@ class CFAccessor:
 
         if arguments:
             # now unwrap the **indexers_kwargs type arguments
+            # so that xarray can parse it :)
             for kw in var_kws:
                 value = arguments.pop(kw, None)
                 if value:
@@ -128,8 +149,10 @@ class CFAccessor:
 
         kwargs.update(updates)
 
-        # maybe the keys I'm looking for are in kwargs.
-        # This happens with DataArray.plot() for example, where the signature is obscured.
+        # maybe the keys we are looking for are in kwargs.
+        # For example, this happens with DataArray.plot(),
+        # where the signature is obscured and kwargs is
+        #    kwargs = {"x": "X", "col": "T"}
         for vkw in var_kws:
             if vkw in kwargs:
                 maybe_update = {
@@ -141,19 +164,8 @@ class CFAccessor:
 
         return kwargs
 
-    def __getattr__(self, name):
-        func = getattr(self._obj, name)
-
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            arguments = self._process_signature(func, args, kwargs)
-            rv = func(**arguments)
-            if isinstance(rv, _WRAPPED_CLASSES):
-                return _CFWrapped(rv, self)
-            else:
-                return rv
-
-        return wrapper
+    def __getattr__(self, attr):
+        return _getattr(obj=self._obj, attr=attr, accessor=self, wrap_classes=True)
 
     @property
     def plot(self):

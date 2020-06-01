@@ -14,6 +14,9 @@ _WRAPPED_CLASSES = (
 )
 
 
+_DEFAULT_KEYS_TO_REWRITE = ("dim", "coord", "group")
+
+
 def _get_axis_name_mapping(da: xr.DataArray):
     return {"X": "lon", "Y": "lat", "T": "time"}
 
@@ -23,7 +26,7 @@ def _getattr(
     attr: str,
     accessor: "CFAccessor",
     wrap_classes=False,
-    keys=("dim",),
+    keys=_DEFAULT_KEYS_TO_REWRITE,
 ):
     """
     Common getattr functionality.
@@ -142,6 +145,8 @@ class CFAccessor:
                 if isinstance(value, dict):
                     # this for things like isel where **kwargs captures things like T=5
                     updates[key] = {self._coords.get(k, k): v for k, v in value.items()}
+                elif value is Ellipsis:
+                    pass
                 else:
                     # things like sum which have dim
                     updates[key] = [self._coords.get(v, v) for v in value]

@@ -22,25 +22,43 @@ objects = datasets + dataarrays
         ("resample", {"time": "M"}, {"T": "M"}),
         ("rolling", {"lat": 5}, {"Y": 5}),
         ("coarsen", {"lon": 2, "lat": 5}, {"X": 2, "Y": 5}),
-        # groupby
+        ("groupby", {"group": "time"}, {"group": "T"})
+        # groupby("time.day")?
         # groupby_bins
         # weighted
     ),
 )
 def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
+
+    if attr in ("rolling", "coarsen"):
+        # TODO: xarray bug, rolling and coarsen don't accept ellipsis
+        args = ()
+    else:
+        args = (...,)
+
     with raise_if_dask_computes():
-        expected = getattr(obj, attr)(**xrkwargs).mean()
-        actual = getattr(obj.cf, attr)(**cfkwargs).mean()
+        expected = getattr(obj, attr)(**xrkwargs).mean(*args)
+        actual = getattr(obj.cf, attr)(**cfkwargs).mean(*args)
     assert_identical(expected, actual)
+
+    if attr in ("groupby", "groupby_bins"):
+        # TODO: this should work for resample too?
+        with raise_if_dask_computes():
+            expected = getattr(obj, attr)(**xrkwargs).mean("lat")
+            actual = getattr(obj.cf, attr)(**cfkwargs).mean("Y")
+        assert_identical(expected, actual)
 
 
 @pytest.mark.parametrize("obj", objects)
-def test_other_methods(obj):
+def test_kwargs_methods(obj):
     with raise_if_dask_computes():
         expected = obj.isel(time=slice(2))
         actual = obj.cf.isel(T=slice(2))
     assert_identical(expected, actual)
 
+
+@pytest.mark.parametrize("obj", objects)
+def test_args_methods(obj):
     with raise_if_dask_computes():
         expected = obj.sum("time")
         actual = obj.cf.sum("T")

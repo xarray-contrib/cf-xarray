@@ -45,11 +45,12 @@ def _getattr(
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         arguments = accessor._process_signature(func, args, kwargs, keys=keys)
-        rv = func(**arguments)
-        if wrap_classes and isinstance(rv, _WRAPPED_CLASSES):
-            return _CFWrappedClass(obj, rv, accessor)
-        else:
-            return rv
+
+        result = func(**arguments)
+        if wrap_classes and isinstance(result, _WRAPPED_CLASSES):
+            result = _CFWrappedClass(result, accessor)
+
+        return result
 
     return wrapper
 

@@ -22,6 +22,7 @@ class _CFWrapped:
     def __init__(self, towrap, accessor):
         self.wrapped = towrap
         self.accessor = accessor
+        self._can_wrap_classes = False
 
     def __repr__(self):
         return "--- CF-xarray wrapped \n" + repr(self.wrapped)
@@ -38,14 +39,49 @@ class _CFWrapped:
         return wrapper
 
 
+class _CFWrappedPlotMethods:
+    def __init__(self, obj, accessor):
+        self._obj = obj
+        self.accessor = accessor
+        self._can_wrap_classes = False
+
+    def __call__(self, *args, **kwargs):
+        func = self._obj.plot  # (*args, **kwargs)
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            arguments = self.accessor._process_signature(
+                func, args, kwargs, keys=("x", "y", "hue", "col", "row")
+            )
+            print(arguments)
+            rv = func(**arguments)
+            return rv
+
+        return wrapper(*args, **kwargs)
+
+    def __getattr__(self, attr):
+        func = getattr(self._obj.plot, attr)
+
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            arguments = self.accessor._process_signature(
+                func, args, kwargs, keys=("x", "y", "hue", "col", "row")
+            )
+            rv = func(**arguments)
+            return rv
+
+        return wrapper
+
+
 @xr.register_dataarray_accessor("cf")
 class CFAccessor:
     def __init__(self, da):
         self._obj = da
         self._coords = _get_axis_name_mapping(da)
+        self._can_wrap_classes = True
 
-    def _process_signature(self, func, args, kwargs):
-        sig = inspect.signature(func)
+    def _process_signature(self, func, args, kwargs, keys=("dim",)):
+        sig = inspect.signature(func, follow_wrapped=False)
 
         # Catch things like .isel(T=5).
         # This assigns indexers_kwargs=dict(T=5).
@@ -55,10 +91,13 @@ class CFAccessor:
             if sig.parameters[param].kind is inspect.Parameter.VAR_KEYWORD:
                 var_kws.append(param)
 
-        bound = sig.bind(*args, **kwargs)
-        arguments = self._rewrite_values_with_axis_names(
-            bound.arguments, ["dim",] + var_kws
-        )
+        if args or kwargs:
+            bound = sig.bind(*args, **kwargs)
+            arguments = self._rewrite_values_with_axis_names(
+                bound.arguments, keys, tuple(var_kws)
+            )
+        else:
+            arguments = {}
 
         if arguments:
             # now unwrap the **indexers_kwargs type arguments
@@ -69,10 +108,10 @@ class CFAccessor:
 
         return arguments
 
-    def _rewrite_values_with_axis_names(self, kwargs, keys):
+    def _rewrite_values_with_axis_names(self, kwargs, keys, var_kws):
         """ rewrites 'dim' for example. """
         updates = {}
-        for key in keys:
+        for key in tuple(keys) + tuple(var_kws):
             value = kwargs.get(key, None)
             if value:
                 if isinstance(value, str):
@@ -88,6 +127,18 @@ class CFAccessor:
                         updates[key] = updates[key][0]
 
         kwargs.update(updates)
+
+        # maybe the keys I'm looking for are in kwargs.
+        # This happens with DataArray.plot() for example, where the signature is obscured.
+        for vkw in var_kws:
+            if vkw in kwargs:
+                maybe_update = {
+                    k: self._coords.get(v, v)
+                    for k, v in kwargs[vkw].items()
+                    if k in keys
+                }
+                kwargs[vkw].update(maybe_update)
+
         return kwargs
 
     def __getattr__(self, name):
@@ -104,11 +155,6 @@ class CFAccessor:
 
         return wrapper
 
-    def plot(self, *args, **kwargs):
-        if args:
-            raise ValueError("cf.plot can only be called with keyword arguments.")
-
-        kwargs = self._rewrite_values_with_axis_names(
-            kwargs, ("x", "y", "hue", "col", "row")
-        )
-        return self._obj.plot(*args, **kwargs)
+    @property
+    def plot(self):
+        return _CFWrappedPlotMethods(self._obj, self)

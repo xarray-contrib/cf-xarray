@@ -1,23 +1,4 @@
-from typing import (
-    AbstractSet,
-    Any,
-    Callable,
-    Collection,
-    Container,
-    Dict,
-    Hashable,
-    Iterable,
-    Iterator,
-    Mapping,
-    MutableMapping,
-    MutableSet,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Any, Hashable, Mapping, Optional, TypeVar, cast
 
 K = TypeVar("K")
 V = TypeVar("V")

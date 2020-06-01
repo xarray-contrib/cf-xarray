@@ -1,1 +1,1 @@
-from .accessor import CFAccessor
+from .accessor import CFAccessor  # noqa

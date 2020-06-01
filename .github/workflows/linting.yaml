@@ -25,7 +25,7 @@ jobs:
           python -m pip install black
       - name: Black Code Formatter
         run: |
-          black --check --line-length 100 --skip-string-normalization .
+          black --check .
 
   lint-flake8:
     name: flake8

@@ -10,7 +10,9 @@ ds = xr.tutorial.load_dataset("air_temperature").isel(time=slice(4))
 
 ds.air.cf.var("X")
 
-ds.air.cf.resample(T="M").var("X")
+ds.air.cf.resample(T="M").var()
+
+ds.air.cf.groupby("T").var("Y")
 
 (
 	ds.air

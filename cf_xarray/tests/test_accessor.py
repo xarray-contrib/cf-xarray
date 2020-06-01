@@ -100,3 +100,13 @@ def test_dataarray_plot(obj):
 @pytest.mark.parametrize("obj", datasets)
 def test_dataset_plot(obj):
     pass
+
+
+@pytest.mark.parametrize("obj", objects)
+@pytest.mark.parametrize(
+    "key, expected_key", (("X", "lon"), ("Y", "lat"), ("T", "time"))
+)
+def test_getitem(obj, key, expected_key):
+    actual = obj.cf[key]
+    expected = obj[expected_key]
+    assert_identical(actual, expected)

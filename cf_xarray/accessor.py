@@ -88,7 +88,7 @@ class _CFWrappedPlotMethods:
 
     def __call__(self, *args, **kwargs):
         plot = _getattr(
-            obj=self._obj.plot, attr="__call__", accessor=self.accessor, keys=self._keys
+            obj=self._obj, attr="plot", accessor=self.accessor, keys=self._keys
         )
         return plot(*args, **kwargs)
 

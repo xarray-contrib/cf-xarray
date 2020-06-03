@@ -143,7 +143,7 @@ def _get_axis_coord(var: xr.DataArray, key, error: bool = True, default: Any = N
                     return coord
 
     if error:
-        raise ValueError(f"axis name {key!r} not found!")
+        raise KeyError(f"axis name {key!r} not found!")
     else:
         return default
 

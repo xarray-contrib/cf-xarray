@@ -104,9 +104,26 @@ def test_dataset_plot(obj):
 
 @pytest.mark.parametrize("obj", objects)
 @pytest.mark.parametrize(
-    "key, expected_key", (("X", "lon"), ("Y", "lat"), ("T", "time"))
+    "key, expected_key",
+    (
+        ("X", "lon"),
+        ("Y", "lat"),
+        ("T", "time"),
+        ("longitude", "lon"),
+        ("latitude", "lat"),
+        ("time", "time"),
+    ),
 )
 def test_getitem(obj, key, expected_key):
     actual = obj.cf[key]
     expected = obj[expected_key]
     assert_identical(actual, expected)
+
+
+@pytest.mark.parametrize("obj", objects)
+def test_getitem_errors(obj,):
+    with pytest.raises(KeyError):
+        obj.cf["XX"]
+    obj.lon.attrs = {}
+    with pytest.raises(KeyError):
+        obj.cf["X"]

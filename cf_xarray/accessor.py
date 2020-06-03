@@ -133,7 +133,7 @@ def _get_axis_coord(var: xr.DataArray, key, error: bool = True, default: Any = N
             return default
 
     if axis is None:
-        raise AssertionError(f"Should be unreachable")
+        raise AssertionError("Should be unreachable")
 
     for coord in var.coords:
         for criterion, valid_values in coordinate_criteria.items():

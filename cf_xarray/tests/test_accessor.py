@@ -21,8 +21,16 @@ objects = datasets + dataarrays
     (
         ("resample", {"time": "M"}, {"T": "M"}),
         ("rolling", {"lat": 5}, {"Y": 5}),
-        ("coarsen", {"lon": 2, "lat": 5}, {"X": 2, "Y": 5}),
-        ("groupby", {"group": "time"}, {"group": "T"})
+        ("groupby", {"group": "time"}, {"group": "T"}),
+        pytest.param(
+            "coarsen",
+            {"lon": 2, "lat": 5},
+            {"X": 2, "Y": 5},
+            marks=pytest.mark.skip(
+                reason="xarray GH4120. any test after this will fail since attrs are lost"
+            ),
+        ),
+        # order of above tests is important: See xarray GH4120
         # groupby("time.day")?
         # groupby_bins
         # weighted

@@ -14,12 +14,10 @@ _WRAPPED_CLASSES = (
 )
 
 
-_DEFAULT_KEYS_TO_REWRITE = ("dim", "coord", "group")
 _AXIS_NAMES = ("X", "Y", "Z", "T")
 _COORD_NAMES = ("longitude", "latitude", "vertical", "time")
 _COORD_AXIS_MAPPING = dict(zip(_COORD_NAMES, _AXIS_NAMES))
 _CELL_MEASURES = ("area", "volume")
-
 
 # Define the criteria for coordinate matches
 # Copied from metpy
@@ -148,24 +146,54 @@ def _get_axis_coord(var: xr.DataArray, key, error: bool = True, default: Any = N
         return default
 
 
-def _get_measure(da: xr.DataArray, key: str):
-    """
-    TODO: actually interpret da.attrs to get this.
-    """
-    if key not in _CELL_MEASURES:
-        raise ValueError(
-            f"Cell measure must be one of {_CELL_MEASURES!r}. Received {key!r} instead."
-        )
+def _get_measure_variable(
+    da: xr.DataArray, key: str, error: bool = True, default: Any = None
+) -> DataArray:
+    """ tiny wrapper since xarray does not support providing str for weights."""
+    return da[_get_measure(da, key, error, default)]
 
-    return {"area": "cell_area", "volume": "cell_volume"}
+
+def _get_measure(da: xr.DataArray, key: str, error: bool = True, default: Any = None):
+    """
+    Interprets 'cell_measures'.
+    """
+    if not isinstance(da, DataArray):
+        raise NotImplementedError("Measures not implemented for Datasets yet.")
+    if key not in _CELL_MEASURES:
+        if error:
+            raise ValueError(
+                f"Cell measure must be one of {_CELL_MEASURES!r}. Received {key!r} instead."
+            )
+        else:
+            return default
+
+    if "cell_measures" not in da.attrs:
+        if error:
+            raise KeyError("'cell_measures' not present in 'attrs'.")
+        else:
+            return default
+
+    attr = da.attrs["cell_measures"]
+    strings = [s.strip() for s in attr.strip().split(":")]
+    if len(strings) % 2 != 0:
+        if error:
+            raise ValueError(f"attrs['cell_measures'] = {attr!r} is malformed.")
+        else:
+            return default
+    measures = dict(zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)]))
+    return measures[key]
+
+
+_DEFAULT_KEY_MAPPERS: dict = dict.fromkeys(("dim", "coord", "group"), _get_axis_coord)
+_DEFAULT_KEY_MAPPERS["weights"] = _get_measure_variable
 
 
 def _getattr(
     obj: Union[DataArray, Dataset],
     attr: str,
     accessor: "CFAccessor",
+    key_mappers: dict,
     wrap_classes=False,
-    keys=_DEFAULT_KEYS_TO_REWRITE,
 ):
     """
     Common getattr functionality.
@@ -186,8 +214,7 @@ def _getattr(
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        arguments = accessor._process_signature(func, args, kwargs, keys=keys)
-
+        arguments = accessor._process_signature(func, args, kwargs, key_mappers)
         result = func(**arguments)
         if wrap_classes and isinstance(result, _WRAPPED_CLASSES):
             result = _CFWrappedClass(result, accessor)
@@ -203,7 +230,6 @@ class _CFWrappedClass:
 
         Parameters
         ----------
-
         obj : DataArray, Dataset
         towrap : Resample, GroupBy, Coarsen, Rolling, Weighted
             Instance of xarray class that is being wrapped.
@@ -216,7 +242,12 @@ class _CFWrappedClass:
         return "--- CF-xarray wrapped \n" + repr(self.wrapped)
 
     def __getattr__(self, attr):
-        return _getattr(obj=self.wrapped, attr=attr, accessor=self.accessor)
+        return _getattr(
+            obj=self.wrapped,
+            attr=attr,
+            accessor=self.accessor,
+            key_mappers=_DEFAULT_KEY_MAPPERS,
+        )
 
 
 class _CFWrappedPlotMethods:
@@ -227,13 +258,19 @@ class _CFWrappedPlotMethods:
 
     def __call__(self, *args, **kwargs):
         plot = _getattr(
-            obj=self._obj, attr="plot", accessor=self.accessor, keys=self._keys
+            obj=self._obj,
+            attr="plot",
+            accessor=self.accessor,
+            key_mappers=dict.fromkeys(self._keys, _get_axis_coord),
         )
         return plot(*args, **kwargs)
 
     def __getattr__(self, attr):
         return _getattr(
-            obj=self._obj.plot, attr=attr, accessor=self.accessor, keys=self._keys
+            obj=self._obj.plot,
+            attr=attr,
+            accessor=self.accessor,
+            key_mappers=dict.fromkeys(self._keys, _get_axis_coord),
         )
 
 
@@ -241,7 +278,7 @@ class CFAccessor:
     def __init__(self, da):
         self._obj = da
 
-    def _process_signature(self, func, args, kwargs, keys):
+    def _process_signature(self, func, args, kwargs, key_mappers):
         sig = inspect.signature(func, follow_wrapped=False)
 
         # Catch things like .isel(T=5).
@@ -254,9 +291,10 @@ class CFAccessor:
 
         if args or kwargs:
             bound = sig.bind(*args, **kwargs)
-            arguments = self._rewrite_values_with_axis_names(
-                bound.arguments, keys, tuple(var_kws)
+            arguments = self._rewrite_values(
+                bound.arguments, key_mappers, tuple(var_kws)
             )
+            print(arguments)
         else:
             arguments = {}
 
@@ -270,33 +308,32 @@ class CFAccessor:
 
         return arguments
 
-    def _rewrite_values_with_axis_names(self, kwargs, keys, var_kws):
-        """ rewrites 'dim' for example. """
-        updates = {}
-        for key in tuple(keys) + tuple(var_kws):
+    def _rewrite_values(self, kwargs, key_mappers: dict, var_kws):
+        """ rewrites 'dim' for example using 'mapper' """
+        updates: dict = {}
+        key_mappers.update(dict.fromkeys(var_kws, _get_axis_coord))
+        for key, mapper in key_mappers.items():
             value = kwargs.get(key, None)
-            if value:
+            if value is not None:
                 if isinstance(value, str):
                     value = [value]
 
                 if isinstance(value, dict):
                     # this for things like isel where **kwargs captures things like T=5
                     updates[key] = {
-                        _get_axis_coord(self._obj, k, False, k): v
-                        for k, v in value.items()
+                        mapper(self._obj, k, False, k): v for k, v in value.items()
                     }
                 elif value is Ellipsis:
                     pass
                 else:
                     # things like sum which have dim
-                    updates[key] = [
-                        _get_axis_coord(self._obj, v, False, v) for v in value
-                    ]
+                    updates[key] = [mapper(self._obj, v, False, v) for v in value]
                     if len(updates[key]) == 1:
                         updates[key] = updates[key][0]
 
         kwargs.update(updates)
 
+        # TODO: is there a way to merge this with above?
         # maybe the keys we are looking for are in kwargs.
         # For example, this happens with DataArray.plot(),
         # where the signature is obscured and kwargs is
@@ -306,14 +343,20 @@ class CFAccessor:
                 maybe_update = {
                     k: _get_axis_coord(self._obj, v, False, v)
                     for k, v in kwargs[vkw].items()
-                    if k in keys
+                    if k in key_mappers
                 }
                 kwargs[vkw].update(maybe_update)
 
         return kwargs
 
     def __getattr__(self, attr):
-        return _getattr(obj=self._obj, attr=attr, accessor=self, wrap_classes=True)
+        return _getattr(
+            obj=self._obj,
+            attr=attr,
+            accessor=self,
+            key_mappers=_DEFAULT_KEY_MAPPERS,
+            wrap_classes=True,
+        )
 
     @property
     def plot(self):
@@ -326,7 +369,7 @@ class CFDatasetAccessor(CFAccessor):
         if key in _AXIS_NAMES + _COORD_NAMES:
             return self._obj[_get_axis_coord(self._obj, key)]
         elif key in _CELL_MEASURES:
-            raise NotImplementedError("measures not implemented yet.")
+            raise NotImplementedError("measures not implemented for Dataset yet.")
             # return self._obj[_get_measure(self._obj)[key]]
         else:
             raise KeyError(f"DataArray.cf does not understand the key {key}")
@@ -341,7 +384,6 @@ class CFDataArrayAccessor(CFAccessor):
         if key in _AXIS_NAMES + _COORD_NAMES:
             return self._obj[_get_axis_coord(self._obj, key)]
         elif key in _CELL_MEASURES:
-            raise NotImplementedError("measures not implemented yet.")
-            # return self._obj[_get_measure(self._obj)[key]]
+            return self._obj[_get_measure(self._obj, key)]
         else:
             raise KeyError(f"DataArray.cf does not understand the key {key}")

@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 import pytest
 import xarray as xr
 from xarray.testing import assert_identical
@@ -10,6 +11,10 @@ from . import raise_if_dask_computes
 
 mpl.use("Agg")
 ds = xr.tutorial.open_dataset("air_temperature").isel(time=slice(4), lon=slice(50))
+ds.air.attrs["cell_measures"] = "area: cell_area"
+ds.coords["cell_area"] = (
+    xr.DataArray(np.cos(ds.lat * np.pi / 180)) * xr.ones_like(ds.lon) * 105e3 * 110e3
+)
 datasets = [ds, ds.chunk({"lat": 5})]
 dataarrays = [ds.air, ds.air.chunk({"lat": 5})]
 objects = datasets + dataarrays
@@ -55,6 +60,15 @@ def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
             expected = getattr(obj, attr)(**xrkwargs).mean("lat")
             actual = getattr(obj.cf, attr)(**cfkwargs).mean("Y")
         assert_identical(expected, actual)
+
+
+@pytest.mark.parametrize("obj", dataarrays)
+def test_weighted(obj):
+    with raise_if_dask_computes(max_computes=2):
+        # weights are checked for nans
+        expected = obj.weighted(obj["cell_area"]).sum("lat")
+        actual = obj.cf.weighted("area").sum("Y")
+    assert_identical(expected, actual)
 
 
 @pytest.mark.parametrize("obj", objects)
@@ -112,6 +126,11 @@ def test_dataset_plot(obj):
         ("longitude", "lon"),
         ("latitude", "lat"),
         ("time", "time"),
+        pytest.param(
+            "area",
+            "cell_area",
+            marks=pytest.mark.xfail(reason="measures not implemented for dataset"),
+        ),
     ),
 )
 def test_getitem(obj, key, expected_key):

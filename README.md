@@ -21,4 +21,14 @@ ds.air.cf.groupby("T").var("Y")
 )
 
 ds.air.isel(lat=[0, 1], lon=1).cf.plot.line(x="T", hue="Y")
+
+ds.air.attrs["cell_measures"] = "area: cell_area"
+ds.coords["cell_area"] = (
+    xr.DataArray(np.cos(ds.cf["latitude"] * np.pi / 180))
+    * xr.ones_like(ds.cf["longitude"])
+    * 105e3
+    * 110e3
+)
+ds.air.cf.weighted("area").sum("latitude")
+
 ```

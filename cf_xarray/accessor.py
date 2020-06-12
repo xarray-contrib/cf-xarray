@@ -16,16 +16,15 @@ _WRAPPED_CLASSES = (
 
 _AXIS_NAMES = ("X", "Y", "Z", "T")
 _COORD_NAMES = ("longitude", "latitude", "vertical", "time")
-_COORD_AXIS_MAPPING = dict(zip(_COORD_NAMES, _AXIS_NAMES))
 _CELL_MEASURES = ("area", "volume")
 
 # Define the criteria for coordinate matches
 # Copied from metpy
 # Internally we only use X, Y, Z, T
-# TODO: Metpy adds latitude and longitude separately so we may revert to doing that too
-coordinate_criteria = {
+coordinate_criteria: dict = {
     "standard_name": {
         "T": ("time",),
+        "time": ("time",),
         "Z": (
             "air_pressure",
             "height",
@@ -41,20 +40,21 @@ coordinate_criteria = {
             "height_above_reference_ellipsoid",
             "height_above_mean_sea_level",
         ),
-        "Y": ("latitude",),
-        "X": ("longitude",),
+        "latitude": ("latitude",),
+        "longitude": ("longitude",),
     },
-    "long_name": {"T": ("time",)},
     "_CoordinateAxisType": {
         "T": ("Time",),
         "Z": ("GeoZ", "Height", "Pressure"),
-        "Y": ("GeoY", "Lat"),
-        "X": ("GeoX", "Lon"),
+        "Y": ("GeoY",),
+        "latitude": ("Lat",),
+        "X": ("GeoX",),
+        "longitude": ("Lon",),
     },
     "axis": {"T": ("T",), "Z": ("Z",), "Y": ("Y",), "X": ("X",)},
-    "positive": {"Z": ("up", "down")},
+    "positive": {"Z": ("up", "down"), "vertical": ("up", "down")},
     "units": {
-        "Y": (
+        "latitude": (
             "degree_north",
             "degree_N",
             "degreeN",
@@ -62,7 +62,7 @@ coordinate_criteria = {
             "degrees_N",
             "degreesN",
         ),
-        "X": (
+        "longitude": (
             "degree_east",
             "degree_E",
             "degreeE",
@@ -83,6 +83,11 @@ coordinate_criteria = {
     #     "longitude": r"x?lon[a-z0-9]*",
     # },
 }
+
+coordinate_criteria["standard_name"]["vertical"] = coordinate_criteria["standard_name"][
+    "Z"
+]
+coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 
 
 def _get_axis_coord_single(var, key, *args):
@@ -134,21 +139,11 @@ def _get_axis_coord(
     MetPy's parse_cf
     """
 
-    axis = None
-    if key in _COORD_NAMES:
-        coord = key
-        axis = _COORD_AXIS_MAPPING[key]
-    elif key in _AXIS_NAMES:
-        coord = ""
-        axis = key
-    else:
+    if key not in _COORD_NAMES and key not in _AXIS_NAMES:
         if error:
             raise KeyError(f"Did not understand {key}")
         else:
             return [default]
-
-    if axis is None:
-        raise AssertionError("Should be unreachable")
 
     if "coordinates" in var.encoding:
         search_in = var.encoding["coordinates"].split(" ")
@@ -160,8 +155,8 @@ def _get_axis_coord(
     results: Set = set()
     for coord in search_in:
         for criterion, valid_values in coordinate_criteria.items():
-            if axis in valid_values:  # type: ignore
-                expected = valid_values[axis]  # type: ignore
+            if key in valid_values:  # type: ignore
+                expected = valid_values[key]  # type: ignore
                 if var.coords[coord].attrs.get(criterion, None) in expected:
                     results.update((coord,))
 

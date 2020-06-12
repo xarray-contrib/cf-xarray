@@ -119,7 +119,7 @@ def _get_axis_coord(
 
     Returns
     -------
-    str or List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
+    List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
 
     Notes
     -----

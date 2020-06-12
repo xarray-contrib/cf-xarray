@@ -20,6 +20,17 @@ dataarrays = [ds.air, ds.air.chunk({"lat": 5})]
 objects = datasets + dataarrays
 
 
+def test_describe():
+    actual = ds.cf._describe()
+    expected = (
+        "Axes:\n\tX: ['lon']\n\tY: ['lat']\n\tZ: [None]\n\tT: ['time']\n"
+        "\nCoordinates:\n\tlongitude: ['lon']\n\tlatitude: ['lat']"
+        "\n\tvertical: [None]\n\ttime: ['time']\n"
+        "\nCell Measures:\n\tarea: unsupported\n\tvolume: unsupported\n"
+    )
+    assert actual == expected
+
+
 @pytest.mark.parametrize("obj", objects)
 @pytest.mark.parametrize(
     "attr, xrkwargs, cfkwargs",

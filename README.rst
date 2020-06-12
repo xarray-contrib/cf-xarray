@@ -56,8 +56,8 @@ A lightweight convenience wrapper for using CF attributes on xarray objects. Rig
 
     ds.air.attrs["cell_measures"] = "area: cell_area"
     ds.coords["cell_area"] = (
-        xr.DataArray(np.cos(ds.cf["latitude"] * np.pi / 180))
-        * xr.ones_like(ds.cf["longitude"])
+	np.cos(ds.air.cf["latitude"] * np.pi / 180)
+        * xr.ones_like(ds.air.cf["longitude"])
         * 105e3
         * 110e3
     )

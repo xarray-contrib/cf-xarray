@@ -133,17 +133,28 @@ def _get_axis_coord(var: xr.DataArray, key, error: bool = True, default: Any = N
     if axis is None:
         raise AssertionError("Should be unreachable")
 
-    for coord in var.coords:
+    if "coordinates" in var.encoding:
+        search_in = var.encoding["coordinates"].split(" ")
+    elif "coordinates" in var.attrs:
+        search_in = var.attrs["coordinates"].split(" ")
+    else:
+        search_in = set(var.coords)
+
+    results = []
+    for coord in search_in:
         for criterion, valid_values in coordinate_criteria.items():
             if axis in valid_values:  # type: ignore
                 expected = valid_values[axis]  # type: ignore
                 if var.coords[coord].attrs.get(criterion, None) in expected:
-                    return coord
+                    results.append(coord)
 
-    if error:
-        raise KeyError(f"axis name {key!r} not found!")
+    if not results:
+        if error:
+            raise KeyError(f"axis name {key!r} not found!")
+        else:
+            return default
     else:
-        return default
+        return results
 
 
 def _get_measure_variable(
@@ -367,7 +378,8 @@ class CFAccessor:
 class CFDatasetAccessor(CFAccessor):
     def __getitem__(self, key):
         if key in _AXIS_NAMES + _COORD_NAMES:
-            return self._obj[_get_axis_coord(self._obj, key)]
+            varnames = _get_axis_coord(self._obj, key)
+            return self._obj.reset_coords()[varnames].set_coords(varnames)
         elif key in _CELL_MEASURES:
             raise NotImplementedError("measures not implemented for Dataset yet.")
             # return self._obj[_get_measure(self._obj)[key]]
@@ -382,7 +394,12 @@ class CFDatasetAccessor(CFAccessor):
 class CFDataArrayAccessor(CFAccessor):
     def __getitem__(self, key):
         if key in _AXIS_NAMES + _COORD_NAMES:
-            return self._obj[_get_axis_coord(self._obj, key)]
+            varnames = _get_axis_coord(self._obj, key)
+            if len(varnames) > 1:
+                raise ValueError(
+                    "Multiple results for {key!r} found: {varnames!r}. Is this valid CF? Please open an issue."
+                )
+            return self._obj[varnames[0]].reset_coords(drop=True)
         elif key in _CELL_MEASURES:
             return self._obj[_get_measure(self._obj, key)]
         else:

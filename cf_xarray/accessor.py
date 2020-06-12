@@ -1,6 +1,6 @@
 import functools
 import inspect
-from typing import Any, Union
+from typing import Any, List, Optional, Set, Union
 
 import xarray as xr
 from xarray import DataArray, Dataset
@@ -44,6 +44,7 @@ coordinate_criteria = {
         "Y": ("latitude",),
         "X": ("longitude",),
     },
+    "long_name": {"T": ("time",)},
     "_CoordinateAxisType": {
         "T": ("Time",),
         "Z": ("GeoZ", "Height", "Pressure"),
@@ -84,13 +85,29 @@ coordinate_criteria = {
 }
 
 
-def _get_axis_coord(var: xr.DataArray, key, error: bool = True, default: Any = None):
+def _get_axis_coord_single(var, key, *args):
+    """ Helper method for when we really want only one result per key. """
+    results = _get_axis_coord(var, key, *args)
+    if len(results) > 1:
+        raise ValueError(
+            "Multiple results for {key!r} found: {results!r}. Is this valid CF? Please open an issue."
+        )
+    else:
+        return results[0]
+
+
+def _get_axis_coord(
+    var: Union[xr.DataArray, xr.Dataset],
+    key: str,
+    error: bool = True,
+    default: Optional[str] = None,
+) -> List[Optional[str]]:
     """
     Translate from axis or coord name to variable name
 
     Parameters
     ----------
-    var : `xarray.DataArray`
+    var : DataArray, Dataset
         DataArray belonging to the coordinate to be checked
     key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
         key to check for.
@@ -102,7 +119,7 @@ def _get_axis_coord(var: xr.DataArray, key, error: bool = True, default: Any = N
 
     Returns
     -------
-    str, Variable name in parent xarray object that matches axis or coordinate `key`
+    str or List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
 
     Notes
     -----
@@ -128,7 +145,7 @@ def _get_axis_coord(var: xr.DataArray, key, error: bool = True, default: Any = N
         if error:
             raise KeyError(f"Did not understand {key}")
         else:
-            return default
+            return [default]
 
     if axis is None:
         raise AssertionError("Should be unreachable")
@@ -138,23 +155,23 @@ def _get_axis_coord(var: xr.DataArray, key, error: bool = True, default: Any = N
     elif "coordinates" in var.attrs:
         search_in = var.attrs["coordinates"].split(" ")
     else:
-        search_in = set(var.coords)
+        search_in = list(var.coords)
 
-    results = []
+    results: Set = set()
     for coord in search_in:
         for criterion, valid_values in coordinate_criteria.items():
             if axis in valid_values:  # type: ignore
                 expected = valid_values[axis]  # type: ignore
                 if var.coords[coord].attrs.get(criterion, None) in expected:
-                    results.append(coord)
+                    results.update((coord,))
 
     if not results:
         if error:
             raise KeyError(f"axis name {key!r} not found!")
         else:
-            return default
+            return [default]
     else:
-        return results
+        return list(results)
 
 
 def _get_measure_variable(
@@ -195,7 +212,9 @@ def _get_measure(da: xr.DataArray, key: str, error: bool = True, default: Any = 
     return measures[key]
 
 
-_DEFAULT_KEY_MAPPERS: dict = dict.fromkeys(("dim", "coord", "group"), _get_axis_coord)
+_DEFAULT_KEY_MAPPERS: dict = dict.fromkeys(
+    ("dim", "coord", "group"), _get_axis_coord_single
+)
 _DEFAULT_KEY_MAPPERS["weights"] = _get_measure_variable
 
 
@@ -272,7 +291,7 @@ class _CFWrappedPlotMethods:
             obj=self._obj,
             attr="plot",
             accessor=self.accessor,
-            key_mappers=dict.fromkeys(self._keys, _get_axis_coord),
+            key_mappers=dict.fromkeys(self._keys, _get_axis_coord_single),
         )
         return plot(*args, **kwargs)
 
@@ -281,7 +300,7 @@ class _CFWrappedPlotMethods:
             obj=self._obj.plot,
             attr=attr,
             accessor=self.accessor,
-            key_mappers=dict.fromkeys(self._keys, _get_axis_coord),
+            key_mappers=dict.fromkeys(self._keys, _get_axis_coord_single),
         )
 
 
@@ -305,7 +324,6 @@ class CFAccessor:
             arguments = self._rewrite_values(
                 bound.arguments, key_mappers, tuple(var_kws)
             )
-            print(arguments)
         else:
             arguments = {}
 
@@ -322,7 +340,7 @@ class CFAccessor:
     def _rewrite_values(self, kwargs, key_mappers: dict, var_kws):
         """ rewrites 'dim' for example using 'mapper' """
         updates: dict = {}
-        key_mappers.update(dict.fromkeys(var_kws, _get_axis_coord))
+        key_mappers.update(dict.fromkeys(var_kws, _get_axis_coord_single))
         for key, mapper in key_mappers.items():
             value = kwargs.get(key, None)
             if value is not None:
@@ -352,7 +370,7 @@ class CFAccessor:
         for vkw in var_kws:
             if vkw in kwargs:
                 maybe_update = {
-                    k: _get_axis_coord(self._obj, v, False, v)
+                    k: _get_axis_coord_single(self._obj, v, False, v)
                     for k, v in kwargs[vkw].items()
                     if k in key_mappers
                 }
@@ -386,20 +404,13 @@ class CFDatasetAccessor(CFAccessor):
         else:
             raise KeyError(f"DataArray.cf does not understand the key {key}")
 
-    # def __getitem__(self, key):
-    #     raise AttributeError("Dataset.cf does not support [] indexing or __getitem__")
-
 
 @xr.register_dataarray_accessor("cf")
 class CFDataArrayAccessor(CFAccessor):
     def __getitem__(self, key):
         if key in _AXIS_NAMES + _COORD_NAMES:
-            varnames = _get_axis_coord(self._obj, key)
-            if len(varnames) > 1:
-                raise ValueError(
-                    "Multiple results for {key!r} found: {varnames!r}. Is this valid CF? Please open an issue."
-                )
-            return self._obj[varnames[0]].reset_coords(drop=True)
+            varname = _get_axis_coord_single(self._obj, key)
+            return self._obj[varname].reset_coords(drop=True)
         elif key in _CELL_MEASURES:
             return self._obj[_get_measure(self._obj, key)]
         else:

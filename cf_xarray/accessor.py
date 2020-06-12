@@ -400,9 +400,8 @@ class CFDatasetAccessor(CFAccessor):
             return self._obj.reset_coords()[varnames].set_coords(varnames)
         elif key in _CELL_MEASURES:
             raise NotImplementedError("measures not implemented for Dataset yet.")
-            # return self._obj[_get_measure(self._obj)[key]]
         else:
-            raise KeyError(f"DataArray.cf does not understand the key {key}")
+            raise KeyError(f"Dataset.cf does not understand the key {key}")
 
 
 @xr.register_dataarray_accessor("cf")

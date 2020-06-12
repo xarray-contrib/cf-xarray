@@ -386,6 +386,26 @@ class CFAccessor:
     def plot(self):
         return _CFWrappedPlotMethods(self._obj, self)
 
+    def _describe(self):
+        text = "Axes:\n"
+        for key in _AXIS_NAMES:
+            text += f"\t{key}: {_get_axis_coord(self._obj, key, error=False, default=None)}\n"
+
+        text += "\nCoordinates:\n"
+        for key in _COORD_NAMES:
+            text += f"\t{key}: {_get_axis_coord(self._obj, key, error=False, default=None)}\n"
+
+        text += "\nCell Measures:\n"
+        for measure in _CELL_MEASURES:
+            if isinstance(self._obj, xr.Dataset):
+                text += f"\t{measure}: unsupported\n"
+            else:
+                text += f"\t{measure}: {_get_measure(self._obj, measure, error=False, default=None)}\n"
+        return text
+
+    def describe(self):
+        print(self._describe())
+
 
 @xr.register_dataset_accessor("cf")
 class CFDatasetAccessor(CFAccessor):

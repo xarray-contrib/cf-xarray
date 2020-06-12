@@ -164,10 +164,26 @@ def test_getitem_errors(obj,):
 def test_getitem_uses_coordinates():
     # POP-like dataset
     ds = xr.Dataset()
-    ds.coords["TLONG"] = (("nlat", "nlon"), np.ones((20, 30)), {"axis": "X"})
-    ds.coords["TLAT"] = (("nlat", "nlon"), 2 * np.ones((20, 30)), {"axis": "Y"})
-    ds.coords["ULONG"] = (("nlat", "nlon"), 0.5 * np.ones((20, 30)), {"axis": "X"})
-    ds.coords["ULAT"] = (("nlat", "nlon"), 2.5 * np.ones((20, 30)), {"axis": "Y"})
+    ds.coords["TLONG"] = (
+        ("nlat", "nlon"),
+        np.ones((20, 30)),
+        {"axis": "X", "units": "degrees_east"},
+    )
+    ds.coords["TLAT"] = (
+        ("nlat", "nlon"),
+        2 * np.ones((20, 30)),
+        {"axis": "Y", "units": "degrees_north"},
+    )
+    ds.coords["ULONG"] = (
+        ("nlat", "nlon"),
+        0.5 * np.ones((20, 30)),
+        {"axis": "X", "units": "degrees_east"},
+    )
+    ds.coords["ULAT"] = (
+        ("nlat", "nlon"),
+        2.5 * np.ones((20, 30)),
+        {"axis": "Y", "units": "degrees_north"},
+    )
     ds["UVEL"] = (
         ("nlat", "nlon"),
         np.ones((20, 30)) * 15,

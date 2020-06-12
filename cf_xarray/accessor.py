@@ -1,5 +1,6 @@
 import functools
 import inspect
+from collections import ChainMap
 from typing import Any, List, Optional, Set, Union
 
 import xarray as xr
@@ -95,7 +96,7 @@ def _get_axis_coord_single(var, key, *args):
     results = _get_axis_coord(var, key, *args)
     if len(results) > 1:
         raise ValueError(
-            "Multiple results for {key!r} found: {results!r}. Is this valid CF? Please open an issue."
+            f"Multiple results for {key!r} found: {results!r}. Is this valid CF? Please open an issue."
         )
     else:
         return results[0]
@@ -335,20 +336,34 @@ class CFAccessor:
     def _rewrite_values(self, kwargs, key_mappers: dict, var_kws):
         """ rewrites 'dim' for example using 'mapper' """
         updates: dict = {}
-        key_mappers.update(dict.fromkeys(var_kws, _get_axis_coord_single))
+
+        # allow multiple return values here.
+        # these are valid for .sel, .isel, .coarsen
+        key_mappers.update(dict.fromkeys(var_kws, _get_axis_coord))
+
         for key, mapper in key_mappers.items():
             value = kwargs.get(key, None)
+
             if value is not None:
                 if isinstance(value, str):
                     value = [value]
 
                 if isinstance(value, dict):
                     # this for things like isel where **kwargs captures things like T=5
-                    updates[key] = {
-                        mapper(self._obj, k, False, k): v for k, v in value.items()
-                    }
+                    # .sel, .isel, .rolling
+                    # Account for multiple names matching the key.
+                    # e.g. .isel(X=5) → .isel(xi_rho=5, xi_u=5, xi_v=5, xi_psi=5)
+                    # where xi_* have attrs["axis"] = "X"
+                    updates[key] = ChainMap(
+                        *[
+                            dict.fromkeys(mapper(self._obj, k, False, k), v)
+                            for k, v in value.items()
+                        ]
+                    )
+
                 elif value is Ellipsis:
                     pass
+
                 else:
                     # things like sum which have dim
                     updates[key] = [mapper(self._obj, v, False, v) for v in value]

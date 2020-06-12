@@ -90,6 +90,26 @@ def test_kwargs_methods(obj):
     assert_identical(expected, actual)
 
 
+def test_kwargs_expand_key_to_multiple_keys():
+
+    ds = xr.Dataset()
+    ds.coords["x1"] = ("x1", range(30), {"axis": "X"})
+    ds.coords["y1"] = ("y1", range(20), {"axis": "Y"})
+    ds.coords["x2"] = ("x2", range(10), {"axis": "X"})
+    ds.coords["y2"] = ("y2", range(5), {"axis": "Y"})
+
+    ds["v1"] = (("x1", "y1"), np.ones((30, 20)) * 15)
+    ds["v2"] = (("x2", "y2"), np.ones((10, 5)) * 15)
+
+    actual = ds.cf.isel(X=5, Y=3)
+    expected = ds.isel(x1=5, y1=3, x2=5, y2=3)
+    assert_identical(actual, expected)
+
+    actual = ds.cf.coarsen(X=10, Y=5)
+    expected = ds.coarsen(x1=10, y1=5, x2=10, y2=5)
+    assert_identical(actual.mean(), expected.mean())
+
+
 @pytest.mark.parametrize("obj", objects)
 def test_args_methods(obj):
     with raise_if_dask_computes():

@@ -101,8 +101,8 @@ def test_kwargs_expand_key_to_multiple_keys():
     ds["v1"] = (("x1", "y1"), np.ones((30, 20)) * 15)
     ds["v2"] = (("x2", "y2"), np.ones((10, 5)) * 15)
 
-    actual = ds.cf.isel(X=5, Y=10)
-    expected = ds.isel(x1=5, y1=10, x2=5, y2=10)
+    actual = ds.cf.isel(X=5, Y=3)
+    expected = ds.isel(x1=5, y1=3, x2=5, y2=3)
     assert_identical(actual, expected)
 
     actual = ds.cf.coarsen(X=10, Y=5)

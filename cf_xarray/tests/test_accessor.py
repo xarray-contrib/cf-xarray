@@ -135,6 +135,8 @@ def test_dataset_plot(obj):
 )
 def test_getitem(obj, key, expected_key):
     actual = obj.cf[key]
+    if isinstance(obj, xr.Dataset):
+        expected_key = [expected_key]
     expected = obj[expected_key]
     assert_identical(actual, expected)
 
@@ -146,3 +148,31 @@ def test_getitem_errors(obj,):
     obj.lon.attrs = {}
     with pytest.raises(KeyError):
         obj.cf["X"]
+
+
+def test_getitem_uses_coordinates():
+    # POP-like dataset
+    ds = xr.Dataset()
+    ds.coords["TLONG"] = (("nlat", "nlon"), np.ones((20, 30)), {"axis": "X"})
+    ds.coords["TLAT"] = (("nlat", "nlon"), 2 * np.ones((20, 30)), {"axis": "Y"})
+    ds.coords["ULONG"] = (("nlat", "nlon"), 0.5 * np.ones((20, 30)), {"axis": "X"})
+    ds.coords["ULAT"] = (("nlat", "nlon"), 2.5 * np.ones((20, 30)), {"axis": "Y"})
+    ds["UVEL"] = (
+        ("nlat", "nlon"),
+        np.ones((20, 30)) * 15,
+        {"coordinates": "ULONG ULAT"},
+    )
+    ds["TEMP"] = (
+        ("nlat", "nlon"),
+        np.ones((20, 30)) * 15,
+        {"coordinates": "TLONG TLAT"},
+    )
+
+    assert_identical(
+        ds.cf["X"], ds.reset_coords()[["ULONG", "TLONG"]].set_coords(["ULONG", "TLONG"])
+    )
+    assert_identical(
+        ds.cf["Y"], ds.reset_coords()[["ULAT", "TLAT"]].set_coords(["ULAT", "TLAT"])
+    )
+    assert_identical(ds.UVEL.cf["X"], ds["ULONG"].reset_coords(drop=True))
+    assert_identical(ds.TEMP.cf["X"], ds["TLONG"].reset_coords(drop=True))

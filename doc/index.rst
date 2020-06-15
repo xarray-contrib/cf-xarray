@@ -13,6 +13,8 @@ on xarray objects.
    :maxdepth: 2
 
    examples/index
+   roadmap
+   contributing
 
 Indices and tables
 ==================

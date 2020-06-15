@@ -6,6 +6,7 @@ from typing import Any, List, Optional, Set, Union
 import xarray as xr
 from xarray import DataArray, Dataset
 
+#: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (
     xr.core.resample.Resample,
     xr.core.groupby.GroupBy,
@@ -14,9 +15,13 @@ _WRAPPED_CLASSES = (
     xr.core.weighted.Weighted,
 )
 
-
+#:  `axis` names understood by cf_xarray
 _AXIS_NAMES = ("X", "Y", "Z", "T")
+
+#:  `coordinate` types understood by cf_xarray.
 _COORD_NAMES = ("longitude", "latitude", "vertical", "time")
+
+#:  Cell measures understood by cf_xarray.
 _CELL_MEASURES = ("area", "volume")
 
 # Define the criteria for coordinate matches

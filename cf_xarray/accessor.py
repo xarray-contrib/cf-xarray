@@ -436,7 +436,9 @@ class CFDatasetAccessor(CFAccessor):
         elif key in _CELL_MEASURES:
             raise NotImplementedError("measures not implemented for Dataset yet.")
         else:
-            raise KeyError(f"Dataset.cf does not understand the key {key}")
+            raise KeyError(
+                f"Dataset.cf does not understand the key {key!r}. Use Dataset.cf.describe() to see a list of key names that can be interpreted."
+            )
 
 
 @xr.register_dataarray_accessor("cf")
@@ -448,4 +450,6 @@ class CFDataArrayAccessor(CFAccessor):
         elif key in _CELL_MEASURES:
             return self._obj[_get_measure(self._obj, key)]
         else:
-            raise KeyError(f"DataArray.cf does not understand the key {key}")
+            raise KeyError(
+                f"DataArray.cf does not understand the key {key!r}. Use DataArray.cf.describe() to see a list of key names that can be interpreted."
+            )

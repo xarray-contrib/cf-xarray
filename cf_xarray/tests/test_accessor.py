@@ -73,6 +73,13 @@ def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
         assert_identical(expected, actual)
 
 
+@pytest.mark.parametrize("obj", objects)
+def test_groupby_reduce_multiple_dims(obj):
+    actual = obj.cf.groupby("time.month").mean(["lat", "X"])
+    expected = obj.groupby("time.month").mean(["lat", "lon"])
+    assert_identical(actual, expected)
+
+
 @pytest.mark.parametrize("obj", dataarrays)
 def test_weighted(obj):
     with raise_if_dask_computes(max_computes=2):
@@ -103,6 +110,10 @@ def test_kwargs_expand_key_to_multiple_keys():
 
     actual = ds.cf.isel(X=5, Y=3)
     expected = ds.isel(x1=5, y1=3, x2=5, y2=3)
+    assert_identical(actual, expected)
+
+    actual = ds.cf.mean("X")
+    expected = ds.mean(["x1", "x2"])
     assert_identical(actual, expected)
 
     actual = ds.cf.coarsen(X=10, Y=5)

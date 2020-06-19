@@ -1,5 +1,6 @@
 import functools
 import inspect
+import itertools
 from collections import ChainMap
 from typing import Callable, List, Mapping, MutableMapping, Optional, Set, Tuple, Union
 
@@ -230,7 +231,7 @@ def _get_measure(
 
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Mapper] = {
-    "dim": _get_axis_coord_single,
+    "dim": _get_axis_coord,
     "coord": _get_axis_coord_single,
     "group": _get_axis_coord_single,
     "weights": _get_measure_variable,  # type: ignore
@@ -395,9 +396,16 @@ class CFAccessor:
 
                 else:
                     # things like sum which have dim
-                    updates[key] = [mapper(self._obj, v, False, v) for v in value]
-                    if len(updates[key]) == 1:
-                        updates[key] = updates[key][0]
+                    newvalue = [mapper(self._obj, v, False, v) for v in value]
+                    if len(newvalue) == 1:
+                        # works for groupby("time")
+                        newvalue = newvalue[0]
+                    else:
+                        # Mappers return list by default
+                        # for input dim=["lat", "X"], newvalue=[["lat"], ["lon"]],
+                        # so we deal with that here.
+                        newvalue = list(itertools.chain(*newvalue))
+                    updates[key] = newvalue
 
         kwargs.update(updates)
 

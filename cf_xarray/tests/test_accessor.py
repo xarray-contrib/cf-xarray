@@ -251,3 +251,14 @@ def test_getitem_uses_coordinates():
     )
     assert_identical(ds.UVEL.cf["X"], ds["ULONG"].reset_coords(drop=True))
     assert_identical(ds.TEMP.cf["X"], ds["TLONG"].reset_coords(drop=True))
+
+
+def test_plot_xincrease_yincrease():
+    ds.lon.attrs["positive"] = "down"
+    ds.lat.attrs["positive"] = "down"
+
+    f, ax = plt.subplots(1, 1)
+    ds.air.isel(time=1).cf.plot(ax=ax, x="X", y="Y")
+
+    for lim in [ax.get_xlim(), ax.get_ylim()]:
+        assert lim[0] > lim[1]

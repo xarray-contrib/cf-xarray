@@ -254,6 +254,7 @@ def test_getitem_uses_coordinates():
 
 
 def test_plot_xincrease_yincrease():
+    ds = xr.tutorial.open_dataset("air_temperature").isel(time=slice(4), lon=slice(50))
     ds.lon.attrs["positive"] = "down"
     ds.lat.attrs["positive"] = "down"
 

@@ -2,6 +2,7 @@ import functools
 import inspect
 import itertools
 from collections import ChainMap
+from contextlib import suppress
 from typing import Callable, List, Mapping, MutableMapping, Optional, Set, Tuple, Union
 
 import xarray as xr
@@ -226,6 +227,13 @@ def _get_measure(
         else:
             return default
     measures = dict(zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)]))
+    if key not in measures:
+        if error:
+            raise KeyError(
+                f"Cell measure {key!r} not found. Please use .cf.describe() to see a list of key names that can be interpreted."
+            )
+        else:
+            return default
     return measures[key]
 
 
@@ -457,6 +465,29 @@ class CFAccessor:
 
     def describe(self):
         print(self._describe())
+
+    def get_valid_keys(self) -> Set[str]:
+        """
+        Returns valid keys for .cf[]
+
+        Returns
+        -------
+        Set of valid key names that can be used with __getitem__ or .cf[key].
+        """
+        varnames = [
+            key
+            for key in _AXIS_NAMES + _COORD_NAMES
+            if _get_axis_coord(self._obj, key, error=False, default=None) != [None]
+        ]
+        with suppress(NotImplementedError):
+            measures = [
+                key
+                for key in _CELL_MEASURES
+                if _get_measure(self._obj, key, error=False) is not None
+            ]
+            if measures:
+                varnames.append(*measures)
+        return set(varnames)
 
 
 @xr.register_dataset_accessor("cf")

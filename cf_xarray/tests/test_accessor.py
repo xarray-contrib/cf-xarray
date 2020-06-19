@@ -15,6 +15,10 @@ ds.air.attrs["cell_measures"] = "area: cell_area"
 ds.coords["cell_area"] = (
     xr.DataArray(np.cos(ds.lat * np.pi / 180)) * xr.ones_like(ds.lon) * 105e3 * 110e3
 )
+ds_no_attrs = ds.copy(deep=True)
+for variable in ds_no_attrs.variables:
+    ds_no_attrs[variable].attrs = {}
+
 datasets = [ds, ds.chunk({"lat": 5})]
 dataarrays = [ds.air, ds.air.chunk({"lat": 5})]
 objects = datasets + dataarrays
@@ -119,6 +123,19 @@ def test_kwargs_expand_key_to_multiple_keys():
     actual = ds.cf.coarsen(X=10, Y=5)
     expected = ds.coarsen(x1=10, y1=5, x2=10, y2=5)
     assert_identical(actual.mean(), expected.mean())
+
+
+@pytest.mark.parametrize(
+    "obj, expected",
+    [
+        (ds, set(("latitude", "longitude", "time", "X", "Y", "T"))),
+        (ds.air, set(("latitude", "longitude", "time", "X", "Y", "T", "area"))),
+        (ds_no_attrs.air, set()),
+    ],
+)
+def test_get_valid_keys(obj, expected):
+    actual = obj.cf.get_valid_keys()
+    assert actual == expected
 
 
 @pytest.mark.parametrize("obj", objects)
@@ -234,3 +251,15 @@ def test_getitem_uses_coordinates():
     )
     assert_identical(ds.UVEL.cf["X"], ds["ULONG"].reset_coords(drop=True))
     assert_identical(ds.TEMP.cf["X"], ds["TLONG"].reset_coords(drop=True))
+
+
+def test_plot_xincrease_yincrease():
+    ds = xr.tutorial.open_dataset("air_temperature").isel(time=slice(4), lon=slice(50))
+    ds.lon.attrs["positive"] = "down"
+    ds.lat.attrs["positive"] = "down"
+
+    f, ax = plt.subplots(1, 1)
+    ds.air.isel(time=1).cf.plot(ax=ax, x="X", y="Y")
+
+    for lim in [ax.get_xlim(), ax.get_ylim()]:
+        assert lim[0] > lim[1]

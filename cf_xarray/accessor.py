@@ -252,6 +252,7 @@ def _getattr(
     accessor: "CFAccessor",
     key_mappers: Mapping[str, Mapper],
     wrap_classes: bool = False,
+    extra_decorator: Callable = None,
 ):
     """
     Common getattr functionality.
@@ -269,13 +270,17 @@ def _getattr(
         Only True for the high level CFAccessor.
         Facilitates code reuse for _CFWrappedClass and _CFWrapppedPlotMethods
         For both of those, wrap_classes is False.
+    extra_decorator: Callable (optional)
+        An extra decorator, if necessary. This is used by _CFPlotMethods to set default
+        kwargs based on CF attributes.
     """
-    func = getattr(obj, attr)
+    func: Callable = getattr(obj, attr)
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         arguments = accessor._process_signature(func, args, kwargs, key_mappers)
-        result = func(**arguments)
+        final_func = extra_decorator(func) if extra_decorator else func
+        result = final_func(**arguments)
         if wrap_classes and isinstance(result, _WRAPPED_CLASSES):
             result = _CFWrappedClass(result, accessor)
 
@@ -320,6 +325,40 @@ class _CFWrappedPlotMethods:
         self.accessor = accessor
         self._keys = ("x", "y", "hue", "col", "row")
 
+    def _plot_decorator(self, func):
+        """
+        This decorator is used to set kwargs on plotting functions.
+        """
+        valid_keys = self.accessor.get_valid_keys()
+
+        @functools.wraps(func)
+        def _plot_wrapper(*args, **kwargs):
+            if "x" in kwargs:
+                if kwargs["x"] in valid_keys:
+                    xvar = self.accessor[kwargs["x"]]
+                else:
+                    xvar = self._obj[kwargs["x"]]
+                if "positive" in xvar.attrs:
+                    if xvar.attrs["positive"] == "down":
+                        kwargs.setdefault("xincrease", False)
+                    else:
+                        kwargs.setdefault("xincrease", True)
+
+            if "y" in kwargs:
+                if kwargs["y"] in valid_keys:
+                    yvar = self.accessor[kwargs["y"]]
+                else:
+                    yvar = self._obj[kwargs["y"]]
+                if "positive" in yvar.attrs:
+                    if yvar.attrs["positive"] == "down":
+                        kwargs.setdefault("yincrease", False)
+                    else:
+                        kwargs.setdefault("yincrease", True)
+
+            return func(*args, **kwargs)
+
+        return _plot_wrapper
+
     def __call__(self, *args, **kwargs):
         plot = _getattr(
             obj=self._obj,
@@ -327,7 +366,7 @@ class _CFWrappedPlotMethods:
             accessor=self.accessor,
             key_mappers=dict.fromkeys(self._keys, _get_axis_coord_single),
         )
-        return plot(*args, **kwargs)
+        return self._plot_decorator(plot)(*args, **kwargs)
 
     def __getattr__(self, attr):
         return _getattr(
@@ -335,6 +374,9 @@ class _CFWrappedPlotMethods:
             attr=attr,
             accessor=self.accessor,
             key_mappers=dict.fromkeys(self._keys, _get_axis_coord_single),
+            # TODO: "extra_decorator" is more complex than I would like it to be.
+            # Not sure if there is a better way though
+            extra_decorator=self._plot_decorator,
         )
 
 

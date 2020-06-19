@@ -1,7 +1,7 @@
 import functools
 import inspect
 from collections import ChainMap
-from typing import Any, List, Optional, Set, Union
+from typing import Callable, List, Mapping, MutableMapping, Optional, Set, Tuple, Union
 
 import xarray as xr
 from xarray import DataArray, Dataset
@@ -27,7 +27,7 @@ _CELL_MEASURES = ("area", "volume")
 # Define the criteria for coordinate matches
 # Copied from metpy
 # Internally we only use X, Y, Z, T
-coordinate_criteria: dict = {
+coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
     "standard_name": {
         "T": ("time",),
         "time": ("time",),
@@ -90,15 +90,28 @@ coordinate_criteria: dict = {
     # },
 }
 
+# "vertical" is just an alias for "Z"
 coordinate_criteria["standard_name"]["vertical"] = coordinate_criteria["standard_name"][
     "Z"
 ]
+# "long_name" and "standard_name" criteria are the same. For convenience.
 coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 
+# Type for Mapper functions
+Mapper = Callable[
+    [Union[xr.DataArray, xr.Dataset], str, bool, str],
+    Union[Optional[str], List[Optional[str]], DataArray],  # this sucks
+]
 
-def _get_axis_coord_single(var, key, *args):
+
+def _get_axis_coord_single(
+    var: Union[xr.DataArray, xr.Dataset],
+    key: str,
+    error: bool = True,
+    default: str = None,
+) -> Optional[str]:
     """ Helper method for when we really want only one result per key. """
-    results = _get_axis_coord(var, key, *args)
+    results = _get_axis_coord(var, key, error, default)
     if len(results) > 1:
         raise ValueError(
             f"Multiple results for {key!r} found: {results!r}. Is this valid CF? Please open an issue."
@@ -111,7 +124,7 @@ def _get_axis_coord(
     var: Union[xr.DataArray, xr.Dataset],
     key: str,
     error: bool = True,
-    default: Optional[str] = None,
+    default: str = None,
 ) -> List[Optional[str]]:
     """
     Translate from axis or coord name to variable name
@@ -176,13 +189,15 @@ def _get_axis_coord(
 
 
 def _get_measure_variable(
-    da: xr.DataArray, key: str, error: bool = True, default: Any = None
+    da: xr.DataArray, key: str, error: bool = True, default: str = None
 ) -> DataArray:
     """ tiny wrapper since xarray does not support providing str for weights."""
     return da[_get_measure(da, key, error, default)]
 
 
-def _get_measure(da: xr.DataArray, key: str, error: bool = True, default: Any = None):
+def _get_measure(
+    da: xr.DataArray, key: str, error: bool = True, default: str = None
+) -> Optional[str]:
     """
     Interprets 'cell_measures'.
     """
@@ -213,18 +228,21 @@ def _get_measure(da: xr.DataArray, key: str, error: bool = True, default: Any = 
     return measures[key]
 
 
-_DEFAULT_KEY_MAPPERS: dict = dict.fromkeys(
-    ("dim", "coord", "group"), _get_axis_coord_single
-)
-_DEFAULT_KEY_MAPPERS["weights"] = _get_measure_variable
+#: Default mappers for common keys.
+_DEFAULT_KEY_MAPPERS: Mapping[str, Mapper] = {
+    "dim": _get_axis_coord_single,
+    "coord": _get_axis_coord_single,
+    "group": _get_axis_coord_single,
+    "weights": _get_measure_variable,  # type: ignore
+}
 
 
 def _getattr(
     obj: Union[DataArray, Dataset],
     attr: str,
     accessor: "CFAccessor",
-    key_mappers: dict,
-    wrap_classes=False,
+    key_mappers: Mapping[str, Mapper],
+    wrap_classes: bool = False,
 ):
     """
     Common getattr functionality.
@@ -235,11 +253,13 @@ def _getattr(
     obj : DataArray, Dataset
     attr : Name of attribute in obj that will be shadowed.
     accessor : High level accessor object: CFAccessor
+    key_mappers : dict
+        dict(key_name: mapper)
     wrap_classes: bool
         Should we wrap the return value with _CFWrappedClass?
         Only True for the high level CFAccessor.
         Facilitates code reuse for _CFWrappedClass and _CFWrapppedPlotMethods
-        For both of thos, wrap_classes is False.
+        For both of those, wrap_classes is False.
     """
     func = getattr(obj, attr)
 
@@ -258,10 +278,10 @@ def _getattr(
 class _CFWrappedClass:
     def __init__(self, towrap, accessor: "CFAccessor"):
         """
+        This class is used to wrap any class in _WRAPPED_CLASSES.
 
         Parameters
         ----------
-        obj : DataArray, Dataset
         towrap : Resample, GroupBy, Coarsen, Rolling, Weighted
             Instance of xarray class that is being wrapped.
         accessor : CFAccessor
@@ -282,6 +302,10 @@ class _CFWrappedClass:
 
 
 class _CFWrappedPlotMethods:
+    """
+    This class wraps DataArray.plot
+    """
+
     def __init__(self, obj, accessor):
         self._obj = obj
         self.accessor = accessor

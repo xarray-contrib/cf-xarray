@@ -8,31 +8,41 @@ from xarray.testing import assert_identical
 import cf_xarray  # noqa
 
 from . import raise_if_dask_computes
+from .datasets import airds, ds_no_attrs, popds
 
 mpl.use("Agg")
-ds = xr.tutorial.open_dataset("air_temperature").isel(time=slice(4), lon=slice(50))
-ds.air.attrs["cell_measures"] = "area: cell_area"
-ds.coords["cell_area"] = (
-    xr.DataArray(np.cos(ds.lat * np.pi / 180)) * xr.ones_like(ds.lon) * 105e3 * 110e3
-)
-ds_no_attrs = ds.copy(deep=True)
-for variable in ds_no_attrs.variables:
-    ds_no_attrs[variable].attrs = {}
 
-datasets = [ds, ds.chunk({"lat": 5})]
-dataarrays = [ds.air, ds.air.chunk({"lat": 5})]
+ds = airds
+datasets = [airds, airds.chunk({"lat": 5})]
+dataarrays = [airds.air, airds.air.chunk({"lat": 5})]
 objects = datasets + dataarrays
 
 
 def test_describe():
-    actual = ds.cf._describe()
+    actual = airds.cf._describe()
     expected = (
         "Axes:\n\tX: ['lon']\n\tY: ['lat']\n\tZ: [None]\n\tT: ['time']\n"
         "\nCoordinates:\n\tlongitude: ['lon']\n\tlatitude: ['lat']"
         "\n\tvertical: [None]\n\ttime: ['time']\n"
         "\nCell Measures:\n\tarea: unsupported\n\tvolume: unsupported\n"
+        "\nStandard Names:\n\t['air_temperature', 'latitude', 'longitude', 'time']"
     )
     assert actual == expected
+
+
+def test_getitem_standard_name():
+    actual = airds.cf["air_temperature"]
+    expected = airds[["air"]]
+    assert_identical(actual, expected)
+
+    ds = airds.copy(deep=True)
+    ds["air2"] = ds.air
+    actual = ds.cf["air_temperature"]
+    expected = ds[["air", "air2"]]
+    assert_identical(actual, expected)
+
+    with pytest.raises(KeyError):
+        ds.air.cf["air_temperature"]
 
 
 @pytest.mark.parametrize("obj", objects)
@@ -128,7 +138,7 @@ def test_kwargs_expand_key_to_multiple_keys():
 @pytest.mark.parametrize(
     "obj, expected",
     [
-        (ds, set(("latitude", "longitude", "time", "X", "Y", "T"))),
+        (ds, set(("latitude", "longitude", "time", "X", "Y", "T", "air_temperature"))),
         (ds.air, set(("latitude", "longitude", "time", "X", "Y", "T", "area"))),
         (ds_no_attrs.air, set()),
     ],
@@ -144,6 +154,19 @@ def test_args_methods(obj):
         expected = obj.sum("time")
         actual = obj.cf.sum("T")
     assert_identical(expected, actual)
+
+
+def test_dataarray_getitem():
+
+    air = airds.air
+    air.name = None
+
+    assert_identical(air.cf["longitude"], air["lon"])
+    assert_identical(air.cf[["longitude"]], air["lon"].reset_coords())
+    assert_identical(
+        air.cf[["longitude", "latitude"]],
+        air.to_dataset(name="air").drop_vars("cell_area")[["lon", "lat"]],
+    )
 
 
 @pytest.mark.parametrize("obj", dataarrays)
@@ -211,38 +234,7 @@ def test_getitem_errors(obj,):
 
 def test_getitem_uses_coordinates():
     # POP-like dataset
-    ds = xr.Dataset()
-    ds.coords["TLONG"] = (
-        ("nlat", "nlon"),
-        np.ones((20, 30)),
-        {"axis": "X", "units": "degrees_east"},
-    )
-    ds.coords["TLAT"] = (
-        ("nlat", "nlon"),
-        2 * np.ones((20, 30)),
-        {"axis": "Y", "units": "degrees_north"},
-    )
-    ds.coords["ULONG"] = (
-        ("nlat", "nlon"),
-        0.5 * np.ones((20, 30)),
-        {"axis": "X", "units": "degrees_east"},
-    )
-    ds.coords["ULAT"] = (
-        ("nlat", "nlon"),
-        2.5 * np.ones((20, 30)),
-        {"axis": "Y", "units": "degrees_north"},
-    )
-    ds["UVEL"] = (
-        ("nlat", "nlon"),
-        np.ones((20, 30)) * 15,
-        {"coordinates": "ULONG ULAT"},
-    )
-    ds["TEMP"] = (
-        ("nlat", "nlon"),
-        np.ones((20, 30)) * 15,
-        {"coordinates": "TLONG TLAT"},
-    )
-
+    ds = popds
     assert_identical(
         ds.cf["X"], ds.reset_coords()[["ULONG", "TLONG"]].set_coords(["ULONG", "TLONG"])
     )

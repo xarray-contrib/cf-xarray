@@ -47,3 +47,26 @@ popds["TEMP"] = (
     np.ones((20, 30)) * 15,
     {"coordinates": "TLONG TLAT", "standard_name": "sea_water_potential_temperature"},
 )
+
+
+# This dataset has ancillary variables
+
+anc = xr.Dataset()
+anc["q"] = (
+    ("x", "y"),
+    np.random.randn(10, 20),
+    dict(
+        standard_name="specific_humidity",
+        units="g/g",
+        ancillary_variables="q_error_limit q_detection_limit",
+    ),
+)
+anc["q_error_limit"] = (
+    ("x", "y"),
+    np.random.randn(10, 20),
+    dict(standard_name="specific_humidity standard_error", units="g/g"),
+)
+anc["q_detection_limit"] = xr.DataArray(
+    1e-3, attrs=dict(standard_name="specific_humidity detection_minimum", units="g/g"),
+)
+anc

@@ -8,7 +8,7 @@ from xarray.testing import assert_identical
 import cf_xarray  # noqa
 
 from . import raise_if_dask_computes
-from .datasets import airds, ds_no_attrs, popds
+from .datasets import airds, anc, ds_no_attrs, popds
 
 mpl.use("Agg")
 
@@ -43,6 +43,12 @@ def test_getitem_standard_name():
 
     with pytest.raises(KeyError):
         ds.air.cf["air_temperature"]
+
+
+def test_getitem_ancillary_variables():
+    expected = anc.set_coords(["q_error_limit", "q_detection_limit"])["q"]
+    assert_identical(anc.cf["q"], expected)
+    assert_identical(anc.cf["specific_humidity"], expected)
 
 
 @pytest.mark.parametrize("obj", objects)

@@ -178,7 +178,7 @@ def _get_axis_coord(
 
     if key not in _COORD_NAMES and key not in _AXIS_NAMES:
         if error:
-            raise KeyError(f"Did not understand {key}")
+            raise KeyError(f"Did not understand key {key!r}")
         else:
             return [default]
 
@@ -589,6 +589,12 @@ class CFAccessor:
 
         kind = str(type(self._obj).__name__)
         scalar_key = isinstance(key, str)
+
+        if isinstance(self._obj, xr.DataArray) and not scalar_key:
+            raise KeyError(
+                f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
+            )
+
         if scalar_key:
             key = (key,)  # type: ignore
 
@@ -599,7 +605,6 @@ class CFAccessor:
             if k in _AXIS_NAMES + _COORD_NAMES:
                 names = _get_axis_coord(self._obj, k)
                 successful[k] = bool(names)
-                varnames.extend(_strip_none_list(names))
                 coords.extend(_strip_none_list(names))
             elif k in _CELL_MEASURES:
                 if isinstance(self._obj, xr.Dataset):
@@ -615,12 +620,11 @@ class CFAccessor:
                 stdnames = _filter_by_standard_names(self._obj, k)
                 successful[k] = bool(stdnames)
                 varnames.extend(stdnames)
-                coords.extend(list(set(stdnames).intersection(set(self._obj.coords))))
+                coords.extend(list(set(stdnames) & set(self._obj.coords)))
 
         # these are not special names but could be variable names in underlying object
         # we allow this so that we can return variables with appropriate CF auxiliary variables
         varnames.extend([k for k, v in successful.items() if not v])
-        assert len(varnames) > 0
 
         try:
             # TODO: make this a get_auxiliary_variables function
@@ -643,20 +647,29 @@ class CFAccessor:
                 ds = self._obj._to_temp_dataset()
             else:
                 ds = self._obj
-            ds = ds.reset_coords()[varnames]
+
+            if scalar_key and len(varnames) == 1:
+                da = ds[varnames[0]]
+                for k1 in coords:
+                    da.coords[k1] = ds.variables[k1]
+                return da
+
+            ds = ds.reset_coords()[varnames + coords]
             if isinstance(self._obj, DataArray):
                 if scalar_key and len(ds.variables) == 1:
                     # single dimension coordinates
-                    return ds[list(ds.variables.keys())[0]].squeeze(drop=True)
-                elif scalar_key and len(ds.coords) > 1:
+                    assert coords
+                    assert not varnames
+
+                    return ds[coords[0]]
+
+                elif scalar_key and len(ds.variables) > 1:
                     raise NotImplementedError(
                         "Not sure what to return when given scalar key for DataArray and it has multiple values. "
                         "Please open an issue."
                     )
-                elif not scalar_key:
-                    return ds.set_coords(coords)
-            else:
-                return ds.set_coords(coords)
+
+            return ds.set_coords(coords)
 
         except KeyError:
             raise KeyError(

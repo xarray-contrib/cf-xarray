@@ -642,7 +642,10 @@ class CFAccessor:
                     ]
                     coords.extend(_strip_none_list(measures))
 
-            varnames.extend(coords)
+                if isinstance(self._obj, xr.Dataset) and "ancillary_variables" in attrs:
+                    anames = attrs["ancillary_variables"].split(" ")
+                    coords.extend(anames)
+
             if isinstance(self._obj, xr.DataArray):
                 ds = self._obj._to_temp_dataset()
             else:

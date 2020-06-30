@@ -32,7 +32,7 @@ def test_describe():
 
 def test_getitem_standard_name():
     actual = airds.cf["air_temperature"]
-    expected = airds[["air"]]
+    expected = airds["air"]
     assert_identical(actual, expected)
 
     ds = airds.copy(deep=True)
@@ -162,11 +162,10 @@ def test_dataarray_getitem():
     air.name = None
 
     assert_identical(air.cf["longitude"], air["lon"])
-    assert_identical(air.cf[["longitude"]], air["lon"].reset_coords())
-    assert_identical(
+    with pytest.raises(KeyError):
+        air.cf[["longitude"]]
+    with pytest.raises(KeyError):
         air.cf[["longitude", "latitude"]],
-        air.to_dataset(name="air").drop_vars("cell_area")[["lon", "lat"]],
-    )
 
 
 @pytest.mark.parametrize("obj", dataarrays)

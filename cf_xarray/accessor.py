@@ -256,6 +256,7 @@ def _get_measure(
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Mapper] = {
     "dim": _get_axis_coord,
+    "dims_or_levels": _get_axis_coord,  # reset_index
     "coord": _get_axis_coord_single,
     "group": _get_axis_coord_single,
     "weights": _get_measure_variable,  # type: ignore

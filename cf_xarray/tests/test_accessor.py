@@ -8,7 +8,7 @@ from xarray.testing import assert_identical
 import cf_xarray  # noqa
 
 from . import raise_if_dask_computes
-from .datasets import airds, anc, ds_no_attrs, popds
+from .datasets import airds, anc, ds_no_attrs, multiple, popds
 
 mpl.use("Agg")
 
@@ -260,3 +260,29 @@ def test_plot_xincrease_yincrease():
 
     for lim in [ax.get_xlim(), ax.get_ylim()]:
         assert lim[0] > lim[1]
+
+
+def test_dicts():
+    actual = ds.cf.sizes
+    expected = {"X": 50, "Y": 25, "T": 4, "longitude": 50, "latitude": 25, "time": 4}
+    assert actual == expected
+
+    assert popds.cf.sizes == {}
+
+    with pytest.raises(AttributeError):
+        multiple.cf.sizes
+
+    assert airds.cf.chunks == {}
+
+    expected = {
+        "X": (50,),
+        "Y": (5, 5, 5, 5, 5),
+        "T": (4,),
+        "longitude": (50,),
+        "latitude": (5, 5, 5, 5, 5),
+        "time": (4,),
+    }
+    assert airds.chunk({"lat": 5}).cf.chunks == expected
+
+    with pytest.raises(AttributeError):
+        airds.da.cf.chunks

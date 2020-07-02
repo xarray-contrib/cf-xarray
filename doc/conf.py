@@ -15,6 +15,8 @@ import datetime
 import os
 import sys
 
+import sphinx_autosummary_accessors
+
 import cf_xarray  # noqa
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -45,6 +47,7 @@ extensions = [
     "IPython.sphinxext.ipython_console_highlighting",
     "IPython.sphinxext.ipython_directive",
     "nbsphinx",
+    "sphinx_autosummary_accessors",
 ]
 
 extlinks = {
@@ -53,7 +56,7 @@ extlinks = {
 }
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ["_templates"]
+templates_path = ["_templates", sphinx_autosummary_accessors.templates_path]
 
 # The suffix of source filenames.
 source_suffix = ".rst"
@@ -294,3 +297,10 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("http://xarray.pydata.org/en/stable/", None),
 }
+
+autosummary_generate = True
+
+autodoc_typehints = "none"
+
+napoleon_use_param = True
+napoleon_use_rtype = True

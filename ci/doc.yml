@@ -15,3 +15,4 @@ dependencies:
   - pip:
       - cf_xarray
       - sphinx-book-theme
+      - git+https://github.com/keewis/sphinx-autosummary-accessors

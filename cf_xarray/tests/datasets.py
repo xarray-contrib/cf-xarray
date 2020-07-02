@@ -70,3 +70,12 @@ anc["q_detection_limit"] = xr.DataArray(
     1e-3, attrs=dict(standard_name="specific_humidity detection_minimum", units="g/g"),
 )
 anc
+
+multiple = xr.Dataset()
+multiple.coords["x1"] = ("x1", range(30), {"axis": "X"})
+multiple.coords["y1"] = ("y1", range(20), {"axis": "Y"})
+multiple.coords["x2"] = ("x2", range(10), {"axis": "X"})
+multiple.coords["y2"] = ("y2", range(5), {"axis": "Y"})
+
+multiple["v1"] = (("x1", "y1"), np.ones((30, 20)) * 15)
+multiple["v2"] = (("x2", "y2"), np.ones((10, 5)) * 15)

@@ -323,8 +323,10 @@ def _getattr(
             return dict(attribute)
         # attributes like chunks / sizes
         newmap = dict()
+        unused_keys = set(attribute.keys())
         for key in _AXIS_NAMES + _COORD_NAMES:
             value = _get_axis_coord(obj, key, error=False, default=None)
+            unused_keys -= set(value)
             if value != [None]:
                 good_values = set(value) & set(obj.dims)
                 if not good_values:
@@ -335,6 +337,7 @@ def _getattr(
                         f"There is no unique mapping from {key!r} to a value in {attr!r}."
                     )
                 newmap.update({key: attribute[good_values.pop()]})
+        newmap.update({key: attribute[key] for key in unused_keys})
         return newmap
 
     elif isinstance(attribute, Callable):  # type: ignore

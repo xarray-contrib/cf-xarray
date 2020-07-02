@@ -15,6 +15,7 @@ on xarray objects.
    examples/index
    roadmap
    contributing
+   api
 
 Indices and tables
 ==================

@@ -365,7 +365,7 @@ def _getattr(
                     continue
                 if len(good_values) > 1:
                     raise AttributeError(
-                        f"cf_array can't wrap attribute {attr!r} because there are multiple values for {key!r} viz. {good_values!r}. "
+                        f"cf_xarray can't wrap attribute {attr!r} because there are multiple values for {key!r} viz. {good_values!r}. "
                         f"There is no unique mapping from {key!r} to a value in {attr!r}."
                     )
                 newmap.update({key: attribute[good_values.pop()]})

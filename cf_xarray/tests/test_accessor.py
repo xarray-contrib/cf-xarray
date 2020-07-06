@@ -1,7 +1,7 @@
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 import pytest
 import xarray as xr
+from matplotlib import pyplot as plt
 from xarray.testing import assert_identical
 
 import cf_xarray  # noqa

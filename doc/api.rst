@@ -10,7 +10,7 @@ DataArray
    :toctree: generated/
    :template: autosummary/accessor_attribute.rst
 
-
+    DataArray.cf.plot
 
 .. autosummary::
    :toctree: generated/
@@ -25,8 +25,6 @@ Dataset
 .. autosummary::
    :toctree: generated/
    :template: autosummary/accessor_attribute.rst
-
-
 
 .. autosummary::
    :toctree: generated/

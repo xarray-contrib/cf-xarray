@@ -348,7 +348,38 @@ def _getattr(
         An extra decorator, if necessary. This is used by _CFPlotMethods to set default
         kwargs based on CF attributes.
     """
-    func: Callable = getattr(obj, attr)
+    attribute: Union[Mapping, Callable] = getattr(obj, attr)
+
+    if isinstance(attribute, Mapping):
+        if not attribute:
+            return dict(attribute)
+        # attributes like chunks / sizes
+        newmap = dict()
+        unused_keys = set(attribute.keys())
+        for key in _AXIS_NAMES + _COORD_NAMES:
+            value = _get_axis_coord(obj, key, error=False, default=None)
+            unused_keys -= set(value)
+            if value != [None]:
+                good_values = set(value) & set(obj.dims)
+                if not good_values:
+                    continue
+                if len(good_values) > 1:
+                    raise AttributeError(
+                        f"cf_xarray can't wrap attribute {attr!r} because there are multiple values for {key!r} viz. {good_values!r}. "
+                        f"There is no unique mapping from {key!r} to a value in {attr!r}."
+                    )
+                newmap.update({key: attribute[good_values.pop()]})
+        newmap.update({key: attribute[key] for key in unused_keys})
+        return newmap
+
+    elif isinstance(attribute, Callable):  # type: ignore
+        func: Callable = attribute
+
+    else:
+        raise AttributeError(
+            f"cf_xarray does not know how to wrap attribute '{type(obj).__name__}.{attr}'. "
+            "Please file an issue if you have a solution."
+        )
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

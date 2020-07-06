@@ -149,11 +149,11 @@ def _get_axis_coord(
 
     Parameters
     ----------
-    var : DataArray, Dataset
+    var: DataArray, Dataset
         DataArray belonging to the coordinate to be checked
-    key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
+    key: str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
         key to check for.
-    error : bool
+    error: bool
         raise errors when key is not found or interpretable. Use False and provide default
         to replicate dict.get(k, None).
     default: Any
@@ -217,7 +217,24 @@ def _get_measure(
     da: xr.DataArray, key: str, error: bool = True, default: str = None
 ) -> Optional[str]:
     """
-    Interprets 'cell_measures'.
+    Translate from cell measures ("area" or "volume") to appropriate variable name.
+    This function interprets the ``cell_measures`` attribute on DataArrays.
+
+    Parameters
+    ----------
+    da: DataArray
+        DataArray belonging to the coordinate to be checked
+    key: str, ["area", "volume"]
+        key to check for.
+    error: bool
+        raise errors when key is not found or interpretable. Use False and provide default
+        to replicate dict.get(k, None).
+    default: Any
+        default value to return when error is False.
+
+    Returns
+    -------
+    List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
     """
     if not isinstance(da, DataArray):
         raise NotImplementedError("Measures not implemented for Datasets yet.")
@@ -254,6 +271,9 @@ def _get_measure(
 
 
 #: Default mappers for common keys.
+# TODO: Make the values of this a tuple,
+#       so that multiple mappers can be used for a single key
+#       We need this for groupby("T.month") and groupby("latitude") for example.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Mapper] = {
     "dim": _get_axis_coord,
     "dims_or_levels": _get_axis_coord,  # reset_index
@@ -280,7 +300,19 @@ def _filter_by_standard_names(ds: xr.Dataset, name: Union[str, List[str]]) -> Li
 
 
 def _get_list_standard_names(obj: xr.Dataset) -> List[str]:
-    """ Returns a sorted list of standard names in Dataset. """
+    """
+    Returns a sorted list of standard names in Dataset.
+
+    Parameters
+    ----------
+
+    obj: DataArray, Dataset
+        Xarray objec to process
+
+    Returns
+    -------
+    list of standard names in dataset
+    """
     names = []
     for k, v in obj.variables.items():
         if "standard_name" in v.attrs:
@@ -332,15 +364,18 @@ def _getattr(
 
 
 class _CFWrappedClass:
+    """
+    This class is used to wrap any class in _WRAPPED_CLASSES.
+    """
+
     def __init__(self, towrap, accessor: "CFAccessor"):
         """
-        This class is used to wrap any class in _WRAPPED_CLASSES.
-
         Parameters
         ----------
         towrap : Resample, GroupBy, Coarsen, Rolling, Weighted
             Instance of xarray class that is being wrapped.
         accessor : CFAccessor
+            Parent accessor object
         """
         self.wrapped = towrap
         self.accessor = accessor
@@ -369,7 +404,10 @@ class _CFWrappedPlotMethods:
 
     def _plot_decorator(self, func):
         """
-        This decorator is used to set kwargs on plotting functions.
+        This decorator is used to set default kwargs on plotting functions.
+
+        For now, this is setting ``xincrease`` and ``yincrease``. It could set
+        other arguments in the future.
         """
         valid_keys = self.accessor.get_valid_keys()
 
@@ -402,6 +440,9 @@ class _CFWrappedPlotMethods:
         return _plot_wrapper
 
     def __call__(self, *args, **kwargs):
+        """
+        Allows .plot()
+        """
         plot = _getattr(
             obj=self._obj,
             attr="plot",
@@ -411,6 +452,9 @@ class _CFWrappedPlotMethods:
         return self._plot_decorator(plot)(*args, **kwargs)
 
     def __getattr__(self, attr):
+        """
+        Wraps .plot.contour() for example.
+        """
         return _getattr(
             obj=self._obj.plot,
             attr=attr,
@@ -423,10 +467,21 @@ class _CFWrappedPlotMethods:
 
 
 class CFAccessor:
+    """
+    Common Dataset and DataArray accessor functionality.
+    """
+
     def __init__(self, da):
         self._obj = da
 
-    def _process_signature(self, func, args, kwargs, key_mappers):
+    def _process_signature(self, func: Callable, args, kwargs, key_mappers):
+        """
+        Processes a function's signature, args, kwargs:
+        1. Binds *args so that everthing is a Mapping from kwarg name to values
+        2. Calls _rewrite_values to rewrite any special CF names to normal xarray names.
+           This uses key_mappers
+        3. Unpacks arguments if necessary before returning them.
+        """
         sig = inspect.signature(func, follow_wrapped=False)
 
         # Catch things like .isel(T=5).
@@ -456,7 +511,24 @@ class CFAccessor:
         return arguments
 
     def _rewrite_values(self, kwargs, key_mappers: dict, var_kws):
-        """ rewrites 'dim' for example using 'mapper' """
+        """
+        Rewrites the values in a Mapping from kwarg to value.
+
+        Parameters
+        ----------
+        kwargs: Mapping
+            Mapping from kwarg name to value
+        key_mappers: Mapping
+            Mapping from kwarg name to a Mapper function that will convert a
+            given CF "special" name to an xarray name.
+        var_kws: List[str]
+            List of variable kwargs that need special treatment.
+            e.g. **indexers_kwargs in isel
+
+        Returns
+        -------
+        dict of kwargs with fully rewritten values.
+        """
         updates: dict = {}
 
         # allow multiple return values here.
@@ -558,11 +630,17 @@ class CFAccessor:
         return text
 
     def describe(self):
+        """
+        Print a string repr to screen.
+        """
         print(self._describe())
 
     def get_valid_keys(self) -> Set[str]:
         """
-        Returns valid keys for .cf[]
+        Utility function that returns valid keys for .cf[].
+
+        This is useful for checking whether a key is valid for indexing, i.e.
+        that the attributes necessary to allow indexing by that key exist.
 
         Returns
         -------

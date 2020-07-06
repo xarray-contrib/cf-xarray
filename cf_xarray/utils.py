@@ -29,3 +29,21 @@ def either_dict_or_kwargs(
 
 def is_dict_like(value: Any) -> bool:
     return hasattr(value, "keys") and hasattr(value, "__getitem__")
+
+
+# copied from xarray
+class UncachedAccessor:
+    """ Acts like a property, but on both classes and class instances
+    This class is necessary because some tools (e.g. pydoc and sphinx)
+    inspect classes for which property returns itself and not the
+    accessor.
+    """
+
+    def __init__(self, accessor):
+        self._accessor = accessor
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self._accessor
+
+        return self._accessor(obj)

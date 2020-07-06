@@ -5,6 +5,8 @@
 
     import cf_xarray.accessor
 
+.. _contributing:
+
 Contributing
 --------------
 

@@ -7,6 +7,7 @@ from contextlib import suppress
 from typing import (
     Callable,
     Hashable,
+    Iterable,
     List,
     Mapping,
     MutableMapping,
@@ -122,6 +123,50 @@ def _strip_none_list(lst: List[Optional[str]]) -> List[str]:
     return [item for item in lst if item != [None]]  # type: ignore
 
 
+def mapper(valid_keys: Iterable[str]):
+    """
+    Decorator for mapping functions that does error handling / returning defaults.
+    """
+
+    # This decorator Inception is sponsored by
+    # https://realpython.com/primer-on-python-decorators/#decorators-with-arguments
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(
+            obj: Union[xr.DataArray, xr.Dataset],
+            key: str,
+            error: bool = True,
+            default: str = None,
+        ) -> List[Optional[str]]:
+            if key not in valid_keys:
+                if error:
+                    raise KeyError(
+                        f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
+                    )
+                else:
+                    return [default]
+
+            try:
+                results = func(obj, key)
+            except Exception as e:
+                if error:
+                    raise e
+                else:
+                    results = None
+
+            if not results:
+                if error:
+                    raise KeyError(f"Attributes to select {key!r} not found!")
+                else:
+                    return [default]
+            else:
+                return list(results)
+
+        return wrapper
+
+    return decorator
+
+
 def _get_axis_coord_single(
     var: Union[xr.DataArray, xr.Dataset],
     key: str,
@@ -138,11 +183,9 @@ def _get_axis_coord_single(
         return results[0]
 
 
+@mapper(valid_keys=_COORD_NAMES + _AXIS_NAMES)
 def _get_axis_coord(
-    var: Union[xr.DataArray, xr.Dataset],
-    key: str,
-    error: bool = True,
-    default: str = None,
+    var: Union[xr.DataArray, xr.Dataset], key: str,
 ) -> List[Optional[str]]:
     """
     Translate from axis or coord name to variable name
@@ -176,12 +219,6 @@ def _get_axis_coord(
     MetPy's parse_cf
     """
 
-    if key not in _COORD_NAMES and key not in _AXIS_NAMES:
-        if error:
-            raise KeyError(f"Did not understand key {key!r}")
-        else:
-            return [default]
-
     if "coordinates" in var.encoding:
         search_in = var.encoding["coordinates"].split(" ")
     elif "coordinates" in var.attrs:
@@ -196,26 +233,18 @@ def _get_axis_coord(
                 expected = valid_values[key]
                 if var.coords[coord].attrs.get(criterion, None) in expected:
                     results.update((coord,))
-
-    if not results:
-        if error:
-            raise KeyError(f"axis name {key!r} not found!")
-        else:
-            return [default]
-    else:
-        return list(results)
+    return list(results)
 
 
 def _get_measure_variable(
     da: xr.DataArray, key: str, error: bool = True, default: str = None
 ) -> DataArray:
     """ tiny wrapper since xarray does not support providing str for weights."""
-    return da[_get_measure(da, key, error, default)]
+    return da[_get_measure(da, key, error, default)[0]]
 
 
-def _get_measure(
-    da: xr.DataArray, key: str, error: bool = True, default: str = None
-) -> Optional[str]:
+@mapper(valid_keys=_CELL_MEASURES)
+def _get_measure(da: xr.DataArray, key: str) -> List[Optional[str]]:
     """
     Translate from cell measures ("area" or "volume") to appropriate variable name.
     This function interprets the ``cell_measures`` attribute on DataArrays.
@@ -238,36 +267,16 @@ def _get_measure(
     """
     if not isinstance(da, DataArray):
         raise NotImplementedError("Measures not implemented for Datasets yet.")
-    if key not in _CELL_MEASURES:
-        if error:
-            raise ValueError(
-                f"Cell measure must be one of {_CELL_MEASURES!r}. Received {key!r} instead."
-            )
-        else:
-            return default
 
     if "cell_measures" not in da.attrs:
-        if error:
-            raise KeyError("'cell_measures' not present in 'attrs'.")
-        else:
-            return default
+        raise KeyError("'cell_measures' not present in 'attrs'.")
 
     attr = da.attrs["cell_measures"]
     strings = [s.strip() for s in attr.strip().split(":")]
     if len(strings) % 2 != 0:
-        if error:
-            raise ValueError(f"attrs['cell_measures'] = {attr!r} is malformed.")
-        else:
-            return default
+        raise ValueError(f"attrs['cell_measures'] = {attr!r} is malformed.")
     measures = dict(zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)]))
-    if key not in measures:
-        if error:
-            raise KeyError(
-                f"Cell measure {key!r} not found. Please use .cf.describe() to see a list of key names that can be interpreted."
-            )
-        else:
-            return default
-    return measures[key]
+    return [measures.get(key, None)]
 
 
 #: Default mappers for common keys.
@@ -688,10 +697,10 @@ class CFAccessor:
             measures = [
                 key
                 for key in _CELL_MEASURES
-                if _get_measure(self._obj, key, error=False) is not None
+                if _get_measure(self._obj, key, error=False, default=None) != [None]
             ]
             if measures:
-                varnames.append(*measures)
+                varnames.extend(measures)
 
         if not isinstance(self._obj, xr.DataArray):
             varnames.extend(_get_list_standard_names(self._obj))
@@ -727,7 +736,7 @@ class CFAccessor:
                     measure = _get_measure(self._obj, k)
                     successful[k] = bool(measure)
                     if measure:
-                        varnames.append(measure)
+                        varnames.extend(measure)
             elif not isinstance(self._obj, xr.DataArray):
                 stdnames = _filter_by_standard_names(self._obj, k)
                 successful[k] = bool(stdnames)
@@ -740,7 +749,9 @@ class CFAccessor:
 
         try:
             # TODO: make this a get_auxiliary_variables function
-            # make sure to set coordinate variables referred to in "coordinates" attribute
+            #       1. set coordinate variables referred to in "coordinates" attribute
+            #       2. set measures variables as coordinates
+            #       3. set ancillary variables as coordinates
             for name in varnames:
                 attrs = self._obj[name].attrs
                 if "coordinates" in attrs:
@@ -752,7 +763,7 @@ class CFAccessor:
                         for measure in _CELL_MEASURES
                         if measure in attrs["cell_measures"]
                     ]
-                    coords.extend(_strip_none_list(measures))
+                    coords.extend(*_strip_none_list(measures))
 
                 if isinstance(self._obj, xr.Dataset) and "ancillary_variables" in attrs:
                     anames = attrs["ancillary_variables"].split(" ")

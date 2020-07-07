@@ -139,6 +139,9 @@ def mapper(valid_keys: Iterable[str]):
             error: bool = True,
             default: str = None,
         ) -> List[Optional[str]]:
+            """
+            This decorator will add `error` and `default` kwargs to the decorated Mapper function.
+            """
             if key not in valid_keys:
                 if error:
                     raise KeyError(
@@ -645,21 +648,26 @@ class CFAccessor:
     def plot(self):
         return _CFWrappedPlotMethods(self._obj, self)
 
-    def _describe(self):
+    def describe(self):
+        """
+        Print a string repr to screen.
+        """
         text = "Axes:\n"
         for key in _AXIS_NAMES:
-            text += f"\t{key}: {_get_axis_coord(self._obj, key, error=False, default=None)}\n"
+            text += f"\t{key}: {_get_axis_coord(self._obj, key, error=False)}\n"
 
         text += "\nCoordinates:\n"
         for key in _COORD_NAMES:
-            text += f"\t{key}: {_get_axis_coord(self._obj, key, error=False, default=None)}\n"
+            text += f"\t{key}: {_get_axis_coord(self._obj, key, error=False)}\n"
 
         text += "\nCell Measures:\n"
         for measure in _CELL_MEASURES:
             if isinstance(self._obj, xr.Dataset):
                 text += f"\t{measure}: unsupported\n"
             else:
-                text += f"\t{measure}: {_get_measure(self._obj, measure, error=False, default=None)}\n"
+                text += (
+                    f"\t{measure}: {_get_measure(self._obj, measure, error=False)}\n"
+                )
 
         text += "\nStandard Names:\n"
         if isinstance(self._obj, xr.DataArray):
@@ -670,13 +678,7 @@ class CFAccessor:
             text += "\n".join(
                 textwrap.wrap(f"{stdnames!r}", 70, break_long_words=False)
             )
-        return text
-
-    def describe(self):
-        """
-        Print a string repr to screen.
-        """
-        print(self._describe())
+        print(text)
 
     def get_valid_keys(self) -> Set[str]:
         """

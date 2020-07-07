@@ -2,6 +2,7 @@ import functools
 import inspect
 import itertools
 import textwrap
+import warnings
 from collections import ChainMap
 from contextlib import suppress
 from typing import (
@@ -776,8 +777,17 @@ class CFAccessor:
 
             if scalar_key and len(varnames) == 1:
                 da = ds[varnames[0]]
+                failed = []
                 for k1 in coords:
-                    da.coords[k1] = ds.variables[k1]
+                    if k1 not in ds.variables:
+                        failed.append(k1)
+                    else:
+                        da.coords[k1] = ds.variables[k1]
+                if failed:
+                    warnings.warn(
+                        f"Variables {failed!r} not found in object but are referred to in the CF attributes.",
+                        UserWarning,
+                    )
                 return da
 
             ds = ds.reset_coords()[varnames + coords]

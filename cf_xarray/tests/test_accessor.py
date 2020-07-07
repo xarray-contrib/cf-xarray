@@ -83,6 +83,9 @@ def test_getitem_ancillary_variables():
     assert_identical(anc.cf["q"], expected)
     assert_identical(anc.cf["specific_humidity"], expected)
 
+    with pytest.warns(UserWarning):
+        anc[["q"]].cf["q"]
+
 
 @pytest.mark.parametrize("obj", objects)
 @pytest.mark.parametrize(

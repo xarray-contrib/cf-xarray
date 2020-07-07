@@ -313,11 +313,13 @@ def _get_list_standard_names(obj: xr.Dataset) -> List[str]:
     -------
     list of standard names in dataset
     """
-    names = []
-    for k, v in obj.variables.items():
-        if "standard_name" in v.attrs:
-            names.append(v.attrs["standard_name"])
-    return sorted(names)
+    return sorted(
+        [
+            v.attrs["standard_name"]
+            for k, v in obj.variables.items()
+            if "standard_name" in v.attrs
+        ]
+    )
 
 
 def _getattr(

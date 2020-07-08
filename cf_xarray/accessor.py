@@ -115,7 +115,7 @@ coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 # Type for Mapper functions
 Mapper = Callable[
     [Union[xr.DataArray, xr.Dataset], str, bool, str],
-    Union[Optional[str], List[Optional[str]], DataArray],  # this sucks
+    Union[List[Optional[str]], DataArray],  # this sucks
 ]
 
 
@@ -372,7 +372,7 @@ def _getattr(
         newmap = dict()
         unused_keys = set(attribute.keys())
         for key in _AXIS_NAMES + _COORD_NAMES:
-            value = _get_axis_coord(obj, key, error=False, default=None)
+            value = _get_axis_coord(obj, key, error=False)
             unused_keys -= set(value)
             if value != [None]:
                 good_values = set(value) & set(obj.dims)
@@ -694,13 +694,13 @@ class CFAccessor:
         varnames = [
             key
             for key in _AXIS_NAMES + _COORD_NAMES
-            if _get_axis_coord(self._obj, key, error=False, default=None) != [None]
+            if _get_axis_coord(self._obj, key, error=False) != [None]
         ]
         with suppress(NotImplementedError):
             measures = [
                 key
                 for key in _CELL_MEASURES
-                if _get_measure(self._obj, key, error=False, default=None) != [None]
+                if _get_measure(self._obj, key, error=False) != [None]
             ]
             if measures:
                 varnames.extend(measures)

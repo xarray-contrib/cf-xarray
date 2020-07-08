@@ -95,6 +95,7 @@ def test_getitem_ancillary_variables():
         ("resample", {"time": "M"}, {"T": "M"}),
         ("rolling", {"lat": 5}, {"Y": 5}),
         ("groupby", {"group": "time"}, {"group": "T"}),
+        ("groupby_bins", {"group": "lat", "bins": 5}, {"group": "latitude", "bins": 5}),
         pytest.param(
             "coarsen",
             {"lon": 2, "lat": 5},
@@ -105,8 +106,6 @@ def test_getitem_ancillary_variables():
         ),
         # order of above tests is important: See xarray GH4120
         # groupby("time.day")?
-        # groupby_bins
-        # weighted
     ),
 )
 def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):

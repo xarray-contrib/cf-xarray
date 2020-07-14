@@ -1,0 +1,11 @@
+name: cf_xarray_test
+channels:
+  - conda-forge
+dependencies:
+  - pytest-cov
+  - pytest
+  - dask
+  - matplotlib
+  - netcdf4
+  - pip:
+    - git+https://github.com/pydata/xarray

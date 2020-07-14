@@ -741,20 +741,25 @@ class CFAccessor:
             #       2. set measures variables as coordinates
             #       3. set ancillary variables as coordinates
             for name in varnames:
-                attrs = self._obj[name].attrs
-                if "coordinates" in attrs:
-                    coords.extend(attrs.get("coordinates").split(" "))
+                attrs_or_encoding = ChainMap(
+                    self._obj[name].attrs, self._obj[name].encoding
+                )
+                if "coordinates" in attrs_or_encoding:
+                    coords.extend(attrs_or_encoding["coordinates"].split(" "))
 
-                if "cell_measures" in attrs:
+                if "cell_measures" in attrs_or_encoding:
                     measures = [
                         _get_measure(self._obj[name], measure)
                         for measure in _CELL_MEASURES
-                        if measure in attrs["cell_measures"]
+                        if measure in attrs_or_encoding["cell_measures"]
                     ]
                     coords.extend(_strip_none_list(*measures))
 
-                if isinstance(self._obj, xr.Dataset) and "ancillary_variables" in attrs:
-                    anames = attrs["ancillary_variables"].split(" ")
+                if (
+                    isinstance(self._obj, xr.Dataset)
+                    and "ancillary_variables" in attrs_or_encoding
+                ):
+                    anames = attrs_or_encoding["ancillary_variables"].split(" ")
                     coords.extend(anames)
 
             if isinstance(self._obj, xr.DataArray):

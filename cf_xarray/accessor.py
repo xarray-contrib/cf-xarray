@@ -8,7 +8,6 @@ from contextlib import suppress
 from typing import (
     Callable,
     Hashable,
-    Iterable,
     List,
     Mapping,
     MutableMapping,
@@ -113,10 +112,7 @@ coordinate_criteria["standard_name"]["vertical"] = coordinate_criteria["standard
 coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 
 # Type for Mapper functions
-Mapper = Callable[
-    [Union[xr.DataArray, xr.Dataset], str, bool, str],
-    Union[List[Optional[str]], DataArray],  # this sucks
-]
+Mapper = Callable[[Union[xr.DataArray, xr.Dataset], str], List[Optional[str]]]
 
 
 def _strip_none_list(lst: List[Optional[str]]) -> List[str]:
@@ -124,70 +120,46 @@ def _strip_none_list(lst: List[Optional[str]]) -> List[str]:
     return [item for item in lst if item != [None]]  # type: ignore
 
 
-def mapper(valid_keys: Iterable[str]):
-    """
-    Decorator for mapping functions that does error handling / returning defaults.
-    """
-
-    # This decorator Inception is sponsored by
-    # https://realpython.com/primer-on-python-decorators/#decorators-with-arguments
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(
-            obj: Union[xr.DataArray, xr.Dataset],
-            key: str,
-            error: bool = True,
-            default: str = None,
-        ) -> List[Optional[str]]:
-            """
-            This decorator will add `error` and `default` kwargs to the decorated Mapper function.
-            """
-            if key not in valid_keys:
-                if error:
-                    raise KeyError(
-                        f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
-                    )
-                else:
-                    return [default]
-
-            try:
-                results = func(obj, key)
-            except Exception as e:
-                if error:
-                    raise e
-                else:
-                    results = None
-
-            if not results:
-                if error:
-                    raise KeyError(f"Attributes to select {key!r} not found!")
-                else:
-                    return [default]
-            else:
-                return list(results)
-
-        return wrapper
-
-    return decorator
-
-
-def _get_axis_coord_single(
-    var: Union[xr.DataArray, xr.Dataset],
+def apply_mapper(
+    mapper: Mapper,
+    obj: Union[xr.DataArray, xr.Dataset],
     key: str,
     error: bool = True,
     default: str = None,
-) -> Optional[str]:
+) -> List[Optional[str]]:
+    """
+    Applies a mapping function; does error handling / returning defaults.
+    """
+
+    try:
+        results = mapper(obj, key)
+    except Exception as e:
+        if error:
+            raise e
+        else:
+            results = None  # type: ignore
+
+    if not results:
+        if error:
+            raise KeyError(f"Attributes to select {key!r} not found!")
+        else:
+            return [default]
+    else:
+        return list(results)
+
+
+def _get_axis_coord_single(
+    var: Union[xr.DataArray, xr.Dataset], key: str,
+) -> List[Optional[str]]:
     """ Helper method for when we really want only one result per key. """
-    results = _get_axis_coord(var, key, error, default)
+    results = _get_axis_coord(var, key)
     if len(results) > 1:
         raise ValueError(
             f"Multiple results for {key!r} found: {results!r}. Is this valid CF? Please open an issue."
         )
-    else:
-        return results[0]
+    return results
 
 
-@mapper(valid_keys=_COORD_NAMES + _AXIS_NAMES)
 def _get_axis_coord(
     var: Union[xr.DataArray, xr.Dataset], key: str,
 ) -> List[Optional[str]]:
@@ -223,6 +195,12 @@ def _get_axis_coord(
     MetPy's parse_cf
     """
 
+    valid_keys = _COORD_NAMES + _AXIS_NAMES
+    if key not in valid_keys:
+        raise KeyError(
+            f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
+        )
+
     if "coordinates" in var.encoding:
         search_in = var.encoding["coordinates"].split(" ")
     elif "coordinates" in var.attrs:
@@ -242,13 +220,15 @@ def _get_axis_coord(
 
 def _get_measure_variable(
     da: xr.DataArray, key: str, error: bool = True, default: str = None
-) -> DataArray:
+) -> List[DataArray]:
     """ tiny wrapper since xarray does not support providing str for weights."""
-    return da[_get_measure(da, key, error, default)[0]]
+    varnames = _strip_none_list(apply_mapper(_get_measure, da, key, error, default))
+    if len(varnames) > 1:
+        raise ValueError(f"Multiple measures found for key {key!r}: {varnames!r}.")
+    return [da[varnames[0]]]
 
 
-@mapper(valid_keys=_CELL_MEASURES)
-def _get_measure(da: xr.DataArray, key: str) -> List[Optional[str]]:
+def _get_measure(da: Union[xr.DataArray, xr.Dataset], key: str) -> List[Optional[str]]:
     """
     Translate from cell measures ("area" or "volume") to appropriate variable name.
     This function interprets the ``cell_measures`` attribute on DataArrays.
@@ -274,6 +254,12 @@ def _get_measure(da: xr.DataArray, key: str) -> List[Optional[str]]:
 
     if "cell_measures" not in da.attrs:
         raise KeyError("'cell_measures' not present in 'attrs'.")
+
+    valid_keys = _CELL_MEASURES
+    if key not in valid_keys:
+        raise KeyError(
+            f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
+        )
 
     attr = da.attrs["cell_measures"]
     strings = [s.strip() for s in attr.strip().split(":")]
@@ -372,7 +358,7 @@ def _getattr(
         newmap = dict()
         unused_keys = set(attribute.keys())
         for key in _AXIS_NAMES + _COORD_NAMES:
-            value = _get_axis_coord(obj, key, error=False)
+            value = apply_mapper(_get_axis_coord, obj, key, error=False)
             unused_keys -= set(value)
             if value != [None]:
                 good_values = set(value) & set(obj.dims)
@@ -596,7 +582,9 @@ class CFAccessor:
                     # where xi_* have attrs["axis"] = "X"
                     updates[key] = ChainMap(
                         *[
-                            dict.fromkeys(mapper(self._obj, k, False, k), v)
+                            dict.fromkeys(
+                                apply_mapper(mapper, self._obj, k, False, k), v
+                            )
                             for k, v in value.items()
                         ]
                     )
@@ -606,16 +594,18 @@ class CFAccessor:
 
                 else:
                     # things like sum which have dim
-                    newvalue = [mapper(self._obj, v, False, v) for v in value]
-                    if len(newvalue) == 1:
-                        # works for groupby("time")
-                        newvalue = newvalue[0]
+                    newvalue = [
+                        apply_mapper(mapper, self._obj, v, False, v) for v in value
+                    ]
+                    # Mappers return list by default
+                    # for input dim=["lat", "X"], newvalue=[["lat"], ["lon"]],
+                    # so we deal with that here.
+                    unpacked = list(itertools.chain(*newvalue))
+                    if len(unpacked) == 1:
+                        # handle 'group'
+                        updates[key] = unpacked[0]
                     else:
-                        # Mappers return list by default
-                        # for input dim=["lat", "X"], newvalue=[["lat"], ["lon"]],
-                        # so we deal with that here.
-                        newvalue = list(itertools.chain(*newvalue))
-                    updates[key] = newvalue
+                        updates[key] = unpacked
 
         kwargs.update(updates)
 
@@ -627,7 +617,9 @@ class CFAccessor:
         for vkw in var_kws:
             if vkw in kwargs:
                 maybe_update = {
-                    k: _get_axis_coord_single(self._obj, v, False, v)
+                    # TODO: this is assuming key_mappers[k] is always
+                    # _get_axis_coord_single
+                    k: apply_mapper(key_mappers[k], self._obj, v)[0]
                     for k, v in kwargs[vkw].items()
                     if k in key_mappers
                 }
@@ -654,20 +646,18 @@ class CFAccessor:
         """
         text = "Axes:\n"
         for key in _AXIS_NAMES:
-            text += f"\t{key}: {_get_axis_coord(self._obj, key, error=False)}\n"
+            text += f"\t{key}: {apply_mapper(_get_axis_coord, self._obj, key, error=False)}\n"
 
         text += "\nCoordinates:\n"
         for key in _COORD_NAMES:
-            text += f"\t{key}: {_get_axis_coord(self._obj, key, error=False)}\n"
+            text += f"\t{key}: {apply_mapper(_get_axis_coord, self._obj, key, error=False)}\n"
 
         text += "\nCell Measures:\n"
         for measure in _CELL_MEASURES:
             if isinstance(self._obj, xr.Dataset):
                 text += f"\t{measure}: unsupported\n"
             else:
-                text += (
-                    f"\t{measure}: {_get_measure(self._obj, measure, error=False)}\n"
-                )
+                text += f"\t{measure}: {apply_mapper(_get_measure, self._obj, measure, error=False)}\n"
 
         text += "\nStandard Names:\n"
         if isinstance(self._obj, xr.DataArray):
@@ -694,13 +684,13 @@ class CFAccessor:
         varnames = [
             key
             for key in _AXIS_NAMES + _COORD_NAMES
-            if _get_axis_coord(self._obj, key, error=False) != [None]
+            if apply_mapper(_get_axis_coord, self._obj, key, error=False) != [None]
         ]
         with suppress(NotImplementedError):
             measures = [
                 key
                 for key in _CELL_MEASURES
-                if _get_measure(self._obj, key, error=False) != [None]
+                if apply_mapper(_get_measure, self._obj, key, error=False) != [None]
             ]
             if measures:
                 varnames.extend(measures)
@@ -727,19 +717,14 @@ class CFAccessor:
         successful = dict.fromkeys(key, False)
         for k in key:
             if k in _AXIS_NAMES + _COORD_NAMES:
-                names = _get_axis_coord(self._obj, k)
+                names = _strip_none_list(_get_axis_coord(self._obj, k))
                 successful[k] = bool(names)
-                coords.extend(_strip_none_list(names))
+                coords.extend(names)
             elif k in _CELL_MEASURES:
-                if isinstance(self._obj, xr.Dataset):
-                    raise NotImplementedError(
-                        "Invalid key {k!r}. Cell measures not implemented for Dataset yet."
-                    )
-                else:
-                    measure = _get_measure(self._obj, k)
-                    successful[k] = bool(measure)
-                    if measure:
-                        varnames.extend(measure)
+                measure = _strip_none_list(_get_measure(self._obj, k))
+                successful[k] = bool(measure)
+                if measure:
+                    varnames.extend(measure)
             elif not isinstance(self._obj, xr.DataArray):
                 stdnames = _filter_by_standard_names(self._obj, k)
                 successful[k] = bool(stdnames)
@@ -766,7 +751,7 @@ class CFAccessor:
                         for measure in _CELL_MEASURES
                         if measure in attrs["cell_measures"]
                     ]
-                    coords.extend(*_strip_none_list(measures))
+                    coords.extend(_strip_none_list(*measures))
 
                 if isinstance(self._obj, xr.Dataset) and "ancillary_variables" in attrs:
                     anames = attrs["ancillary_variables"].split(" ")

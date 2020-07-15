@@ -1,8 +1,9 @@
 import matplotlib as mpl
+import numpy as np
 import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
-from xarray.testing import assert_identical
+from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
 
@@ -287,3 +288,19 @@ def test_plot_xincrease_yincrease():
 
     for lim in [ax.get_xlim(), ax.get_ylim()]:
         assert lim[0] > lim[1]
+
+
+@pytest.mark.parametrize("obj", [airds, airds.air])
+def test_add_bounds(obj):
+    added = obj.cf.add_bounds("lat")
+    assert "lat_bounds" in added.coords
+    assert added.lat.attrs["bounds"] == "lat_bounds"
+    expected = xr.concat(
+        [
+            obj.lat.copy(data=np.arange(76.25, 16.0, -2.5)),
+            obj.lat.copy(data=np.arange(73.75, 13.6, -2.5)),
+        ],
+        dim="bounds",
+    )
+    expected.attrs.clear()
+    assert_allclose(added.lat_bounds.reset_coords(drop=True), expected)

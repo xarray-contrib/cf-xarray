@@ -290,17 +290,33 @@ def test_plot_xincrease_yincrease():
         assert lim[0] > lim[1]
 
 
+@pytest.mark.parametrize("dims", ["lat", ["lat", "lon"]])
 @pytest.mark.parametrize("obj", [airds, airds.air])
-def test_add_bounds(obj):
-    added = obj.cf.add_bounds("lat")
-    assert "lat_bounds" in added.coords
-    assert added.lat.attrs["bounds"] == "lat_bounds"
-    expected = xr.concat(
+def test_add_bounds(obj, dims):
+    expected = dict()
+    expected["lat"] = xr.concat(
         [
             obj.lat.copy(data=np.arange(76.25, 16.0, -2.5)),
             obj.lat.copy(data=np.arange(73.75, 13.6, -2.5)),
         ],
         dim="bounds",
     )
-    expected.attrs.clear()
-    assert_allclose(added.lat_bounds.reset_coords(drop=True), expected)
+    expected["lon"] = xr.concat(
+        [
+            obj.lon.copy(data=np.arange(198.75, 325 - 1.25, 2.5)),
+            obj.lon.copy(data=np.arange(201.25, 325 + 1.25, 2.5)),
+        ],
+        dim="bounds",
+    )
+    expected["lat"].attrs.clear()
+    expected["lon"].attrs.clear()
+
+    added = obj.cf.add_bounds(dims)
+    if isinstance(dims, str):
+        dims = (dims,)
+
+    for dim in dims:
+        name = f"{dim}_bounds"
+        assert name in added.coords
+        assert added[dim].attrs["bounds"] == name
+        assert_allclose(added[name].reset_coords(drop=True), expected[dim])

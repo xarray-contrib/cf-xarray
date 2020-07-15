@@ -1,5 +1,6 @@
 import matplotlib as mpl
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
@@ -290,7 +291,7 @@ def test_plot_xincrease_yincrease():
         assert lim[0] > lim[1]
 
 
-@pytest.mark.parametrize("dims", ["lat", ["lat", "lon"]])
+@pytest.mark.parametrize("dims", ["lat", "time", ["lat", "lon"]])
 @pytest.mark.parametrize("obj", [airds, airds.air])
 def test_add_bounds(obj, dims):
     expected = dict()
@@ -308,8 +309,20 @@ def test_add_bounds(obj, dims):
         ],
         dim="bounds",
     )
+    t0 = pd.Timestamp("2013-01-01")
+    t1 = pd.Timestamp("2013-01-01 18:00")
+    dt = "6h"
+    dtb2 = pd.Timedelta("3h")
+    expected["time"] = xr.concat(
+        [
+            obj.time.copy(data=pd.date_range(start=t0 - dtb2, end=t1 - dtb2, freq=dt)),
+            obj.time.copy(data=pd.date_range(start=t0 + dtb2, end=t1 + dtb2, freq=dt)),
+        ],
+        dim="bounds",
+    )
     expected["lat"].attrs.clear()
     expected["lon"].attrs.clear()
+    expected["time"].attrs.clear()
 
     added = obj.cf.add_bounds(dims)
     if isinstance(dims, str):

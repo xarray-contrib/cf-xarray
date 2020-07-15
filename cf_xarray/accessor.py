@@ -8,6 +8,7 @@ from contextlib import suppress
 from typing import (
     Callable,
     Hashable,
+    Iterable,
     List,
     Mapping,
     MutableMapping,
@@ -319,6 +320,25 @@ def _get_list_standard_names(obj: xr.Dataset) -> List[str]:
             if "standard_name" in v.attrs
         ]
     )
+
+
+def _guess_bounds_dim(da):
+    """
+    Guess bounds values given a 1D coordinate variable.
+    Assumes equal spacing on either side of the coordinate label.
+    """
+    assert da.ndim == 1
+
+    dim = da.dims[0]
+    diff = da.diff(dim)
+    lower = da - diff / 2
+    upper = da + diff / 2
+    bounds = xr.concat([lower, upper], dim="bounds")
+
+    first = (bounds.isel({dim: 0}) - diff[0]).assign_coords({dim: da[dim][0]})
+    result = xr.concat([first, bounds], dim=dim)
+
+    return result
 
 
 def _getattr(
@@ -804,6 +824,63 @@ class CFAccessor:
                 f"{kind}.cf does not understand the key {k!r}. "
                 f"Use {kind}.cf.describe() to see a list of key names that can be interpreted."
             )
+
+    def _maybe_to_dataset(self, obj=None) -> xr.Dataset:
+        if obj is None:
+            obj = self._obj
+        if isinstance(self._obj, xr.DataArray):
+            return obj._to_temp_dataset()
+        else:
+            return obj
+
+    def _maybe_to_dataarray(self, obj=None):
+        if obj is None:
+            obj = self._obj
+        if isinstance(self._obj, xr.DataArray):
+            return self._obj._from_temp_dataset(obj)
+        else:
+            return obj
+
+    def add_bounds(self, dims: Union[Hashable, Iterable[Hashable]]):
+        """
+        Returns a new object with bounds variables. The bounds values are guessed assuming
+        equal spacing on either side of a coordinate label.
+
+        Parameters
+        ----------
+        dims: Hashable or Iterable[Hashable]
+            Either a single dimension name or a list of dimension names.
+
+        Returns
+        -------
+        DataArray or Dataset with bounds variables added and appropriate "bounds" attribute set.
+
+        Notes
+        -----
+
+        The bounds variables are automatically named f"{dim}_bounds" where ``dim``
+        is a dimension name.
+        """
+        if isinstance(dims, Hashable):
+            dimensions = (dims,)
+        else:
+            dimensions = dims
+
+        bad_dims: Set[Hashable] = set(dimensions) - set(self._obj.dims)
+        if bad_dims:
+            raise ValueError(
+                f"{bad_dims!r} are not dimensions in the underlying object."
+            )
+
+        obj = self._maybe_to_dataset(self._obj.copy(deep=True))
+        for dim in dimensions:
+            bname = f"{dim}_bounds"
+            if bname in obj.variables:
+                raise ValueError(f"Bounds variable name {bname!r} will conflict!")
+            obj.coords[bname] = _guess_bounds_dim(obj[dim].reset_coords(drop=True))
+            obj[dim].attrs["bounds"] = bname
+
+        return self._maybe_to_dataarray(obj)
 
 
 @xr.register_dataset_accessor("cf")

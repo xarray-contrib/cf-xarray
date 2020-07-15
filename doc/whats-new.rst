@@ -1,6 +1,11 @@
 What's New
 ----------
 
+v0.1.6
+======
+
+- Added ```.cf.add_bounds`` to add guessed bounds for 1D coorindates. (:pr:`53`) `Deepak Cherian`_.
+
 v0.1.5
 ======
 - Wrap ``.sizes`` and ``.chunks``. (:pr:`42`) `Deepak Cherian`_.

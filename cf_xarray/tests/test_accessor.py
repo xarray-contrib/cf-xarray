@@ -1,8 +1,10 @@
 import matplotlib as mpl
+import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
-from xarray.testing import assert_identical
+from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
 
@@ -287,3 +289,47 @@ def test_plot_xincrease_yincrease():
 
     for lim in [ax.get_xlim(), ax.get_ylim()]:
         assert lim[0] > lim[1]
+
+
+@pytest.mark.parametrize("dims", ["lat", "time", ["lat", "lon"]])
+@pytest.mark.parametrize("obj", [airds, airds.air])
+def test_add_bounds(obj, dims):
+    expected = dict()
+    expected["lat"] = xr.concat(
+        [
+            obj.lat.copy(data=np.arange(76.25, 16.0, -2.5)),
+            obj.lat.copy(data=np.arange(73.75, 13.6, -2.5)),
+        ],
+        dim="bounds",
+    )
+    expected["lon"] = xr.concat(
+        [
+            obj.lon.copy(data=np.arange(198.75, 325 - 1.25, 2.5)),
+            obj.lon.copy(data=np.arange(201.25, 325 + 1.25, 2.5)),
+        ],
+        dim="bounds",
+    )
+    t0 = pd.Timestamp("2013-01-01")
+    t1 = pd.Timestamp("2013-01-01 18:00")
+    dt = "6h"
+    dtb2 = pd.Timedelta("3h")
+    expected["time"] = xr.concat(
+        [
+            obj.time.copy(data=pd.date_range(start=t0 - dtb2, end=t1 - dtb2, freq=dt)),
+            obj.time.copy(data=pd.date_range(start=t0 + dtb2, end=t1 + dtb2, freq=dt)),
+        ],
+        dim="bounds",
+    )
+    expected["lat"].attrs.clear()
+    expected["lon"].attrs.clear()
+    expected["time"].attrs.clear()
+
+    added = obj.cf.add_bounds(dims)
+    if isinstance(dims, str):
+        dims = (dims,)
+
+    for dim in dims:
+        name = f"{dim}_bounds"
+        assert name in added.coords
+        assert added[dim].attrs["bounds"] == name
+        assert_allclose(added[name].reset_coords(drop=True), expected[dim])

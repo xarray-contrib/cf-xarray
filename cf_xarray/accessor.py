@@ -924,7 +924,18 @@ class CFAccessor:
             theirs = _get_axis_coord_single(other, key)[0]
             renamer[ours] = theirs
 
-        return self._obj.rename(renamer)
+        newobj = self._obj.rename(renamer)
+
+        # rename variable names in the coordinates attribute
+        # if present
+        ds = self._maybe_to_dataset(newobj)
+        for _, variable in ds.variables.items():
+            coordinates = variable.attrs.get("coordinates", None)
+            if coordinates:
+                for k, v in renamer.items():
+                    coordinates = coordinates.replace(k, v)
+                variable.attrs["coordinates"] = coordinates
+        return self._maybe_to_dataarray(ds)
 
 
 @xr.register_dataset_accessor("cf")

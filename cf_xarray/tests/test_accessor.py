@@ -89,6 +89,12 @@ def test_getitem_ancillary_variables():
     with pytest.warns(UserWarning):
         anc[["q"]].cf["q"]
 
+    for k in ["ULONG", "ULAT"]:
+        assert k not in popds.cf["TEMP"].coords
+
+    for k in ["TLONG", "TLAT"]:
+        assert k not in popds.cf["UVEL"].coords
+
 
 @pytest.mark.parametrize("obj", objects)
 @pytest.mark.parametrize(

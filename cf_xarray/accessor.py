@@ -912,8 +912,14 @@ class CFAccessor:
         ourkeys = self.get_valid_keys()
         theirkeys = other.cf.get_valid_keys()
 
+        good_keys = set(_COORD_NAMES) & ourkeys & theirkeys
+        if not good_keys:
+            raise ValueError(
+                "No common coordinate variables between these two objects."
+            )
+
         renamer = {}
-        for key in set(_COORD_NAMES) & ourkeys & theirkeys:
+        for key in good_keys:
             ours = _get_axis_coord_single(self._obj, key)[0]
             theirs = _get_axis_coord_single(other, key)[0]
             renamer[ours] = theirs

@@ -158,6 +158,8 @@ def _get_axis_coord_single(
         raise ValueError(
             f"Multiple results for {key!r} found: {results!r}. Is this valid CF? Please open an issue."
         )
+    elif len(results) == 0:
+        raise ValueError(f"No results found for {key!r}.")
     return results
 
 
@@ -276,6 +278,8 @@ def _get_measure(da: Union[xr.DataArray, xr.Dataset], key: str) -> List[Optional
 #       We need this for groupby("T.month") and groupby("latitude") for example.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Mapper] = {
     "dim": _get_axis_coord,
+    "dims": _get_axis_coord,  # is this necessary?
+    "coords": _get_axis_coord,  # interp
     "indexers": _get_axis_coord,  # sel, isel
     "dims_or_levels": _get_axis_coord,  # reset_index
     "coord": _get_axis_coord_single,
@@ -882,6 +886,21 @@ class CFAccessor:
             obj[dim].attrs["bounds"] = bname
 
         return self._maybe_to_dataarray(obj)
+
+    def rename_like(self, other: Union[xr.DataArray, xr.Dataset]):
+        """
+        Renames variables in object to match names of like-variables in other.
+        """
+        ourkeys = self.get_valid_keys()
+        theirkeys = other.cf.get_valid_keys()
+
+        renamer = {}
+        for key in set(_COORD_NAMES) & ourkeys & theirkeys:
+            ours = _get_axis_coord_single(self._obj, key)
+            theirs = _get_axis_coord_single(other, key)
+            renamer[ours.name] = theirs.name
+
+        return self._obj.rename(renamer)
 
 
 @xr.register_dataset_accessor("cf")

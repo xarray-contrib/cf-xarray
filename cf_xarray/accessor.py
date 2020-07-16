@@ -789,7 +789,7 @@ class CFAccessor:
                 ds = self._obj
 
             if scalar_key and len(varnames) == 1:
-                da = ds[varnames[0]]
+                da = ds[varnames[0]].reset_coords(drop=True)
                 failed = []
                 for k1 in coords:
                     if k1 not in ds.variables:

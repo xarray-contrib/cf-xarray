@@ -276,6 +276,7 @@ def _get_measure(da: Union[xr.DataArray, xr.Dataset], key: str) -> List[Optional
 #       We need this for groupby("T.month") and groupby("latitude") for example.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Mapper] = {
     "dim": _get_axis_coord,
+    "indexers": _get_axis_coord,  # sel, isel
     "dims_or_levels": _get_axis_coord,  # reset_index
     "coord": _get_axis_coord_single,
     "group": _get_axis_coord_single,

@@ -13,6 +13,6 @@ dependencies:
   - ipython
   - ipykernel
   - pip:
-      - cf_xarray
+      - git+https://github.com/xarray-contrib/cf-xarray
       - sphinx-book-theme
       - git+https://github.com/keewis/sphinx-autosummary-accessors

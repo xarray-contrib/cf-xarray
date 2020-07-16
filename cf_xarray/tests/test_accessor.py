@@ -96,6 +96,23 @@ def test_getitem_ancillary_variables():
         assert k not in popds.cf["UVEL"].coords
 
 
+def test_rename_like():
+    original = popds.copy(deep=True)
+
+    with pytest.raises(ValueError):
+        popds.cf.rename_like(airds)
+
+    renamed = popds.cf["TEMP"].cf.rename_like(airds)
+    for k in ["TLONG", "TLAT"]:
+        assert k not in renamed.coords
+        assert k in original.coords
+        assert original.TEMP.attrs["coordinates"] == "TLONG TLAT"
+
+    assert "lon" in renamed.coords
+    assert "lat" in renamed.coords
+    assert renamed.attrs["coordinates"] == "lon lat"
+
+
 @pytest.mark.parametrize("obj", objects)
 @pytest.mark.parametrize(
     "attr, xrkwargs, cfkwargs",

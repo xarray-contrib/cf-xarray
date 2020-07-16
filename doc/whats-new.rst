@@ -1,10 +1,13 @@
 What's New
 ----------
 
-v0.1.6
-======
+v0.1.6 (unreleased)
+===================
 
-- Added ```.cf.add_bounds`` to add guessed bounds for 1D coorindates. (:pr:`53`) `Deepak Cherian`_.
+- Added ``.cf.rename_like`` to rename matching variables. Only coordinate variables
+  i.e. those that match the criteria for ``("latitude", "longitude", "vertical", "time")``
+  are renamed for now. (:pr:`55`) `Deepak Cherian`_.
+- Added ``.cf.add_bounds`` to add guessed bounds for 1D coordinates. (:pr:`53`) `Deepak Cherian`_.
 
 v0.1.5
 ======

@@ -158,6 +158,8 @@ def _get_axis_coord_single(
         raise ValueError(
             f"Multiple results for {key!r} found: {results!r}. Is this valid CF? Please open an issue."
         )
+    elif len(results) == 0:
+        raise ValueError(f"No results found for {key!r}.")
     return results
 
 
@@ -276,6 +278,8 @@ def _get_measure(da: Union[xr.DataArray, xr.Dataset], key: str) -> List[Optional
 #       We need this for groupby("T.month") and groupby("latitude") for example.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Mapper] = {
     "dim": _get_axis_coord,
+    "dims": _get_axis_coord,  # is this necessary?
+    "coords": _get_axis_coord,  # interp
     "indexers": _get_axis_coord,  # sel, isel
     "dims_or_levels": _get_axis_coord,  # reset_index
     "coord": _get_axis_coord_single,
@@ -882,6 +886,56 @@ class CFAccessor:
             obj[dim].attrs["bounds"] = bname
 
         return self._maybe_to_dataarray(obj)
+
+    def rename_like(
+        self, other: Union[xr.DataArray, xr.Dataset]
+    ) -> Union[xr.DataArray, xr.Dataset]:
+        """
+        Renames variables in object to match names of like-variables in ``other``.
+
+        "Likeness" is determined by variables sharing similar attributes. If
+        cf_xarray can identify a single "longitude" variable in both this object and
+        ``other``, that variable will be renamed to match the "longitude" variable in
+        ``other``.
+
+        For now, this function only matches ``("latitude", "longitude", "vertical", "time")``
+
+        Parameters
+        ----------
+        other: DataArray, Dataset
+            Variables will be renamed to match variable names in this xarray object
+
+        Returns
+        -------
+        DataArray or Dataset with renamed variables
+        """
+        ourkeys = self.get_valid_keys()
+        theirkeys = other.cf.get_valid_keys()
+
+        good_keys = set(_COORD_NAMES) & ourkeys & theirkeys
+        if not good_keys:
+            raise ValueError(
+                "No common coordinate variables between these two objects."
+            )
+
+        renamer = {}
+        for key in good_keys:
+            ours = _get_axis_coord_single(self._obj, key)[0]
+            theirs = _get_axis_coord_single(other, key)[0]
+            renamer[ours] = theirs
+
+        newobj = self._obj.rename(renamer)
+
+        # rename variable names in the coordinates attribute
+        # if present
+        ds = self._maybe_to_dataset(newobj)
+        for _, variable in ds.variables.items():
+            coordinates = variable.attrs.get("coordinates", None)
+            if coordinates:
+                for k, v in renamer.items():
+                    coordinates = coordinates.replace(k, v)
+                variable.attrs["coordinates"] = coordinates
+        return self._maybe_to_dataarray(ds)
 
 
 @xr.register_dataset_accessor("cf")

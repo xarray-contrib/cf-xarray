@@ -19,6 +19,7 @@ DataArray
     DataArray.cf.add_bounds
     DataArray.cf.describe
     DataArray.cf.get_valid_keys
+    DataArray.cf.rename_like
 
 Dataset
 -------
@@ -34,3 +35,4 @@ Dataset
     Dataset.cf.add_bounds
     Dataset.cf.describe
     Dataset.cf.get_valid_keys
+    Dataset.cf.rename_like

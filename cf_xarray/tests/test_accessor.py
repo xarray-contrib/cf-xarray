@@ -154,6 +154,11 @@ def test_kwargs_methods(obj):
         actual = obj.cf.isel(T=slice(2))
     assert_identical(expected, actual)
 
+    with raise_if_dask_computes():
+        expected = obj.isel({"time": slice(2)})
+        actual = obj.cf.isel({"T": slice(2)})
+    assert_identical(expected, actual)
+
 
 def test_kwargs_expand_key_to_multiple_keys():
 

@@ -887,18 +887,36 @@ class CFAccessor:
 
         return self._maybe_to_dataarray(obj)
 
-    def rename_like(self, other: Union[xr.DataArray, xr.Dataset]):
+    def rename_like(
+        self, other: Union[xr.DataArray, xr.Dataset]
+    ) -> Union[xr.DataArray, xr.Dataset]:
         """
-        Renames variables in object to match names of like-variables in other.
+        Renames variables in object to match names of like-variables in ``other``.
+
+        "Likeness" is determined by variables sharing similar attributes. If
+        cf_xarray can identify a single "longitude" variable in both this object and
+        ``other``, that variable will be renamed to match the "longitude" variable in
+        ``other``.
+
+        For now, this function only matches ``("latitude", "longitude", "vertical", "time")``
+
+        Parameters
+        ----------
+        other: DataArray, Dataset
+            Variables will be renamed to match variable names in this xarray object
+
+        Returns
+        -------
+        DataArray or Dataset with renamed variables
         """
         ourkeys = self.get_valid_keys()
         theirkeys = other.cf.get_valid_keys()
 
         renamer = {}
         for key in set(_COORD_NAMES) & ourkeys & theirkeys:
-            ours = _get_axis_coord_single(self._obj, key)
-            theirs = _get_axis_coord_single(other, key)
-            renamer[ours.name] = theirs.name
+            ours = _get_axis_coord_single(self._obj, key)[0]
+            theirs = _get_axis_coord_single(other, key)[0]
+            renamer[ours] = theirs
 
         return self._obj.rename(renamer)
 

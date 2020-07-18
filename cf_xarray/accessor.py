@@ -112,12 +112,12 @@ coordinate_criteria["standard_name"]["vertical"] = coordinate_criteria["standard
 coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 
 # Type for Mapper functions
-Mapper = Callable[[Union[xr.DataArray, xr.Dataset], str], List[str]]
+Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]
 
 
 def apply_mapper(
     mapper: Mapper,
-    obj: Union[xr.DataArray, xr.Dataset],
+    obj: Union[DataArray, Dataset],
     key: str,
     error: bool = True,
     default: Any = None,
@@ -139,9 +139,7 @@ def apply_mapper(
     return results
 
 
-def _get_axis_coord_single(
-    var: Union[xr.DataArray, xr.Dataset], key: str,
-) -> List[str]:
+def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str,) -> List[str]:
     """ Helper method for when we really want only one result per key. """
     results = _get_axis_coord(var, key)
     if len(results) > 1:
@@ -153,7 +151,7 @@ def _get_axis_coord_single(
     return results
 
 
-def _get_axis_coord(var: Union[xr.DataArray, xr.Dataset], key: str,) -> List[str]:
+def _get_axis_coord(var: Union[DataArray, Dataset], key: str,) -> List[str]:
     """
     Translate from axis or coord name to variable name
 
@@ -210,7 +208,7 @@ def _get_axis_coord(var: Union[xr.DataArray, xr.Dataset], key: str,) -> List[str
 
 
 def _get_measure_variable(
-    da: xr.DataArray, key: str, error: bool = True, default: str = None
+    da: DataArray, key: str, error: bool = True, default: str = None
 ) -> List[DataArray]:
     """ tiny wrapper since xarray does not support providing str for weights."""
     varnames = apply_mapper(_get_measure, da, key, error, default)
@@ -219,7 +217,7 @@ def _get_measure_variable(
     return [da[varnames[0]]]
 
 
-def _get_measure(da: Union[xr.DataArray, xr.Dataset], key: str) -> List[str]:
+def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Translate from cell measures ("area" or "volume") to appropriate variable name.
     This function interprets the ``cell_measures`` attribute on DataArrays.
@@ -279,7 +277,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Mapper] = {
 }
 
 
-def _filter_by_standard_names(ds: xr.Dataset, name: Union[str, List[str]]) -> List[str]:
+def _filter_by_standard_names(ds: Dataset, name: Union[str, List[str]]) -> List[str]:
     """ returns a list of variable names with standard names matching name. """
     if isinstance(name, str):
         name = [name]
@@ -295,7 +293,7 @@ def _filter_by_standard_names(ds: xr.Dataset, name: Union[str, List[str]]) -> Li
     return varnames
 
 
-def _get_list_standard_names(obj: xr.Dataset) -> List[str]:
+def _get_list_standard_names(obj: Dataset) -> List[str]:
     """
     Returns a sorted list of standard names in Dataset.
 
@@ -365,7 +363,12 @@ def _getattr(
         An extra decorator, if necessary. This is used by _CFPlotMethods to set default
         kwargs based on CF attributes.
     """
-    attribute: Union[Mapping, Callable] = getattr(obj, attr)
+    try:
+        attribute: Union[Mapping, Callable] = getattr(obj, attr)
+    except AttributeError:
+        raise AttributeError(
+            f"{attr!r} is not a valid attribute on the underlying xarray object."
+        )
 
     if isinstance(attribute, Mapping):
         if not attribute:
@@ -545,16 +548,14 @@ class CFAccessor:
             arguments = self._rewrite_values(
                 bound.arguments, key_mappers, tuple(var_kws)
             )
-        else:
-            arguments = {}
-
-        if arguments:
             # now unwrap the **indexers_kwargs type arguments
             # so that xarray can parse it :)
             for kw in var_kws:
                 value = arguments.pop(kw, None)
                 if value:
                     arguments.update(**value)
+        else:
+            arguments = {}
 
         return arguments
 
@@ -583,45 +584,41 @@ class CFAccessor:
         # these are valid for .sel, .isel, .coarsen
         key_mappers.update(dict.fromkeys(var_kws, _get_axis_coord))
 
-        for key, value in kwargs.items():
-            mapper = key_mappers.get(key, None)
+        for key in set(key_mappers) & set(kwargs):
+            value = kwargs[key]
+            mapper = key_mappers[key]
 
-            if mapper is not None:
-                if isinstance(value, str):
-                    value = [value]
+            if isinstance(value, str):
+                value = [value]
 
-                if isinstance(value, dict):
-                    # this for things like isel where **kwargs captures things like T=5
-                    # .sel, .isel, .rolling
-                    # Account for multiple names matching the key.
-                    # e.g. .isel(X=5) → .isel(xi_rho=5, xi_u=5, xi_v=5, xi_psi=5)
-                    # where xi_* have attrs["axis"] = "X"
-                    updates[key] = ChainMap(
-                        *[
-                            dict.fromkeys(
-                                apply_mapper(mapper, self._obj, k, False, k), v
-                            )
-                            for k, v in value.items()
-                        ]
-                    )
-
-                elif value is Ellipsis:
-                    pass
-
-                else:
-                    # things like sum which have dim
-                    newvalue = [
-                        apply_mapper(mapper, self._obj, v, False, v) for v in value
+            if isinstance(value, dict):
+                # this for things like isel where **kwargs captures things like T=5
+                # .sel, .isel, .rolling
+                # Account for multiple names matching the key.
+                # e.g. .isel(X=5) → .isel(xi_rho=5, xi_u=5, xi_v=5, xi_psi=5)
+                # where xi_* have attrs["axis"] = "X"
+                updates[key] = ChainMap(
+                    *[
+                        dict.fromkeys(apply_mapper(mapper, self._obj, k, False, k), v)
+                        for k, v in value.items()
                     ]
-                    # Mappers return list by default
-                    # for input dim=["lat", "X"], newvalue=[["lat"], ["lon"]],
-                    # so we deal with that here.
-                    unpacked = list(itertools.chain(*newvalue))
-                    if len(unpacked) == 1:
-                        # handle 'group'
-                        updates[key] = unpacked[0]
-                    else:
-                        updates[key] = unpacked
+                )
+
+            elif value is Ellipsis:
+                pass
+
+            else:
+                # things like sum which have dim
+                newvalue = [apply_mapper(mapper, self._obj, v, False, v) for v in value]
+                # Mappers return list by default
+                # for input dim=["lat", "X"], newvalue=[["lat"], ["lon"]],
+                # so we deal with that here.
+                unpacked = list(itertools.chain(*newvalue))
+                if len(unpacked) == 1:
+                    # handle 'group'
+                    updates[key] = unpacked[0]
+                else:
+                    updates[key] = unpacked
 
         kwargs.update(updates)
 
@@ -670,13 +667,13 @@ class CFAccessor:
 
         text += "\nCell Measures:\n"
         for measure in _CELL_MEASURES:
-            if isinstance(self._obj, xr.Dataset):
+            if isinstance(self._obj, Dataset):
                 text += f"\t{measure}: unsupported\n"
             else:
                 text += f"\t{measure}: {apply_mapper(_get_measure, self._obj, measure, error=False)}\n"
 
         text += "\nStandard Names:\n"
-        if isinstance(self._obj, xr.DataArray):
+        if isinstance(self._obj, DataArray):
             text += "\tunsupported\n"
         else:
             stdnames = _get_list_standard_names(self._obj)
@@ -702,7 +699,7 @@ class CFAccessor:
             for key in _AXIS_NAMES + _COORD_NAMES
             if apply_mapper(_get_axis_coord, self._obj, key, error=False)
         ]
-        if not isinstance(self._obj, xr.Dataset):
+        if not isinstance(self._obj, Dataset):
             measures = [
                 key
                 for key in _CELL_MEASURES
@@ -711,16 +708,45 @@ class CFAccessor:
             if measures:
                 varnames.extend(measures)
 
-        if not isinstance(self._obj, xr.DataArray):
+        if not isinstance(self._obj, DataArray):
             varnames.extend(_get_list_standard_names(self._obj))
         return set(varnames)
+
+    def get_associated_variable_names(self, name: Hashable) -> List[Hashable]:
+        """
+        Returns a list of variable names referred to in the following attributes
+            1. "coordinates"
+            2. "cell_measures"
+            3. "ancillary_variables"
+        """
+        coords = []
+        attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
+
+        if "coordinates" in attrs_or_encoding:
+            coords.extend(attrs_or_encoding["coordinates"].split(" "))
+
+        if "cell_measures" in attrs_or_encoding:
+            measures = [
+                _get_measure(self._obj[name], measure)
+                for measure in _CELL_MEASURES
+                if measure in attrs_or_encoding["cell_measures"]
+            ]
+            coords.extend(*measures)
+
+        if (
+            isinstance(self._obj, Dataset)
+            and "ancillary_variables" in attrs_or_encoding
+        ):
+            anames = attrs_or_encoding["ancillary_variables"].split(" ")
+            coords.extend(anames)
+        return coords
 
     def __getitem__(self, key: Union[str, List[str]]):
 
         kind = str(type(self._obj).__name__)
         scalar_key = isinstance(key, str)
 
-        if isinstance(self._obj, xr.DataArray) and not scalar_key:
+        if isinstance(self._obj, DataArray) and not scalar_key:
             raise KeyError(
                 f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
             )
@@ -741,7 +767,7 @@ class CFAccessor:
                 successful[k] = bool(measure)
                 if measure:
                     varnames.extend(measure)
-            elif not isinstance(self._obj, xr.DataArray):
+            elif not isinstance(self._obj, DataArray):
                 stdnames = _filter_by_standard_names(self._obj, k)
                 successful[k] = bool(stdnames)
                 varnames.extend(stdnames)
@@ -752,39 +778,16 @@ class CFAccessor:
         varnames.extend([k for k, v in successful.items() if not v])
 
         try:
-            # TODO: make this a get_auxiliary_variables function
-            #       1. set coordinate variables referred to in "coordinates" attribute
-            #       2. set measures variables as coordinates
-            #       3. set ancillary variables as coordinates
             for name in varnames:
-                attrs_or_encoding = ChainMap(
-                    self._obj[name].attrs, self._obj[name].encoding
-                )
-                if "coordinates" in attrs_or_encoding:
-                    coords.extend(attrs_or_encoding["coordinates"].split(" "))
+                coords.extend(self.get_associated_variable_names(name))
 
-                if "cell_measures" in attrs_or_encoding:
-                    measures = [
-                        _get_measure(self._obj[name], measure)
-                        for measure in _CELL_MEASURES
-                        if measure in attrs_or_encoding["cell_measures"]
-                    ]
-                    coords.extend(*measures)
-
-                if (
-                    isinstance(self._obj, xr.Dataset)
-                    and "ancillary_variables" in attrs_or_encoding
-                ):
-                    anames = attrs_or_encoding["ancillary_variables"].split(" ")
-                    coords.extend(anames)
-
-            if isinstance(self._obj, xr.DataArray):
+            if isinstance(self._obj, DataArray):
                 ds = self._obj._to_temp_dataset()
             else:
                 ds = self._obj
 
             if scalar_key and len(varnames) == 1:
-                da: xr.DataArray = ds[varnames[0]].reset_coords(drop=True)  # type: ignore
+                da: DataArray = ds[varnames[0]].reset_coords(drop=True)  # type: ignore
                 failed = []
                 for k1 in coords:
                     if k1 not in ds.variables:
@@ -821,10 +824,10 @@ class CFAccessor:
                 f"Use {kind}.cf.describe() to see a list of key names that can be interpreted."
             )
 
-    def _maybe_to_dataset(self, obj=None) -> xr.Dataset:
+    def _maybe_to_dataset(self, obj=None) -> Dataset:
         if obj is None:
             obj = self._obj
-        if isinstance(self._obj, xr.DataArray):
+        if isinstance(self._obj, DataArray):
             return obj._to_temp_dataset()
         else:
             return obj
@@ -832,7 +835,7 @@ class CFAccessor:
     def _maybe_to_dataarray(self, obj=None):
         if obj is None:
             obj = self._obj
-        if isinstance(self._obj, xr.DataArray):
+        if isinstance(self._obj, DataArray):
             return self._obj._from_temp_dataset(obj)
         else:
             return obj
@@ -879,8 +882,8 @@ class CFAccessor:
         return self._maybe_to_dataarray(obj)
 
     def rename_like(
-        self, other: Union[xr.DataArray, xr.Dataset]
-    ) -> Union[xr.DataArray, xr.Dataset]:
+        self, other: Union[DataArray, Dataset]
+    ) -> Union[DataArray, Dataset]:
         """
         Renames variables in object to match names of like-variables in ``other``.
 

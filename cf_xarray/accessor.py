@@ -4,15 +4,14 @@ import itertools
 import textwrap
 import warnings
 from collections import ChainMap
-from contextlib import suppress
 from typing import (
+    Any,
     Callable,
     Hashable,
     Iterable,
     List,
     Mapping,
     MutableMapping,
-    Optional,
     Set,
     Tuple,
     Union,
@@ -113,12 +112,7 @@ coordinate_criteria["standard_name"]["vertical"] = coordinate_criteria["standard
 coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 
 # Type for Mapper functions
-Mapper = Callable[[Union[xr.DataArray, xr.Dataset], str], List[Optional[str]]]
-
-
-def _strip_none_list(lst: List[Optional[str]]) -> List[str]:
-    """ The mappers can return [None]. Strip that when necessary. Keeps mypy happy."""
-    return [item for item in lst if item != [None]]  # type: ignore
+Mapper = Callable[[Union[xr.DataArray, xr.Dataset], str], List[str]]
 
 
 def apply_mapper(
@@ -126,32 +120,28 @@ def apply_mapper(
     obj: Union[xr.DataArray, xr.Dataset],
     key: str,
     error: bool = True,
-    default: str = None,
-) -> List[Optional[str]]:
+    default: Any = None,
+) -> List[Any]:
     """
     Applies a mapping function; does error handling / returning defaults.
     """
-
     try:
         results = mapper(obj, key)
     except Exception as e:
         if error:
             raise e
         else:
-            results = None  # type: ignore
+            if default:
+                results = [default]  # type: ignore
+            else:
+                results = []
 
-    if not results:
-        if error:
-            raise KeyError(f"Attributes to select {key!r} not found!")
-        else:
-            return [default]
-    else:
-        return list(results)
+    return results
 
 
 def _get_axis_coord_single(
     var: Union[xr.DataArray, xr.Dataset], key: str,
-) -> List[Optional[str]]:
+) -> List[str]:
     """ Helper method for when we really want only one result per key. """
     results = _get_axis_coord(var, key)
     if len(results) > 1:
@@ -163,9 +153,7 @@ def _get_axis_coord_single(
     return results
 
 
-def _get_axis_coord(
-    var: Union[xr.DataArray, xr.Dataset], key: str,
-) -> List[Optional[str]]:
+def _get_axis_coord(var: Union[xr.DataArray, xr.Dataset], key: str,) -> List[str]:
     """
     Translate from axis or coord name to variable name
 
@@ -225,13 +213,13 @@ def _get_measure_variable(
     da: xr.DataArray, key: str, error: bool = True, default: str = None
 ) -> List[DataArray]:
     """ tiny wrapper since xarray does not support providing str for weights."""
-    varnames = _strip_none_list(apply_mapper(_get_measure, da, key, error, default))
+    varnames = apply_mapper(_get_measure, da, key, error, default)
     if len(varnames) > 1:
         raise ValueError(f"Multiple measures found for key {key!r}: {varnames!r}.")
     return [da[varnames[0]]]
 
 
-def _get_measure(da: Union[xr.DataArray, xr.Dataset], key: str) -> List[Optional[str]]:
+def _get_measure(da: Union[xr.DataArray, xr.Dataset], key: str) -> List[str]:
     """
     Translate from cell measures ("area" or "volume") to appropriate variable name.
     This function interprets the ``cell_measures`` attribute on DataArrays.
@@ -269,7 +257,10 @@ def _get_measure(da: Union[xr.DataArray, xr.Dataset], key: str) -> List[Optional
     if len(strings) % 2 != 0:
         raise ValueError(f"attrs['cell_measures'] = {attr!r} is malformed.")
     measures = dict(zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)]))
-    return [measures.get(key, None)]
+    results = measures.get(key, [])
+    if isinstance(results, str):
+        return [results]
+    return results
 
 
 #: Default mappers for common keys.
@@ -383,10 +374,10 @@ def _getattr(
         newmap = dict()
         unused_keys = set(attribute.keys())
         for key in _AXIS_NAMES + _COORD_NAMES:
-            value = apply_mapper(_get_axis_coord, obj, key, error=False)
-            unused_keys -= set(value)
-            if value != [None]:
-                good_values = set(value) & set(obj.dims)
+            value = set(apply_mapper(_get_axis_coord, obj, key, error=False))
+            unused_keys -= value
+            if value:
+                good_values = value & set(obj.dims)
                 if not good_values:
                     continue
                 if len(good_values) > 1:
@@ -592,10 +583,10 @@ class CFAccessor:
         # these are valid for .sel, .isel, .coarsen
         key_mappers.update(dict.fromkeys(var_kws, _get_axis_coord))
 
-        for key, mapper in key_mappers.items():
-            value = kwargs.get(key, None)
+        for key, value in kwargs.items():
+            mapper = key_mappers.get(key, None)
 
-            if value is not None:
+            if mapper is not None:
                 if isinstance(value, str):
                     value = [value]
 
@@ -709,13 +700,13 @@ class CFAccessor:
         varnames = [
             key
             for key in _AXIS_NAMES + _COORD_NAMES
-            if apply_mapper(_get_axis_coord, self._obj, key, error=False) != [None]
+            if apply_mapper(_get_axis_coord, self._obj, key, error=False)
         ]
-        with suppress(NotImplementedError):
+        if not isinstance(self._obj, xr.Dataset):
             measures = [
                 key
                 for key in _CELL_MEASURES
-                if apply_mapper(_get_measure, self._obj, key, error=False) != [None]
+                if apply_mapper(_get_measure, self._obj, key, error=False)
             ]
             if measures:
                 varnames.extend(measures)
@@ -742,11 +733,11 @@ class CFAccessor:
         successful = dict.fromkeys(key, False)
         for k in key:
             if k in _AXIS_NAMES + _COORD_NAMES:
-                names = _strip_none_list(_get_axis_coord(self._obj, k))
+                names = _get_axis_coord(self._obj, k)
                 successful[k] = bool(names)
                 coords.extend(names)
             elif k in _CELL_MEASURES:
-                measure = _strip_none_list(_get_measure(self._obj, k))
+                measure = _get_measure(self._obj, k)
                 successful[k] = bool(measure)
                 if measure:
                     varnames.extend(measure)
@@ -778,7 +769,7 @@ class CFAccessor:
                         for measure in _CELL_MEASURES
                         if measure in attrs_or_encoding["cell_measures"]
                     ]
-                    coords.extend(_strip_none_list(*measures))
+                    coords.extend(*measures)
 
                 if (
                     isinstance(self._obj, xr.Dataset)
@@ -793,7 +784,7 @@ class CFAccessor:
                 ds = self._obj
 
             if scalar_key and len(varnames) == 1:
-                da = ds[varnames[0]].reset_coords(drop=True)
+                da: xr.DataArray = ds[varnames[0]].reset_coords(drop=True)  # type: ignore
                 failed = []
                 for k1 in coords:
                     if k1 not in ds.variables:

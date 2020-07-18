@@ -57,9 +57,9 @@ def test_describe(capsys):
     airds.cf.describe()
     actual = capsys.readouterr().out
     expected = (
-        "Axes:\n\tX: ['lon']\n\tY: ['lat']\n\tZ: [None]\n\tT: ['time']\n"
+        "Axes:\n\tX: ['lon']\n\tY: ['lat']\n\tZ: []\n\tT: ['time']\n"
         "\nCoordinates:\n\tlongitude: ['lon']\n\tlatitude: ['lat']"
-        "\n\tvertical: [None]\n\ttime: ['time']\n"
+        "\n\tvertical: []\n\ttime: ['time']\n"
         "\nCell Measures:\n\tarea: unsupported\n\tvolume: unsupported\n"
         "\nStandard Names:\n\t['air_temperature', 'latitude', 'longitude', 'time']\n"
     )

@@ -262,9 +262,6 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
 
 
 #: Default mappers for common keys.
-# TODO: Make the values of this a tuple,
-#       so that multiple mappers can be used for a single key
-#       We need this for groupby("T.month") and groupby("latitude") for example.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dim": (_get_axis_coord,),
     "dims": (_get_axis_coord,),  # is this necessary?
@@ -301,7 +298,7 @@ def _get_list_standard_names(obj: Dataset) -> List[str]:
     ----------
 
     obj: DataArray, Dataset
-        Xarray objec to process
+        Xarray object to process
 
     Returns
     -------
@@ -568,7 +565,7 @@ class CFAccessor:
     def _rewrite_values(
         self,
         kwargs,
-        key_mappers: MutableMapping[str, Tuple[Mapper, ...]],
+        key_mappers: Mapping[str, Tuple[Mapper, ...]],
         var_kws: Tuple[str, ...],
     ):
         """
@@ -593,11 +590,11 @@ class CFAccessor:
 
         # allow multiple return values here.
         # these are valid for .sel, .isel, .coarsen
-        key_mappers.update(dict.fromkeys(var_kws, (_get_axis_coord,)))
+        all_mappers = ChainMap(key_mappers, dict.fromkeys(var_kws, (_get_axis_coord,)))
 
-        for key in set(key_mappers) & set(kwargs):
+        for key in set(all_mappers) & set(kwargs):
             value = kwargs[key]
-            mappers = key_mappers[key]
+            mappers = all_mappers[key]
 
             if isinstance(value, str):
                 value = [value]

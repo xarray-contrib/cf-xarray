@@ -265,15 +265,15 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
 # TODO: Make the values of this a tuple,
 #       so that multiple mappers can be used for a single key
 #       We need this for groupby("T.month") and groupby("latitude") for example.
-_DEFAULT_KEY_MAPPERS: Mapping[str, Mapper] = {
-    "dim": _get_axis_coord,
-    "dims": _get_axis_coord,  # is this necessary?
-    "coords": _get_axis_coord,  # interp
-    "indexers": _get_axis_coord,  # sel, isel
-    "dims_or_levels": _get_axis_coord,  # reset_index
-    "coord": _get_axis_coord_single,
-    "group": _get_axis_coord_single,
-    "weights": _get_measure_variable,  # type: ignore
+_DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
+    "dim": (_get_axis_coord,),
+    "dims": (_get_axis_coord,),  # is this necessary?
+    "coords": (_get_axis_coord,),  # interp
+    "indexers": (_get_axis_coord,),  # sel, isel
+    "dims_or_levels": (_get_axis_coord,),  # reset_index
+    "coord": (_get_axis_coord_single,),
+    "group": (_get_axis_coord_single,),
+    "weights": (_get_measure_variable,),  # type: ignore
 }
 
 
@@ -498,7 +498,7 @@ class _CFWrappedPlotMethods:
             obj=self._obj,
             attr="plot",
             accessor=self.accessor,
-            key_mappers=dict.fromkeys(self._keys, _get_axis_coord_single),
+            key_mappers=dict.fromkeys(self._keys, (_get_axis_coord_single,)),
         )
         return self._plot_decorator(plot)(*args, **kwargs)
 
@@ -510,7 +510,7 @@ class _CFWrappedPlotMethods:
             obj=self._obj.plot,
             attr=attr,
             accessor=self.accessor,
-            key_mappers=dict.fromkeys(self._keys, _get_axis_coord_single),
+            key_mappers=dict.fromkeys(self._keys, (_get_axis_coord_single,)),
             # TODO: "extra_decorator" is more complex than I would like it to be.
             # Not sure if there is a better way though
             extra_decorator=self._plot_decorator,
@@ -525,7 +525,13 @@ class CFAccessor:
     def __init__(self, da):
         self._obj = da
 
-    def _process_signature(self, func: Callable, args, kwargs, key_mappers):
+    def _process_signature(
+        self,
+        func: Callable,
+        args,
+        kwargs,
+        key_mappers: MutableMapping[str, Tuple[Mapper, ...]],
+    ):
         """
         Processes a function's signature, args, kwargs:
         1. Binds *args so that everthing is a Mapping from kwarg name to values
@@ -559,7 +565,12 @@ class CFAccessor:
 
         return arguments
 
-    def _rewrite_values(self, kwargs, key_mappers: dict, var_kws):
+    def _rewrite_values(
+        self,
+        kwargs,
+        key_mappers: MutableMapping[str, Tuple[Mapper, ...]],
+        var_kws: Tuple[str, ...],
+    ):
         """
         Rewrites the values in a Mapping from kwarg to value.
 
@@ -582,11 +593,11 @@ class CFAccessor:
 
         # allow multiple return values here.
         # these are valid for .sel, .isel, .coarsen
-        key_mappers.update(dict.fromkeys(var_kws, _get_axis_coord))
+        key_mappers.update(dict.fromkeys(var_kws, (_get_axis_coord,)))
 
         for key in set(key_mappers) & set(kwargs):
             value = kwargs[key]
-            mapper = key_mappers[key]
+            mappers = key_mappers[key]
 
             if isinstance(value, str):
                 value = [value]
@@ -601,6 +612,7 @@ class CFAccessor:
                     *[
                         dict.fromkeys(apply_mapper(mapper, self._obj, k, False, k), v)
                         for k, v in value.items()
+                        for mapper in mappers
                     ]
                 )
 
@@ -609,7 +621,11 @@ class CFAccessor:
 
             else:
                 # things like sum which have dim
-                newvalue = [apply_mapper(mapper, self._obj, v, False, v) for v in value]
+                newvalue = [
+                    apply_mapper(mapper, self._obj, v, False, v)
+                    for v in value
+                    for mapper in mappers
+                ]
                 # Mappers return list by default
                 # for input dim=["lat", "X"], newvalue=[["lat"], ["lon"]],
                 # so we deal with that here.
@@ -632,9 +648,10 @@ class CFAccessor:
                 maybe_update = {
                     # TODO: this is assuming key_mappers[k] is always
                     # _get_axis_coord_single
-                    k: apply_mapper(key_mappers[k], self._obj, v)[0]
+                    k: apply_mapper(mapper, self._obj, v)[0]
                     for k, v in kwargs[vkw].items()
                     if k in key_mappers
+                    for mapper in key_mappers[k]
                 }
                 kwargs[vkw].update(maybe_update)
 

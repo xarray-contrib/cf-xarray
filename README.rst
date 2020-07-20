@@ -1,5 +1,5 @@
 .. image:: https://img.shields.io/static/v1.svg?logo=Jupyter&label=Pangeo+Binder&message=GCE+us-central1&color=blue&style=for-the-badge
-    :target: https://binder.pangeo.io/v2/gh/xarray-contrib/cf-xarray/master?urlpath=lab
+    :target: https://binder.pangeo.io/v2/gh/xarray-contrib/cf-xarray/main?urlpath=lab
     :alt: Binder
 
 .. image:: https://img.shields.io/readthedocs/cf-xarray/latest.svg?style=for-the-badge

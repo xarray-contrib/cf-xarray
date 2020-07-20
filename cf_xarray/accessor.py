@@ -124,17 +124,37 @@ def apply_mapper(
 ) -> List[Any]:
     """
     Applies a mapping function; does error handling / returning defaults.
+
+    Expects the mapper function to raise an error if passed a bad key.
+    It should return a list in all other cases including when there are no
+    results for a good key.
     """
+
+    def _maybe_return_default():
+        """
+        Used when mapper raises an error or returns empty list.
+        Sets a default if possible else sets []
+        """
+        if error:
+            raise KeyError(
+                f"cf-xarray cannot interpret key {key!r}. Perhaps some needed attributes are missing."
+            )
+        if default:
+            results = [default]
+        else:
+            results = []
+        return results
+
     try:
         results = mapper(obj, key)
     except Exception as e:
         if error:
             raise e
         else:
-            if default:
-                results = [default]  # type: ignore
-            else:
-                results = []
+            results = _maybe_return_default()
+
+    if not results:
+        results = _maybe_return_default()
 
     return results
 
@@ -204,6 +224,7 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str,) -> List[str]:
                 expected = valid_values[key]
                 if var.coords[coord].attrs.get(criterion, None) in expected:
                     results.update((coord,))
+
     return list(results)
 
 

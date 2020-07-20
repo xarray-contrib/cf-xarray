@@ -183,6 +183,15 @@ def test_kwargs_methods(obj):
     assert_identical(expected, actual)
 
 
+def test_preserve_unused_keys():
+
+    ds = airds.copy(deep=True)
+    ds.time.attrs.clear()
+    actual = ds.cf.sel(X=260, Y=40, time=airds.time[:2], method="nearest")
+    expected = ds.sel(lon=260, lat=40, time=airds.time[:2], method="nearest")
+    assert_identical(actual, expected)
+
+
 def test_kwargs_expand_key_to_multiple_keys():
 
     actual = multiple.cf.isel(X=5, Y=3)

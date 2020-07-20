@@ -8,4 +8,4 @@ dependencies:
   - pip
   - xarray
   - pip:
-    - cf_xarray
+    - git+https://github.com/xarray-contrib/cf-xarray

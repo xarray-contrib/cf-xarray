@@ -270,6 +270,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dims_or_levels": (_get_axis_coord,),  # reset_index
     "coord": (_get_axis_coord_single,),
     "group": (_get_axis_coord_single,),
+    "variables": (_get_axis_coord,),  # sortby
     "weights": (_get_measure_variable,),  # type: ignore
 }
 

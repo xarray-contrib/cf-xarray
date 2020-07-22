@@ -116,7 +116,7 @@ Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]
 
 
 def apply_mapper(
-    mapper: Mapper,
+    mappers: Union[Mapper, Tuple[Mapper, ...]],
     obj: Union[DataArray, Dataset],
     key: str,
     error: bool = True,
@@ -129,34 +129,45 @@ def apply_mapper(
     It should return a list in all other cases including when there are no
     results for a good key.
     """
+    if default is None:
+        default = []
 
-    def _maybe_return_default():
-        """
-        Used when mapper raises an error or returns empty list.
-        Sets a default if possible else sets []
-        """
+    def _apply_single_mapper(mapper):
+
+        try:
+            results = mapper(obj, key)
+        except Exception as e:
+            if error:
+                raise e
+            else:
+                results = []
+        return results
+
+    if not isinstance(mappers, Iterable):
+        mappers = (mappers,)
+
+    # apply a sequence of mappers
+    # if the mapper fails, it *should* return an empty list
+    # if the mapper raises an error, that is processed based on `error`
+    results = []
+    for mapper in mappers:
+        results.append(_apply_single_mapper(mapper))
+
+    nresults = sum([bool(v) for v in results])
+    if nresults > 1:
+        raise KeyError(
+            f"Multiple mappers succeeded with key {key!r}.\nI was using mappers: {mappers!r}."
+            f"I received results: {results!r}.\nPlease open an issue."
+        )
+    if nresults == 0:
         if error:
             raise KeyError(
                 f"cf-xarray cannot interpret key {key!r}. Perhaps some needed attributes are missing."
             )
-        if default:
-            results = [default]
         else:
-            results = []
-        return results
-
-    try:
-        results = mapper(obj, key)
-    except Exception as e:
-        if error:
-            raise e
-        else:
-            results = _maybe_return_default()
-
-    if not results:
-        results = _maybe_return_default()
-
-    return results
+            # none of the mappers worked. Return the default
+            return default
+    return list(itertools.chain(*results))
 
 
 def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str,) -> List[str]:
@@ -629,9 +640,10 @@ class CFAccessor:
                 # where xi_* have attrs["axis"] = "X"
                 updates[key] = ChainMap(
                     *[
-                        dict.fromkeys(apply_mapper(mapper, self._obj, k, False, k), v)
+                        dict.fromkeys(
+                            apply_mapper(mappers, self._obj, k, False, [k]), v
+                        )
                         for k, v in value.items()
-                        for mapper in mappers
                     ]
                 )
 
@@ -641,9 +653,8 @@ class CFAccessor:
             else:
                 # things like sum which have dim
                 newvalue = [
-                    apply_mapper(mapper, self._obj, v, False, v)
+                    apply_mapper(mappers, self._obj, v, error=False, default=[v])
                     for v in value
-                    for mapper in mappers
                 ]
                 # Mappers return list by default
                 # for input dim=["lat", "X"], newvalue=[["lat"], ["lon"]],
@@ -695,18 +706,21 @@ class CFAccessor:
         """
         text = "Axes:\n"
         for key in _AXIS_NAMES:
-            text += f"\t{key}: {apply_mapper(_get_axis_coord, self._obj, key, error=False)}\n"
+            axes = apply_mapper(_get_axis_coord, self._obj, key, error=False)
+            text += f"\t{key}: {axes}\n"
 
         text += "\nCoordinates:\n"
         for key in _COORD_NAMES:
-            text += f"\t{key}: {apply_mapper(_get_axis_coord, self._obj, key, error=False)}\n"
+            coords = apply_mapper(_get_axis_coord, self._obj, key, error=False)
+            text += f"\t{key}: {coords}\n"
 
         text += "\nCell Measures:\n"
         for measure in _CELL_MEASURES:
             if isinstance(self._obj, Dataset):
                 text += f"\t{measure}: unsupported\n"
             else:
-                text += f"\t{measure}: {apply_mapper(_get_measure, self._obj, measure, error=False)}\n"
+                measures = apply_mapper(_get_measure, self._obj, measure, error=False)
+                text += f"\t{measure}: {measures}\n"
 
         text += "\nStandard Names:\n"
         if isinstance(self._obj, DataArray):

@@ -407,7 +407,7 @@ def _getattr(
         newmap = dict()
         unused_keys = set(attribute.keys())
         for key in _AXIS_NAMES + _COORD_NAMES:
-            value = set(apply_mapper(_get_axis_coord, obj, key, error=False,))
+            value = set(apply_mapper(_get_axis_coord, obj, key, error=False))
             unused_keys -= value
             if value:
                 good_values = value & set(obj.dims)

@@ -119,7 +119,8 @@ def test_rename_like():
     (
         ("resample", {"time": "M"}, {"T": "M"}),
         ("rolling", {"lat": 5}, {"Y": 5}),
-        ("groupby", {"group": "time"}, {"group": "T"}),
+        ("groupby", {"group": "time"}, {"group": "T"}), 
+        ("groupby_alt", {"group": "time.month"}, {"group": "T.month"}),
         ("groupby_bins", {"group": "lat", "bins": 5}, {"group": "latitude", "bins": 5}),
         pytest.param(
             "coarsen",
@@ -146,7 +147,7 @@ def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
         actual = getattr(obj.cf, attr)(**cfkwargs).mean(*args)
     assert_identical(expected, actual)
 
-    if attr in ("groupby", "groupby_bins"):
+    if attr in ("groupby", "groupby_alt", "groupby_bins"):
         # TODO: this should work for resample too?
         with raise_if_dask_computes():
             expected = getattr(obj, attr)(**xrkwargs).mean("lat")

@@ -182,6 +182,36 @@ def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str,) -> List[st
     return results
 
 
+def _get_axis_coord_alt(var, key):
+    """
+    Helper method for when our key name is of the nature "T.month" and we want to 
+    isolate the "T" for coordinate mapping
+    
+    Parameters
+    ----------
+    var: DataArray, Dataset
+        DataArray belonging to the coordinate to be checked
+    key: str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
+        key to check for.
+
+    Returns
+    -------
+    List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key` appended by the frequency extension (e.g. ".month")
+    
+    Notes
+    -----
+    Returns an empty list if there is no frequency extension specified.
+    """
+    if '.' in key:
+        key, ext = key.split('.', 1)
+        
+        results = _get_axis_coord_single(var, key)
+        return [v + '.' + ext for v in results]
+    
+    else:
+        return []
+
+
 def _get_axis_coord(var: Union[DataArray, Dataset], key: str,) -> List[str]:
     """
     Translate from axis or coord name to variable name
@@ -301,7 +331,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "indexers": (_get_axis_coord,),  # sel, isel
     "dims_or_levels": (_get_axis_coord,),  # reset_index
     "coord": (_get_axis_coord_single,),
-    "group": (_get_axis_coord_single,),
+    "group": (_get_axis_coord_single, _get_axis_coord_alt,),
     "variables": (_get_axis_coord,),  # sortby
     "weights": (_get_measure_variable,),  # type: ignore
 }

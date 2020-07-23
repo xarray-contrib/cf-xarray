@@ -182,7 +182,7 @@ def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str,) -> List[st
     return results
 
 
-def _get_axis_coord_alt(var, key):
+def _get_axis_coord_time_accessor(var, key):
     """
     Helper method for when our key name is of the nature "T.month" and we want to 
     isolate the "T" for coordinate mapping
@@ -331,7 +331,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "indexers": (_get_axis_coord,),  # sel, isel
     "dims_or_levels": (_get_axis_coord,),  # reset_index
     "coord": (_get_axis_coord_single,),
-    "group": (_get_axis_coord_single, _get_axis_coord_alt,),
+    "group": (_get_axis_coord_single, _get_axis_coord_time_accessor,),
     "variables": (_get_axis_coord,),  # sortby
     "weights": (_get_measure_variable,),  # type: ignore
 }

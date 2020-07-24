@@ -383,8 +383,11 @@ def _build_docstring(func):
     for k in set(sig.parameters.keys()) & set(_DEFAULT_KEY_MAPPERS):
         # intentionally raise here if docstrings have not been updated
         # with all mappers
-        mappers = _DEFAULT_KEY_MAPPERS[k]
-        docstring = "; ".join(mapper_docstrings[mapper] for mapper in mappers)
+        mappers = _DEFAULT_KEY_MAPPERS.get(k, [])
+        docstring = "; ".join(
+            mapper_docstrings.get(mapper, "unknown. please open an issue.")
+            for mapper in mappers
+        )
         string += f"\t\t{k}: {docstring} \n"
 
     for param in sig.parameters:

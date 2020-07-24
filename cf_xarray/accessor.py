@@ -365,6 +365,37 @@ def _guess_bounds_dim(da):
     return result
 
 
+def _build_docstring(func):
+    """
+    Builds a nice docstring for wrapped functions, stating what key words
+    can be used for arguments.
+    """
+
+    # this list will need to be updated any time a new mapper is added
+    mapper_docstrings = {
+        _get_axis_coord: f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r}",
+        _get_axis_coord_single: f"One of {(_AXIS_NAMES + _COORD_NAMES)!r}",
+        _get_measure_variable: f"One of {_CELL_MEASURES!r}",
+    }
+
+    sig = inspect.signature(func)
+    string = ""
+    for k in set(sig.parameters.keys()) & set(_DEFAULT_KEY_MAPPERS):
+        # intentionally raise here if docstrings have not been updated
+        # with all mappers
+        mappers = _DEFAULT_KEY_MAPPERS[k]
+        docstring = "; ".join(mapper_docstrings[mapper] for mapper in mappers)
+        string += f"\t\t{k}: {docstring} \n"
+
+    for param in sig.parameters:
+        if sig.parameters[param].kind is inspect.Parameter.VAR_KEYWORD:
+            string += f"\t\t{param}: {mapper_docstrings[_get_axis_coord]} \n\n"
+    return (
+        f"\n\tThe following arguments will be processed by cf_xarray: \n{string}"
+        "\n\t----\n"
+    )
+
+
 def _getattr(
     obj: Union[DataArray, Dataset],
     attr: str,
@@ -440,6 +471,8 @@ def _getattr(
             result = _CFWrappedClass(result, accessor)
 
         return result
+
+    wrapper.__doc__ = _build_docstring(func) + wrapper.__doc__
 
     return wrapper
 

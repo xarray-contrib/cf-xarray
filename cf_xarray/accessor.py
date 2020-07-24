@@ -296,7 +296,7 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dim": (_get_axis_coord,),
-    "dims": (_get_axis_coord_single,),  # transpose
+    "dims": (_get_axis_coord,),  # transpose
     "coords": (_get_axis_coord,),  # interp
     "indexers": (_get_axis_coord,),  # sel, isel
     "dims_or_levels": (_get_axis_coord,),  # reset_index

@@ -191,6 +191,10 @@ def test_pos_args_methods():
     actual = airds.cf.transpose("longitude", ...)
     assert_identical(actual, expected)
 
+    expected = multiple.transpose("y2", "y1", "x1", "x2")
+    actual = multiple.cf.transpose("Y", "X")
+    assert_identical(actual, expected)
+
 
 def test_preserve_unused_keys():
 

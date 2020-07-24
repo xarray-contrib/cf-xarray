@@ -392,7 +392,7 @@ def _build_docstring(func):
             string += f"\t\t{param}: {mapper_docstrings[_get_axis_coord]} \n\n"
     return (
         f"\n\tThe following arguments will be processed by cf_xarray: \n{string}"
-        "\n\t----\n"
+        "\n\t----\n\t"
     )
 
 

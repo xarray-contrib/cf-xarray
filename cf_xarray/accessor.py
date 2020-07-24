@@ -331,29 +331,6 @@ def _filter_by_standard_names(ds: Dataset, name: Union[str, List[str]]) -> List[
     return varnames
 
 
-def _get_list_standard_names(obj: Dataset) -> List[str]:
-    """
-    Returns a sorted list of standard names in Dataset.
-
-    Parameters
-    ----------
-
-    obj: DataArray, Dataset
-        Xarray object to process
-
-    Returns
-    -------
-    list of standard names in dataset
-    """
-    return sorted(
-        [
-            v.attrs["standard_name"]
-            for k, v in obj.variables.items()
-            if "standard_name" in v.attrs
-        ]
-    )
-
-
 def _guess_bounds_dim(da):
     """
     Guess bounds values given a 1D coordinate variable.
@@ -781,7 +758,7 @@ class CFAccessor:
         if isinstance(self._obj, DataArray):
             text += "\tunsupported\n"
         else:
-            stdnames = _get_list_standard_names(self._obj)
+            stdnames = self.get_standard_names()
             text += "\t"
             text += "\n".join(
                 textwrap.wrap(f"{stdnames!r}", 70, break_long_words=False)
@@ -813,9 +790,34 @@ class CFAccessor:
             if measures:
                 varnames.extend(measures)
 
-        if not isinstance(self._obj, DataArray):
-            varnames.extend(_get_list_standard_names(self._obj))
+        varnames.extend(self.get_standard_names())
         return set(varnames)
+
+    def get_standard_names(self) -> List[str]:
+        """
+        Returns a sorted list of standard names in Dataset.
+
+        Parameters
+        ----------
+
+        obj: DataArray, Dataset
+            Xarray object to process
+
+        Returns
+        -------
+        list of standard names in dataset
+        """
+        if isinstance(self._obj, Dataset):
+            variables = self._obj.variables
+        elif isinstance(self._obj, DataArray):
+            variables = self._obj.coords
+        return sorted(
+            [
+                v.attrs["standard_name"]
+                for k, v in variables.items()
+                if "standard_name" in v.attrs
+            ]
+        )
 
     def get_associated_variable_names(self, name: Hashable) -> List[Hashable]:
         """

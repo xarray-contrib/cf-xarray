@@ -183,6 +183,15 @@ def test_kwargs_methods(obj):
     assert_identical(expected, actual)
 
 
+def test_pos_args_methods():
+    expected = airds.transpose("lon", "time", "lat")
+    actual = airds.cf.transpose("longitude", "T", "latitude")
+    assert_identical(actual, expected)
+
+    actual = airds.cf.transpose("longitude", ...)
+    assert_identical(actual, expected)
+
+
 def test_preserve_unused_keys():
 
     ds = airds.copy(deep=True)

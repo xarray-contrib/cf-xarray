@@ -370,3 +370,8 @@ def test_add_bounds(obj, dims):
         assert name in added.coords
         assert added[dim].attrs["bounds"] == name
         assert_allclose(added[name].reset_coords(drop=True), expected[dim])
+
+
+def test_docstring():
+    assert "One of ('X'" in airds.cf.groupby.__doc__
+    assert "One or more of ('X'" in airds.cf.mean.__doc__

@@ -120,7 +120,7 @@ def test_rename_like():
         ("resample", {"time": "M"}, {"T": "M"}),
         ("rolling", {"lat": 5}, {"Y": 5}),
         ("groupby", {"group": "time"}, {"group": "T"}), 
-        ("groupby_time_accessor", {"group": "time.month"}, {"group": "T.month"}),
+        ("groupby", {"group": "time.month"}, {"group": "T.month"}),
         ("groupby_bins", {"group": "lat", "bins": 5}, {"group": "latitude", "bins": 5}),
         pytest.param(
             "coarsen",

@@ -184,9 +184,9 @@ def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str,) -> List[st
 
 def _get_axis_coord_time_accessor(var, key):
     """
-    Helper method for when our key name is of the nature "T.month" and we want to 
+    Helper method for when our key name is of the nature "T.month" and we want to
     isolate the "T" for coordinate mapping
-    
+
     Parameters
     ----------
     var: DataArray, Dataset
@@ -197,7 +197,7 @@ def _get_axis_coord_time_accessor(var, key):
     Returns
     -------
     List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key` appended by the frequency extension (e.g. ".month")
-    
+
     Notes
     -----
     Returns an empty list if there is no frequency extension specified.

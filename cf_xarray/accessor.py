@@ -296,7 +296,7 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dim": (_get_axis_coord,),
-    "dims": (_get_axis_coord,),  # is this necessary?
+    "dims": (_get_axis_coord,),  # transpose
     "coords": (_get_axis_coord,),  # interp
     "indexers": (_get_axis_coord,),  # sel, isel
     "dims_or_levels": (_get_axis_coord,),  # reset_index
@@ -433,9 +433,11 @@ def _getattr(
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        arguments = accessor._process_signature(func, args, kwargs, key_mappers)
+        posargs, arguments = accessor._process_signature(
+            func, args, kwargs, key_mappers
+        )
         final_func = extra_decorator(func) if extra_decorator else func
-        result = final_func(**arguments)
+        result = final_func(*posargs, **arguments)
         if wrap_classes and isinstance(result, _WRAPPED_CLASSES):
             result = _CFWrappedClass(result, accessor)
 
@@ -575,17 +577,28 @@ class CFAccessor:
         # This assigns indexers_kwargs=dict(T=5).
         # and indexers_kwargs is of kind VAR_KEYWORD
         var_kws = []
+        # capture *args, e.g. transpose
+        var_args = []
         for param in sig.parameters:
             if sig.parameters[param].kind is inspect.Parameter.VAR_KEYWORD:
                 var_kws.append(param)
+            elif sig.parameters[param].kind is inspect.Parameter.VAR_POSITIONAL:
+                var_args.append(param)
 
+        posargs = []
         if args or kwargs:
             bound = sig.bind(*args, **kwargs)
             arguments = self._rewrite_values(
                 bound.arguments, key_mappers, tuple(var_kws)
             )
-            # now unwrap the **indexers_kwargs type arguments
-            # so that xarray can parse it :)
+
+            # unwrap the *args type arguments
+            for arg in var_args:
+                value = arguments.pop(arg, None)
+                if value:
+                    # value should always be Iterable
+                    posargs.extend(value)
+            # now unwrap the **kwargs type arguments
             for kw in var_kws:
                 value = arguments.pop(kw, None)
                 if value:
@@ -593,7 +606,7 @@ class CFAccessor:
         else:
             arguments = {}
 
-        return arguments
+        return posargs, arguments
 
     def _rewrite_values(
         self,

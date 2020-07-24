@@ -66,6 +66,12 @@ def test_describe(capsys):
     assert actual == expected
 
 
+def test_get_standard_names():
+    expected = ["air_temperature", "latitude", "longitude", "time"]
+    actual = airds.cf.get_standard_names()
+    assert actual == expected
+
+
 def test_getitem_standard_name():
     actual = airds.cf["air_temperature"]
     expected = airds["air"]
@@ -301,6 +307,8 @@ def test_dataset_plot(obj):
     ),
 )
 def test_getitem(obj, key, expected_key):
+    assert key in obj.cf
+
     actual = obj.cf[key]
     if isinstance(obj, xr.Dataset):
         expected_key = [expected_key]

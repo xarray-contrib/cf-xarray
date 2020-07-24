@@ -202,12 +202,12 @@ def _get_axis_coord_time_accessor(var, key):
     -----
     Returns an empty list if there is no frequency extension specified.
     """
-    if '.' in key:
-        key, ext = key.split('.', 1)
-        
+    if "." in key:
+        key, ext = key.split(".", 1)
+
         results = _get_axis_coord_single(var, key)
-        return [v + '.' + ext for v in results]
-    
+        return [v + "." + ext for v in results]
+
     else:
         return []
 

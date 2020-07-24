@@ -297,11 +297,19 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dim": (_get_axis_coord,),
     "dims": (_get_axis_coord,),  # is this necessary?
+    "dimensions": (_get_axis_coord,),  # stack
+    "dims_dict": (_get_axis_coord,),  # swap_dims, rename_dims
+    "shifts": (_get_axis_coord,),  # shift, roll
+    "pad_width": (_get_axis_coord,),  # shift, roll
+    # "names": something_with_all_valid_keys? # set_coords, reset_coords
     "coords": (_get_axis_coord,),  # interp
-    "indexers": (_get_axis_coord,),  # sel, isel
+    "indexers": (_get_axis_coord,),  # sel, isel, reindex
+    # "indexes": (_get_axis_coord,),  # set_index
     "dims_or_levels": (_get_axis_coord,),  # reset_index
-    "coord": (_get_axis_coord_single,),
+    "window": (_get_axis_coord,),  # rolling_exp
+    "coord": (_get_axis_coord_single,),  # differentiate, integrate
     "group": (_get_axis_coord_single,),
+    "indexer": (_get_axis_coord_single,),  # resample
     "variables": (_get_axis_coord,),  # sortby
     "weights": (_get_measure_variable,),  # type: ignore
 }

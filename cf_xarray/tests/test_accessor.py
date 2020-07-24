@@ -306,6 +306,8 @@ def test_dataset_plot(obj):
     ),
 )
 def test_getitem(obj, key, expected_key):
+    assert key in obj.cf
+
     actual = obj.cf[key]
     if isinstance(obj, xr.Dataset):
         expected_key = [expected_key]

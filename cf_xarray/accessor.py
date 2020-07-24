@@ -728,6 +728,12 @@ class CFAccessor:
             wrap_classes=True,
         )
 
+    def __contains__(self, item: str) -> bool:
+        """
+        Check whether item is a valid key for indexing with .cf
+        """
+        return item in self.get_valid_keys()
+
     @property
     def plot(self):
         return _CFWrappedPlotMethods(self._obj, self)

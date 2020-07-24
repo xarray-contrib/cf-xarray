@@ -184,6 +184,19 @@ def test_kwargs_methods(obj):
     assert_identical(expected, actual)
 
 
+def test_pos_args_methods():
+    expected = airds.transpose("lon", "time", "lat")
+    actual = airds.cf.transpose("longitude", "T", "latitude")
+    assert_identical(actual, expected)
+
+    actual = airds.cf.transpose("longitude", ...)
+    assert_identical(actual, expected)
+
+    expected = multiple.transpose("y2", "y1", "x1", "x2")
+    actual = multiple.cf.transpose("Y", "X")
+    assert_identical(actual, expected)
+
+
 def test_preserve_unused_keys():
 
     ds = airds.copy(deep=True)
@@ -371,3 +384,8 @@ def test_add_bounds(obj, dims):
         assert name in added.coords
         assert added[dim].attrs["bounds"] == name
         assert_allclose(added[name].reset_coords(drop=True), expected[dim])
+
+
+def test_docstring():
+    assert "One of ('X'" in airds.cf.groupby.__doc__
+    assert "One or more of ('X'" in airds.cf.mean.__doc__

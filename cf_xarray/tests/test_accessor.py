@@ -66,6 +66,12 @@ def test_describe(capsys):
     assert actual == expected
 
 
+def test_get_standard_names():
+    expected = ["air_temperature", "latitude", "longitude", "time"]
+    actual = airds.cf.get_standard_names()
+    assert actual == expected
+
+
 def test_getitem_standard_name():
     actual = airds.cf["air_temperature"]
     expected = airds["air"]

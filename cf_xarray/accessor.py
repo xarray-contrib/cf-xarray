@@ -381,8 +381,6 @@ def _build_docstring(func):
     sig = inspect.signature(func)
     string = ""
     for k in set(sig.parameters.keys()) & set(_DEFAULT_KEY_MAPPERS):
-        # intentionally raise here if docstrings have not been updated
-        # with all mappers
         mappers = _DEFAULT_KEY_MAPPERS.get(k, [])
         docstring = "; ".join(
             mapper_docstrings.get(mapper, "unknown. please open an issue.")

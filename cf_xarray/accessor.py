@@ -296,7 +296,7 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dim": (_get_axis_coord,),
-    "dims": (_get_axis_coord,),  # is this necessary?
+    "dims": (_get_axis_coord,),  # transpose
     "dimensions": (_get_axis_coord,),  # stack
     "dims_dict": (_get_axis_coord,),  # swap_dims, rename_dims
     "shifts": (_get_axis_coord,),  # shift, roll
@@ -373,6 +373,38 @@ def _guess_bounds_dim(da):
     return result
 
 
+def _build_docstring(func):
+    """
+    Builds a nice docstring for wrapped functions, stating what key words
+    can be used for arguments.
+    """
+
+    # this list will need to be updated any time a new mapper is added
+    mapper_docstrings = {
+        _get_axis_coord: f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r}",
+        _get_axis_coord_single: f"One of {(_AXIS_NAMES + _COORD_NAMES)!r}",
+        _get_measure_variable: f"One of {_CELL_MEASURES!r}",
+    }
+
+    sig = inspect.signature(func)
+    string = ""
+    for k in set(sig.parameters.keys()) & set(_DEFAULT_KEY_MAPPERS):
+        mappers = _DEFAULT_KEY_MAPPERS.get(k, [])
+        docstring = "; ".join(
+            mapper_docstrings.get(mapper, "unknown. please open an issue.")
+            for mapper in mappers
+        )
+        string += f"\t\t{k}: {docstring} \n"
+
+    for param in sig.parameters:
+        if sig.parameters[param].kind is inspect.Parameter.VAR_KEYWORD:
+            string += f"\t\t{param}: {mapper_docstrings[_get_axis_coord]} \n\n"
+    return (
+        f"\n\tThe following arguments will be processed by cf_xarray: \n{string}"
+        "\n\t----\n\t"
+    )
+
+
 def _getattr(
     obj: Union[DataArray, Dataset],
     attr: str,
@@ -441,13 +473,17 @@ def _getattr(
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        arguments = accessor._process_signature(func, args, kwargs, key_mappers)
+        posargs, arguments = accessor._process_signature(
+            func, args, kwargs, key_mappers
+        )
         final_func = extra_decorator(func) if extra_decorator else func
-        result = final_func(**arguments)
+        result = final_func(*posargs, **arguments)
         if wrap_classes and isinstance(result, _WRAPPED_CLASSES):
             result = _CFWrappedClass(result, accessor)
 
         return result
+
+    wrapper.__doc__ = _build_docstring(func) + wrapper.__doc__
 
     return wrapper
 
@@ -583,17 +619,28 @@ class CFAccessor:
         # This assigns indexers_kwargs=dict(T=5).
         # and indexers_kwargs is of kind VAR_KEYWORD
         var_kws = []
+        # capture *args, e.g. transpose
+        var_args = []
         for param in sig.parameters:
             if sig.parameters[param].kind is inspect.Parameter.VAR_KEYWORD:
                 var_kws.append(param)
+            elif sig.parameters[param].kind is inspect.Parameter.VAR_POSITIONAL:
+                var_args.append(param)
 
+        posargs = []
         if args or kwargs:
             bound = sig.bind(*args, **kwargs)
             arguments = self._rewrite_values(
                 bound.arguments, key_mappers, tuple(var_kws)
             )
-            # now unwrap the **indexers_kwargs type arguments
-            # so that xarray can parse it :)
+
+            # unwrap the *args type arguments
+            for arg in var_args:
+                value = arguments.pop(arg, None)
+                if value:
+                    # value should always be Iterable
+                    posargs.extend(value)
+            # now unwrap the **kwargs type arguments
             for kw in var_kws:
                 value = arguments.pop(kw, None)
                 if value:
@@ -601,7 +648,7 @@ class CFAccessor:
         else:
             arguments = {}
 
-        return arguments
+        return posargs, arguments
 
     def _rewrite_values(
         self,

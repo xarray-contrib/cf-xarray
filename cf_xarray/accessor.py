@@ -338,7 +338,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dims_or_levels": (_get_axis_coord,),  # reset_index
     "window": (_get_axis_coord,),  # rolling_exp
     "coord": (_get_axis_coord_single,),  # differentiate, integrate
-    "group": (_get_axis_coord_single, _get_axis_coord_time_accessor,),
+    "group": (_get_axis_coord_single, _get_axis_coord_time_accessor),
     "indexer": (_get_axis_coord_single,),  # resample
     "variables": (_get_axis_coord,),  # sortby
     "weights": (_get_measure_variable,),  # type: ignore

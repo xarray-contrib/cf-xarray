@@ -4,7 +4,7 @@ What's New
 v0.1.6 (unreleased)
 ===================
 
-- Remap datetime accessor syntax for groupby. E.g. `.cf.groupby("T.month")` → `.cf.groupby("time.month")`.
+- Remap datetime accessor syntax for groupby. E.g. ``.cf.groupby("T.month")`` → ``.cf.groupby("ocean_time.month")``.
   (:pr:`64`, :issue:`6`). `Julia Kent`_.
 - Added ``.cf.rename_like`` to rename matching variables. Only coordinate variables
   i.e. those that match the criteria for ``("latitude", "longitude", "vertical", "time")``

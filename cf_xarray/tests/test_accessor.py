@@ -153,7 +153,7 @@ def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
         actual = getattr(obj.cf, attr)(**cfkwargs).mean(*args)
     assert_identical(expected, actual)
 
-    if attr in ("groupby", "groupby_time_accessor", "groupby_bins"):
+    if attr in ("groupby", "groupby_bins"):
         # TODO: this should work for resample too?
         with raise_if_dask_computes():
             expected = getattr(obj, attr)(**xrkwargs).mean("lat")

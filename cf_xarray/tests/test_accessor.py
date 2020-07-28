@@ -105,7 +105,7 @@ def test_getitem_ancillary_variables():
 def test_rename_like():
     original = popds.copy(deep=True)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         popds.cf.rename_like(airds)
 
     renamed = popds.cf["TEMP"].cf.rename_like(airds)
@@ -309,8 +309,6 @@ def test_getitem(obj, key, expected_key):
     assert key in obj.cf
 
     actual = obj.cf[key]
-    if isinstance(obj, xr.Dataset):
-        expected_key = [expected_key]
     expected = obj[expected_key]
     assert_identical(actual, expected)
 
@@ -328,10 +326,11 @@ def test_getitem_uses_coordinates():
     # POP-like dataset
     ds = popds
     assert_identical(
-        ds.cf["X"], ds.reset_coords()[["ULONG", "TLONG"]].set_coords(["ULONG", "TLONG"])
+        ds.cf[["X"]],
+        ds.reset_coords()[["ULONG", "TLONG"]].set_coords(["ULONG", "TLONG"]),
     )
     assert_identical(
-        ds.cf["Y"], ds.reset_coords()[["ULAT", "TLAT"]].set_coords(["ULAT", "TLAT"])
+        ds.cf[["Y"]], ds.reset_coords()[["ULAT", "TLAT"]].set_coords(["ULAT", "TLAT"])
     )
     assert_identical(ds.UVEL.cf["X"], ds["ULONG"].reset_coords(drop=True))
     assert_identical(ds.TEMP.cf["X"], ds["TLONG"].reset_coords(drop=True))

@@ -174,11 +174,11 @@ def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str,) -> List[st
     """ Helper method for when we really want only one result per key. """
     results = _get_axis_coord(var, key)
     if len(results) > 1:
-        raise ValueError(
+        raise KeyError(
             f"Multiple results for {key!r} found: {results!r}. Is this valid CF? Please open an issue."
         )
     elif len(results) == 0:
-        raise ValueError(f"No results found for {key!r}.")
+        raise KeyError(f"No results found for {key!r}.")
     return results
 
 
@@ -865,14 +865,17 @@ class CFAccessor:
             )
 
         if scalar_key:
+            axis_coord_mapper = _get_axis_coord_single
             key = (key,)  # type: ignore
+        else:
+            axis_coord_mapper = _get_axis_coord
 
         varnames: List[Hashable] = []
         coords: List[Hashable] = []
         successful = dict.fromkeys(key, False)
         for k in key:
             if k in _AXIS_NAMES + _COORD_NAMES:
-                names = _get_axis_coord(self._obj, k)
+                names = axis_coord_mapper(self._obj, k)
                 successful[k] = bool(names)
                 coords.extend(names)
             elif k in _CELL_MEASURES:
@@ -889,6 +892,7 @@ class CFAccessor:
         # these are not special names but could be variable names in underlying object
         # we allow this so that we can return variables with appropriate CF auxiliary variables
         varnames.extend([k for k, v in successful.items() if not v])
+        allnames = varnames + coords
 
         try:
             for name in varnames:
@@ -899,8 +903,10 @@ class CFAccessor:
             else:
                 ds = self._obj
 
-            if scalar_key and len(varnames) == 1:
-                da: DataArray = ds[varnames[0]].reset_coords(drop=True)  # type: ignore
+            if scalar_key and len(allnames) == 1:
+                da: DataArray = ds.reset_coords()[allnames[0]]  # type: ignore
+                if allnames[0] in coords:
+                    coords.remove(allnames[0])
                 failed = []
                 for k1 in coords:
                     if k1 not in ds.variables:

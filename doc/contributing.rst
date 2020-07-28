@@ -55,7 +55,6 @@ Primarily for developer reference. Some of these could become public API if nece
     ~accessor._getattr
     ~accessor._get_axis_coord
     ~accessor._get_axis_coord_single
-    ~accessor._get_list_standard_names
     ~accessor._get_measure
     ~accessor._get_measure_variable
     accessor._CFWrappedPlotMethods._plot_decorator

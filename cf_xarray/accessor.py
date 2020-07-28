@@ -882,6 +882,15 @@ class CFAccessor:
         ):
             anames = attrs_or_encoding["ancillary_variables"].split(" ")
             coords.extend(anames)
+
+        missing = set(coords) - set(self._maybe_to_dataset().variables)
+        if missing:
+            warnings.warn(
+                f"Variables {missing!r} not found in object but are referred to in the CF attributes.",
+                UserWarning,
+            )
+            for m in missing:
+                coords.remove(m)
         return coords
 
     def __getitem__(self, key: Union[str, List[str]]):
@@ -937,17 +946,8 @@ class CFAccessor:
                 da: DataArray = ds.reset_coords()[allnames[0]]  # type: ignore
                 if allnames[0] in coords:
                     coords.remove(allnames[0])
-                failed = []
                 for k1 in coords:
-                    if k1 not in ds.variables:
-                        failed.append(k1)
-                    else:
-                        da.coords[k1] = ds.variables[k1]
-                if failed:
-                    warnings.warn(
-                        f"Variables {failed!r} not found in object but are referred to in the CF attributes.",
-                        UserWarning,
-                    )
+                    da.coords[k1] = ds.variables[k1]
                 return da
 
             ds = ds.reset_coords()[varnames + coords]

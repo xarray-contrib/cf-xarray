@@ -182,7 +182,9 @@ def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str,) -> List[st
     return results
 
 
-def _get_axis_coord_time_accessor(var, key):
+def _get_axis_coord_time_accessor(
+    var: Union[DataArray, Dataset], key: str
+) -> List[str]:
     """
     Helper method for when our key name is of the nature "T.month" and we want to
     isolate the "T" for coordinate mapping
@@ -191,7 +193,7 @@ def _get_axis_coord_time_accessor(var, key):
     ----------
     var: DataArray, Dataset
         DataArray belonging to the coordinate to be checked
-    key: str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
+    key: str, [e.g. "T.month"]
         key to check for.
 
     Returns
@@ -212,7 +214,7 @@ def _get_axis_coord_time_accessor(var, key):
         return []
 
 
-def _get_axis_coord(var: Union[DataArray, Dataset], key: str,) -> List[str]:
+def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Translate from axis or coord name to variable name
 

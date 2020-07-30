@@ -22,11 +22,9 @@
     :target: https://pypi.org/project/cf-xarray
     :alt: Python Package Index
 
-.. If you want the following badges to be visible, please remove this line, and unindent the lines below
-
-	.. image:: https://img.shields.io/conda/vn/conda-forge/cf-xarray.svg?style=for-the-badge
-        :target: https://anaconda.org/conda-forge/cf-xarray
-        :alt: Conda Version
+.. image:: https://img.shields.io/conda/vn/conda-forge/cf-xarray.svg?style=for-the-badge
+    :target: https://anaconda.org/conda-forge/cf-xarray
+    :alt: Conda Version
 
 
 cf-xarray

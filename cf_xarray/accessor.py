@@ -91,17 +91,6 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
             "degreesE",
         ),
     },
-    # "regular_expression": {
-    #     "time": r"time[0-9]*",
-    #     "vertical": (
-    #         r"(lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|isobaric|pres|"
-    #         r"isotherm)[a-z_]*[0-9]*"
-    #     ),
-    #     "y": r"y",
-    #     "latitude": r"x?lat[a-z0-9]*",
-    #     "x": r"x",
-    #     "longitude": r"x?lon[a-z0-9]*",
-    # },
 }
 
 # "vertical" is just an alias for "Z"
@@ -110,6 +99,54 @@ coordinate_criteria["standard_name"]["vertical"] = coordinate_criteria["standard
 ]
 # "long_name" and "standard_name" criteria are the same. For convenience.
 coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
+
+
+#: regular expressions for guess_coord_axis
+regex = {
+    "time": "time[0-9]*",
+    "vertical": (
+        "(lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|isobaric|pres|"
+        "isotherm)[a-z_]*[0-9]*"
+    ),
+    "Y": "y",
+    "latitude": "y?lat[a-z0-9]*",
+    "X": "x",
+    "longitude": "x?lon[a-z0-9]*",
+}
+regex["Z"] = regex["vertical"]
+regex["T"] = regex["time"]
+
+
+attrs = {
+    "X": {"axis": "X"},
+    "T": {"axis": "T", "standard_name": "time"},
+    "Y": {"axis": "Y"},
+    "Z": {"axis": "Z"},
+    "latitude": {"units": "degrees_north", "standard_name": "latitude"},
+    "longitude": {"units": "degrees_east", "standard_name": "longitude"},
+}
+attrs["time"] = attrs["T"]
+attrs["vertical"] = attrs["Z"]
+
+
+def _is_datetime_like(da: DataArray) -> bool:
+    import numpy as np
+
+    if np.issubdtype(da.dtype, np.datetime64) or np.issubdtype(
+        da.dtype, np.timedelta64
+    ):
+        return True
+
+    try:
+        import cftime
+
+        if isinstance(da.data[0], cftime.datetime):
+            return True
+    except ImportError:
+        pass
+
+    return False
+
 
 # Type for Mapper functions
 Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]
@@ -1082,6 +1119,36 @@ class CFAccessor:
                     coordinates = coordinates.replace(k, v)
                 variable.attrs["coordinates"] = coordinates
         return self._maybe_to_dataarray(ds)
+
+    def guess_coord_axis(self, verbose: bool = False) -> Union[DataArray, Dataset]:
+        """
+        Automagically guesses X, Y, Z, T, latitude, longitude, and adds
+        appropriate attributes. Uses regexes from Metpy and inspired by Iris
+        function of same name.
+
+        Existing attributes will not be modified.
+
+        Returns
+        -------
+        DataArray or Dataset with appropriate attributes added
+        """
+        import re
+
+        obj = self._obj.copy(deep=True)
+        for dim in obj.dims:
+            if _is_datetime_like(obj[dim]):
+                if verbose:
+                    print(f"I think {dim!r} is of type 'time'.")
+                obj[dim].attrs = dict(ChainMap(obj[dim].attrs, attrs["time"]))
+                continue  # prevent second detection
+
+            for axis, pattern in regex.items():
+                # match variable names
+                if re.match(pattern, dim.lower()):
+                    if verbose:
+                        print(f"I think {dim!r} is of type {axis!r}")
+                    obj[dim].attrs = dict(ChainMap(obj[dim].attrs, attrs[axis]))
+        return obj
 
 
 @xr.register_dataset_accessor("cf")

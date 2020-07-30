@@ -20,6 +20,7 @@ DataArray
     DataArray.cf.describe
     DataArray.cf.get_standard_names
     DataArray.cf.get_valid_keys
+    DataArray.cf.guess_coord_axis
     DataArray.cf.rename_like
 
 Dataset
@@ -37,4 +38,5 @@ Dataset
     Dataset.cf.describe
     Dataset.cf.get_standard_names
     Dataset.cf.get_valid_keys
+    Dataset.cf.guess_coord_axis
     Dataset.cf.rename_like

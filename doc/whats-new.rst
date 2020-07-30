@@ -1,8 +1,15 @@
 What's New
 ----------
+v0.2.1
+======
+
+- Add ``.cf.guess_coord_axis`` to automagically guess axis and coord names, and add
+  appropriate attributes. (:pr:`67`, :issue:`46`). `Deepak Cherian`_.
 
 v0.2.0 (Jul 28, 2020)
 =====================
+
+``cf_xarray`` is now available on conda-forge. Thanks to `Anderson Banihirwe`_ and `Filipe Fernandes`_
 
 - Remap datetime accessor syntax for groupby. E.g. ``.cf.groupby("T.month")`` → ``.cf.groupby("ocean_time.month")``.
   (:pr:`64`, :issue:`6`). `Julia Kent`_.
@@ -33,5 +40,7 @@ v0.1.3
 
 - Support expanding key to multiple dimension names.
 
+.. _`Anderson Banihirwe`: https://github.com/andersy005
 .. _`Deepak Cherian`: https://github.com/dcherian
+.. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Julia Kent`: https://github.com/jukent

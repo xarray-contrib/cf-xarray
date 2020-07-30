@@ -16,7 +16,7 @@
 
 .. image:: https://img.shields.io/codecov/c/github/xarray-contrib/cf-xarray.svg?style=for-the-badge
     :target: https://codecov.io/gh/xarray-contrib/cf-xarray
-	:alt: Code Coverage
+    :alt: Code Coverage
 
 .. image:: https://img.shields.io/pypi/v/cf-xarray.svg?style=for-the-badge
     :target: https://pypi.org/project/cf-xarray

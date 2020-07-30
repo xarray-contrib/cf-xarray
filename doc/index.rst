@@ -9,9 +9,27 @@ Welcome to cf_xarray's documentation!
 ``cf_xarray`` is a lightweight accessor that allows you to interpret CF attributes present
 on xarray objects.
 
+
+Installing
+----------
+
+``cf_xarray`` can be installed using ``pip``
+
+    >>> pip install cf_xarray
+
+
+or using ``conda``
+
+    >>> conda install -c conda-forge cf_xarray
+
+
+Table of contents
+-----------------
+
 .. toctree::
    :maxdepth: 2
 
+   installing
    examples/index
    whats-new
    roadmap

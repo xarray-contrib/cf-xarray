@@ -742,10 +742,11 @@ class CFAccessor:
                 maybe_update = {
                     # TODO: this is assuming key_mappers[k] is always
                     # _get_axis_coord_single
-                    k: apply_mapper(mapper, self._obj, v)[0]
+                    k: apply_mapper(
+                        key_mappers[k], self._obj, v, error=False, default=[v]
+                    )[0]
                     for k, v in kwargs[vkw].items()
                     if k in key_mappers
-                    for mapper in key_mappers[k]
                 }
                 kwargs[vkw].update(maybe_update)
 

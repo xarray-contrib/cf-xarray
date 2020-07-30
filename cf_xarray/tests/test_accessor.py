@@ -402,3 +402,25 @@ def test_add_bounds(obj, dims):
 def test_docstring():
     assert "One of ('X'" in airds.cf.groupby.__doc__
     assert "One or more of ('X'" in airds.cf.mean.__doc__
+
+
+def test_guess_axis_coord():
+    ds = xr.Dataset()
+    ds["time"] = ("time", pd.date_range("2001-01-01", "2001-04-01"))
+    ds["lon_rho"] = ("lon_rho", [1, 2, 3, 4, 5])
+    ds["lat_rho"] = ("lat_rho", [1, 2, 3, 4, 5])
+    ds["x1"] = ("x1", [1, 2, 3, 4, 5])
+    ds["y1"] = ("y1", [1, 2, 3, 4, 5])
+
+    dsnew = ds.cf.guess_coord_axis()
+    assert dsnew.time.attrs == {"standard_name": "time", "axis": "T"}
+    assert dsnew.lon_rho.attrs == {
+        "standard_name": "longitude",
+        "units": "degrees_east",
+    }
+    assert dsnew.lat_rho.attrs == {
+        "standard_name": "latitude",
+        "units": "degrees_north",
+    }
+    assert dsnew.x1.attrs == {"axis": "X"}
+    assert dsnew.y1.attrs == {"axis": "Y"}

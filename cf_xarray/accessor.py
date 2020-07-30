@@ -1128,6 +1128,11 @@ class CFAccessor:
 
         Existing attributes will not be modified.
 
+        Parameters
+        ----------
+        verbose: bool
+            Print extra info to screen
+
         Returns
         -------
         DataArray or Dataset with appropriate attributes added
@@ -1138,7 +1143,9 @@ class CFAccessor:
         for dim in obj.dims:
             if _is_datetime_like(obj[dim]):
                 if verbose:
-                    print(f"I think {dim!r} is of type 'time'.")
+                    print(
+                        f"I think {dim!r} is of type 'time' since it has a datetime-like type."
+                    )
                 obj[dim].attrs = dict(ChainMap(obj[dim].attrs, attrs["time"]))
                 continue  # prevent second detection
 
@@ -1146,7 +1153,9 @@ class CFAccessor:
                 # match variable names
                 if re.match(pattern, dim.lower()):
                     if verbose:
-                        print(f"I think {dim!r} is of type {axis!r}")
+                        print(
+                            f"I think {dim!r} is of type {axis!r} since it matched {pattern!r}"
+                        )
                     obj[dim].attrs = dict(ChainMap(obj[dim].attrs, attrs[axis]))
         return obj
 

@@ -72,6 +72,7 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
         "longitude": ("Lon",),
     },
     "axis": {"T": ("T",), "Z": ("Z",), "Y": ("Y",), "X": ("X",)},
+    "cartesian_axis": {"T": ("T",), "Z": ("Z",), "Y": ("Y",), "X": ("X",)},
     "positive": {"Z": ("up", "down"), "vertical": ("up", "down")},
     "units": {
         "latitude": (
@@ -175,7 +176,7 @@ def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str,) -> List[st
     results = _get_axis_coord(var, key)
     if len(results) > 1:
         raise KeyError(
-            f"Multiple results for {key!r} found: {results!r}. Is this valid CF? Please open an issue."
+            f"Multiple results for {key!r} found: {results!r}. I expected only one."
         )
     elif len(results) == 0:
         raise KeyError(f"No results found for {key!r}.")
@@ -917,7 +918,11 @@ class CFAccessor:
         successful = dict.fromkeys(key, False)
         for k in key:
             if k in _AXIS_NAMES + _COORD_NAMES:
-                names = axis_coord_mapper(self._obj, k)
+                try:
+                    names = axis_coord_mapper(self._obj, k)
+                except KeyError as e:
+                    raise ValueError(f"Receive multiple variables for key {k!r}. Expected only one. Please pass a list [{k!r}] instead to get all variables matching {k!r}.")
+                    raise e
                 successful[k] = bool(names)
                 coords.extend(names)
             elif k in _CELL_MEASURES:

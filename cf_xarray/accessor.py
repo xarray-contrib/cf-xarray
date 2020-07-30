@@ -921,7 +921,7 @@ class CFAccessor:
                 try:
                     names = axis_coord_mapper(self._obj, k)
                 except KeyError as e:
-                    raise ValueError(
+                    raise KeyError(
                         f"Receive multiple variables for key {k!r}. Expected only one. Please pass a list [{k!r}] instead to get all variables matching {k!r}."
                     )
                     raise e

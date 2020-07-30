@@ -12,6 +12,7 @@ dependencies:
   - numpydoc
   - ipython
   - ipykernel
+  - pandas<1.1.0
   - pip:
       - git+https://github.com/xarray-contrib/cf-xarray
       - sphinx-book-theme

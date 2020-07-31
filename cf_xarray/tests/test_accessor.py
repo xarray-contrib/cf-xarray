@@ -230,8 +230,8 @@ def test_kwargs_expand_key_to_multiple_keys():
 @pytest.mark.parametrize(
     "obj, expected",
     [
-        (ds, set(("latitude", "longitude", "time", "X", "Y", "T", "air_temperature"))),
-        (ds.air, set(("latitude", "longitude", "time", "X", "Y", "T", "area"))),
+        (ds, {"latitude", "longitude", "time", "X", "Y", "T", "air_temperature"}),
+        (ds.air, {"latitude", "longitude", "time", "X", "Y", "T", "area"}),
         (ds_no_attrs.air, set()),
     ],
 )

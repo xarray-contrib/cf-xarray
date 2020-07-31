@@ -2,15 +2,14 @@ What's New
 ----------
 v0.2.1
 ======
-
+- Support for the ``bounds`` attribute. (:pr:`68`, :issue:`32`). `Deepak Cherian`_.
 - Add ``.cf.guess_coord_axis`` to automagically guess axis and coord names, and add
   appropriate attributes. (:pr:`67`, :issue:`46`). `Deepak Cherian`_.
 
 v0.2.0 (Jul 28, 2020)
 =====================
 
-``cf_xarray`` is now available on conda-forge. Thanks to `Anderson Banihirwe`_ and `Filipe Fernandes`_
-
+- ``cf_xarray`` is now available on conda-forge. Thanks to `Anderson Banihirwe`_ and `Filipe Fernandes`_
 - Remap datetime accessor syntax for groupby. E.g. ``.cf.groupby("T.month")`` → ``.cf.groupby("ocean_time.month")``.
   (:pr:`64`, :issue:`6`). `Julia Kent`_.
 - Added ``.cf.rename_like`` to rename matching variables. Only coordinate variables

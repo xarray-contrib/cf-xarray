@@ -22,7 +22,7 @@
     :target: https://pypi.org/project/cf-xarray
     :alt: Python Package Index
 
-.. image:: https://img.shields.io/conda/vn/conda-forge/cf-xarray.svg?style=for-the-badge
+.. image:: https://img.shields.io/conda/vn/conda-forge/cf_xarray.svg?style=for-the-badge
     :target: https://anaconda.org/conda-forge/cf_xarray
     :alt: Conda Version
 

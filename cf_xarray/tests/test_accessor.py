@@ -356,7 +356,7 @@ def test_plot_xincrease_yincrease():
 
 
 @pytest.mark.parametrize("dims", ["lat", "time", ["lat", "lon"]])
-@pytest.mark.parametrize("obj", [airds, airds.air])
+@pytest.mark.parametrize("obj", [airds])
 def test_add_bounds(obj, dims):
     expected = dict()
     expected["lat"] = xr.concat(
@@ -397,6 +397,26 @@ def test_add_bounds(obj, dims):
         assert name in added.coords
         assert added[dim].attrs["bounds"] == name
         assert_allclose(added[name].reset_coords(drop=True), expected[dim])
+
+
+def test_bounds():
+    ds = airds.copy(deep=True).cf.add_bounds("lat")
+    actual = ds.cf[["lat"]]
+    expected = ds[["lat", "lat_bounds"]]
+    assert_identical(actual, expected)
+
+    actual = ds.cf[["air"]]
+    assert "lat_bounds" in actual.coords
+
+    # can't associate bounds variable when providing scalar keys
+    # i.e. when DataArrays are returned
+    actual = ds.cf["lat"]
+    expected = ds["lat"]
+    assert_identical(actual, expected)
+
+    actual = ds.cf.get_bounds("lat")
+    expected = ds["lat_bounds"]
+    assert_identical(actual, expected)
 
 
 def test_docstring():

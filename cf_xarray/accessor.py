@@ -7,6 +7,7 @@ from collections import ChainMap
 from typing import (
     Any,
     Callable,
+    Dict,
     Hashable,
     Iterable,
     List,
@@ -896,42 +897,72 @@ class CFAccessor:
             ]
         )
 
-    def get_associated_variable_names(self, name: Hashable) -> List[Hashable]:
+    def get_associated_variable_names(self, name: Hashable) -> Dict[str, List[str]]:
         """
-        Returns a list of variable names referred to in the following attributes
-            1. "coordinates"
-            2. "cell_measures"
-            3. "ancillary_variables"
+        Returns a dict mapping
+            1. "ancillary_variables"
+            2. "bounds"
+            3. "cell_measures"
+            4. "coordinates"
+        to a list of variable names referred to in the appropriate attribute
+
+        Parameters
+        ----------
+
+        name: Hashable
+
+        Returns
+        ------
+
+        Dict with keys "ancillary_variables", "cell_measures", "coordinates", "bounds"
         """
-        coords = []
+        keys = ["ancillary_variables", "cell_measures", "coordinates", "bounds"]
+        coords: Dict[str, List[str]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
 
         if "coordinates" in attrs_or_encoding:
-            coords.extend(attrs_or_encoding["coordinates"].split(" "))
+            coords["coordinates"] = attrs_or_encoding["coordinates"].split(" ")
 
         if "cell_measures" in attrs_or_encoding:
-            measures = [
-                _get_measure(self._obj[name], measure)
-                for measure in _CELL_MEASURES
-                if measure in attrs_or_encoding["cell_measures"]
-            ]
-            coords.extend(*measures)
+            coords["cell_measures"] = list(
+                itertools.chain(
+                    *[
+                        _get_measure(self._obj[name], measure)
+                        for measure in _CELL_MEASURES
+                        if measure in attrs_or_encoding["cell_measures"]
+                    ]
+                )
+            )
 
         if (
             isinstance(self._obj, Dataset)
             and "ancillary_variables" in attrs_or_encoding
         ):
-            anames = attrs_or_encoding["ancillary_variables"].split(" ")
-            coords.extend(anames)
+            coords["ancillary_variables"] = attrs_or_encoding[
+                "ancillary_variables"
+            ].split(" ")
 
-        missing = set(coords) - set(self._maybe_to_dataset().variables)
+        if "bounds" in attrs_or_encoding:
+            coords["bounds"] = [attrs_or_encoding["bounds"]]
+
+        for dim in self._obj[name].dims:
+            dbounds = self._obj[dim].attrs.get("bounds", None)
+            if dbounds:
+                coords["bounds"].append(dbounds)
+
+        allvars = itertools.chain(*coords.values())
+        missing = set(allvars) - set(self._maybe_to_dataset().variables)
         if missing:
             warnings.warn(
                 f"Variables {missing!r} not found in object but are referred to in the CF attributes.",
                 UserWarning,
             )
-            for m in missing:
-                coords.remove(m)
+            for k, v in coords.items():
+                for m in missing:
+                    if m in v:
+                        v.remove(m)
+                        coords[k] = v
+
         return coords
 
     def __getitem__(self, key: Union[str, List[str]]):
@@ -981,8 +1012,12 @@ class CFAccessor:
         allnames = varnames + coords
 
         try:
-            for name in varnames:
-                coords.extend(self.get_associated_variable_names(name))
+            for name in allnames:
+                extravars = self.get_associated_variable_names(name)
+                # we cannot return bounds variables with scalar keys
+                if scalar_key:
+                    extravars.pop("bounds")
+                coords.extend(itertools.chain(*extravars.values()))
 
             if isinstance(self._obj, DataArray):
                 ds = self._obj._to_temp_dataset()
@@ -1035,47 +1070,6 @@ class CFAccessor:
             return self._obj._from_temp_dataset(obj)
         else:
             return obj
-
-    def add_bounds(self, dims: Union[Hashable, Iterable[Hashable]]):
-        """
-        Returns a new object with bounds variables. The bounds values are guessed assuming
-        equal spacing on either side of a coordinate label.
-
-        Parameters
-        ----------
-        dims: Hashable or Iterable[Hashable]
-            Either a single dimension name or a list of dimension names.
-
-        Returns
-        -------
-        DataArray or Dataset with bounds variables added and appropriate "bounds" attribute set.
-
-        Notes
-        -----
-
-        The bounds variables are automatically named f"{dim}_bounds" where ``dim``
-        is a dimension name.
-        """
-        if isinstance(dims, Hashable):
-            dimensions = (dims,)
-        else:
-            dimensions = dims
-
-        bad_dims: Set[Hashable] = set(dimensions) - set(self._obj.dims)
-        if bad_dims:
-            raise ValueError(
-                f"{bad_dims!r} are not dimensions in the underlying object."
-            )
-
-        obj = self._maybe_to_dataset(self._obj.copy(deep=True))
-        for dim in dimensions:
-            bname = f"{dim}_bounds"
-            if bname in obj.variables:
-                raise ValueError(f"Bounds variable name {bname!r} will conflict!")
-            obj.coords[bname] = _guess_bounds_dim(obj[dim].reset_coords(drop=True))
-            obj[dim].attrs["bounds"] = bname
-
-        return self._maybe_to_dataarray(obj)
 
     def rename_like(
         self, other: Union[DataArray, Dataset]
@@ -1169,7 +1163,66 @@ class CFAccessor:
 
 @xr.register_dataset_accessor("cf")
 class CFDatasetAccessor(CFAccessor):
-    pass
+    def get_bounds(self, key: str) -> DataArray:
+        """
+        Get bounds variable corresponding to key.
+
+        Parameters
+        ----------
+        key: str
+            Name of variable whose bounds are desired
+
+        Returns
+        -------
+        DataArray
+        """
+        name = apply_mapper(
+            _get_axis_coord_single, self._obj, key, error=False, default=[key]
+        )[0]
+        bounds = self._obj[name].attrs["bounds"]
+        obj = self._maybe_to_dataset()
+        return obj[bounds]
+
+    def add_bounds(self, dims: Union[Hashable, Iterable[Hashable]]):
+        """
+        Returns a new object with bounds variables. The bounds values are guessed assuming
+        equal spacing on either side of a coordinate label.
+
+        Parameters
+        ----------
+        dims: Hashable or Iterable[Hashable]
+            Either a single dimension name or a list of dimension names.
+
+        Returns
+        -------
+        DataArray or Dataset with bounds variables added and appropriate "bounds" attribute set.
+
+        Notes
+        -----
+
+        The bounds variables are automatically named f"{dim}_bounds" where ``dim``
+        is a dimension name.
+        """
+        if isinstance(dims, Hashable):
+            dimensions = (dims,)
+        else:
+            dimensions = dims
+
+        bad_dims: Set[Hashable] = set(dimensions) - set(self._obj.dims)
+        if bad_dims:
+            raise ValueError(
+                f"{bad_dims!r} are not dimensions in the underlying object."
+            )
+
+        obj = self._maybe_to_dataset(self._obj.copy(deep=True))
+        for dim in dimensions:
+            bname = f"{dim}_bounds"
+            if bname in obj.variables:
+                raise ValueError(f"Bounds variable name {bname!r} will conflict!")
+            obj.coords[bname] = _guess_bounds_dim(obj[dim].reset_coords(drop=True))
+            obj[dim].attrs["bounds"] = bname
+
+        return self._maybe_to_dataarray(obj)
 
 
 @xr.register_dataarray_accessor("cf")

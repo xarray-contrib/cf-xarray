@@ -16,7 +16,6 @@ DataArray
    :toctree: generated/
    :template: autosummary/accessor_method.rst
 
-    DataArray.cf.add_bounds
     DataArray.cf.describe
     DataArray.cf.get_standard_names
     DataArray.cf.get_valid_keys
@@ -36,6 +35,7 @@ Dataset
 
     Dataset.cf.add_bounds
     Dataset.cf.describe
+    Dataset.cf.get_bounds
     Dataset.cf.get_standard_names
     Dataset.cf.get_valid_keys
     Dataset.cf.guess_coord_axis

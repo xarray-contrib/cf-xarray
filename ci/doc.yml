@@ -16,4 +16,4 @@ dependencies:
   - pip:
       - git+https://github.com/xarray-contrib/cf-xarray
       - sphinx-book-theme
-      - git+https://github.com/keewis/sphinx-autosummary-accessors
+      - git+https://github.com/xarray-contrib/sphinx-autosummary-accessors

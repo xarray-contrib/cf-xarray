@@ -30,7 +30,7 @@ Table of contents
    :maxdepth: 2
 
    installing
-   examples/index
+   examples/introduction
    whats-new
    roadmap
    contributing

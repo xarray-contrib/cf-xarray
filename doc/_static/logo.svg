@@ -15,7 +15,10 @@
    version="1.1"
    id="svg8"
    inkscape:version="0.92.5 (0.92.5+68)"
-   sodipodi:docname="logo.svg">
+   sodipodi:docname="logo.svg"
+   inkscape:export-filename="/home/deepak/work/python/cf-xarray/doc/_static/full-logo.png"
+   inkscape:export-xdpi="300"
+   inkscape:export-ydpi="300">
   <defs
      id="defs2">
     <clipPath
@@ -51,7 +54,7 @@
      inkscape:pageshadow="2"
      inkscape:zoom="2.8"
      inkscape:cx="250.33437"
-     inkscape:cy="105.45725"
+     inkscape:cy="105.45724"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"

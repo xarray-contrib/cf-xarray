@@ -3,8 +3,17 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+
+.. image:: _static/full-logo.png
+    :align: center
+    :width: 80%
+   
+|
+|
+
 Welcome to cf_xarray's documentation!
 =====================================
+
 
 ``cf_xarray`` is a lightweight accessor that allows you to interpret CF attributes present
 on xarray objects.
@@ -29,7 +38,6 @@ Table of contents
 .. toctree::
    :maxdepth: 2
 
-   installing
    examples/introduction
    whats-new
    roadmap

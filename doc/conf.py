@@ -65,7 +65,7 @@ source_suffix = ".rst"
 # https://nbsphinx.readthedocs.io/en/0.4.2/never-execute.html
 # nbsphinx_execute = 'auto'
 # Allow errors in all notebooks by
-nbsphinx_allow_errors = True
+# nbsphinx_allow_errors = True
 
 # Disable cell timeout
 nbsphinx_timeout = -1

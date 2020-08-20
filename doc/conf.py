@@ -70,6 +70,15 @@ source_suffix = ".rst"
 # Disable cell timeout
 nbsphinx_timeout = -1
 
+nbsphinx_prolog = """
+{% set docname = env.doc2path(env.docname, base=None) %}
+
+You can run this notebook in a `live session <https://binder.pangeo.io/v2/gh/xarray-contrib/cf-xarray/main?urlpath=lab/tree/{{
+docname }}>`_ |Binder| or view it `on Github <https://github.com/xarray-contrib/cf-xarray/blob/main/{{ docname }}>`_.
+
+.. |Binder| image:: https://mybinder.org/badge_logo.svg
+   :target: https://binder.pangeo.io/v2/gh/xarray-contrib/cf-xarray/main?urlpath=lab/tree/{{ docname }}
+"""
 
 # The encoding of source files.
 # source_encoding = 'utf-8-sig'
@@ -142,6 +151,7 @@ html_theme = "pydata_sphinx_theme"
 html_theme_options = {
     "github_url": "https://github.com/xarray-contrib/cf-xarray",
     "use_edit_page_button": True,
+    "search_bar_position": "navbar",
 }
 
 html_context = {

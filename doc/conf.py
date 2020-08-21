@@ -77,7 +77,7 @@ You can run this notebook in a `live session <https://binder.pangeo.io/v2/gh/xar
 docname }}>`_ |Binder| or view it `on Github <https://github.com/xarray-contrib/cf-xarray/blob/main/doc/{{ docname }}>`_.
 
 .. |Binder| image:: https://mybinder.org/badge_logo.svg
-   :target: https://binder.pangeo.io/v2/gh/xarray-contrib/cf-xarray/main?urlpath=lab/tree/{{ docname }}
+   :target: https://binder.pangeo.io/v2/gh/xarray-contrib/cf-xarray/main?urlpath=lab/tree/doc/{{ docname }}
 """
 
 # The encoding of source files.

@@ -666,9 +666,9 @@ class CFAccessor:
         # Catch things like .isel(T=5).
         # This assigns indexers_kwargs=dict(T=5).
         # and indexers_kwargs is of kind VAR_KEYWORD
-        var_kws = []
+        var_kws: List = []
         # capture *args, e.g. transpose
-        var_args = []
+        var_args: List = []
         for param in sig.parameters:
             if sig.parameters[param].kind is inspect.Parameter.VAR_KEYWORD:
                 var_kws.append(param)

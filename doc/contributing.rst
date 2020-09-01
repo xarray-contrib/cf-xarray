@@ -5,10 +5,9 @@
 
     import cf_xarray.accessor
 
-.. _contributing:
 
 Contributing
---------------
+------------
 
 This section will be expanded later. For now it lists docstrings for a number of internal variables, classes and functions.
 

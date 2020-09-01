@@ -24,7 +24,7 @@ v0.1.5
      >>> ds.cf.sizes
      {'X': 53, 'Y': 25, 'T': 2920, 'longitude': 53, 'latitude': 25, 'time': 2920}
 
-- Begin documenting things for contributors in :ref:`contributing`.
+- Begin documenting things for contributors in :ref:`contribut`.
 - Parse ``ancillary_variables`` attribute. These variables are converted to coordinate variables.
 - Support ``reset_index``
 

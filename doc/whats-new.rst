@@ -5,6 +5,7 @@ v0.2.1 (Aug 06, 2020)
 - Support for the ``bounds`` attribute. (:pr:`68`, :issue:`32`). `Deepak Cherian`_.
 - Add ``.cf.guess_coord_axis`` to automagically guess axis and coord names, and add
   appropriate attributes. (:pr:`67`, :issue:`46`). `Deepak Cherian`_.
+- Fixed tests that would only pass if ran in a specific order. `Julia Kent`_.
 
 v0.2.0 (Jul 28, 2020)
 =====================

@@ -19,40 +19,6 @@ dataarrays = [airds.air, airds.air.chunk({"lat": 5})]
 objects = datasets + dataarrays
 
 
-def test_dicts():
-    from .datasets import airds
-
-    actual = airds.cf.sizes
-    expected = {"X": 50, "Y": 25, "T": 4, "longitude": 50, "latitude": 25, "time": 4}
-    assert actual == expected
-
-    assert popds.cf.sizes == popds.sizes
-
-    with pytest.raises(AttributeError):
-        multiple.cf.sizes
-
-    assert airds.cf.chunks == {}
-
-    expected = {
-        "X": (50,),
-        "Y": (5, 5, 5, 5, 5),
-        "T": (4,),
-        "longitude": (50,),
-        "latitude": (5, 5, 5, 5, 5),
-        "time": (4,),
-    }
-    assert airds.chunk({"lat": 5}).cf.chunks == expected
-
-    with pytest.raises(AttributeError):
-        airds.da.cf.chunks
-
-    airds = airds.copy(deep=True)
-    airds.lon.attrs = {}
-    actual = airds.cf.sizes
-    expected = {"lon": 50, "Y": 25, "T": 4, "latitude": 25, "time": 4}
-    assert actual == expected
-
-
 def test_describe(capsys):
     airds.cf.describe()
     actual = capsys.readouterr().out
@@ -324,9 +290,10 @@ def test_getitem(obj, key, expected_key):
 def test_getitem_errors(obj,):
     with pytest.raises(KeyError):
         obj.cf["XX"]
-    obj.lon.attrs = {}
+    obj2 = obj.copy(deep=True)
+    obj2.lon.attrs = {}
     with pytest.raises(KeyError):
-        obj.cf["X"]
+        obj2.cf["X"]
 
 
 def test_getitem_uses_coordinates():
@@ -444,3 +411,35 @@ def test_guess_axis_coord():
     }
     assert dsnew.x1.attrs == {"axis": "X"}
     assert dsnew.y1.attrs == {"axis": "Y"}
+
+
+def test_dicts():
+    actual = airds.cf.sizes
+    expected = {"X": 50, "Y": 25, "T": 4, "longitude": 50, "latitude": 25, "time": 4}
+    assert actual == expected
+
+    assert popds.cf.sizes == popds.sizes
+
+    with pytest.raises(AttributeError):
+        multiple.cf.sizes
+
+    assert airds.cf.chunks == {}
+
+    expected = {
+        "X": (50,),
+        "Y": (5, 5, 5, 5, 5),
+        "T": (4,),
+        "longitude": (50,),
+        "latitude": (5, 5, 5, 5, 5),
+        "time": (4,),
+    }
+    assert airds.chunk({"lat": 5}).cf.chunks == expected
+
+    with pytest.raises(AttributeError):
+        airds.da.cf.chunks
+
+    airds2 = airds.copy(deep=True)
+    airds2.lon.attrs = {}
+    actual = airds2.cf.sizes
+    expected = {"lon": 50, "Y": 25, "T": 4, "latitude": 25, "time": 4}
+    assert actual == expected

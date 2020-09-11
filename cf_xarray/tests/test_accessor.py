@@ -177,7 +177,6 @@ def test_preserve_unused_keys():
     assert_identical(actual, expected)
 
 
-@pytest.mark.skip(reason="xarray GH4120. any test after this will fail since attrs are lost")
 def test_kwargs_expand_key_to_multiple_keys():
 
     actual = multiple.cf.isel(X=5, Y=3)
@@ -188,9 +187,10 @@ def test_kwargs_expand_key_to_multiple_keys():
     expected = multiple.mean(["x1", "x2"])
     assert_identical(actual, expected)
 
-    actual = multiple.cf.coarsen(X=10, Y=5)
-    expected = multiple.coarsen(x1=10, y1=5, x2=10, y2=5)
-    assert_identical(actual.mean(), expected.mean())
+    # Commenting out lines that use Coarsen
+    # actual = multiple.cf.coarsen(X=10, Y=5)
+    # expected = multiple.coarsen(x1=10, y1=5, x2=10, y2=5)
+    # assert_identical(actual.mean(), expected.mean())
 
 
 @pytest.mark.parametrize(

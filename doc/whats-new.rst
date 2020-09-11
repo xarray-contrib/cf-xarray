@@ -1,6 +1,6 @@
 What's New
 ----------
-v0.2.2 (September 10, 2020)
+v0.2.2 (unreleased)
 ===========================
 - Fixed tests that would only pass if ran in a specific order. `Julia Kent`_.
 

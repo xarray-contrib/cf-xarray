@@ -28,6 +28,7 @@ _WRAPPED_CLASSES = (
     xr.core.rolling.Rolling,
     xr.core.rolling.Coarsen,
     xr.core.weighted.Weighted,
+    xr.plot.FacetGrid,
 )
 
 #:  `axis` names understood by cf_xarray

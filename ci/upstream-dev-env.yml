@@ -7,6 +7,6 @@ dependencies:
   - dask
   - matplotlib
   - netcdf4
-  - pandas < 1.1.0
+  - pandas
   - pip:
     - git+https://github.com/pydata/xarray

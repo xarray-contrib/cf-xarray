@@ -401,7 +401,7 @@ def test_docstring():
     assert "One or more of ('X'" in airds.cf.mean.__doc__
 
 
-def test_guess_axis_coord():
+def test_guess_coord_axis():
     ds = xr.Dataset()
     ds["time"] = ("time", pd.date_range("2001-01-01", "2001-04-01"))
     ds["lon_rho"] = ("lon_rho", [1, 2, 3, 4, 5])

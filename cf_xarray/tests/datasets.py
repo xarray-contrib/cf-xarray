@@ -20,22 +20,22 @@ popds = xr.Dataset()
 popds.coords["TLONG"] = (
     ("nlat", "nlon"),
     np.ones((20, 30)),
-    {"axis": "X", "units": "degrees_east"},
+    {"units": "degrees_east"},
 )
 popds.coords["TLAT"] = (
     ("nlat", "nlon"),
     2 * np.ones((20, 30)),
-    {"axis": "Y", "units": "degrees_north"},
+    {"units": "degrees_north"},
 )
 popds.coords["ULONG"] = (
     ("nlat", "nlon"),
     0.5 * np.ones((20, 30)),
-    {"axis": "X", "units": "degrees_east"},
+    {"units": "degrees_east"},
 )
 popds.coords["ULAT"] = (
     ("nlat", "nlon"),
     2.5 * np.ones((20, 30)),
-    {"axis": "Y", "units": "degrees_north"},
+    {"units": "degrees_north"},
 )
 popds["UVEL"] = (
     ("nlat", "nlon"),
@@ -47,7 +47,8 @@ popds["TEMP"] = (
     np.ones((20, 30)) * 15,
     {"coordinates": "TLONG TLAT", "standard_name": "sea_water_potential_temperature"},
 )
-
+popds["nlon"] = ("nlon", np.arange(popds.sizes["nlon"]), {"axis": "X"})
+popds["nlat"] = ("nlat", np.arange(popds.sizes["nlat"]), {"axis": "Y"})
 
 # This dataset has ancillary variables
 

@@ -300,7 +300,7 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
         search_in = list(var.coords)
 
     results: Set = set()
-    for coord in itertools.chain(search_in, var.dims):
+    for coord in itertools.chain(search_in, var.indexes):
         for criterion, valid_values in coordinate_criteria.items():
             if key in valid_values:
                 expected = valid_values[key]
@@ -1141,23 +1141,23 @@ class CFAccessor:
         import re
 
         obj = self._obj.copy(deep=True)
-        for dim in obj.dims:
-            if _is_datetime_like(obj[dim]):
+        for var in obj.coords.variables:
+            if obj[var].ndim == 1 and _is_datetime_like(obj[var]):
                 if verbose:
                     print(
-                        f"I think {dim!r} is of type 'time' since it has a datetime-like type."
+                        f"I think {var!r} is of type 'time'. It has a datetime-like type."
                     )
-                obj[dim].attrs = dict(ChainMap(obj[dim].attrs, attrs["time"]))
+                obj[var].attrs = dict(ChainMap(obj[var].attrs, attrs["time"]))
                 continue  # prevent second detection
 
             for axis, pattern in regex.items():
                 # match variable names
-                if re.match(pattern, dim.lower()):
+                if re.match(pattern, var.lower()):
                     if verbose:
                         print(
-                            f"I think {dim!r} is of type {axis!r} since it matched {pattern!r}"
+                            f"I think {var!r} is of type {axis!r}. It matched {pattern!r}"
                         )
-                    obj[dim].attrs = dict(ChainMap(obj[dim].attrs, attrs[axis]))
+                    obj[var].attrs = dict(ChainMap(obj[var].attrs, attrs[axis]))
         return obj
 
 

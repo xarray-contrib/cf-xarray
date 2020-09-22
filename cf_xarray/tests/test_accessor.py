@@ -300,14 +300,24 @@ def test_getitem_uses_coordinates():
     # POP-like dataset
     ds = popds
     assert_identical(
-        ds.cf[["X"]],
+        ds.cf[["longitude"]],
         ds.reset_coords()[["ULONG", "TLONG"]].set_coords(["ULONG", "TLONG"]),
     )
     assert_identical(
-        ds.cf[["Y"]], ds.reset_coords()[["ULAT", "TLAT"]].set_coords(["ULAT", "TLAT"])
+        ds.cf[["latitude"]],
+        ds.reset_coords()[["ULAT", "TLAT"]].set_coords(["ULAT", "TLAT"]),
     )
-    assert_identical(ds.UVEL.cf["X"], ds["ULONG"].reset_coords(drop=True))
-    assert_identical(ds.TEMP.cf["X"], ds["TLONG"].reset_coords(drop=True))
+    assert_identical(ds.UVEL.cf["longitude"], ds["ULONG"].reset_coords(drop=True))
+    assert_identical(ds.TEMP.cf["latitude"], ds["TLAT"].reset_coords(drop=True))
+
+
+def test_getitem_uses_dimension_names_when_coordinates_attr():
+    # POP-like dataset
+    ds = popds
+    assert_identical(ds.cf["X"], ds["nlon"])
+    assert_identical(ds.cf["Y"], ds["nlat"])
+    assert_identical(ds.UVEL.cf["X"], ds["nlon"])
+    assert_identical(ds.TEMP.cf["Y"], ds["nlat"])
 
 
 def test_plot_xincrease_yincrease():
@@ -418,7 +428,7 @@ def test_dicts():
     expected = {"X": 50, "Y": 25, "T": 4, "longitude": 50, "latitude": 25, "time": 4}
     assert actual == expected
 
-    assert popds.cf.sizes == popds.sizes
+    assert popds.cf.sizes == {"X": 30, "Y": 20}
 
     with pytest.raises(AttributeError):
         multiple.cf.sizes

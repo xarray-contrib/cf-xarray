@@ -300,7 +300,7 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
         search_in = list(var.coords)
 
     results: Set = set()
-    for coord in search_in:
+    for coord in itertools.chain(search_in, var.dims):
         for criterion, valid_values in coordinate_criteria.items():
             if key in valid_values:
                 expected = valid_values[key]

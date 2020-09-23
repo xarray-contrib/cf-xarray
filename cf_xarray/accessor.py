@@ -310,8 +310,6 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
             if key in valid_values:
                 expected = valid_values[key]
                 if var.coords[coord].attrs.get(criterion, None) in expected:
-                    print(coord)
-                    print(criterion)
                     results.update((coord,))
 
     return list(results)

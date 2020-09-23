@@ -6,7 +6,7 @@ This release brings changes necessary to make ``cf_xarray`` more useful with the
 model in particular. Thanks to Kristen Thyng for opening many issues.
 
 - ``vertical`` and ``Z`` are not synonyms any more. In particular, the attribute
-  ``positive: up`` now will only match ``vertical`` and not ``Z``. Deepak Cherian`_.
+  ``positive: up`` now will only match ``vertical`` and not ``Z``. `Deepak Cherian`_.
 - Fixed tests that would only pass if ran in a specific order. `Julia Kent`_.
 
 v0.2.1 (Aug 06, 2020)

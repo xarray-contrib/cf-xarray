@@ -453,3 +453,17 @@ def test_dicts():
     actual = airds2.cf.sizes
     expected = {"lon": 50, "Y": 25, "T": 4, "latitude": 25, "time": 4}
     assert actual == expected
+
+
+def test_Z_vs_vertical_ROMS():
+    ds = xr.Dataset()
+    ds["s_rho"] = (
+        "s_rho",
+        np.linspace(-1, 0, 10),
+        {"standard_name": "ocean_s_coordinate_g2"},
+    )
+    ds.coords["z_rho"] = ("s_rho", np.linspace(-100, 0, 10), {"positive": "up"})
+    ds["temp"] = ("s_rho", np.linspace(20, 30, 10), {"coordinates": "z_rho"})
+
+    assert_identical(ds.s_rho.reset_coords(drop=True), ds.temp.cf["Z"])
+    assert_identical(ds.z_rho.reset_coords(drop=True), ds.temp.cf["vertical"])

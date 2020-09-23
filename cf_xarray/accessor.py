@@ -46,11 +46,18 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
     "standard_name": {
         "T": ("time",),
         "time": ("time",),
-        "Z": (
+        "vertical": (
             "air_pressure",
             "height",
             "depth",
             "geopotential_height",
+            # computed dimensional coordinate name
+            "altitude",
+            "height_above_geopotential_datum",
+            "height_above_reference_ellipsoid",
+            "height_above_mean_sea_level",
+        ),
+        "Z": (
             "model_level_number",
             "atmosphere_ln_pressure_coordinate",
             "atmosphere_sigma_coordinate",
@@ -63,11 +70,6 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
             "ocean_s_coordinate_g2",
             "ocean_sigma_z_coordinate",
             "ocean_double_sigma_coordinate",
-            # computed dimensional coordinate name
-            "altitude",
-            "height_above_geopotential_datum",
-            "height_above_reference_ellipsoid",
-            "height_above_mean_sea_level",
         ),
         "latitude": ("latitude",),
         "longitude": ("longitude",),
@@ -82,7 +84,7 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
     },
     "axis": {"T": ("T",), "Z": ("Z",), "Y": ("Y",), "X": ("X",)},
     "cartesian_axis": {"T": ("T",), "Z": ("Z",), "Y": ("Y",), "X": ("X",)},
-    "positive": {"Z": ("up", "down"), "vertical": ("up", "down")},
+    "positive": {"vertical": ("up", "down")},
     "units": {
         "latitude": (
             "degree_north",
@@ -103,13 +105,8 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
     },
 }
 
-# "vertical" is just an alias for "Z"
-coordinate_criteria["standard_name"]["vertical"] = coordinate_criteria["standard_name"][
-    "Z"
-]
 # "long_name" and "standard_name" criteria are the same. For convenience.
 coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
-
 
 #: regular expressions for guess_coord_axis
 regex = {
@@ -313,6 +310,8 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
             if key in valid_values:
                 expected = valid_values[key]
                 if var.coords[coord].attrs.get(criterion, None) in expected:
+                    print(coord)
+                    print(criterion)
                     results.update((coord,))
 
     return list(results)

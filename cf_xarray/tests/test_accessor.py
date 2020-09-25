@@ -9,7 +9,7 @@ from xarray.testing import assert_allclose, assert_identical
 import cf_xarray  # noqa
 
 from . import raise_if_dask_computes
-from .datasets import airds, anc, ds_no_attrs, multiple, popds
+from .datasets import airds, anc, ds_no_attrs, multiple, popds, romsds
 
 mpl.use("Agg")
 
@@ -456,14 +456,5 @@ def test_dicts():
 
 
 def test_Z_vs_vertical_ROMS():
-    ds = xr.Dataset()
-    ds["s_rho"] = (
-        "s_rho",
-        np.linspace(-1, 0, 10),
-        {"standard_name": "ocean_s_coordinate_g2"},
-    )
-    ds.coords["z_rho"] = ("s_rho", np.linspace(-100, 0, 10), {"positive": "up"})
-    ds["temp"] = ("s_rho", np.linspace(20, 30, 10), {"coordinates": "z_rho"})
-
-    assert_identical(ds.s_rho.reset_coords(drop=True), ds.temp.cf["Z"])
-    assert_identical(ds.z_rho.reset_coords(drop=True), ds.temp.cf["vertical"])
+    assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
+    assert_identical(romsds.z_rho.reset_coords(drop=True), romsds.temp.cf["vertical"])

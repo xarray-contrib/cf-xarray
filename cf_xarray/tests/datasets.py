@@ -81,3 +81,13 @@ multiple.coords["y2"] = ("y2", range(5), {"axis": "Y"})
 
 multiple["v1"] = (("x1", "y1"), np.ones((30, 20)) * 15)
 multiple["v2"] = (("x2", "y2"), np.ones((10, 5)) * 15)
+
+
+romsds = xr.Dataset()
+romsds["s_rho"] = (
+    "s_rho",
+    np.linspace(-1, 0, 10),
+    {"standard_name": "ocean_s_coordinate_g2"},
+)
+romsds.coords["z_rho"] = ("s_rho", np.linspace(-100, 0, 10), {"positive": "up"})
+romsds["temp"] = ("s_rho", np.linspace(20, 30, 10), {"coordinates": "z_rho"})

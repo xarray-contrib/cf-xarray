@@ -469,6 +469,16 @@ def test_Z_vs_vertical_ROMS():
     assert_identical(romsds.z_rho.reset_coords(drop=True), romsds.temp.cf["vertical"])
 
     romsds = romsds.copy(deep=True)
+
     romsds.temp.attrs.clear()
+    # look in encoding
+    assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
+    with pytest.raises(KeyError):
+        # z_rho is not in .encoding["coordinates"]
+        # so this won't work
+        romsds.temp.cf["vertical"]
+
+    # use .coords if coordinates attribute is not available
     romsds.temp.encoding.clear()
+    assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
     assert_identical(romsds.z_rho.reset_coords(drop=True), romsds.temp.cf["vertical"])

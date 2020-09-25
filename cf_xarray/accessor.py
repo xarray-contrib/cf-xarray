@@ -299,7 +299,7 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
 
     search_in = set()
     if "coordinates" in var.encoding:
-        search_in.update(var.attrs["coordinates"].split(" "))
+        search_in.update(var.encoding["coordinates"].split(" "))
     if "coordinates" in var.attrs:
         search_in.update(var.attrs["coordinates"].split(" "))
     if not search_in:

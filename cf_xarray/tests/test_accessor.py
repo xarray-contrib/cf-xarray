@@ -9,7 +9,7 @@ from xarray.testing import assert_allclose, assert_identical
 import cf_xarray  # noqa
 
 from . import raise_if_dask_computes
-from .datasets import airds, anc, ds_no_attrs, multiple, popds
+from .datasets import airds, anc, ds_no_attrs, multiple, popds, romsds
 
 mpl.use("Agg")
 
@@ -460,3 +460,8 @@ def test_missing_variable_in_coordinates():
     with xr.set_options(keep_attrs=True):
         # keep bad coordinates attribute after mean
         assert_identical(airds.time, airds.air.cf.mean(["X", "Y"]).cf["time"])
+
+
+def test_Z_vs_vertical_ROMS():
+    assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
+    assert_identical(romsds.z_rho.reset_coords(drop=True), romsds.temp.cf["vertical"])

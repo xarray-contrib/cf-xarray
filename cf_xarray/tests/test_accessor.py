@@ -453,3 +453,10 @@ def test_dicts():
     actual = airds2.cf.sizes
     expected = {"lon": 50, "Y": 25, "T": 4, "latitude": 25, "time": 4}
     assert actual == expected
+
+
+def test_missing_variable_in_coordinates():
+    airds.air.attrs["coordinates"] = "lat lon time"
+    with xr.set_options(keep_attrs=True):
+        # keep bad coordinates attribute after mean
+        assert_identical(airds.time, airds.air.cf.mean(["X", "Y"]).cf["time"])

@@ -297,16 +297,19 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
             f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
         )
 
-    search_in = set(
-        " ".join(
-            [var.encoding.get("coordinates", ""), var.attrs.get("coordinates", "")]
-        ).split(" ")
-    )
-    if search_in == {""}:  # no coordinates attribute
+    search_in = set()
+    if "coordinates" in var.encoding:
+        search_in.update(var.attrs["coordinates"].split(" "))
+    if "coordinates" in var.attrs:
+        search_in.update(var.attrs["coordinates"].split(" "))
+    if not search_in:
         search_in = set(var.coords)
 
+    # maybe only do this for key in _AXIS_NAMES?
+    search_in.update(var.indexes)
+
     results: Set = set()
-    for coord in itertools.chain(search_in, var.indexes):
+    for coord in search_in:
         for criterion, valid_values in coordinate_criteria.items():
             if key in valid_values:
                 expected = valid_values[key]

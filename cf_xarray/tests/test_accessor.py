@@ -455,6 +455,13 @@ def test_dicts():
     assert actual == expected
 
 
+def test_missing_variable_in_coordinates():
+    airds.air.attrs["coordinates"] = "lat lon time"
+    with xr.set_options(keep_attrs=True):
+        # keep bad coordinates attribute after mean
+        assert_identical(airds.time, airds.air.cf.mean(["X", "Y"]).cf["time"])
+
+
 def test_Z_vs_vertical_ROMS():
     assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
     assert_identical(romsds.z_rho.reset_coords(drop=True), romsds.temp.cf["vertical"])

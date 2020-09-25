@@ -91,3 +91,4 @@ romsds["s_rho"] = (
 )
 romsds.coords["z_rho"] = ("s_rho", np.linspace(-100, 0, 10), {"positive": "up"})
 romsds["temp"] = ("s_rho", np.linspace(20, 30, 10), {"coordinates": "z_rho"})
+romsds["temp"].encoding["coordinates"] = "s_rho"

@@ -297,12 +297,13 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
             f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
         )
 
-    if "coordinates" in var.encoding:
-        search_in = var.encoding["coordinates"].split(" ")
-    elif "coordinates" in var.attrs:
-        search_in = var.attrs["coordinates"].split(" ")
-    else:
-        search_in = list(var.coords)
+    search_in = set(
+        " ".join(
+            [var.encoding.get("coordinates", ""), var.attrs.get("coordinates", "")]
+        ).split(" ")
+    )
+    if search_in == {""}:  # no coordinates attribute
+        search_in = set(var.coords)
 
     results: Set = set()
     for coord in itertools.chain(search_in, var.indexes):

@@ -1,7 +1,8 @@
 What's New
 ----------
-v0.2.2 (unreleased)
-===================
+
+v0.3.0 (Sep 27, 2020)
+=====================
 This release brings changes necessary to make ``cf_xarray`` more useful with the ROMS
 model in particular. Thanks to Kristen Thyng for opening many issues.
 

@@ -50,7 +50,9 @@ def test_getitem_standard_name():
 
     ds = airds.copy(deep=True)
     ds["air2"] = ds.air
-    actual = ds.cf["air_temperature"]
+    with pytest.raises(ValueError):
+        ds.cf["air_temperature"]
+    actual = ds.cf[["air_temperature"]]
     expected = ds[["air", "air2"]]
     assert_identical(actual, expected)
 

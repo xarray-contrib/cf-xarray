@@ -984,32 +984,34 @@ class CFAccessor:
             )
 
         if scalar_key:
-            axis_coord_mapper = _get_axis_coord_single
             key = (key,)  # type: ignore
-        else:
-            axis_coord_mapper = _get_axis_coord
+
+        def check_results(names, k):
+            if scalar_key and len(names) > 1:
+                raise ValueError(
+                    f"Receive multiple variables for key {k!r}: {names}. "
+                    f"Expected only one. Please pass a list [{k!r}] "
+                    f"instead to get all variables matching {k!r}."
+                )
 
         varnames: List[Hashable] = []
         coords: List[Hashable] = []
         successful = dict.fromkeys(key, False)
         for k in key:
             if k in _AXIS_NAMES + _COORD_NAMES:
-                try:
-                    names = axis_coord_mapper(self._obj, k)
-                except KeyError as e:
-                    raise KeyError(
-                        f"Receive multiple variables for key {k!r}. Expected only one. Please pass a list [{k!r}] instead to get all variables matching {k!r}."
-                    )
-                    raise e
+                names = _get_axis_coord(self._obj, k)
+                check_results(names, k)
                 successful[k] = bool(names)
                 coords.extend(names)
             elif k in _CELL_MEASURES:
                 measure = _get_measure(self._obj, k)
+                check_results(measure, k)
                 successful[k] = bool(measure)
                 if measure:
                     varnames.extend(measure)
             elif not isinstance(self._obj, DataArray):
                 stdnames = _get_with_standard_name(self._obj, k)
+                check_results(stdnames, k)
                 successful[k] = bool(stdnames)
                 varnames.extend(stdnames)
                 coords.extend(list(set(stdnames) & set(self._obj.coords)))

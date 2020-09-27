@@ -27,7 +27,7 @@ def test_describe(capsys):
         "\nCoordinates:\n\tlongitude: ['lon']\n\tlatitude: ['lat']"
         "\n\tvertical: []\n\ttime: ['time']\n"
         "\nCell Measures:\n\tarea: unsupported\n\tvolume: unsupported\n"
-        "\nStandard Names:\n\t['air_temperature', 'latitude', 'longitude', 'time']\n"
+        "\nStandard Names:\n\tair_temperature: ['air']\n\n"
     )
     assert actual == expected
 
@@ -36,6 +36,11 @@ def test_get_standard_names():
     expected = ["air_temperature", "latitude", "longitude", "time"]
     actual = airds.cf.get_standard_names()
     assert actual == expected
+
+    dsnew = xr.Dataset()
+    dsnew["a"] = ("a", np.arange(10), {"standard_name": "a"})
+    dsnew["b"] = ("a", np.arange(10), {"standard_name": "a"})
+    assert dsnew.cf.get_standard_names() == ["a"]
 
 
 def test_getitem_standard_name():

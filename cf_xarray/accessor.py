@@ -1,7 +1,6 @@
 import functools
 import inspect
 import itertools
-import textwrap
 import warnings
 from collections import ChainMap
 from typing import (
@@ -398,18 +397,13 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
 }
 
 
-def _filter_by_standard_names(ds: Dataset, name: Union[str, List[str]]) -> List[str]:
-    """ returns a list of variable names with standard names matching name. """
-    if isinstance(name, str):
-        name = [name]
-
+def _get_with_standard_name(ds: Dataset, name: Union[str, List[str]]) -> List[str]:
+    """ returns a list of variable names with standard name == name. """
     varnames = []
-    counts = dict.fromkeys(name, 0)
     for vname, var in ds.variables.items():
         stdname = var.attrs.get("standard_name", None)
-        if stdname in name:
+        if stdname == name:
             varnames.append(str(vname))
-            counts[stdname] += 1
 
     return varnames
 
@@ -848,11 +842,11 @@ class CFAccessor:
         if isinstance(self._obj, DataArray):
             text += "\tunsupported\n"
         else:
-            stdnames = self.get_standard_names()
-            text += "\t"
-            text += "\n".join(
-                textwrap.wrap(f"{stdnames!r}", 70, break_long_words=False)
-            )
+            stdnames = sorted(self.get_standard_names())
+            for name in stdnames:
+                if name not in _COORD_NAMES:
+                    text += f"\t{name}: {_get_with_standard_name(self._obj, name)}\n"
+
         print(text)
 
     def get_valid_keys(self) -> Set[str]:
@@ -902,11 +896,13 @@ class CFAccessor:
         elif isinstance(self._obj, DataArray):
             variables = self._obj.coords
         return sorted(
-            [
-                v.attrs["standard_name"]
-                for k, v in variables.items()
-                if "standard_name" in v.attrs
-            ]
+            set(
+                [
+                    v.attrs["standard_name"]
+                    for k, v in variables.items()
+                    if "standard_name" in v.attrs
+                ]
+            )
         )
 
     def get_associated_variable_names(self, name: Hashable) -> Dict[str, List[str]]:
@@ -1013,7 +1009,7 @@ class CFAccessor:
                 if measure:
                     varnames.extend(measure)
             elif not isinstance(self._obj, DataArray):
-                stdnames = _filter_by_standard_names(self._obj, k)
+                stdnames = _get_with_standard_name(self._obj, k)
                 successful[k] = bool(stdnames)
                 varnames.extend(stdnames)
                 coords.extend(list(set(stdnames) & set(self._obj.coords)))

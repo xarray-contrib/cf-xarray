@@ -37,6 +37,11 @@ def test_get_standard_names():
     actual = airds.cf.get_standard_names()
     assert actual == expected
 
+    dsnew = xr.Dataset()
+    dsnew["a"] = ("a", np.arange(10), {"standard_name": "a"})
+    dsnew["b"] = ("a", np.arange(10), {"standard_name": "a"})
+    assert dsnew.cf.get_standard_names() == ["a"]
+
 
 def test_getitem_standard_name():
     actual = airds.cf["air_temperature"]

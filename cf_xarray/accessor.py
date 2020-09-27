@@ -896,11 +896,13 @@ class CFAccessor:
         elif isinstance(self._obj, DataArray):
             variables = self._obj.coords
         return sorted(
-            [
-                v.attrs["standard_name"]
-                for k, v in variables.items()
-                if "standard_name" in v.attrs
-            ]
+            set(
+                [
+                    v.attrs["standard_name"]
+                    for k, v in variables.items()
+                    if "standard_name" in v.attrs
+                ]
+            )
         )
 
     def get_associated_variable_names(self, name: Hashable) -> Dict[str, List[str]]:

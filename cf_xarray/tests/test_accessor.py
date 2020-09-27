@@ -27,7 +27,7 @@ def test_describe(capsys):
         "\nCoordinates:\n\tlongitude: ['lon']\n\tlatitude: ['lat']"
         "\n\tvertical: []\n\ttime: ['time']\n"
         "\nCell Measures:\n\tarea: unsupported\n\tvolume: unsupported\n"
-        "\nStandard Names:\n\t['air_temperature', 'latitude', 'longitude', 'time']\n"
+        "\nStandard Names:\n\tair_temperature: ['air']\n\n"
     )
     assert actual == expected
 

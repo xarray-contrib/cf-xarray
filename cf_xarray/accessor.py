@@ -213,7 +213,7 @@ def apply_mapper(
     return list(itertools.chain(*results))
 
 
-def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str,) -> List[str]:
+def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """ Helper method for when we really want only one result per key. """
     results = _get_axis_coord(var, key)
     if len(results) > 1:
@@ -1010,11 +1010,12 @@ class CFAccessor:
                 if measure:
                     varnames.extend(measure)
             elif not isinstance(self._obj, DataArray):
-                stdnames = _get_with_standard_name(self._obj, k)
+                stdnames = set(_get_with_standard_name(self._obj, k))
+                objcoords = set(self._obj.coords)
                 check_results(stdnames, k)
                 successful[k] = bool(stdnames)
-                varnames.extend(set(stdnames) - set(self._obj.coords))
-                coords.extend(set(stdnames) & set(self._obj.coords))
+                varnames.extend(stdnames - objcoords)
+                coords.extend(stdnames & objcoords)
 
         # these are not special names but could be variable names in underlying object
         # we allow this so that we can return variables with appropriate CF auxiliary variables
@@ -1041,6 +1042,10 @@ class CFAccessor:
                 for k1 in coords:
                     da.coords[k1] = ds.variables[k1]
                 return da
+            else:
+                raise ValueError(
+                    f"Received scalar key {key} but multiple results: {allnames}"
+                )
 
             ds = ds.reset_coords()[varnames + coords]
             if isinstance(self._obj, DataArray):

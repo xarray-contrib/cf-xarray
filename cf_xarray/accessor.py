@@ -213,7 +213,7 @@ def apply_mapper(
     return list(itertools.chain(*results))
 
 
-def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str,) -> List[str]:
+def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """ Helper method for when we really want only one result per key. """
     results = _get_axis_coord(var, key)
     if len(results) > 1:
@@ -1010,11 +1010,12 @@ class CFAccessor:
                 if measure:
                     varnames.extend(measure)
             elif not isinstance(self._obj, DataArray):
-                stdnames = _get_with_standard_name(self._obj, k)
+                stdnames = set(_get_with_standard_name(self._obj, k))
                 check_results(stdnames, k)
                 successful[k] = bool(stdnames)
-                varnames.extend(stdnames)
-                coords.extend(list(set(stdnames) & set(self._obj.coords)))
+                objcoords = set(self._obj.coords)
+                varnames.extend(stdnames - objcoords)
+                coords.extend(stdnames & objcoords)
 
         # these are not special names but could be variable names in underlying object
         # we allow this so that we can return variables with appropriate CF auxiliary variables
@@ -1034,13 +1035,20 @@ class CFAccessor:
             else:
                 ds = self._obj
 
-            if scalar_key and len(allnames) == 1:
-                da: DataArray = ds.reset_coords()[allnames[0]]  # type: ignore
-                if allnames[0] in coords:
-                    coords.remove(allnames[0])
-                for k1 in coords:
-                    da.coords[k1] = ds.variables[k1]
-                return da
+            if scalar_key:
+                if len(allnames) == 1:
+                    da: DataArray = ds.reset_coords()[allnames[0]]  # type: ignore
+                    if allnames[0] in coords:
+                        coords.remove(allnames[0])
+                    for k1 in coords:
+                        da.coords[k1] = ds.variables[k1]
+                    return da
+                else:
+                    raise ValueError(
+                        f"Received scalar key {key[0]!r} but multiple results: {allnames!r}. "
+                        f"Please pass a list instead (['{key[0]}']) to get back a Dataset "
+                        f"with {allnames!r}."
+                    )
 
             ds = ds.reset_coords()[varnames + coords]
             if isinstance(self._obj, DataArray):

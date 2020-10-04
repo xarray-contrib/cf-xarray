@@ -1045,7 +1045,9 @@ class CFAccessor:
                     return da
                 else:
                     raise ValueError(
-                        f"Received scalar key {key} but multiple results: {allnames}"
+                        f"Received scalar key {key[0]!r} but multiple results: {allnames!r}. "
+                        f"Please pass a list instead (['{key[0]}']) to get back a Dataset "
+                        f"with {allnames!r}."
                     )
 
             ds = ds.reset_coords()[varnames + coords]

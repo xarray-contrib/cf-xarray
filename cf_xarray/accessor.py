@@ -1035,17 +1035,18 @@ class CFAccessor:
             else:
                 ds = self._obj
 
-            if scalar_key and len(allnames) == 1:
-                da: DataArray = ds.reset_coords()[allnames[0]]  # type: ignore
-                if allnames[0] in coords:
-                    coords.remove(allnames[0])
-                for k1 in coords:
-                    da.coords[k1] = ds.variables[k1]
-                return da
-            else:
-                raise ValueError(
-                    f"Received scalar key {key} but multiple results: {allnames}"
-                )
+            if scalar_key:
+                if len(allnames) == 1:
+                    da: DataArray = ds.reset_coords()[allnames[0]]  # type: ignore
+                    if allnames[0] in coords:
+                        coords.remove(allnames[0])
+                    for k1 in coords:
+                        da.coords[k1] = ds.variables[k1]
+                    return da
+                else:
+                    raise ValueError(
+                        f"Received scalar key {key} but multiple results: {allnames}"
+                    )
 
             ds = ds.reset_coords()[varnames + coords]
             if isinstance(self._obj, DataArray):

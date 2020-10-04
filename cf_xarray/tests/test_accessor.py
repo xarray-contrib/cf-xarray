@@ -294,13 +294,19 @@ def test_getitem(obj, key, expected_key):
 
 
 @pytest.mark.parametrize("obj", objects)
-def test_getitem_errors(obj,):
+def test_getitem_errors(obj):
     with pytest.raises(KeyError):
         obj.cf["XX"]
     obj2 = obj.copy(deep=True)
     obj2.lon.attrs = {}
     with pytest.raises(KeyError):
         obj2.cf["X"]
+
+
+def test_getitem_regression():
+    ds = xr.Dataset()
+    ds.coords["area"] = xr.DataArray(np.ones(10), attrs={"standard_name": "cell_area"})
+    assert_identical(ds.cf["cell_area"], ds["area"].reset_coords(drop=True))
 
 
 def test_getitem_uses_coordinates():

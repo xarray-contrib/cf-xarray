@@ -1013,8 +1013,8 @@ class CFAccessor:
                 stdnames = _get_with_standard_name(self._obj, k)
                 check_results(stdnames, k)
                 successful[k] = bool(stdnames)
-                varnames.extend(stdnames)
-                coords.extend(list(set(stdnames) & set(self._obj.coords)))
+                varnames.extend(set(stdnames) - set(self._obj.coords))
+                coords.extend(set(stdnames) & set(self._obj.coords))
 
         # these are not special names but could be variable names in underlying object
         # we allow this so that we can return variables with appropriate CF auxiliary variables

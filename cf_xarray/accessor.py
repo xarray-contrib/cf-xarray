@@ -1011,9 +1011,9 @@ class CFAccessor:
                     varnames.extend(measure)
             elif not isinstance(self._obj, DataArray):
                 stdnames = set(_get_with_standard_name(self._obj, k))
-                objcoords = set(self._obj.coords)
                 check_results(stdnames, k)
                 successful[k] = bool(stdnames)
+                objcoords = set(self._obj.coords)
                 varnames.extend(stdnames - objcoords)
                 coords.extend(stdnames & objcoords)
 

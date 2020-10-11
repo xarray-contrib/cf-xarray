@@ -1242,6 +1242,65 @@ class CFDatasetAccessor(CFAccessor):
 
         return self._maybe_to_dataarray(obj)
 
+    def decode_vertical_coords(self, prefix="z"):
+        """
+        Decode parameterized vertical coordinates.
+
+        Parameters
+        ----------
+        prefix: str, options (default "z")
+            Prefix for newly created z variables.
+            E.g. ``s_rho`` becomes `z_rho``
+
+        Returns
+        -------
+        Dataset with vertical variables added
+        """
+        import re
+
+        ds = self._obj
+        dims = _get_axis_coord(ds, "Z")
+
+        for dim in dims:
+            suffix = dim.split("_")
+            zname = f"{prefix}_" + "_".join(suffix[1:])
+
+            formula_terms = ds[dim].attrs["formula_terms"]
+            stdname = ds[dim].attrs["standard_name"]
+
+            terms = {}
+            for mapping in re.sub(": ", ":", formula_terms).split(" "):
+                key, value = mapping.split(":")
+                # raise nice error here if value is not in ds
+                terms[key] = ds[value]
+
+            if stdname == "ocean_s_coordinate_g1":
+                # S(k,j,i) = depth_c * s(k) + (depth(j,i) - depth_c) * C(k)
+                S = (
+                    terms["depth_c"] * terms["s"]
+                    + (terms["depth"] - terms["depth_c"]) * terms["C"]
+                )
+                # z(n,k,j,i) = S(k,j,i) + eta(n,j,i) * (1 + S(k,j,i) / depth(j,i))
+                z = S + terms["eta"] * (1 + S / terms["depth"])
+
+            elif stdname == "ocean_s_coordinate_g2":
+                # make sure all necessary terms are present in terms
+                # (depth_c * s(k) + depth(j,i) * C(k)) / (depth_c + depth(j,i))
+                S = (terms["depth_c"] * terms["s"] + terms["depth"] * terms["C"]) / (
+                    terms["depth_c"] + terms["depth"]
+                )
+                # z(n,k,j,i) = eta(n,j,i) + (eta(n,j,i) + depth(j,i)) * S(k,j,i)
+                z = terms["eta"] + (terms["eta"] + terms["depth"]) * S
+
+            else:
+                raise NotImplementedError(
+                    f"Coordinate function for {stdname} not implemented yet. Contributions welcome!"
+                )
+
+            ds.coords[zname] = z
+
+        return ds
+
 
 @xr.register_dataarray_accessor("cf")
 class CFDataArrayAccessor(CFAccessor):

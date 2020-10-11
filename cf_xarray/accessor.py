@@ -1248,7 +1248,7 @@ class CFDatasetAccessor(CFAccessor):
 
         Parameters
         ----------
-        prefix: str, options (default "z")
+        prefix: str, optional
             Prefix for newly created z variables.
             E.g. ``s_rho`` becomes ``z_rho``
 
@@ -1261,6 +1261,11 @@ class CFDatasetAccessor(CFAccessor):
         ds = self._obj
         dims = _get_axis_coord(ds, "Z")
 
+        requirements = {
+            "ocean_s_coordinate_g1": {"depth_c", "depth", "s", "C"},
+            "ocean_s_coordinate_g2": {"depth_c", "depth", "s", "C"},
+        }
+
         for dim in dims:
             suffix = dim.split("_")
             zname = f"{prefix}_" + "_".join(suffix[1:])
@@ -1268,11 +1273,19 @@ class CFDatasetAccessor(CFAccessor):
             formula_terms = ds[dim].attrs["formula_terms"]
             stdname = ds[dim].attrs["standard_name"]
 
+            # map "standard" formula term names to actual variable names
             terms = {}
             for mapping in re.sub(": ", ":", formula_terms).split(" "):
                 key, value = mapping.split(":")
-                # raise nice error here if value is not in ds
+                if value not in ds:
+                    raise KeyError(
+                        f"Variable {value!r} is required to decode coordinate for {dim} but it is absent in the Dataset."
+                    )
                 terms[key] = ds[value]
+
+            absent_terms = set(terms) - set(requirements[stdname])
+            if not absent_terms:
+                raise KeyError(f"Required terms {absent_terms} absent in dataset.")
 
             if stdname == "ocean_s_coordinate_g1":
                 # S(k,j,i) = depth_c * s(k) + (depth(j,i) - depth_c) * C(k)
@@ -1281,7 +1294,7 @@ class CFDatasetAccessor(CFAccessor):
                     + (terms["depth"] - terms["depth_c"]) * terms["C"]
                 )
                 # z(n,k,j,i) = S(k,j,i) + eta(n,j,i) * (1 + S(k,j,i) / depth(j,i))
-                z = S + terms["eta"] * (1 + S / terms["depth"])
+                ds.coords[zname] = S + terms["eta"] * (1 + S / terms["depth"])
 
             elif stdname == "ocean_s_coordinate_g2":
                 # make sure all necessary terms are present in terms
@@ -1290,14 +1303,12 @@ class CFDatasetAccessor(CFAccessor):
                     terms["depth_c"] + terms["depth"]
                 )
                 # z(n,k,j,i) = eta(n,j,i) + (eta(n,j,i) + depth(j,i)) * S(k,j,i)
-                z = terms["eta"] + (terms["eta"] + terms["depth"]) * S
+                ds.coords[zname] = terms["eta"] + (terms["eta"] + terms["depth"]) * S
 
             else:
                 raise NotImplementedError(
                     f"Coordinate function for {stdname} not implemented yet. Contributions welcome!"
                 )
-
-            ds.coords[zname] = z
 
         return ds
 

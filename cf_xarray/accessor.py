@@ -1244,7 +1244,7 @@ class CFDatasetAccessor(CFAccessor):
 
     def decode_vertical_coords(self, prefix="z"):
         """
-        Decode parameterized vertical coordinates.
+        Decode parameterized vertical coordinates in place.
 
         Parameters
         ----------
@@ -1254,7 +1254,7 @@ class CFDatasetAccessor(CFAccessor):
 
         Returns
         -------
-        Dataset with vertical variables added
+        None
         """
         import re
 
@@ -1309,8 +1309,6 @@ class CFDatasetAccessor(CFAccessor):
                 raise NotImplementedError(
                     f"Coordinate function for {stdname} not implemented yet. Contributions welcome!"
                 )
-
-        return ds
 
 
 @xr.register_dataarray_accessor("cf")

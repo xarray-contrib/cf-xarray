@@ -5,7 +5,8 @@ What's New
 v0.4.0 (unreleased)
 ===================
 
-- Added ``.cf.decode_vertical_coords`` for decoding of paramterized vertical coordinate variables. (:issue:`34`, :pr:`103`). `Deepak Cherian`_._
+- Added ``.cf.decode_vertical_coords`` for decoding of paramterized vertical coordinate variables.
+  (:issue:`34`, :pr:`103`). `Deepak Cherian`_.
 
 v0.3.0 (Sep 27, 2020)
 =====================

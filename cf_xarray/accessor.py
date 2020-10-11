@@ -1250,7 +1250,7 @@ class CFDatasetAccessor(CFAccessor):
         ----------
         prefix: str, options (default "z")
             Prefix for newly created z variables.
-            E.g. ``s_rho`` becomes `z_rho``
+            E.g. ``s_rho`` becomes ``z_rho``
 
         Returns
         -------

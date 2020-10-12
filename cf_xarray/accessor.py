@@ -877,6 +877,46 @@ class CFAccessor:
         varnames.extend(self.get_standard_names())
         return set(varnames)
 
+    def get_valid_axis(self) -> Set[str]:
+        """
+        Utility function that returns valid Axis names for .cf[].
+
+        This is useful for checking whether a key is valid for indexing, i.e.
+        that the attributes necessary to allow indexing by that key exist. 
+        However, it will only return the Axis names, not Coordinate names.
+
+        Returns
+        -------
+        Set of valid Axis names that can be used with __getitem__ or .cf[key].
+        """
+        varnames = [
+            key
+            for key in _AXIS_NAMES
+            if apply_mapper(_get_axis_coord, self._obj, key, error=False)
+        ]
+
+        return set(varnames)
+
+    def get_valid_coords(self) -> Set[str]:
+        """
+        Utility function that returns valid Coordinate names for .cf[].
+
+        This is useful for checking whether a key is valid for indexing, i.e.
+        that the attributes necessary to allow indexing by that key exist. 
+        However, it will only return the Coordinate names, not Axis names.
+
+        Returns
+        -------
+        Set of valid Coordinate names that can be used with __getitem__ or .cf[key].
+        """
+        varnames = [
+            key
+            for key in _COORD_NAMES
+            if apply_mapper(_get_axis_coord, self._obj, key, error=False)
+        ]
+
+        return set(varnames)
+
     def get_standard_names(self) -> List[str]:
         """
         Returns a sorted list of standard names in Dataset.

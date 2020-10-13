@@ -4,7 +4,8 @@ What's New
 
 v0.4.0 (unreleased)
 ===================
-
+- Added ``.axes`` to return available Axis names for an xarray object, ``.coordinates`` for Coordinate names,
+  ``.cell_measures`` for cell measures, and changed ``get_valid_keys()`` to ``.keys()``. `Kristen Thyng`_.
 
 v0.3.0 (Sep 27, 2020)
 =====================
@@ -58,3 +59,4 @@ v0.1.3
 .. _`Deepak Cherian`: https://github.com/dcherian
 .. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Julia Kent`: https://github.com/jukent
+.. _`Kristen Thyng`: https://github.com/kthyng

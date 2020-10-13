@@ -852,7 +852,7 @@ class CFAccessor:
     def get_valid_keys(self) -> Set[str]:
 
         warnings.warn(
-            """Now called `keys` and `get_valid_keys` will 
+            """Now called `keys` and `get_valid_keys` will
                       be removed in a future version.""",
             DeprecationWarning,
         )
@@ -893,7 +893,7 @@ class CFAccessor:
         Utility function that returns valid Axis names for .cf[].
 
         This is useful for checking whether a key is valid for indexing, i.e.
-        that the attributes necessary to allow indexing by that key exist. 
+        that the attributes necessary to allow indexing by that key exist.
         However, it will only return the Axis names, not Coordinate names.
 
         Returns
@@ -914,7 +914,7 @@ class CFAccessor:
         Utility function that returns valid Coordinate names for .cf[].
 
         This is useful for checking whether a key is valid for indexing, i.e.
-        that the attributes necessary to allow indexing by that key exist. 
+        that the attributes necessary to allow indexing by that key exist.
         However, it will only return the Coordinate names, not Axis names.
 
         Returns
@@ -935,7 +935,7 @@ class CFAccessor:
         Utility function that returns valid cell measure names for .cf[].
 
         This is useful for checking whether a key is valid for indexing, i.e.
-        that the attributes necessary to allow indexing by that key exist. 
+        that the attributes necessary to allow indexing by that key exist.
         However, it will only return the cell measure names.
 
         Returns
@@ -953,7 +953,7 @@ class CFAccessor:
     def get_standard_names(self) -> List[str]:
 
         warnings.warn(
-            """Now called `standard_names` and `get_standard_names` 
+            """Now called `standard_names` and `get_standard_names`
                       will be removed in a future version.""",
             DeprecationWarning,
         )

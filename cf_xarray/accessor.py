@@ -1242,6 +1242,91 @@ class CFDatasetAccessor(CFAccessor):
 
         return self._maybe_to_dataarray(obj)
 
+    def decode_vertical_coords(self, prefix="z"):
+        """
+        Decode parameterized vertical coordinates in place.
+
+        Parameters
+        ----------
+        prefix: str, optional
+            Prefix for newly created z variables.
+            E.g. ``s_rho`` becomes ``z_rho``
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+
+        Will only decode when the ``formula_terms`` and ``standard_name`` attributes
+        are set on the parameter (e.g ``s_rho`` )
+
+        Currently only supports ``ocean_s_coordinate_g1`` and ``ocean_s_coordinate_g2``.
+
+        .. warning::
+           Very lightly tested. Please double check the results.
+        """
+        import re
+
+        ds = self._obj
+        dims = _get_axis_coord(ds, "Z")
+
+        requirements = {
+            "ocean_s_coordinate_g1": {"depth_c", "depth", "s", "C", "eta"},
+            "ocean_s_coordinate_g2": {"depth_c", "depth", "s", "C", "eta"},
+        }
+
+        for dim in dims:
+            suffix = dim.split("_")
+            zname = f"{prefix}_" + "_".join(suffix[1:])
+
+            if (
+                "formula_terms" not in ds[dim].attrs
+                or "standard_name" not in ds[dim].attrs
+            ):
+                continue
+
+            formula_terms = ds[dim].attrs["formula_terms"]
+            stdname = ds[dim].attrs["standard_name"]
+
+            # map "standard" formula term names to actual variable names
+            terms = {}
+            for mapping in re.sub(": ", ":", formula_terms).split(" "):
+                key, value = mapping.split(":")
+                if value not in ds:
+                    raise KeyError(
+                        f"Variable {value!r} is required to decode coordinate for {dim} but it is absent in the Dataset."
+                    )
+                terms[key] = ds[value]
+
+            absent_terms = requirements[stdname] - set(terms)
+            if absent_terms:
+                raise KeyError(f"Required terms {absent_terms} absent in dataset.")
+
+            if stdname == "ocean_s_coordinate_g1":
+                # S(k,j,i) = depth_c * s(k) + (depth(j,i) - depth_c) * C(k)
+                S = (
+                    terms["depth_c"] * terms["s"]
+                    + (terms["depth"] - terms["depth_c"]) * terms["C"]
+                )
+                # z(n,k,j,i) = S(k,j,i) + eta(n,j,i) * (1 + S(k,j,i) / depth(j,i))
+                ds.coords[zname] = S + terms["eta"] * (1 + S / terms["depth"])
+
+            elif stdname == "ocean_s_coordinate_g2":
+                # make sure all necessary terms are present in terms
+                # (depth_c * s(k) + depth(j,i) * C(k)) / (depth_c + depth(j,i))
+                S = (terms["depth_c"] * terms["s"] + terms["depth"] * terms["C"]) / (
+                    terms["depth_c"] + terms["depth"]
+                )
+                # z(n,k,j,i) = eta(n,j,i) + (eta(n,j,i) + depth(j,i)) * S(k,j,i)
+                ds.coords[zname] = terms["eta"] + (terms["eta"] + terms["depth"]) * S
+
+            else:
+                raise NotImplementedError(
+                    f"Coordinate function for {stdname} not implemented yet. Contributions welcome!"
+                )
+
 
 @xr.register_dataarray_accessor("cf")
 class CFDataArrayAccessor(CFAccessor):

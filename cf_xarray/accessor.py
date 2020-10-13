@@ -889,7 +889,7 @@ class CFAccessor:
     @property
     def axes(self) -> Set[str]:
         """
-        Utility function that returns valid Axis names for .cf[].
+        Property that returns valid Axis names for ``.cf[]``.
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.

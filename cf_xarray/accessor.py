@@ -852,8 +852,7 @@ class CFAccessor:
     def get_valid_keys(self) -> Set[str]:
 
         warnings.warn(
-            """Now called `keys` and `get_valid_keys` will
-                      be removed in a future version.""",
+            "Now called `keys` and `get_valid_keys` will be removed in a future version.",
             DeprecationWarning,
         )
 
@@ -955,8 +954,7 @@ class CFAccessor:
     def get_standard_names(self) -> List[str]:
 
         warnings.warn(
-            """Now called `standard_names` and `get_standard_names`
-                      will be removed in a future version.""",
+            "Now called `standard_names` and `get_standard_names` will be removed in a future version.",
             DeprecationWarning,
         )
 

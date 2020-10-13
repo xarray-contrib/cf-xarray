@@ -885,6 +885,7 @@ class CFAccessor:
         varnames.extend(self.get_standard_names())
         return set(varnames)
 
+    @property
     def axes(self) -> Set[str]:
         """
         Utility function that returns valid Axis names for .cf[].
@@ -925,6 +926,7 @@ class CFAccessor:
 
         return set(varnames)
 
+    @property
     def cell_measures(self) -> Set[str]:
         """
         Utility function that returns valid cell measure names for .cf[].

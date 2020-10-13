@@ -897,7 +897,7 @@ class CFAccessor:
 
         Returns
         -------
-        Set of valid Axis names that can be used with __getitem__ or .cf[key].
+        Set of valid Axis names that can be used with ``__getitem__`` or ``.cf[key]``.
         """
         varnames = [
             key

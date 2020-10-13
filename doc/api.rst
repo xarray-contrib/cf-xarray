@@ -43,6 +43,5 @@ Dataset
     Dataset.cf.keys
     Dataset.cf.axes
     Dataset.cf.coordinates
-    Dataset.cf.cell_measures
     Dataset.cf.guess_coord_axis
     Dataset.cf.rename_like

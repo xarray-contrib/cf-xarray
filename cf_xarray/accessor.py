@@ -942,13 +942,15 @@ class CFAccessor:
         -------
         Set of valid cell measure names that can be used with __getitem__ or .cf[key].
         """
-        varnames = [
+        assert isinstance(self._obj, DataArray), "this works with DataArrays"
+
+        measures = [
             key
             for key in _CELL_MEASURES
-            if apply_mapper(_get_axis_coord, self._obj, key, error=False)
+            if apply_mapper(_get_measure, self._obj, key, error=False)
         ]
 
-        return set(varnames)
+        return set(measures)
 
     def get_standard_names(self) -> List[str]:
 

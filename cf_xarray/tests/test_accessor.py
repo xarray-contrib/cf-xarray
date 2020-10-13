@@ -32,15 +32,35 @@ def test_describe(capsys):
     assert actual == expected
 
 
-def test_get_standard_names():
+def test_axes():
+    expected = ["T", "X", "Y"]
+    actual = airds.cf.axes
+    assert actual == expected
+
+    expected = ["X", "Y"]
+    actual = popds.cf.axes
+    assert actual == expected
+
+
+def test_coordinates():
+    expected = ["latitude", "longitude", "time"]
+    actual = airds.cf.coordinates
+    assert actual == expected
+
+    expected = ["latitude", "longitude"]
+    actual = popds.cf.coordinates
+    assert actual == expected
+
+
+def test_standard_names():
     expected = ["air_temperature", "latitude", "longitude", "time"]
-    actual = airds.cf.get_standard_names()
+    actual = airds.cf.standard_names()
     assert actual == expected
 
     dsnew = xr.Dataset()
     dsnew["a"] = ("a", np.arange(10), {"standard_name": "a"})
     dsnew["b"] = ("a", np.arange(10), {"standard_name": "a"})
-    assert dsnew.cf.get_standard_names() == ["a"]
+    assert dsnew.cf.standard_names() == ["a"]
 
 
 def test_getitem_standard_name():
@@ -208,8 +228,8 @@ def test_kwargs_expand_key_to_multiple_keys():
         (ds_no_attrs.air, set()),
     ],
 )
-def test_get_valid_keys(obj, expected):
-    actual = obj.cf.get_valid_keys()
+def test_keys(obj, expected):
+    actual = obj.cf.keys()
     assert actual == expected
 
 

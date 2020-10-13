@@ -37,6 +37,7 @@ Dataset
    :template: autosummary/accessor_method.rst
 
     Dataset.cf.add_bounds
+    Dataset.cf.decode_vertical_coords
     Dataset.cf.describe
     Dataset.cf.get_bounds
     Dataset.cf.standard_names

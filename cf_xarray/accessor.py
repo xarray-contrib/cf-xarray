@@ -857,6 +857,8 @@ class CFAccessor:
             DeprecationWarning,
         )
 
+        return self.keys()
+
     def keys(self) -> Set[str]:
         """
         Utility function that returns valid keys for .cf[].
@@ -956,6 +958,9 @@ class CFAccessor:
             DeprecationWarning,
         )
 
+        return self.standard_names
+
+    @property
     def standard_names(self) -> List[str]:
         """
         Returns a sorted list of standard names in Dataset.

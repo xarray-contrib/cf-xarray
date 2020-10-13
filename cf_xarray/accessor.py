@@ -906,6 +906,7 @@ class CFAccessor:
 
         return set(varnames)
 
+    @property
     def coordinates(self) -> Set[str]:
         """
         Utility function that returns valid Coordinate names for .cf[].

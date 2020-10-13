@@ -4,7 +4,9 @@ What's New
 
 v0.4.0 (unreleased)
 ===================
-
+- Added ``.axes`` to return available Axis names for an xarray object, ``.coordinates`` for Coordinate names,
+  ``.standard_names`` for standard names, ``.cell_measures`` for cell measures,
+  and changed ``get_valid_keys()`` to ``.keys()``. `Kristen Thyng`_.
 - Added ``.cf.decode_vertical_coords`` for decoding of parameterized vertical coordinate variables.
   (:issue:`34`, :pr:`103`). `Deepak Cherian`_.
 
@@ -60,3 +62,4 @@ v0.1.3
 .. _`Deepak Cherian`: https://github.com/dcherian
 .. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Julia Kent`: https://github.com/jukent
+.. _`Kristen Thyng`: https://github.com/kthyng

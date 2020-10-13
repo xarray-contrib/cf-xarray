@@ -850,6 +850,15 @@ class CFAccessor:
         print(text)
 
     def get_valid_keys(self) -> Set[str]:
+
+        warnings.warn(
+            "Now called `keys` and `get_valid_keys` will be removed in a future version.",
+            DeprecationWarning,
+        )
+
+        return self.keys()
+
+    def keys(self) -> Set[str]:
         """
         Utility function that returns valid keys for .cf[].
 
@@ -877,7 +886,84 @@ class CFAccessor:
         varnames.extend(self.get_standard_names())
         return set(varnames)
 
+    @property
+    def axes(self) -> Set[str]:
+        """
+        Property that returns valid Axis names for ``.cf[]``.
+
+        This is useful for checking whether a key is valid for indexing, i.e.
+        that the attributes necessary to allow indexing by that key exist.
+        However, it will only return the Axis names, not Coordinate names.
+
+        Returns
+        -------
+        Set of valid Axis names that can be used with ``__getitem__`` or ``.cf[key]``.
+        Will be ("X", "Y", "Z", "T") or a subset thereof.
+        """
+        varnames = [
+            key
+            for key in _AXIS_NAMES
+            if apply_mapper(_get_axis_coord, self._obj, key, error=False)
+        ]
+
+        return set(varnames)
+
+    @property
+    def coordinates(self) -> Set[str]:
+        """
+        Property that returns valid Coordinate names for .cf[].
+
+        This is useful for checking whether a key is valid for indexing, i.e.
+        that the attributes necessary to allow indexing by that key exist.
+        However, it will only return the Coordinate names, not Axis names.
+
+        Returns
+        -------
+        Set of valid Coordinate names that can be used with ``__getitem__`` or ``.cf[key]``.
+        Will be ("longitude", "latitude", "vertical", "time") or a subset thereof.
+        """
+        varnames = [
+            key
+            for key in _COORD_NAMES
+            if apply_mapper(_get_axis_coord, self._obj, key, error=False)
+        ]
+
+        return set(varnames)
+
+    @property
+    def cell_measures(self) -> Set[str]:
+        """
+        Property that returns valid cell measure names for .cf[].
+
+        This is useful for checking whether a key is valid for indexing, i.e.
+        that the attributes necessary to allow indexing by that key exist.
+        However, it will only return the cell measure names.
+
+        Returns
+        -------
+        Set of valid cell measure names that can be used with __getitem__ or .cf[key].
+        """
+        assert isinstance(self._obj, DataArray), "this works with DataArrays"
+
+        measures = [
+            key
+            for key in _CELL_MEASURES
+            if apply_mapper(_get_measure, self._obj, key, error=False)
+        ]
+
+        return set(measures)
+
     def get_standard_names(self) -> List[str]:
+
+        warnings.warn(
+            "Now called `standard_names` and `get_standard_names` will be removed in a future version.",
+            DeprecationWarning,
+        )
+
+        return self.standard_names
+
+    @property
+    def standard_names(self) -> List[str]:
         """
         Returns a sorted list of standard names in Dataset.
 

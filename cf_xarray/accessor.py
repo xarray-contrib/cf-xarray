@@ -1259,10 +1259,10 @@ class CFDatasetAccessor(CFAccessor):
         Notes
         -----
 
-        Will only decode when the ``"formula_terms"`` and ``"standard_name"`` attributes
-        are set on the parameter (e.g.g ``"s_rho"`` )
+        Will only decode when the ``formula_terms`` and ``standard_name`` attributes
+        are set on the parameter (e.g ``s_rho`` )
 
-        Currently only supports ``"ocean_s_coordinate_g1"`` and ``"ocean_s_coordinate_g2"``.
+        Currently only supports ``ocean_s_coordinate_g1`` and ``ocean_s_coordinate_g2``.
 
         .. warning::
            Very lightly tested. Please double check the results.

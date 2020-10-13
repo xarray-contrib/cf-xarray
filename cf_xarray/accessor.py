@@ -850,6 +850,15 @@ class CFAccessor:
         print(text)
 
     def get_valid_keys(self) -> Set[str]:
+        
+        warnings.warn(
+                      """Now called `keys` and `get_valid_keys` will 
+                      be removed in a future version.""",
+                      DeprecationWarning,
+                      )
+
+
+    def keys(self) -> Set[str]:
         """
         Utility function that returns valid keys for .cf[].
 
@@ -877,7 +886,7 @@ class CFAccessor:
         varnames.extend(self.get_standard_names())
         return set(varnames)
 
-    def get_valid_axis(self) -> Set[str]:
+    def axes(self) -> Set[str]:
         """
         Utility function that returns valid Axis names for .cf[].
 
@@ -897,7 +906,7 @@ class CFAccessor:
 
         return set(varnames)
 
-    def get_valid_coords(self) -> Set[str]:
+    def coordinates(self) -> Set[str]:
         """
         Utility function that returns valid Coordinate names for .cf[].
 
@@ -917,7 +926,35 @@ class CFAccessor:
 
         return set(varnames)
 
+    def cell_measures(self) -> Set[str]:
+        """
+        Utility function that returns valid cell measure names for .cf[].
+
+        This is useful for checking whether a key is valid for indexing, i.e.
+        that the attributes necessary to allow indexing by that key exist. 
+        However, it will only return the cell measure names.
+
+        Returns
+        -------
+        Set of valid cell measure names that can be used with __getitem__ or .cf[key].
+        """
+        varnames = [
+            key
+            for key in _CELL_MEASURES
+            if apply_mapper(_get_axis_coord, self._obj, key, error=False)
+        ]
+
+        return set(varnames)
+
     def get_standard_names(self) -> List[str]:
+        
+        warnings.warn(
+                      """Now called `standard_names` and `get_standard_names` 
+                      will be removed in a future version.""",
+                      DeprecationWarning,
+                      )
+        
+    def standard_names(self) -> List[str]:
         """
         Returns a sorted list of standard names in Dataset.
 

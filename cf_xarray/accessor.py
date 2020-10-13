@@ -898,6 +898,7 @@ class CFAccessor:
         Returns
         -------
         Set of valid Axis names that can be used with __getitem__ or .cf[key].
+        Will be ("X", "Y", "Z", "T") or a subset thereof.
         """
         varnames = [
             key
@@ -910,7 +911,7 @@ class CFAccessor:
     @property
     def coordinates(self) -> Set[str]:
         """
-        Utility function that returns valid Coordinate names for .cf[].
+        Property that returns valid Coordinate names for .cf[].
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
@@ -918,7 +919,8 @@ class CFAccessor:
 
         Returns
         -------
-        Set of valid Coordinate names that can be used with __getitem__ or .cf[key].
+        Set of valid Coordinate names that can be used with ``__getitem__`` or ``.cf[key]``.
+        Will be ("longitude", "latitude", "vertical", "time") or a subset thereof.
         """
         varnames = [
             key
@@ -931,7 +933,7 @@ class CFAccessor:
     @property
     def cell_measures(self) -> Set[str]:
         """
-        Utility function that returns valid cell measure names for .cf[].
+        Property that returns valid cell measure names for .cf[].
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.

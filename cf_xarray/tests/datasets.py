@@ -97,7 +97,6 @@ romsds["s_rho"] = (
         "long_name": "S-coordinate at RHO-points",
         "valid_min": -1.0,
         "valid_max": 0.0,
-        "positive": "up",
         "standard_name": "ocean_s_coordinate_g2",
         "formula_terms": "s: s_rho C: Cs_r eta: zeta depth: h depth_c: hc",
         "field": "s_rho, scalar",
@@ -123,9 +122,11 @@ romsds["zeta"] = ("ocean_time", [-0.155356, -0.127435])
 romsds["temp"] = (
     ("ocean_time", "s_rho"),
     [np.linspace(20, 30, 30)] * 2,
-    {"coordinates": "z_rho_expected"},
+    {"coordinates": "z_rho_dummy"},
 )
 romsds["temp"].encoding["coordinates"] = "s_rho"
-Zo_rho = (romsds.hc * romsds.s_rho + romsds.Cs_r * romsds.h) / (romsds.hc + romsds.h)
-romsds.coords["z_rho_expected"] = romsds.zeta + (romsds.zeta + romsds.h) * Zo_rho
-romsds["z_rho_expected"].attrs["positive"] = "up"
+romsds.coords["z_rho_dummy"] = (
+    ("ocean_time", "s_rho"),
+    np.random.randn(2, 30),
+    {"positive": "up"},
+)

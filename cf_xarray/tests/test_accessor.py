@@ -480,7 +480,7 @@ def test_Z_vs_vertical_ROMS():
 
     assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
     assert_identical(
-        romsds.z_rho_expected.reset_coords(drop=True), romsds.temp.cf["vertical"]
+        romsds.z_rho_dummy.reset_coords(drop=True), romsds.temp.cf["vertical"]
     )
 
     romsds = romsds.copy(deep=True)
@@ -497,15 +497,30 @@ def test_Z_vs_vertical_ROMS():
     romsds.temp.encoding.clear()
     assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
     assert_identical(
-        romsds.z_rho_expected.reset_coords(drop=True), romsds.temp.cf["vertical"]
+        romsds.z_rho_dummy.reset_coords(drop=True), romsds.temp.cf["vertical"]
     )
 
 
 def test_param_vcoord_ocean_s_coord():
     from .datasets import romsds
 
+    romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g2"
+    Zo_rho = (romsds.hc * romsds.s_rho + romsds.Cs_r * romsds.h) / (
+        romsds.hc + romsds.h
+    )
+    expected = romsds.zeta + (romsds.zeta + romsds.h) * Zo_rho
     romsds.cf.decode_vertical_coords()
-    assert_allclose(romsds.z_rho, romsds.z_rho_expected)
+    assert_allclose(
+        romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
+    )
+
+    romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g1"
+    Zo_rho = romsds.hc * (romsds.s_rho - romsds.Cs_r) + romsds.Cs_r * romsds.h
+    expected = Zo_rho + romsds.zeta * (1 + Zo_rho / romsds.h)
+    romsds.cf.decode_vertical_coords()
+    assert_allclose(
+        romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
+    )
 
     romsds.cf.decode_vertical_coords(prefix="ZZZ")
     assert "ZZZ_rho" in romsds.coords

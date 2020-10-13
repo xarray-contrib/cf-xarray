@@ -850,13 +850,12 @@ class CFAccessor:
         print(text)
 
     def get_valid_keys(self) -> Set[str]:
-        
-        warnings.warn(
-                      """Now called `keys` and `get_valid_keys` will 
-                      be removed in a future version.""",
-                      DeprecationWarning,
-                      )
 
+        warnings.warn(
+            """Now called `keys` and `get_valid_keys` will 
+                      be removed in a future version.""",
+            DeprecationWarning,
+        )
 
     def keys(self) -> Set[str]:
         """
@@ -947,13 +946,13 @@ class CFAccessor:
         return set(varnames)
 
     def get_standard_names(self) -> List[str]:
-        
+
         warnings.warn(
-                      """Now called `standard_names` and `get_standard_names` 
+            """Now called `standard_names` and `get_standard_names` 
                       will be removed in a future version.""",
-                      DeprecationWarning,
-                      )
-        
+            DeprecationWarning,
+        )
+
     def standard_names(self) -> List[str]:
         """
         Returns a sorted list of standard names in Dataset.

@@ -1255,6 +1255,17 @@ class CFDatasetAccessor(CFAccessor):
         Returns
         -------
         None
+
+        Notes
+        -----
+
+        Will only decode when the ``"formula_terms"`` and ``"standard_name"`` attributes
+        are set on the parameter (e.g.g ``"s_rho"`` )
+
+        Currently only supports ``"ocean_s_coordinate_g1"`` and ``"ocean_s_coordinate_g2"``.
+
+        .. warning::
+           Very lightly tested. Please double check the results.
         """
         import re
 
@@ -1262,13 +1273,19 @@ class CFDatasetAccessor(CFAccessor):
         dims = _get_axis_coord(ds, "Z")
 
         requirements = {
-            "ocean_s_coordinate_g1": {"depth_c", "depth", "s", "C"},
-            "ocean_s_coordinate_g2": {"depth_c", "depth", "s", "C"},
+            "ocean_s_coordinate_g1": {"depth_c", "depth", "s", "C", "eta"},
+            "ocean_s_coordinate_g2": {"depth_c", "depth", "s", "C", "eta"},
         }
 
         for dim in dims:
             suffix = dim.split("_")
             zname = f"{prefix}_" + "_".join(suffix[1:])
+
+            if (
+                "formula_terms" not in ds[dim].attrs
+                or "standard_name" not in ds[dim].attrs
+            ):
+                continue
 
             formula_terms = ds[dim].attrs["formula_terms"]
             stdname = ds[dim].attrs["standard_name"]
@@ -1283,8 +1300,8 @@ class CFDatasetAccessor(CFAccessor):
                     )
                 terms[key] = ds[value]
 
-            absent_terms = set(terms) - set(requirements[stdname])
-            if not absent_terms:
+            absent_terms = requirements[stdname] - set(terms)
+            if absent_terms:
                 raise KeyError(f"Required terms {absent_terms} absent in dataset.")
 
             if stdname == "ocean_s_coordinate_g1":

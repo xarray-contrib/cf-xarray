@@ -479,7 +479,9 @@ def test_Z_vs_vertical_ROMS():
     from .datasets import romsds
 
     assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
-    assert_identical(romsds.z_rho.reset_coords(drop=True), romsds.temp.cf["vertical"])
+    assert_identical(
+        romsds.z_rho_expected.reset_coords(drop=True), romsds.temp.cf["vertical"]
+    )
 
     romsds = romsds.copy(deep=True)
 
@@ -494,4 +496,26 @@ def test_Z_vs_vertical_ROMS():
     # use .coords if coordinates attribute is not available
     romsds.temp.encoding.clear()
     assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
-    assert_identical(romsds.z_rho.reset_coords(drop=True), romsds.temp.cf["vertical"])
+    assert_identical(
+        romsds.z_rho_expected.reset_coords(drop=True), romsds.temp.cf["vertical"]
+    )
+
+
+def test_param_vcoord_ocean_s_coord():
+    from .datasets import romsds
+
+    romsds.cf.decode_vertical_coords()
+    assert_allclose(romsds.z_rho, romsds.z_rho_expected)
+
+    romsds.cf.decode_vertical_coords(prefix="ZZZ")
+    assert "ZZZ_rho" in romsds.coords
+
+    copy = romsds.copy(deep=True)
+    del copy["zeta"]
+    with pytest.raises(KeyError):
+        copy.cf.decode_vertical_coords()
+
+    copy = romsds.copy(deep=True)
+    copy.s_rho.attrs["formula_terms"] = "s: s_rho C: Cs_r depth: h depth_c: hc"
+    with pytest.raises(KeyError):
+        copy.cf.decode_vertical_coords()

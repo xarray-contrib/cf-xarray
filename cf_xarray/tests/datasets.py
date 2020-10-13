@@ -68,7 +68,7 @@ anc["q_error_limit"] = (
     dict(standard_name="specific_humidity standard_error", units="g/g"),
 )
 anc["q_detection_limit"] = xr.DataArray(
-    1e-3, attrs=dict(standard_name="specific_humidity detection_minimum", units="g/g"),
+    1e-3, attrs=dict(standard_name="specific_humidity detection_minimum", units="g/g")
 )
 anc
 
@@ -85,10 +85,47 @@ multiple["v2"] = (("x2", "y2"), np.ones((10, 5)) * 15)
 
 romsds = xr.Dataset()
 romsds["s_rho"] = (
+    # fmt: off
     "s_rho",
-    np.linspace(-1, 0, 10),
-    {"standard_name": "ocean_s_coordinate_g2"},
+    [-0.983333, -0.95    , -0.916667, -0.883333, -0.85    , -0.816667,
+     -0.783333, -0.75    , -0.716667, -0.683333, -0.65    , -0.616667,
+     -0.583333, -0.55    , -0.516667, -0.483333, -0.45    , -0.416667,
+     -0.383333, -0.35    , -0.316667, -0.283333, -0.25    , -0.216667,
+     -0.183333, -0.15    , -0.116667, -0.083333, -0.05    , -0.016667],
+    # fmt: on
+    {
+        "long_name": "S-coordinate at RHO-points",
+        "valid_min": -1.0,
+        "valid_max": 0.0,
+        "positive": "up",
+        "standard_name": "ocean_s_coordinate_g2",
+        "formula_terms": "s: s_rho C: Cs_r eta: zeta depth: h depth_c: hc",
+        "field": "s_rho, scalar",
+    }
 )
-romsds.coords["z_rho"] = ("s_rho", np.linspace(-100, 0, 10), {"positive": "up"})
-romsds["temp"] = ("s_rho", np.linspace(20, 30, 10), {"coordinates": "z_rho"})
+romsds.coords["hc"] = 20.0
+romsds.coords["h"] = 603.9
+romsds.coords["Vtransform"] = 2.0
+romsds.coords["Cs_r"] = (
+    # fmt: off
+    "s_rho",
+    [-9.33010396e-01, -8.09234736e-01, -6.98779853e-01, -6.01008926e-01,
+     -5.15058562e-01, -4.39938913e-01, -3.74609181e-01, -3.18031817e-01,
+     -2.69209327e-01, -2.27207488e-01, -1.91168387e-01, -1.60316097e-01,
+     -1.33957253e-01, -1.11478268e-01, -9.23404709e-02, -7.60741092e-02,
+     -6.22718662e-02, -5.05823390e-02, -4.07037635e-02, -3.23781605e-02,
+     -2.53860004e-02, -1.95414261e-02, -1.46880431e-02, -1.06952600e-02,
+     -7.45515186e-03, -4.87981407e-03, -2.89916971e-03, -1.45919898e-03,
+     -5.20560097e-04, -5.75774004e-05],
+    # fmt: on
+)
+romsds["zeta"] = ("ocean_time", [-0.155356, -0.127435])
+romsds["temp"] = (
+    ("ocean_time", "s_rho"),
+    [np.linspace(20, 30, 30)] * 2,
+    {"coordinates": "z_rho_expected"},
+)
 romsds["temp"].encoding["coordinates"] = "s_rho"
+Zo_rho = (romsds.hc * romsds.s_rho + romsds.Cs_r * romsds.h) / (romsds.hc + romsds.h)
+romsds.coords["z_rho_expected"] = romsds.zeta + (romsds.zeta + romsds.h) * Zo_rho
+romsds["z_rho_expected"].attrs["positive"] = "up"

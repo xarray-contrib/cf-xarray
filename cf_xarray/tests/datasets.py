@@ -68,7 +68,7 @@ anc["q_error_limit"] = (
     dict(standard_name="specific_humidity standard_error", units="g/g"),
 )
 anc["q_detection_limit"] = xr.DataArray(
-    1e-3, attrs=dict(standard_name="specific_humidity detection_minimum", units="g/g"),
+    1e-3, attrs=dict(standard_name="specific_humidity detection_minimum", units="g/g")
 )
 anc
 

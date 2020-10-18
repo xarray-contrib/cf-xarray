@@ -33,7 +33,7 @@ def is_dict_like(value: Any) -> bool:
 
 # copied from xarray
 class UncachedAccessor:
-    """ Acts like a property, but on both classes and class instances
+    """Acts like a property, but on both classes and class instances
     This class is necessary because some tools (e.g. pydoc and sphinx)
     inspect classes for which property returns itself and not the
     accessor.

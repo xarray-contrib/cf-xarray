@@ -9,7 +9,7 @@ from xarray.testing import assert_allclose, assert_identical
 import cf_xarray  # noqa
 
 from . import raise_if_dask_computes
-from .datasets import airds, anc, ds_no_attrs, multiple, popds
+from .datasets import airds, anc, ds_no_attrs, mollwds, multiple, popds
 
 mpl.use("Agg")
 
@@ -427,6 +427,27 @@ def test_bounds():
     actual = ds.cf.get_bounds("lat")
     expected = ds["lat_bounds"]
     assert_identical(actual, expected)
+
+
+def test_get_corners():
+    # 1D case
+    ds = airds.cf.add_bounds(['lon', 'lat'])
+    lat_c = ds.cf.get_corners('latitude')
+    lon_c = ds.cf.get_corners('longitude')
+    assert np.all(ds.lat.values + 1.25 == lat_c.values[:-1])
+    assert np.all(ds.lon.values - 1.25 == lon_c.values[:-1])
+
+    # 2D case
+    lat_c = mollwds.cf.get_corners('latitude')
+    lon_c = mollwds.cf.get_corners('longitude')
+    assert_identical(mollwds.lat_corners, lat_c)
+    assert_identical(mollwds.lon_corners, lon_c)
+    # Transposing the array changes the bounds direction
+    ds = mollwds.transpose('bounds', 'y', 'x', 'y_corners', 'x_corners')
+    lat_c = ds.cf.get_corners('latitude')
+    lon_c = ds.cf.get_corners('longitude')
+    assert_identical(ds.lat_corners, lat_c)
+    assert_identical(ds.lon_corners, lon_c)
 
 
 def test_docstring():

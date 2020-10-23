@@ -17,6 +17,7 @@ from typing import (
     Union,
 )
 
+import numpy as np
 import xarray as xr
 from xarray import DataArray, Dataset
 
@@ -540,6 +541,23 @@ def _getattr(
     wrapper.__doc__ = _build_docstring(func) + wrapper.__doc__
 
     return wrapper
+
+
+def _bounds_are_clockwise(values):
+    """Guesses the order of the given bounds.
+
+    If we draw the bounds points, with axis 1 vertical and axis 2 horizontal,
+    this function returns whether the points are stored clockwise or counterclockwise.
+
+    Parameters
+    ----------
+    values : np.ndarray (bounds, n, m)
+
+    Returns
+    -------
+    boolean
+    """
+    pass
 
 
 class _CFWrappedClass:
@@ -1286,6 +1304,66 @@ class CFDatasetAccessor(CFAccessor):
         bounds = self._obj[name].attrs["bounds"]
         obj = self._maybe_to_dataset()
         return obj[bounds]
+
+    def get_corners(self, key: str) -> DataArray:
+        """
+        Get corners variable corresponding to key.
+        Corners are computed from bounds, so bounds
+        for that key must already be in the dataset.
+
+        Parameters
+        ----------
+        key: str
+            Name of variable whose corners are desired
+
+        Returns
+        -------
+        DataArray
+        """
+        bounds = self.get_bounds(key)
+        # Get old and new dimension names and retranspose array to have bounds dim at axis 0.
+        old_dims = self[key].dims
+        bnd_dim = list(set(bounds.dims) - set(old_dims))[0]
+        new_dims = [f'{dim}_corners' for dim in old_dims]
+        name = f'{self[key].name}_corners'
+        values = bounds.transpose(bnd_dim, *old_dims).values
+        if len(old_dims) == 2 and bounds.ndim == 3 and bounds[bnd_dim].size == 4:
+            # Vertices case (2D lat/lon)
+            # Names assume we are drawing axis 1 upward et axis 2 rightward.
+            bot_left = values[0, :, :]
+            bot_right = values[1, :, -1:]
+            top_right = values[2, -1:, -1:]
+            top_left = values[3, -1:, :]
+            corner_vals = np.block([
+                [bot_left, bot_right],
+                [top_left, top_right]
+            ])
+            calc_bnds = np.stack(
+                (corner_vals[:-1, :-1],
+                 corner_vals[:-1, 1:],
+                 corner_vals[1:, 1:],
+                 corner_vals[1:, :-1]),
+                axis=0
+            )
+            if not np.all(calc_bnds == values):
+                bot_right = values[3, :, -1:]
+                top_left = values[1, -1:, :]
+                # Our asumption was wrong, axis 1 is rightward and axis 2 is upward
+                corner_vals = np.block([
+                    [bot_left, bot_right],
+                    [top_left, top_right]
+                ])
+            corners = xr.DataArray(corner_vals, dims=new_dims, name=name)
+        elif len(old_dims) == 1 and bounds.ndim == 2 and bounds[bnd_dim].size == 2:
+            # Middle points case (1D lat/lon)
+            corners = xr.DataArray(
+                np.concatenate((values[0, :], values[1, -1:])),
+                dims=(new_dims[0],), name=name
+            )
+        else:
+            raise ValueError(f'Bounds format not understood. Got {bounds.dims} with shape {bounds.shape}.')
+
+        return corners
 
     def add_bounds(self, dims: Union[Hashable, Iterable[Hashable]]):
         """

@@ -61,6 +61,7 @@ v0.1.3
 - Support expanding key to multiple dimension names.
 
 .. _`Anderson Banihirwe`: https://github.com/andersy005
+.. _`Pascal Bourgault`: https://github.com/aulemahal
 .. _`Deepak Cherian`: https://github.com/dcherian
 .. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Julia Kent`: https://github.com/jukent

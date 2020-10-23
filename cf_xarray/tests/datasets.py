@@ -146,23 +146,45 @@ lat_corners = np.rad2deg(np.arcsin((2 * theta_bnds + np.sin(2 * theta_bnds)) / n
 lon_corners = np.rad2deg(XX_bnds * np.pi / (R * 2 * np.sqrt(2) * np.cos(theta_bnds)))
 
 lon_bounds = np.stack(
-    (lon_corners[:-1, :-1], lon_corners[:-1, 1:], lon_corners[1:, 1:], lon_corners[1:, :-1]),
-    axis=0
+    (
+        lon_corners[:-1, :-1],
+        lon_corners[:-1, 1:],
+        lon_corners[1:, 1:],
+        lon_corners[1:, :-1],
+    ),
+    axis=0,
 )
 lat_bounds = np.stack(
-    (lat_corners[:-1, :-1], lat_corners[:-1, 1:], lat_corners[1:, 1:], lat_corners[1:, :-1]),
-    axis=0
+    (
+        lat_corners[:-1, :-1],
+        lat_corners[:-1, 1:],
+        lat_corners[1:, 1:],
+        lat_corners[1:, :-1],
+    ),
+    axis=0,
 )
 
 mollwds = xr.Dataset(
     coords=dict(
-        lon=xr.DataArray(lon, dims=('x', 'y'), attrs={'units': 'degrees_east', 'bounds': 'lon_bounds'}),
-        lat=xr.DataArray(lat, dims=('x', 'y'), attrs={'units': 'degrees_north', 'bounds': 'lat_bounds'}),
+        lon=xr.DataArray(
+            lon,
+            dims=("x", "y"),
+            attrs={"units": "degrees_east", "bounds": "lon_bounds"},
+        ),
+        lat=xr.DataArray(
+            lat,
+            dims=("x", "y"),
+            attrs={"units": "degrees_north", "bounds": "lat_bounds"},
+        ),
     ),
     data_vars=dict(
-        lon_bounds=xr.DataArray(lon_bounds, dims=('bounds', 'x', 'y'), attrs={'units': 'degrees_east'}),
-        lat_bounds=xr.DataArray(lat_bounds, dims=('bounds', 'x', 'y'), attrs={'units': 'degrees_north'}),
-        lon_corners=xr.DataArray(lon_corners, dims=('x_corners', 'y_corners')),
-        lat_corners=xr.DataArray(lat_corners, dims=('x_corners', 'y_corners'))
-    )
+        lon_bounds=xr.DataArray(
+            lon_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_east"}
+        ),
+        lat_bounds=xr.DataArray(
+            lat_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_north"}
+        ),
+        lon_corners=xr.DataArray(lon_corners, dims=("x_corners", "y_corners")),
+        lat_corners=xr.DataArray(lat_corners, dims=("x_corners", "y_corners")),
+    ),
 )

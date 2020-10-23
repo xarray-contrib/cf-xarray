@@ -1307,8 +1307,8 @@ class CFDatasetAccessor(CFAccessor):
         # Get old and new dimension names and retranspose array to have bounds dim at axis 0.
         old_dims = self[key].dims
         bnd_dim = list(set(bounds.dims) - set(old_dims))[0]
-        new_dims = [f'{dim}_corners' for dim in old_dims]
-        name = f'{self[key].name}_corners'
+        new_dims = [f"{dim}_corners" for dim in old_dims]
+        name = f"{self[key].name}_corners"
         values = bounds.transpose(bnd_dim, *old_dims).values
         if len(old_dims) == 2 and bounds.ndim == 3 and bounds[bnd_dim].size == 4:
             # Vertices case (2D lat/lon)
@@ -1317,34 +1317,33 @@ class CFDatasetAccessor(CFAccessor):
             bot_right = values[1, :, -1:]
             top_right = values[2, -1:, -1:]
             top_left = values[3, -1:, :]
-            corner_vals = np.block([
-                [bot_left, bot_right],
-                [top_left, top_right]
-            ])
+            corner_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
             calc_bnds = np.stack(
-                (corner_vals[:-1, :-1],
-                 corner_vals[:-1, 1:],
-                 corner_vals[1:, 1:],
-                 corner_vals[1:, :-1]),
-                axis=0
+                (
+                    corner_vals[:-1, :-1],
+                    corner_vals[:-1, 1:],
+                    corner_vals[1:, 1:],
+                    corner_vals[1:, :-1],
+                ),
+                axis=0,
             )
             if not np.all(calc_bnds == values):
                 bot_right = values[3, :, -1:]
                 top_left = values[1, -1:, :]
                 # Our asumption was wrong, axis 1 is rightward and axis 2 is upward
-                corner_vals = np.block([
-                    [bot_left, bot_right],
-                    [top_left, top_right]
-                ])
+                corner_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
             corners = xr.DataArray(corner_vals, dims=new_dims, name=name)
         elif len(old_dims) == 1 and bounds.ndim == 2 and bounds[bnd_dim].size == 2:
             # Middle points case (1D lat/lon)
             corners = xr.DataArray(
                 np.concatenate((values[0, :], values[1, -1:])),
-                dims=(new_dims[0],), name=name
+                dims=(new_dims[0],),
+                name=name,
             )
         else:
-            raise ValueError(f'Bounds format not understood. Got {bounds.dims} with shape {bounds.shape}.')
+            raise ValueError(
+                f"Bounds format not understood. Got {bounds.dims} with shape {bounds.shape}."
+            )
 
         return corners
 

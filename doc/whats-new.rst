@@ -9,6 +9,8 @@ v0.4.0 (unreleased)
   and changed ``get_valid_keys()`` to ``.keys()``. `Kristen Thyng`_.
 - Added ``.cf.decode_vertical_coords`` for decoding of parameterized vertical coordinate variables.
   (:issue:`34`, :pr:`103`). `Deepak Cherian`_.
+- Added ``cf.get_corners`` to convert from coordinate bounds in a CF format (shape (nx, 2)) to a corners format (shape (nx+1)).
+  (:pr:`108`). `Pascal Bourgault`_.
 
 v0.3.0 (Sep 27, 2020)
 =====================

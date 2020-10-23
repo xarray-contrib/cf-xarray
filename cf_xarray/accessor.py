@@ -543,23 +543,6 @@ def _getattr(
     return wrapper
 
 
-def _bounds_are_clockwise(values):
-    """Guesses the order of the given bounds.
-
-    If we draw the bounds points, with axis 1 vertical and axis 2 horizontal,
-    this function returns whether the points are stored clockwise or counterclockwise.
-
-    Parameters
-    ----------
-    values : np.ndarray (bounds, n, m)
-
-    Returns
-    -------
-    boolean
-    """
-    pass
-
-
 class _CFWrappedClass:
     """
     This class is used to wrap any class in _WRAPPED_CLASSES.

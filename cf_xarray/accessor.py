@@ -18,12 +18,10 @@ from typing import (
     Union,
 )
 
-import numpy as np
 import xarray as xr
 from xarray import DataArray, Dataset
 
 from .helpers import bounds_to_corners
-
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (
@@ -1334,9 +1332,9 @@ class CFDatasetAccessor(CFAccessor):
         return self._maybe_to_dataarray(obj)
 
     def bounds_to_corners(
-            self,
-            keys: Optional[Union[str, Iterable[str]]] = None,
-            order: Optional[str] = 'counterclockwise'
+        self,
+        keys: Optional[Union[str, Iterable[str]]] = None,
+        order: Optional[str] = "counterclockwise",
     ) -> Dataset:
         """
         Convert bounds variable to corners.
@@ -1373,7 +1371,7 @@ class CFDatasetAccessor(CFAccessor):
             If any of the keys given doesn't corresponds to existing bounds.
         """
         if keys is None:
-            coords = self.keys()
+            coords: Iterable[str] = self.keys()
         elif isinstance(keys, str):
             coords = (keys,)
         else:
@@ -1386,16 +1384,22 @@ class CFDatasetAccessor(CFAccessor):
                 bounds = self.get_bounds(coord)
             except KeyError as exc:
                 if keys is not None:
-                    raise ValueError(f'Corners are computed from bounds but given key {coord} did not correspond to existing bounds.') from exc
+                    raise ValueError(
+                        f"Corners are computed from bounds but given key {coord} did not correspond to existing bounds."
+                    ) from exc
             else:
-                name = f'{self[coord].name}_corners'
+                name = f"{self[coord].name}_corners"
                 if name not in obj:
                     obj = obj.assign(
-                        {name: bounds_to_corners(
-                            bounds,
-                            bounds_dim=list(set(bounds.dims) - set(self[coord].dims))[0],
-                            order=order
-                        )}
+                        {
+                            name: bounds_to_corners(
+                                bounds,
+                                bounds_dim=list(
+                                    set(bounds.dims) - set(self[coord].dims)
+                                )[0],
+                                order=order,
+                            )
+                        }
                     )
         return obj
 

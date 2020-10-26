@@ -12,6 +12,7 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
+    Optional,
     Set,
     Tuple,
     Union,
@@ -20,6 +21,9 @@ from typing import (
 import numpy as np
 import xarray as xr
 from xarray import DataArray, Dataset
+
+from .helpers import bounds_to_corners
+
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (
@@ -1288,65 +1292,6 @@ class CFDatasetAccessor(CFAccessor):
         obj = self._maybe_to_dataset()
         return obj[bounds]
 
-    def get_corners(self, key: str) -> DataArray:
-        """
-        Get corners variable corresponding to key.
-        Corners are computed from bounds, so bounds
-        for that key must already be in the dataset.
-
-        Parameters
-        ----------
-        key: str
-            Name of variable whose corners are desired
-
-        Returns
-        -------
-        DataArray
-        """
-        bounds = self.get_bounds(key)
-        # Get old and new dimension names and retranspose array to have bounds dim at axis 0.
-        old_dims = self[key].dims
-        bnd_dim = list(set(bounds.dims) - set(old_dims))[0]
-        new_dims = [f"{dim}_corners" for dim in old_dims]
-        name = f"{self[key].name}_corners"
-        values = bounds.transpose(bnd_dim, *old_dims).values
-        if len(old_dims) == 2 and bounds.ndim == 3 and bounds[bnd_dim].size == 4:
-            # Vertices case (2D lat/lon)
-            # Names assume we are drawing axis 1 upward et axis 2 rightward.
-            bot_left = values[0, :, :]
-            bot_right = values[1, :, -1:]
-            top_right = values[2, -1:, -1:]
-            top_left = values[3, -1:, :]
-            corner_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
-            calc_bnds = np.stack(
-                (
-                    corner_vals[:-1, :-1],
-                    corner_vals[:-1, 1:],
-                    corner_vals[1:, 1:],
-                    corner_vals[1:, :-1],
-                ),
-                axis=0,
-            )
-            if not np.all(calc_bnds == values):
-                bot_right = values[3, :, -1:]
-                top_left = values[1, -1:, :]
-                # Our asumption was wrong, axis 1 is rightward and axis 2 is upward
-                corner_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
-            corners = xr.DataArray(corner_vals, dims=new_dims, name=name)
-        elif len(old_dims) == 1 and bounds.ndim == 2 and bounds[bnd_dim].size == 2:
-            # Middle points case (1D lat/lon)
-            corners = xr.DataArray(
-                np.concatenate((values[0, :], values[1, -1:])),
-                dims=(new_dims[0],),
-                name=name,
-            )
-        else:
-            raise ValueError(
-                f"Bounds format not understood. Got {bounds.dims} with shape {bounds.shape}."
-            )
-
-        return corners
-
     def add_bounds(self, dims: Union[Hashable, Iterable[Hashable]]):
         """
         Returns a new object with bounds variables. The bounds values are guessed assuming
@@ -1387,6 +1332,72 @@ class CFDatasetAccessor(CFAccessor):
             obj[dim].attrs["bounds"] = bname
 
         return self._maybe_to_dataarray(obj)
+
+    def bounds_to_corners(
+            self,
+            keys: Optional[Union[str, Iterable[str]]] = None,
+            order: Optional[str] = 'counterclockwise'
+    ) -> Dataset:
+        """
+        Convert bounds variable to corners.
+
+        There 2 covered cases:
+         - 1D coordinates, with bounds of shape (N, 2),
+           converted to corners of shape (N+1,)
+         - 2D coordinates, with bounds of shape (N, M, 4).
+           converted to corners of shape (N+1, M+1).
+
+
+        Parameters
+        ----------
+        keys : str or Iterable[str], optional
+            The names of the variables whose bounds are to be converted to corners.
+            If not given, converts all available bounds within self.cf.keys().
+        order : {'counterclockwise', 'ccw', 'clockwise', 'cw', None}
+            Valid for 2D coordinates only (bounds of shape NxMx4), ignored otherwise.
+            Order the bounds are given in, assuming that axis0-axis1-upward
+            is a right handed coordinate system.
+            If None, the counterclockwise version is computed and then
+            verified. If the check fails the clockwise version is returned.
+
+        Returns
+        -------
+        Dataset
+            Copy of the dataset with added corners variables.
+            Either of shape (N+1,) or (N+1, M+1). New corner dimensions are named
+            from the intial dimension and suffix "_corners".
+
+        Raises
+        ------
+        ValueError
+            If any of the keys given doesn't corresponds to existing bounds.
+        """
+        if keys is None:
+            coords = self.keys()
+        elif isinstance(keys, str):
+            coords = (keys,)
+        else:
+            coords = keys
+
+        obj = self._maybe_to_dataset(self._obj.copy(deep=True))
+
+        for coord in coords:
+            try:
+                bounds = self.get_bounds(coord)
+            except KeyError as exc:
+                if keys is not None:
+                    raise ValueError(f'Corners are computed from bounds but given key {coord} did not correspond to existing bounds.') from exc
+            else:
+                name = f'{self[coord].name}_corners'
+                if name not in obj:
+                    obj = obj.assign(
+                        {name: bounds_to_corners(
+                            bounds,
+                            bounds_dim=list(set(bounds.dims) - set(self[coord].dims))[0],
+                            order=order
+                        )}
+                    )
+        return obj
 
     def decode_vertical_coords(self, prefix="z"):
         """

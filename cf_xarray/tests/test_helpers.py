@@ -1,36 +1,56 @@
-import numpy as np
 from numpy.testing import assert_array_equal
+from xarray.testing import assert_equal
 
-import cf_xarray as cf  # noqa
+import cf_xarray as cfxr  # noqa
 
 from .datasets import airds, mollwds
+
+try:
+    from dask.array import Array as DaskArray
+except ImportError:
+    DaskArray = None
 
 
 def test_bounds_to_corners():
     # 1D case
-    ds = airds.cf.add_bounds(["lon", "lat"])
-    lat_c = cf.bounds_to_corners(ds.lat_bounds, bounds_dim="bounds")
-    assert np.all(ds.lat.values + 1.25 == lat_c.values[:-1])
+    ds = airds.cf.add_bounds(["lon", "lat", "time"])
+    lat_c = cfxr.bounds_to_corners(ds.lat_bounds, bounds_dim="bounds")
+    assert_array_equal(ds.lat.values + 1.25, lat_c.values[:-1])
 
     # 2D case, CF- order
-    lat_c = cf.bounds_to_corners(mollwds.lat_bounds, bounds_dim="bounds")
-    assert mollwds.lat_corners.equals(lat_c)
+    lat_c = cfxr.bounds_to_corners(mollwds.lat_bounds, bounds_dim="bounds")
+    assert_equal(mollwds.lat_corners, lat_c)
 
     # Transposing the array changes the bounds direction
     ds = mollwds.transpose("bounds", "y", "x", "y_corners", "x_corners")
-    lon_c = cf.bounds_to_corners(ds.lon_bounds, bounds_dim="bounds", order="clockwise")
-    lon_c2 = cf.bounds_to_corners(ds.lon_bounds, bounds_dim="bounds", order=None)
-    assert ds.lon_corners.equals(lon_c)
-    assert ds.lon_corners.equals(lon_c2)
+    lon_c = cfxr.bounds_to_corners(
+        ds.lon_bounds, bounds_dim="bounds", order="clockwise"
+    )
+    lon_c2 = cfxr.bounds_to_corners(ds.lon_bounds, bounds_dim="bounds", order=None)
+    assert_equal(ds.lon_corners, lon_c)
+    assert_equal(ds.lon_corners, lon_c2)
+
+    # Preserves dask-backed arrays
+    if DaskArray is not None:
+        lon_bounds = ds.lon_bounds.chunk()
+        lon_c = cfxr.bounds_to_corners(
+            lon_bounds, bounds_dim="bounds", order="clockwise"
+        )
+        assert isinstance(lon_c.data, DaskArray)
 
 
 def test_corners_to_bounds():
     # 1D case
-    ds = airds.cf.add_bounds(["lon", "lat"])
-    lat_c = cf.bounds_to_corners(ds.lat_bounds, bounds_dim="bounds")
-    lat_b = cf.corners_to_bounds(lat_c, out_dims=("bounds", "lat"))
+    ds = airds.cf.add_bounds(["lon", "lat", "time"])
+    lat_c = cfxr.bounds_to_corners(ds.lat_bounds, bounds_dim="bounds")
+    lat_b = cfxr.corners_to_bounds(lat_c, out_dims=("bounds", "lat"))
     assert_array_equal(ds.lat_bounds, lat_b)
 
+    # Datetime
+    time_c = cfxr.bounds_to_corners(ds.time_bounds, bounds_dim="bounds")
+    time_b = cfxr.corners_to_bounds(time_c, out_dims=("bounds", "time"))
+    assert_array_equal(ds.time_bounds, time_b)
+
     # 2D case
-    lon_b = cf.corners_to_bounds(mollwds.lon_corners, out_dims=("bounds", "x", "y"))
-    assert (mollwds.lon_bounds == lon_b).all()
+    lon_b = cfxr.corners_to_bounds(mollwds.lon_corners, out_dims=("bounds", "x", "y"))
+    assert_array_equal(mollwds.lon_bounds, lon_b)

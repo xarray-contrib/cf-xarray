@@ -40,9 +40,21 @@ Dataset
     Dataset.cf.decode_vertical_coords
     Dataset.cf.describe
     Dataset.cf.get_bounds
+    Dataset.cf.bounds_to_corners
     Dataset.cf.standard_names
     Dataset.cf.keys
     Dataset.cf.axes
     Dataset.cf.coordinates
     Dataset.cf.guess_coord_axis
     Dataset.cf.rename_like
+
+.. currentmodule:: cf_xarray
+
+Helpers
+-------
+
+.. autosummary::
+    :toctree: generated/
+
+    cf_xarray.helpers.bounds_to_corners
+    cf_xarray.helpers.corners_to_bounds

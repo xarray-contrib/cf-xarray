@@ -1345,17 +1345,16 @@ class CFDatasetAccessor(CFAccessor):
          - 2D coordinates, with bounds of shape (N, M, 4).
            converted to corners of shape (N+1, M+1).
 
-
         Parameters
         ----------
         keys : str or Iterable[str], optional
             The names of the variables whose bounds are to be converted to corners.
             If not given, converts all available bounds within self.cf.keys().
-        order : {'counterclockwise', 'ccw', 'clockwise', 'cw', None}
-            Valid for 2D coordinates only (bounds of shape NxMx4), ignored otherwise.
-            Order the bounds are given in, assuming that axis0-axis1-upward
-            is a right handed coordinate system.
-            If None, the counterclockwise version is computed and then
+        order : {'counterclockwise', 'clockwise', None}
+            Valid for 2D coordinates only (bounds of shape (N, M, 4), ignored otherwise.
+            Order the bounds are given in, assuming that ax0-ax1-upward is a right
+            handed coordinate system, where ax0 and ax1 are the two first dimensions of
+            the variable. If None, the counterclockwise version is computed and then
             verified. If the check fails the clockwise version is returned.
 
         Returns
@@ -1363,7 +1362,8 @@ class CFDatasetAccessor(CFAccessor):
         Dataset
             Copy of the dataset with added corners variables.
             Either of shape (N+1,) or (N+1, M+1). New corner dimensions are named
-            from the intial dimension and suffix "_corners".
+            from the intial dimension and suffix "_corners". Variables with similar
+            names are overwritten.
 
         Raises
         ------
@@ -1389,18 +1389,17 @@ class CFDatasetAccessor(CFAccessor):
                     ) from exc
             else:
                 name = f"{self[coord].name}_corners"
-                if name not in obj:
-                    obj = obj.assign(
-                        {
-                            name: bounds_to_corners(
-                                bounds,
-                                bounds_dim=list(
-                                    set(bounds.dims) - set(self[coord].dims)
-                                )[0],
-                                order=order,
-                            )
-                        }
-                    )
+                obj = obj.assign(  # Overwrite any variable with the same name.
+                    {
+                        name: bounds_to_corners(
+                            bounds,
+                            bounds_dim=list(set(bounds.dims) - set(self[coord].dims))[
+                                0
+                            ],
+                            order=order,
+                        )
+                    }
+                )
         return obj
 
     def decode_vertical_coords(self, prefix="z"):

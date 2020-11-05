@@ -21,17 +21,28 @@ def bounds_to_vertices(
         The bounds to convert. Must be of shape (N, 2) or (N, M, 4).
     bounds_dim : str
         The name of the bounds dimension of `bounds` (the one of length 2 or 4).
-    order : {'counterclockwise', 'ccw', 'clockwise', 'cw', None}
+    order : {'counterclockwise', 'clockwise', None}
         Valid for 2D coordinates only (bounds of shape (N, M, 4), ignored otherwise.
-        Order the bounds are given in, assuming that axis0-axis1-upward
-        is a right handed coordinate system.
-        If None, the counterclockwise version is computed and then
-        verified. If the check fails the clockwise version is returned.
+        Order the bounds are given in, assuming that ax0-ax1-upward is a right handed
+        coordinate system, where ax0 and ax1 are the two first dimensions of `bounds`.
+        If None, the counterclockwise version is computed and then verified. If the
+        check fails the clockwise version is returned. See Notes for more details.
+
     Returns
     -------
     DataArray
         Either of shape (N+1,) or (N+1, M+1). New vertex dimensions are named
         from the intial dimension and suffix "_vertices".
+
+    Notes
+    -----
+    Getting the correct axes "order" is tricky. There are no real standards for
+    dimension names or even axes order, even though the CF conventions mentions the
+    ax0-ax1-upward (counterclockwise bounds) as being the default. Moreover, xarray can
+    tranpose data without raising any warning or error, which make attributes
+    unreliable.
+
+    Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-boundaries.
     """
     # Get old and new dimension names and retranspose array to have bounds dim at axis 0.
     bnd_dim = (
@@ -39,10 +50,10 @@ def bounds_to_vertices(
     )
     old_dims = [dim for dim in bounds.dims if dim != bnd_dim]
     new_dims = [f"{dim}_vertices" for dim in old_dims]
-    values = bounds.transpose(bnd_dim, *old_dims).values
+    values = bounds.transpose(bnd_dim, *old_dims).data
     if len(old_dims) == 2 and bounds.ndim == 3 and bounds[bnd_dim].size == 4:
         # Vertices case (2D lat/lon)
-        if order in ["counterclockwise", "ccw", None]:
+        if order in ["counterclockwise", None]:
             # Names assume we are drawing axis 1 upward et axis 2 rightward.
             bot_left = values[0, :, :]
             bot_right = values[1, :, -1:]
@@ -51,8 +62,8 @@ def bounds_to_vertices(
             vertex_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
         if order is None:  # We verify if the ccw version works.
             calc_bnds = vertices_to_bounds(vertex_vals).values
-            order = "ccw" if np.all(calc_bnds == values) else "cw"
-        if order in ["cw", "clockwise"]:
+            order = "counterclockwise" if np.all(calc_bnds == values) else "clockwise"
+        if order == "clockwise":
             bot_left = values[0, :, :]
             top_left = values[1, -1:, :]
             top_right = values[2, -1:, -1:]

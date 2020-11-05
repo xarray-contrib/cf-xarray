@@ -449,6 +449,11 @@ def test_bounds_to_vertices():
     with pytest.raises(ValueError):
         dsc = ds.cf.bounds_to_vertices("T")
 
+    # Words on datetime arrays to
+    ds = airds.cf.add_bounds("time")
+    dsc = ds.cf.bounds_to_corners()
+    assert "time_bounds" in dsc
+
 
 def test_docstring():
     assert "One of ('X'" in airds.cf.groupby.__doc__

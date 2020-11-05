@@ -451,7 +451,7 @@ def test_bounds_to_vertices():
 
     # Words on datetime arrays to
     ds = airds.cf.add_bounds("time")
-    dsc = ds.cf.bounds_to_corners()
+    dsc = ds.cf.bounds_to_vertices()
     assert "time_bounds" in dsc
 
 

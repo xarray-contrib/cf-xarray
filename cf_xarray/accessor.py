@@ -12,7 +12,6 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
-    Optional,
     Set,
     Tuple,
     Union,
@@ -1333,8 +1332,8 @@ class CFDatasetAccessor(CFAccessor):
 
     def bounds_to_corners(
         self,
-        keys: Optional[Union[str, Iterable[str]]] = None,
-        order: Optional[str] = "counterclockwise",
+        keys: Union[str, Iterable[str]] = None,
+        order: str = "counterclockwise",
     ) -> Dataset:
         """
         Convert bounds variable to corners.
@@ -1369,6 +1368,16 @@ class CFDatasetAccessor(CFAccessor):
         ------
         ValueError
             If any of the keys given doesn't corresponds to existing bounds.
+
+        Notes
+        -----
+        Getting the correct axes "order" is tricky. There are no real standards for
+        dimension names or even axes order, even though the CF conventions mentions the
+        ax0-ax1-upward (counterclockwise bounds) as being the default. Moreover, xarray can
+        tranpose data without raising any warning or error, which make attributes
+        unreliable.
+
+        Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-boundaries.
         """
         if keys is None:
             coords: Iterable[str] = self.keys()

@@ -50,11 +50,11 @@ Dataset
 
 .. currentmodule:: cf_xarray
 
-Helpers
--------
+Top-level API
+-------------
 
 .. autosummary::
     :toctree: generated/
 
-    cf_xarray.helpers.bounds_to_corners
-    cf_xarray.helpers.corners_to_bounds
+    bounds_to_corners
+    corners_to_bounds

@@ -21,7 +21,7 @@ from typing import (
 import xarray as xr
 from xarray import DataArray, Dataset
 
-from .helpers import bounds_to_corners
+from .helpers import bounds_to_vertices
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (
@@ -1331,25 +1331,25 @@ class CFDatasetAccessor(CFAccessor):
 
         return self._maybe_to_dataarray(obj)
 
-    def bounds_to_corners(
+    def bounds_to_vertices(
         self,
         keys: Optional[Union[str, Iterable[str]]] = None,
         order: Optional[str] = "counterclockwise",
     ) -> Dataset:
         """
-        Convert bounds variable to corners.
+        Convert bounds variable to vertices.
 
         There 2 covered cases:
          - 1D coordinates, with bounds of shape (N, 2),
-           converted to corners of shape (N+1,)
+           converted to vertices of shape (N+1,)
          - 2D coordinates, with bounds of shape (N, M, 4).
-           converted to corners of shape (N+1, M+1).
+           converted to vertices of shape (N+1, M+1).
 
 
         Parameters
         ----------
         keys : str or Iterable[str], optional
-            The names of the variables whose bounds are to be converted to corners.
+            The names of the variables whose bounds are to be converted to vertices.
             If not given, converts all available bounds within self.cf.keys().
         order : {'counterclockwise', 'ccw', 'clockwise', 'cw', None}
             Valid for 2D coordinates only (bounds of shape NxMx4), ignored otherwise.
@@ -1361,9 +1361,9 @@ class CFDatasetAccessor(CFAccessor):
         Returns
         -------
         Dataset
-            Copy of the dataset with added corners variables.
-            Either of shape (N+1,) or (N+1, M+1). New corner dimensions are named
-            from the intial dimension and suffix "_corners".
+            Copy of the dataset with added vertices variables.
+            Either of shape (N+1,) or (N+1, M+1). New vertex dimensions are named
+            from the intial dimension and suffix "_vertices".
 
         Raises
         ------
@@ -1385,14 +1385,14 @@ class CFDatasetAccessor(CFAccessor):
             except KeyError as exc:
                 if keys is not None:
                     raise ValueError(
-                        f"Corners are computed from bounds but given key {coord} did not correspond to existing bounds."
+                        f"vertices are computed from bounds but given key {coord} did not correspond to existing bounds."
                     ) from exc
             else:
-                name = f"{self[coord].name}_corners"
+                name = f"{self[coord].name}_vertices"
                 if name not in obj:
                     obj = obj.assign(
                         {
-                            name: bounds_to_corners(
+                            name: bounds_to_vertices(
                                 bounds,
                                 bounds_dim=list(
                                     set(bounds.dims) - set(self[coord].dims)

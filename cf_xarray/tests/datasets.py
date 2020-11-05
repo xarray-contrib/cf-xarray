@@ -142,24 +142,24 @@ lat = np.rad2deg(np.arcsin((2 * theta + np.sin(2 * theta)) / np.pi))
 lon = np.rad2deg(XX * np.pi / (R * 2 * np.sqrt(2) * np.cos(theta)))
 
 theta_bnds = np.arcsin(YY_bnds / (R * np.sqrt(2)))
-lat_corners = np.rad2deg(np.arcsin((2 * theta_bnds + np.sin(2 * theta_bnds)) / np.pi))
-lon_corners = np.rad2deg(XX_bnds * np.pi / (R * 2 * np.sqrt(2) * np.cos(theta_bnds)))
+lat_vertices = np.rad2deg(np.arcsin((2 * theta_bnds + np.sin(2 * theta_bnds)) / np.pi))
+lon_vertices = np.rad2deg(XX_bnds * np.pi / (R * 2 * np.sqrt(2) * np.cos(theta_bnds)))
 
 lon_bounds = np.stack(
     (
-        lon_corners[:-1, :-1],
-        lon_corners[:-1, 1:],
-        lon_corners[1:, 1:],
-        lon_corners[1:, :-1],
+        lon_vertices[:-1, :-1],
+        lon_vertices[:-1, 1:],
+        lon_vertices[1:, 1:],
+        lon_vertices[1:, :-1],
     ),
     axis=0,
 )
 lat_bounds = np.stack(
     (
-        lat_corners[:-1, :-1],
-        lat_corners[:-1, 1:],
-        lat_corners[1:, 1:],
-        lat_corners[1:, :-1],
+        lat_vertices[:-1, :-1],
+        lat_vertices[:-1, 1:],
+        lat_vertices[1:, 1:],
+        lat_vertices[1:, :-1],
     ),
     axis=0,
 )
@@ -184,7 +184,7 @@ mollwds = xr.Dataset(
         lat_bounds=xr.DataArray(
             lat_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_north"}
         ),
-        lon_corners=xr.DataArray(lon_corners, dims=("x_corners", "y_corners")),
-        lat_corners=xr.DataArray(lat_corners, dims=("x_corners", "y_corners")),
+        lon_vertices=xr.DataArray(lon_vertices, dims=("x_vertices", "y_vertices")),
+        lat_vertices=xr.DataArray(lat_vertices, dims=("x_vertices", "y_vertices")),
     ),
 )

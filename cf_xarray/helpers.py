@@ -5,15 +5,15 @@ import xarray as xr
 from xarray import DataArray
 
 
-def bounds_to_corners(
+def bounds_to_vertices(
     bounds: DataArray, bounds_dim: str, order: Optional[str] = "counterclockwise"
 ) -> DataArray:
     """
-    Convert bounds variable to corners. There 2 covered cases:
+    Convert bounds variable to vertices. There 2 covered cases:
      - 1D coordinates, with bounds of shape (N, 2),
-       converted to corners of shape (N+1,)
+       converted to vertices of shape (N+1,)
      - 2D coordinates, with bounds of shape (N, M, 4).
-       converted to corners of shape (N+1, M+1).
+       converted to vertices of shape (N+1, M+1).
 
     Parameters
     ----------
@@ -30,15 +30,15 @@ def bounds_to_corners(
     Returns
     -------
     DataArray
-        Either of shape (N+1,) or (N+1, M+1). New corner dimensions are named
-        from the intial dimension and suffix "_corners".
+        Either of shape (N+1,) or (N+1, M+1). New vertex dimensions are named
+        from the intial dimension and suffix "_vertices".
     """
     # Get old and new dimension names and retranspose array to have bounds dim at axis 0.
     bnd_dim = (
         bounds_dim if isinstance(bounds_dim, str) else bounds.get_axis_num(bounds_dim)
     )
     old_dims = [dim for dim in bounds.dims if dim != bnd_dim]
-    new_dims = [f"{dim}_corners" for dim in old_dims]
+    new_dims = [f"{dim}_vertices" for dim in old_dims]
     values = bounds.transpose(bnd_dim, *old_dims).values
     if len(old_dims) == 2 and bounds.ndim == 3 and bounds[bnd_dim].size == 4:
         # Vertices case (2D lat/lon)
@@ -48,9 +48,9 @@ def bounds_to_corners(
             bot_right = values[1, :, -1:]
             top_right = values[2, -1:, -1:]
             top_left = values[3, -1:, :]
-            corner_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
+            vertex_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
         if order is None:  # We verify if the ccw version works.
-            calc_bnds = corners_to_bounds(corner_vals).values
+            calc_bnds = vertices_to_bounds(vertex_vals).values
             order = "ccw" if np.all(calc_bnds == values) else "cw"
         if order in ["cw", "clockwise"]:
             bot_left = values[0, :, :]
@@ -58,26 +58,26 @@ def bounds_to_corners(
             top_right = values[2, -1:, -1:]
             bot_right = values[3, :, -1:]
             # Our asumption was wrong, axis 1 is rightward and axis 2 is upward
-            corner_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
+            vertex_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
     elif len(old_dims) == 1 and bounds.ndim == 2 and bounds[bnd_dim].size == 2:
         # Middle points case (1D lat/lon)
-        corner_vals = np.concatenate((values[0, :], values[1, -1:]))
+        vertex_vals = np.concatenate((values[0, :], values[1, -1:]))
     else:
         raise ValueError(
             f"Bounds format not understood. Got {bounds.dims} with shape {bounds.shape}."
         )
 
-    return xr.DataArray(corner_vals, dims=new_dims)
+    return xr.DataArray(vertex_vals, dims=new_dims)
 
 
-def corners_to_bounds(
-    corners: DataArray, out_dims: Sequence[str] = ("bounds", "x", "y")
+def vertices_to_bounds(
+    vertices: DataArray, out_dims: Sequence[str] = ("bounds", "x", "y")
 ) -> DataArray:
     """
-    Convert corners to CF-compliant bounds. There 2 covered cases:
-     - 1D coordinates, with corners of shape (N+1,),
+    Convert vertices to CF-compliant bounds. There 2 covered cases:
+     - 1D coordinates, with vertices of shape (N+1,),
        converted to bounds of shape (N, 2)
-     - 2D coordinates, with corners of shape (N+1, M+1).
+     - 2D coordinates, with vertices of shape (N+1, M+1).
        converted to bounds of shape (N, M, 4).
 
     Parameters
@@ -91,15 +91,20 @@ def corners_to_bounds(
     -------
     DataArray
     """
-    if corners.ndim == 1:
-        bnd_vals = np.stack((corners[:-1], corners[1:]), axis=0)
-    elif corners.ndim == 2:
+    if vertices.ndim == 1:
+        bnd_vals = np.stack((vertices[:-1], vertices[1:]), axis=0)
+    elif vertices.ndim == 2:
         bnd_vals = np.stack(
-            (corners[:-1, :-1], corners[:-1, 1:], corners[1:, 1:], corners[1:, :-1]),
+            (
+                vertices[:-1, :-1],
+                vertices[:-1, 1:],
+                vertices[1:, 1:],
+                vertices[1:, :-1],
+            ),
             axis=0,
         )
     else:
         raise ValueError(
-            f"Corners format not understood. Got {corners.dims} with shape {corners.shape}."
+            f"vertices format not understood. Got {vertices.dims} with shape {vertices.shape}."
         )
-    return xr.DataArray(bnd_vals, dims=out_dims[: corners.ndim + 1])
+    return xr.DataArray(bnd_vals, dims=out_dims[: vertices.ndim + 1])

@@ -429,25 +429,25 @@ def test_bounds():
     assert_identical(actual, expected)
 
 
-def test_bounds_to_corners():
+def test_bounds_to_vertices():
     # All available
     ds = airds.cf.add_bounds(["lon", "lat"])
-    dsc = ds.cf.bounds_to_corners()
-    assert "lon_corners" in dsc
-    assert "lat_corners" in dsc
+    dsc = ds.cf.bounds_to_vertices()
+    assert "lon_vertices" in dsc
+    assert "lat_vertices" in dsc
 
     # Giving key
-    dsc = ds.cf.bounds_to_corners("longitude")
-    assert "lon_corners" in dsc
-    assert "lat_corners" not in dsc
+    dsc = ds.cf.bounds_to_vertices("longitude")
+    assert "lon_vertices" in dsc
+    assert "lat_vertices" not in dsc
 
-    dsc = ds.cf.bounds_to_corners(["longitude", "latitude"])
-    assert "lon_corners" in dsc
-    assert "lat_corners" in dsc
+    dsc = ds.cf.bounds_to_vertices(["longitude", "latitude"])
+    assert "lon_vertices" in dsc
+    assert "lat_vertices" in dsc
 
     # Error
     with pytest.raises(ValueError):
-        dsc = ds.cf.bounds_to_corners("T")
+        dsc = ds.cf.bounds_to_vertices("T")
 
 
 def test_docstring():

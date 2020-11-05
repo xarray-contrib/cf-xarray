@@ -429,6 +429,32 @@ def test_bounds():
     assert_identical(actual, expected)
 
 
+def test_bounds_to_vertices():
+    # All available
+    ds = airds.cf.add_bounds(["lon", "lat"])
+    dsc = ds.cf.bounds_to_vertices()
+    assert "lon_vertices" in dsc
+    assert "lat_vertices" in dsc
+
+    # Giving key
+    dsc = ds.cf.bounds_to_vertices("longitude")
+    assert "lon_vertices" in dsc
+    assert "lat_vertices" not in dsc
+
+    dsc = ds.cf.bounds_to_vertices(["longitude", "latitude"])
+    assert "lon_vertices" in dsc
+    assert "lat_vertices" in dsc
+
+    # Error
+    with pytest.raises(ValueError):
+        dsc = ds.cf.bounds_to_vertices("T")
+
+    # Words on datetime arrays to
+    ds = airds.cf.add_bounds("time")
+    dsc = ds.cf.bounds_to_vertices()
+    assert "time_bounds" in dsc
+
+
 def test_docstring():
     assert "One of ('X'" in airds.cf.groupby.__doc__
     assert "One or more of ('X'" in airds.cf.mean.__doc__

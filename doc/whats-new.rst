@@ -9,6 +9,9 @@ v0.4.0 (unreleased)
   and changed ``get_valid_keys()`` to ``.keys()``. `Kristen Thyng`_.
 - Added ``.cf.decode_vertical_coords`` for decoding of parameterized vertical coordinate variables.
   (:issue:`34`, :pr:`103`). `Deepak Cherian`_.
+- Added top-level ``bounds_to_vertices`` and ``vertices_to_bounds`` as well as ``.cf.bounds_to_vertices`` 
+  to convert from coordinate bounds in a CF format (shape (nx, 2)) to a vertices format (shape (nx+1)).
+  (:pr:`108`). `Pascal Bourgault`_.
 
 v0.3.0 (Sep 27, 2020)
 =====================
@@ -59,6 +62,7 @@ v0.1.3
 - Support expanding key to multiple dimension names.
 
 .. _`Anderson Banihirwe`: https://github.com/andersy005
+.. _`Pascal Bourgault`: https://github.com/aulemahal
 .. _`Deepak Cherian`: https://github.com/dcherian
 .. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Julia Kent`: https://github.com/jukent

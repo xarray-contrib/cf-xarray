@@ -130,3 +130,61 @@ romsds.coords["z_rho_dummy"] = (
     np.random.randn(2, 30),
     {"positive": "up"},
 )
+
+
+# Dataset with random data on a grid that is some sort of Mollweide projection
+XX, YY = np.mgrid[:11, :11] * 5 - 25
+XX_bnds, YY_bnds = np.mgrid[:12, :12] * 5 - 27.5
+
+R = 50
+theta = np.arcsin(YY / (R * np.sqrt(2)))
+lat = np.rad2deg(np.arcsin((2 * theta + np.sin(2 * theta)) / np.pi))
+lon = np.rad2deg(XX * np.pi / (R * 2 * np.sqrt(2) * np.cos(theta)))
+
+theta_bnds = np.arcsin(YY_bnds / (R * np.sqrt(2)))
+lat_vertices = np.rad2deg(np.arcsin((2 * theta_bnds + np.sin(2 * theta_bnds)) / np.pi))
+lon_vertices = np.rad2deg(XX_bnds * np.pi / (R * 2 * np.sqrt(2) * np.cos(theta_bnds)))
+
+lon_bounds = np.stack(
+    (
+        lon_vertices[:-1, :-1],
+        lon_vertices[:-1, 1:],
+        lon_vertices[1:, 1:],
+        lon_vertices[1:, :-1],
+    ),
+    axis=0,
+)
+lat_bounds = np.stack(
+    (
+        lat_vertices[:-1, :-1],
+        lat_vertices[:-1, 1:],
+        lat_vertices[1:, 1:],
+        lat_vertices[1:, :-1],
+    ),
+    axis=0,
+)
+
+mollwds = xr.Dataset(
+    coords=dict(
+        lon=xr.DataArray(
+            lon,
+            dims=("x", "y"),
+            attrs={"units": "degrees_east", "bounds": "lon_bounds"},
+        ),
+        lat=xr.DataArray(
+            lat,
+            dims=("x", "y"),
+            attrs={"units": "degrees_north", "bounds": "lat_bounds"},
+        ),
+    ),
+    data_vars=dict(
+        lon_bounds=xr.DataArray(
+            lon_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_east"}
+        ),
+        lat_bounds=xr.DataArray(
+            lat_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_north"}
+        ),
+        lon_vertices=xr.DataArray(lon_vertices, dims=("x_vertices", "y_vertices")),
+        lat_vertices=xr.DataArray(lat_vertices, dims=("x_vertices", "y_vertices")),
+    ),
+)

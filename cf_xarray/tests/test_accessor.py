@@ -33,34 +33,45 @@ def test_describe(capsys):
 
 
 def test_axes():
-    expected = {"T", "X", "Y"}
+    expected = dict(T=["time"], X=["lon"], Y=["lat"])
     actual = airds.cf.axes
     assert actual == expected
 
-    expected = {"X", "Y"}
+    expected = dict(X=["nlon"], Y=["nlat"])
     actual = popds.cf.axes
     assert actual == expected
 
 
 def test_coordinates():
-    expected = {"latitude", "longitude", "time"}
+    expected = dict(latitude=["lat"], longitude=["lon"], time=["time"])
     actual = airds.cf.coordinates
     assert actual == expected
 
-    expected = {"latitude", "longitude"}
+    expected = dict(latitude=["TLAT", "ULAT"], longitude=["TLONG", "ULONG"])
     actual = popds.cf.coordinates
     assert actual == expected
 
 
+def test_cell_measures():
+    expected = dict(area=["cell_area"])
+    actual = airds["air"].cf.cell_measures
+    assert actual == expected
+
+    with pytest.raises(AssertionError, match=r"this only works with DataArrays"):
+        popds.cf.cell_measures
+
+
 def test_standard_names():
-    expected = ["air_temperature", "latitude", "longitude", "time"]
+    expected = dict(
+        air_temperature=["air"], latitude=["lat"], longitude=["lon"], time=["time"]
+    )
     actual = airds.cf.standard_names
     assert actual == expected
 
     dsnew = xr.Dataset()
     dsnew["a"] = ("a", np.arange(10), {"standard_name": "a"})
     dsnew["b"] = ("a", np.arange(10), {"standard_name": "a"})
-    assert dsnew.cf.standard_names == ["a"]
+    assert dsnew.cf.standard_names == dict(a=["a", "b"])
 
 
 def test_getitem_standard_name():

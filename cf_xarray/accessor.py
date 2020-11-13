@@ -844,7 +844,7 @@ class CFAccessor:
         if isinstance(self._obj, DataArray):
             text += "\tunsupported\n"
         else:
-            for key, value in self.standard_names.items():
+            for key, value in sorted(self.standard_names.items()):
                 if key not in _COORD_NAMES:
                     text += f"\t{key}: {value}\n"
 
@@ -870,21 +870,12 @@ class CFAccessor:
         -------
         Set of valid key names that can be used with __getitem__ or .cf[key].
         """
-        varnames = [
-            key
-            for key in _AXIS_NAMES + _COORD_NAMES
-            if apply_mapper(_get_axis_coord, self._obj, key, error=False)
-        ]
-        if not isinstance(self._obj, Dataset):
-            measures = [
-                key
-                for key in _CELL_MEASURES
-                if apply_mapper(_get_measure, self._obj, key, error=False)
-            ]
-            if measures:
-                varnames.extend(measures)
 
-        varnames.extend(self.get_standard_names())
+        varnames = list(self.axes) + list(self.coordinates)
+        if not isinstance(self._obj, Dataset):
+            varnames.extend(list(self.cell_measures))
+        varnames.extend(list(self.standard_names))
+
         return set(varnames)
 
     @property
@@ -989,7 +980,7 @@ class CFAccessor:
                 std_name = v.attrs["standard_name"]
                 vardict[std_name] = vardict.setdefault(std_name, []) + [k]
 
-        return {k: sorted(v) for k, v in sorted(vardict.items())}
+        return {k: sorted(v) for k, v in vardict.items()}
 
     def get_associated_variable_names(self, name: Hashable) -> Dict[str, List[str]]:
         """

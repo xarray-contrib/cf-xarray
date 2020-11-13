@@ -991,7 +991,7 @@ class CFAccessor:
                 vardict[std_name] = vardict.setdefault(std_name, [])
                 vardict[std_name] += [k]
 
-        return {k: sorted(v) for k, v in vardict.items()}
+        return {k: sorted(v) for k, v in sorted(vardict.items())}
 
     def get_associated_variable_names(self, name: Hashable) -> Dict[str, List[str]]:
         """

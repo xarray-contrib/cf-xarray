@@ -889,9 +889,10 @@ class CFAccessor:
         return set(varnames)
 
     @property
-    def axes(self) -> Set[str]:
+    def axes(self) -> Dict[str, List[str]]:
         """
-        Property that returns valid Axis names for ``.cf[]``.
+        Property that returns a dictionary mapping valid Axis standard names for ``.cf[]``
+        to variable names.
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
@@ -899,21 +900,21 @@ class CFAccessor:
 
         Returns
         -------
-        Set of valid Axis names that can be used with ``__getitem__`` or ``.cf[key]``.
+        Dictionary of valid Axis names that can be used with ``__getitem__`` or ``.cf[key]``.
         Will be ("X", "Y", "Z", "T") or a subset thereof.
         """
-        varnames = [
-            key
+        vardict = {
+            key: apply_mapper(_get_axis_coord, self._obj, key, error=False)
             for key in _AXIS_NAMES
-            if apply_mapper(_get_axis_coord, self._obj, key, error=False)
-        ]
+        }
 
-        return set(varnames)
+        return {k: sorted(v) for k, v in vardict.items() if v}
 
     @property
-    def coordinates(self) -> Set[str]:
+    def coordinates(self) -> Dict[str, List[str]]:
         """
-        Property that returns valid Coordinate names for .cf[].
+        Property that returns a dictionary mapping valid Coordinate standard names for ``.cf[]``
+        to variable names.
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
@@ -921,21 +922,21 @@ class CFAccessor:
 
         Returns
         -------
-        Set of valid Coordinate names that can be used with ``__getitem__`` or ``.cf[key]``.
+        Dictionary of valid Coordinate names that can be used with ``__getitem__`` or ``.cf[key]``.
         Will be ("longitude", "latitude", "vertical", "time") or a subset thereof.
         """
-        varnames = [
-            key
+        vardict = {
+            key: apply_mapper(_get_axis_coord, self._obj, key, error=False)
             for key in _COORD_NAMES
-            if apply_mapper(_get_axis_coord, self._obj, key, error=False)
-        ]
+        }
 
-        return set(varnames)
+        return {k: sorted(v) for k, v in vardict.items() if v}
 
     @property
-    def cell_measures(self) -> Set[str]:
+    def cell_measures(self) -> Dict[str, List[str]]:
         """
-        Property that returns valid cell measure names for .cf[].
+        Property that returns a dictionary mapping valid cell measure standard names for ``.cf[]``
+        to variable names.
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
@@ -943,29 +944,28 @@ class CFAccessor:
 
         Returns
         -------
-        Set of valid cell measure names that can be used with __getitem__ or .cf[key].
+        Dictionary of valid cell measure names that can be used with __getitem__ or .cf[key].
         """
-        assert isinstance(self._obj, DataArray), "this works with DataArrays"
+        assert isinstance(self._obj, DataArray), "this only works with DataArrays"
 
-        measures = [
-            key
+        measures = {
+            key: apply_mapper(_get_measure, self._obj, key, error=False)
             for key in _CELL_MEASURES
-            if apply_mapper(_get_measure, self._obj, key, error=False)
-        ]
+        }
 
-        return set(measures)
+        return {k: sorted(v) for k, v in measures.items() if v}
 
     def get_standard_names(self) -> List[str]:
 
         warnings.warn(
-            "Now called `standard_names` and `get_standard_names` will be removed in a future version.",
+            "`get_standard_names` will be removed in a future version in favor of `standard_names`.",
             DeprecationWarning,
         )
 
-        return self.standard_names
+        return list(self.standard_names.keys())
 
     @property
-    def standard_names(self) -> List[str]:
+    def standard_names(self) -> Dict[str, List[str]]:
         """
         Returns a sorted list of standard names in Dataset.
 
@@ -977,21 +977,21 @@ class CFAccessor:
 
         Returns
         -------
-        list of standard names in dataset
+        Dictionary of standard names in dataset
         """
         if isinstance(self._obj, Dataset):
             variables = self._obj.variables
         elif isinstance(self._obj, DataArray):
             variables = self._obj.coords
-        return sorted(
-            set(
-                [
-                    v.attrs["standard_name"]
-                    for k, v in variables.items()
-                    if "standard_name" in v.attrs
-                ]
-            )
-        )
+
+        vardict: Dict[str, List[str]] = dict()
+        for k, v in variables.items():
+            if "standard_name" in v.attrs:
+                std_name = v.attrs["standard_name"]
+                vardict[std_name] = vardict.setdefault(std_name, [])
+                vardict[std_name] += [k]
+
+        return {k: sorted(v) for k, v in vardict.items()}
 
     def get_associated_variable_names(self, name: Hashable) -> Dict[str, List[str]]:
         """

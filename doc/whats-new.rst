@@ -4,9 +4,9 @@ What's New
 
 v0.4.0 (unreleased)
 ===================
-- Added ``.axes`` to return available Axis names for an xarray object, ``.coordinates`` for Coordinate names,
-  ``.standard_names`` for standard names, ``.cell_measures`` for cell measures,
-  and changed ``get_valid_keys()`` to ``.keys()``. `Kristen Thyng`_.
+- Added ``.axes`` to return a dictionary mapping available Axis standard names to variable names of an xarray object, ``.coordinates`` for Coordinates, 
+  ``.cell_measures`` for Cell Measures, and ``.standard_names`` for all variables. `Kristen Thyng`_ and `Mattia Almansi`_.
+- Changed ``get_valid_keys()`` to ``.keys()``. `Kristen Thyng`_.
 - Added ``.cf.decode_vertical_coords`` for decoding of parameterized vertical coordinate variables.
   (:issue:`34`, :pr:`103`). `Deepak Cherian`_.
 - Added top-level ``bounds_to_vertices`` and ``vertices_to_bounds`` as well as ``.cf.bounds_to_vertices`` 
@@ -61,6 +61,7 @@ v0.1.3
 
 - Support expanding key to multiple dimension names.
 
+.. _`Mattia Almansi`: https://github.com/malmans2
 .. _`Anderson Banihirwe`: https://github.com/andersy005
 .. _`Pascal Bourgault`: https://github.com/aulemahal
 .. _`Deepak Cherian`: https://github.com/dcherian

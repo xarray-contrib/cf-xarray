@@ -823,31 +823,30 @@ class CFAccessor:
         Print a string repr to screen.
         """
         text = "Axes:\n"
+        axes = self.axes
         for key in _AXIS_NAMES:
-            axes = apply_mapper(_get_axis_coord, self._obj, key, error=False)
-            text += f"\t{key}: {axes}\n"
+            text += f"\t{key}: {axes[key] if key in axes else []}\n"
 
         text += "\nCoordinates:\n"
+        coords = self.coordinates
         for key in _COORD_NAMES:
-            coords = apply_mapper(_get_axis_coord, self._obj, key, error=False)
-            text += f"\t{key}: {coords}\n"
+            text += f"\t{key}: {coords[key] if key in coords else []}\n"
 
         text += "\nCell Measures:\n"
-        for measure in _CELL_MEASURES:
-            if isinstance(self._obj, Dataset):
-                text += f"\t{measure}: unsupported\n"
-            else:
-                measures = apply_mapper(_get_measure, self._obj, measure, error=False)
-                text += f"\t{measure}: {measures}\n"
+        if isinstance(self._obj, Dataset):
+            measures = {key: "unsupported" for key in _CELL_MEASURES}
+        else:
+            measures = self.cell_measures
+        for key in _CELL_MEASURES:
+            text += f"\t{key}: {measures[key] if key in measures else []}\n"
 
         text += "\nStandard Names:\n"
         if isinstance(self._obj, DataArray):
             text += "\tunsupported\n"
         else:
-            stdnames = sorted(self.get_standard_names())
-            for name in stdnames:
-                if name not in _COORD_NAMES:
-                    text += f"\t{name}: {_get_with_standard_name(self._obj, name)}\n"
+            for key, value in self.standard_names.items():
+                if key not in _COORD_NAMES:
+                    text += f"\t{key}: {value}\n"
 
         print(text)
 
@@ -988,9 +987,10 @@ class CFAccessor:
         for k, v in variables.items():
             if "standard_name" in v.attrs:
                 std_name = v.attrs["standard_name"]
-                vardict[std_name] = vardict.setdefault(std_name, []) + [k]
+                vardict[std_name] = vardict.setdefault(std_name, [])
+                vardict[std_name] += [k]
 
-        return {k: sorted(v) for k, v in sorted(vardict.items())}
+        return {k: sorted(v) for k, v in vardict.items()}
 
     def get_associated_variable_names(self, name: Hashable) -> Dict[str, List[str]]:
         """

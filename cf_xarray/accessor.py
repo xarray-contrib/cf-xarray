@@ -363,11 +363,11 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
     if "cell_measures" not in da.attrs:
         raise KeyError("'cell_measures' not present in 'attrs'.")
 
-    #  valid_keys = _CELL_MEASURES
-    #  if key not in valid_keys:
-    #      raise KeyError(
-    #          f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
-    #      )
+    valid_keys = _CELL_MEASURES
+    if key not in valid_keys:
+        raise KeyError(
+            f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
+        )
 
     attr = da.attrs["cell_measures"]
     measures = parse_cell_methods_attr(attr)
@@ -1011,14 +1011,7 @@ class CFAccessor:
 
         if "cell_measures" in attrs_or_encoding:
             coords["cell_measures"] = list(
-                itertools.chain(
-                    *[
-                        _get_measure(self._obj[name], measure)
-                        for measure in parse_cell_methods_attr(
-                            attrs_or_encoding["cell_measures"]
-                        )
-                    ]
-                )
+                parse_cell_methods_attr(attrs_or_encoding["cell_measures"]).values()
             )
 
         if (

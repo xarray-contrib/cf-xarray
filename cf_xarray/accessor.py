@@ -45,6 +45,8 @@ _CELL_MEASURES = ("area", "volume")
 # Internally we only use X, Y, Z, T
 coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
     "standard_name": {
+        "X": ("projection_x_coordinate",),
+        "Y": ("projection_y_coordinate",),
         "T": ("time",),
         "time": ("time",),
         "vertical": (
@@ -72,8 +74,8 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
             "ocean_sigma_z_coordinate",
             "ocean_double_sigma_coordinate",
         ),
-        "latitude": ("latitude",),
-        "longitude": ("longitude",),
+        "latitude": ("latitude", "grid_latitude"),
+        "longitude": ("longitude", "grid_longitude"),
     },
     "_CoordinateAxisType": {
         "T": ("Time",),
@@ -1320,9 +1322,7 @@ class CFDatasetAccessor(CFAccessor):
         return self._maybe_to_dataarray(obj)
 
     def bounds_to_vertices(
-        self,
-        keys: Union[str, Iterable[str]] = None,
-        order: str = "counterclockwise",
+        self, keys: Union[str, Iterable[str]] = None, order: str = "counterclockwise"
     ) -> Dataset:
         """
         Convert bounds variable to vertices.

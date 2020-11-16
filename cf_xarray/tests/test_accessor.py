@@ -53,8 +53,10 @@ def test_coordinates():
 
 
 def test_cell_measures():
+    da = airds["air"].copy()
+    da.attrs["cell_measures"] += " dummy: dummy"
     expected = dict(area=["cell_area"])
-    actual = airds["air"].cf.cell_measures
+    actual = da.cf.cell_measures
     assert actual == expected
 
     with pytest.raises(AssertionError, match=r"this only works with DataArrays"):

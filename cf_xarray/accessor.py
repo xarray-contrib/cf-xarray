@@ -345,7 +345,7 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
     ----------
     da: DataArray
         DataArray belonging to the coordinate to be checked
-    key: str
+    key: str, ["area", "volume"]
         key to check for.
     error: bool
         raise errors when key is not found or interpretable. Use False and provide default

@@ -367,7 +367,7 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
         )
 
     attr = da.attrs["cell_measures"]
-    strings = [s.strip() for s in attr.strip().split(":")]
+    strings = [s for scolons in attr.split(":") for s in scolons.split()]
     if len(strings) % 2 != 0:
         raise ValueError(f"attrs['cell_measures'] = {attr!r} is malformed.")
     measures = dict(zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)]))

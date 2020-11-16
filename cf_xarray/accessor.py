@@ -345,7 +345,7 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
     ----------
     da: DataArray
         DataArray belonging to the coordinate to be checked
-    key: str, ["area", "volume"]
+    key: str
         key to check for.
     error: bool
         raise errors when key is not found or interpretable. Use False and provide default
@@ -935,6 +935,7 @@ class CFAccessor:
         Returns
         -------
         Dictionary of valid cell measure names that can be used with __getitem__ or .cf[key].
+        Will be ("area", "volume") or a subset thereof.
         """
         assert isinstance(self._obj, DataArray), "this only works with DataArrays"
 

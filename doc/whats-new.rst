@@ -4,6 +4,7 @@ What's New
 
 v0.4.0 (unreleased)
 ===================
+- Support ``Dataset.cf.cell_measures``. By `Deepak Cherian`_.
 - Added ``.axes`` to return a dictionary mapping available Axis standard names to variable names of an xarray object, ``.coordinates`` for Coordinates, 
   ``.cell_measures`` for Cell Measures, and ``.standard_names`` for all variables. `Kristen Thyng`_ and `Mattia Almansi`_.
 - Changed ``get_valid_keys()`` to ``.keys()``. `Kristen Thyng`_.

@@ -336,14 +336,14 @@ def _get_measure_variable(
     return [da[varnames[0]]]
 
 
-def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
+def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Translate from cell measures ("area" or "volume") to appropriate variable name.
     This function interprets the ``cell_measures`` attribute on DataArrays.
 
     Parameters
     ----------
-    da: DataArray
+    obj: DataArray, Dataset
         DataArray belonging to the coordinate to be checked
     key: str, ["area", "volume"]
         key to check for.
@@ -357,11 +357,11 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
     -------
     List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
     """
-    if not isinstance(da, DataArray):
-        raise NotImplementedError("Measures not implemented for Datasets yet.")
+    # if not isinstance(da, DataArray):
+    #    raise NotImplementedError("Measures not implemented for Datasets yet.")
 
-    if "cell_measures" not in da.attrs:
-        raise KeyError("'cell_measures' not present in 'attrs'.")
+    # if "cell_measures" not in da.attrs:
+    #    raise KeyError("'cell_measures' not present in 'attrs'.")
 
     valid_keys = _CELL_MEASURES
     if key not in valid_keys:
@@ -369,12 +369,21 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
             f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
         )
 
-    attr = da.attrs["cell_measures"]
-    measures = parse_cell_methods_attr(attr)
-    results: Union[str, List] = measures.get(key, [])
+    if isinstance(obj, DataArray):
+        obj = obj._to_temp_dataset()
+
+    results = set()
+    for var in obj.variables:
+        da = obj[var]
+        if "cell_measures" in da.attrs:
+            attr = da.attrs["cell_measures"]
+            measures = parse_cell_methods_attr(attr)
+            if key in measures:
+                results.update([measures[key]])
+
     if isinstance(results, str):
         return [results]
-    return results
+    return list(results)
 
 
 #: Default mappers for common keys.
@@ -930,14 +939,12 @@ class CFAccessor:
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
-        However, it will only return the cell measure names.
 
         Returns
         -------
         Dictionary of valid cell measure names that can be used with __getitem__ or .cf[key].
         Will be ("area", "volume") or a subset thereof.
         """
-        assert isinstance(self._obj, DataArray), "this only works with DataArrays"
 
         measures = {
             key: apply_mapper(_get_measure, self._obj, key, error=False)

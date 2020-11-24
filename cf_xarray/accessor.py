@@ -357,11 +357,6 @@ def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     -------
     List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
     """
-    # if not isinstance(da, DataArray):
-    #    raise NotImplementedError("Measures not implemented for Datasets yet.")
-
-    # if "cell_measures" not in da.attrs:
-    #    raise KeyError("'cell_measures' not present in 'attrs'.")
 
     valid_keys = _CELL_MEASURES
     if key not in valid_keys:
@@ -842,10 +837,7 @@ class CFAccessor:
             text += f"\t{key}: {coords[key] if key in coords else []}\n"
 
         text += "\nCell Measures:\n"
-        if isinstance(self._obj, Dataset):
-            measures = {key: "unsupported" for key in _CELL_MEASURES}
-        else:
-            measures = self.cell_measures
+        measures = self.cell_measures
         for key in _CELL_MEASURES:
             text += f"\t{key}: {measures[key] if key in measures else []}\n"
 

@@ -590,7 +590,7 @@ class _CFWrappedPlotMethods:
         For now, this is setting ``xincrease`` and ``yincrease``. It could set
         other arguments in the future.
         """
-        valid_keys = self.accessor.get_valid_keys()
+        valid_keys = self.accessor.keys()
 
         @functools.wraps(func)
         def _plot_wrapper(*args, **kwargs):
@@ -812,7 +812,7 @@ class CFAccessor:
         """
         Check whether item is a valid key for indexing with .cf
         """
-        return item in self.get_valid_keys()
+        return item in self.keys()
 
     @property
     def plot(self):
@@ -1183,8 +1183,8 @@ class CFAccessor:
         -------
         DataArray or Dataset with renamed variables
         """
-        ourkeys = self.get_valid_keys()
-        theirkeys = other.cf.get_valid_keys()
+        ourkeys = self.keys()
+        theirkeys = other.cf.keys()
 
         good_keys = set(_COORD_NAMES) & ourkeys & theirkeys
         if not good_keys:

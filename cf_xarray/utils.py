@@ -1,4 +1,4 @@
-from typing import Any, Hashable, Mapping, Optional, TypeVar, cast
+from typing import Any, Dict, Hashable, Mapping, Optional, TypeVar, cast
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -47,3 +47,23 @@ class UncachedAccessor:
             return self._accessor
 
         return self._accessor(obj)
+
+
+def parse_cell_methods_attr(attr: str) -> Dict[str, str]:
+    """
+    Parse cell_methods attributes (format is 'measure: name').
+
+    Parameters
+    ----------
+    attr: str
+        String to parse
+
+    Returns
+    -------
+    Dictionary mapping measure to name
+    """
+    strings = [s for scolons in attr.split(":") for s in scolons.split()]
+    if len(strings) % 2 != 0:
+        raise ValueError(f"attrs['cell_measures'] = {attr!r} is malformed.")
+
+    return dict(zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)]))

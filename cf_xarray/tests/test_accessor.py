@@ -53,10 +53,13 @@ def test_coordinates():
 
 
 def test_cell_measures():
-    da = airds["air"].copy()
-    da.attrs["cell_measures"] += " dummy: dummy"
+    ds = airds.copy(deep=True)
+    ds["foo"] = xr.DataArray(ds["cell_area"], attrs=dict(standard_name="foo_std_name"))
+    ds["air"].attrs["cell_measures"] += " foo_measure: foo"
+    assert "foo_std_name" in ds.cf["air_temperature"].cf
+
     expected = dict(area=["cell_area"])
-    actual = da.cf.cell_measures
+    actual = ds["air"].cf.cell_measures
     assert actual == expected
 
     with pytest.raises(AssertionError, match=r"this only works with DataArrays"):

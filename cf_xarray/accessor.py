@@ -21,6 +21,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 
 from .helpers import bounds_to_vertices
+from .utils import parse_cell_methods_attr
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (
@@ -369,11 +370,8 @@ def _get_measure(da: Union[DataArray, Dataset], key: str) -> List[str]:
         )
 
     attr = da.attrs["cell_measures"]
-    strings = [s for scolons in attr.split(":") for s in scolons.split()]
-    if len(strings) % 2 != 0:
-        raise ValueError(f"attrs['cell_measures'] = {attr!r} is malformed.")
-    measures = dict(zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)]))
-    results = measures.get(key, [])
+    measures = parse_cell_methods_attr(attr)
+    results: Union[str, List] = measures.get(key, [])
     if isinstance(results, str):
         return [results]
     return results
@@ -937,6 +935,7 @@ class CFAccessor:
         Returns
         -------
         Dictionary of valid cell measure names that can be used with __getitem__ or .cf[key].
+        Will be ("area", "volume") or a subset thereof.
         """
         assert isinstance(self._obj, DataArray), "this only works with DataArrays"
 
@@ -1012,13 +1011,7 @@ class CFAccessor:
 
         if "cell_measures" in attrs_or_encoding:
             coords["cell_measures"] = list(
-                itertools.chain(
-                    *[
-                        _get_measure(self._obj[name], measure)
-                        for measure in _CELL_MEASURES
-                        if measure in attrs_or_encoding["cell_measures"]
-                    ]
-                )
+                parse_cell_methods_attr(attrs_or_encoding["cell_measures"]).values()
             )
 
         if (

@@ -17,27 +17,20 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.7", "3.8"]
+        python-version: ["3.7", "3.8", "3.9"]
     steps:
       - uses: actions/checkout@v2
-      - name: Cache conda
-        uses: actions/cache@v1
-        env:
-          # Increase this value to reset cache if ci/environment.yml has not changed
-          CACHE_NUMBER: 0
+      - uses: conda-incubator/setup-miniconda@v2
         with:
-          path: ~/conda_pkgs_dir
-          key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('ci/environment.yml') }}
-      - uses: goanpeca/setup-miniconda@v1
-        with:
-          activate-environment: cf_xarray_test # Defined in ci/environment.yml
+          channels: conda-forge
+          mamba-version: "*"
+          activate-environment: cf_xarray_test
           auto-update-conda: false
           python-version: ${{ matrix.python-version }}
-          environment-file: ci/environment.yml
-          use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
       - name: Set up conda environment
         shell: bash -l {0}
         run: |
+          mamba env update -f ci/environment.yml
           python -m pip install -e .
           conda list
 
@@ -59,29 +52,21 @@ jobs:
     name: upstream-dev
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Cache conda
-      uses: actions/cache@v1
-      env:
-        # Increase this value to reset cache if ci/upstream-dev-env.yml has not changed
-        CACHE_NUMBER: 0
-      with:
-        path: ~/conda_pkgs_dir
-        key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{ hashFiles('ci/upstream-dev-env.yml') }}
-    - uses: goanpeca/setup-miniconda@v1
-      with:
-        activate-environment: cf_xarray_test # Defined in ci/upstream-dev-env.yml
-        auto-update-conda: false
-        python-version: 3.8
-        environment-file: ci/upstream-dev-env.yml
-        use-only-tar-bz2: true # IMPORTANT: This needs to be set for caching to work properly!
-    - name: Set up conda environment
-      shell: bash -l {0}
-      run: |
-        python -m pip install -e .
-        conda list
-
-    - name: Run Tests
-      shell: bash -l {0}
-      run: |
-        pytest
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          channels: conda-forge
+          mamba-version: "*"
+          activate-environment: cf_xarray_test
+          auto-update-conda: false
+          python-version: ${{ matrix.python-version }}
+      - name: Set up conda environment
+        shell: bash -l {0}
+        run: |
+          mamba env update -f ci/upstream-dev-env.yml
+          python -m pip install -e .
+          conda list
+      - name: Run Tests
+        shell: bash -l {0}
+        run: |
+          pytest

@@ -26,7 +26,7 @@ def test_describe(capsys):
         "Axes:\n\tX: ['lon']\n\tY: ['lat']\n\tZ: []\n\tT: ['time']\n"
         "\nCoordinates:\n\tlongitude: ['lon']\n\tlatitude: ['lat']"
         "\n\tvertical: []\n\ttime: ['time']\n"
-        "\nCell Measures:\n\tarea: unsupported\n\tvolume: unsupported\n"
+        "\nCell Measures:\n\tarea: ['cell_area']\n\tvolume: []\n"
         "\nStandard Names:\n\tair_temperature: ['air']\n\n"
     )
     assert actual == expected
@@ -58,12 +58,13 @@ def test_cell_measures():
     ds["air"].attrs["cell_measures"] += " foo_measure: foo"
     assert "foo_std_name" in ds.cf["air_temperature"].cf
 
-    expected = dict(area=["cell_area"])
+    ds["air"].attrs["cell_measures"] += " volume: foo"
+    expected = dict(area=["cell_area"], volume=["foo"])
     actual = ds["air"].cf.cell_measures
     assert actual == expected
 
-    with pytest.raises(AssertionError, match=r"this only works with DataArrays"):
-        popds.cf.cell_measures
+    actual = ds.cf.cell_measures
+    assert actual == expected
 
 
 def test_standard_names():

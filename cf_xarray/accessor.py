@@ -338,26 +338,20 @@ def _get_measure_variable(
 
 def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     """
-    Translate from cell measures ("area" or "volume") to appropriate variable name.
+    Translate from cell measures to appropriate variable name.
     This function interprets the ``cell_measures`` attribute on DataArrays.
 
     Parameters
     ----------
     obj: DataArray, Dataset
         DataArray belonging to the coordinate to be checked
-    key: str, ["area", "volume"]
+    key: str
         key to check for.
 
     Returns
     -------
     List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
     """
-
-    valid_keys = _CELL_MEASURES
-    if key not in valid_keys:
-        raise KeyError(
-            f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
-        )
 
     if isinstance(obj, DataArray):
         obj = obj._to_temp_dataset()
@@ -438,7 +432,7 @@ def _build_docstring(func):
     mapper_docstrings = {
         _get_axis_coord: f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r}",
         _get_axis_coord_single: f"One of {(_AXIS_NAMES + _COORD_NAMES)!r}",
-        _get_measure_variable: f"One of {_CELL_MEASURES!r}",
+        # _get_measure_variable: f"One of {_CELL_MEASURES!r}",
     }
 
     sig = inspect.signature(func)
@@ -653,6 +647,9 @@ class CFAccessor:
 
     def __init__(self, da):
         self._obj = da
+        self._defined_cell_measures = tuple(
+            set(_CELL_MEASURES + tuple(self.cell_measures))
+        )
 
     def _process_signature(
         self,
@@ -833,7 +830,7 @@ class CFAccessor:
 
         text += "\nCell Measures:\n"
         measures = self.cell_measures
-        for key in _CELL_MEASURES:
+        for key in sorted(self._defined_cell_measures):
             text += f"\t{key}: {measures[key] if key in measures else []}\n"
 
         text += "\nStandard Names:\n"
@@ -930,15 +927,33 @@ class CFAccessor:
         Returns
         -------
         Dictionary of valid cell measure names that can be used with __getitem__ or .cf[key].
-        Will be ("area", "volume") or a subset thereof.
         """
 
-        measures = {
-            key: apply_mapper(_get_measure, self._obj, key, error=False)
-            for key in _CELL_MEASURES
-        }
+        obj = self._obj
+        all_attrs = [
+            da.attrs.get("cell_measures")
+            for da in obj.coords.values()
+            if da.attrs.get("cell_measures")
+        ]
+        if isinstance(obj, DataArray):
+            all_attrs += (
+                [obj.attrs.get("cell_measures")]
+                if obj.attrs.get("cell_measures")
+                else []
+            )
+        elif isinstance(obj, Dataset):
+            all_attrs += [
+                da.attrs.get("cell_measures")
+                for da in obj.data_vars.values()
+                if da.attrs.get("cell_measures")
+            ]
 
-        return {k: sorted(v) for k, v in measures.items() if v}
+        measures: Dict[str, List[str]] = dict()
+        for attr in all_attrs:
+            for key, value in parse_cell_methods_attr(attr).items():
+                measures[key] = measures.setdefault(key, []) + [value]
+
+        return {k: sorted(set(v)) for k, v in measures.items() if v}
 
     def get_standard_names(self) -> List[str]:
 
@@ -1069,7 +1084,7 @@ class CFAccessor:
                 check_results(names, k)
                 successful[k] = bool(names)
                 coords.extend(names)
-            elif k in _CELL_MEASURES:
+            elif k in self._defined_cell_measures:
                 measure = _get_measure(self._obj, k)
                 check_results(measure, k)
                 successful[k] = bool(measure)

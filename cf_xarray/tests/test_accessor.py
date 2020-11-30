@@ -52,19 +52,27 @@ def test_coordinates():
     assert actual == expected
 
 
-def test_cell_measures():
+def test_cell_measures(capsys):
     ds = airds.copy(deep=True)
     ds["foo"] = xr.DataArray(ds["cell_area"], attrs=dict(standard_name="foo_std_name"))
     ds["air"].attrs["cell_measures"] += " foo_measure: foo"
     assert "foo_std_name" in ds.cf["air_temperature"].cf
 
     ds["air"].attrs["cell_measures"] += " volume: foo"
-    expected = dict(area=["cell_area"], volume=["foo"])
+    expected = dict(area=["cell_area"], foo_measure=["foo"], volume=["foo"])
     actual = ds["air"].cf.cell_measures
     assert actual == expected
 
     actual = ds.cf.cell_measures
     assert actual == expected
+
+    ds.cf.describe()
+    actual = capsys.readouterr().out
+    expected = (
+        "\nCell Measures:\n\tarea: ['cell_area']\n\tfoo_measure: ['foo']\n\tvolume: ['foo']\n"
+        "\nStandard Names:\n\tair_temperature: ['air']\n\tfoo_std_name: ['foo']\n\n"
+    )
+    assert actual.endswith(expected)
 
 
 def test_standard_names():

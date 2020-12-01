@@ -930,22 +930,12 @@ class CFAccessor:
         """
 
         obj = self._obj
-        all_attrs = [
-            da.attrs.get("cell_measures")
-            for da in obj.coords.values()
-            if da.attrs.get("cell_measures")
-        ]
+        all_attrs = [da.attrs.get("cell_measures", "") for da in obj.coords.values()]
         if isinstance(obj, DataArray):
-            all_attrs += (
-                [obj.attrs.get("cell_measures")]
-                if obj.attrs.get("cell_measures")
-                else []
-            )
+            all_attrs += [obj.attrs.get("cell_measures", "")]
         elif isinstance(obj, Dataset):
             all_attrs += [
-                da.attrs.get("cell_measures")
-                for da in obj.data_vars.values()
-                if da.attrs.get("cell_measures")
+                da.attrs.get("cell_measures", "") for da in obj.data_vars.values()
             ]
 
         measures: Dict[str, List[str]] = dict()

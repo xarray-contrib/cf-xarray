@@ -659,7 +659,7 @@ class CFAccessor:
             self._all_cell_measures = set(_CELL_MEASURES + tuple(self.cell_measures))
 
         return self._all_cell_measures
-    
+
     def _process_signature(
         self,
         func: Callable,
@@ -874,8 +874,7 @@ class CFAccessor:
         """
 
         varnames = list(self.axes) + list(self.coordinates)
-        if not isinstance(self._obj, Dataset):
-            varnames.extend(list(self.cell_measures))
+        varnames.extend(list(self.cell_measures))
         varnames.extend(list(self.standard_names))
 
         return set(varnames)

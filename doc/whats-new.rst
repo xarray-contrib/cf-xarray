@@ -3,7 +3,7 @@ What's New
 
 v0.4.0 (unreleased)
 ===================
-
+- Support for arbitrary cell measures indexing. By `Mattia Almansi`_.
 
 v0.3.1 (Nov 25, 2020)
 =====================

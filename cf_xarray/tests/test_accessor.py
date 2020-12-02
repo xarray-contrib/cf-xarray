@@ -56,12 +56,14 @@ def test_cell_measures(capsys):
     ds = airds.copy(deep=True)
     ds["foo"] = xr.DataArray(ds["cell_area"], attrs=dict(standard_name="foo_std_name"))
     ds["air"].attrs["cell_measures"] += " foo_measure: foo"
-    assert "foo_std_name" in ds.cf["air_temperature"].cf
+    assert ("foo_std_name" in ds.cf["air_temperature"].cf) and ("foo_measure" in ds.cf)
 
     ds["air"].attrs["cell_measures"] += " volume: foo"
+    ds["foo"].attrs["cell_measures"] = ds["air"].attrs["cell_measures"]
     expected = dict(area=["cell_area"], foo_measure=["foo"], volume=["foo"])
-    actual = ds["air"].cf.cell_measures
-    assert actual == expected
+    actual_air = ds["air"].cf.cell_measures
+    actual_foo = ds["foo"].cf.cell_measures
+    assert actual_air == actual_foo == expected
 
     actual = ds.cf.cell_measures
     assert actual == expected
@@ -248,7 +250,10 @@ def test_kwargs_expand_key_to_multiple_keys():
 @pytest.mark.parametrize(
     "obj, expected",
     [
-        (ds, {"latitude", "longitude", "time", "X", "Y", "T", "air_temperature"}),
+        (
+            ds,
+            {"latitude", "longitude", "time", "X", "Y", "T", "air_temperature", "area"},
+        ),
         (ds.air, {"latitude", "longitude", "time", "X", "Y", "T", "area"}),
         (ds_no_attrs.air, set()),
     ],

@@ -647,10 +647,19 @@ class CFAccessor:
 
     def __init__(self, da):
         self._obj = da
-        self._defined_cell_measures = tuple(
-            set(_CELL_MEASURES + tuple(self.cell_measures))
-        )
+        self._all_cell_measures = None
 
+    def _get_all_cell_measures(self):
+        """
+        Get all cell measures defined in the object, adding CF pre-defined measures.
+        """
+
+        # get all_cell_measures only once
+        if not self._all_cell_measures:
+            self._all_cell_measures = set(_CELL_MEASURES + tuple(self.cell_measures))
+
+        return self._all_cell_measures
+    
     def _process_signature(
         self,
         func: Callable,
@@ -830,7 +839,7 @@ class CFAccessor:
 
         text += "\nCell Measures:\n"
         measures = self.cell_measures
-        for key in sorted(self._defined_cell_measures):
+        for key in sorted(self._get_all_cell_measures()):
             text += f"\t{key}: {measures[key] if key in measures else []}\n"
 
         text += "\nStandard Names:\n"
@@ -1074,7 +1083,7 @@ class CFAccessor:
                 check_results(names, k)
                 successful[k] = bool(names)
                 coords.extend(names)
-            elif k in self._defined_cell_measures:
+            elif k in self._get_all_cell_measures():
                 measure = _get_measure(self._obj, k)
                 check_results(measure, k)
                 successful[k] = bool(measure)

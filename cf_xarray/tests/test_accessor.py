@@ -62,7 +62,7 @@ def test_cell_measures(capsys):
     ds["foo"].attrs["cell_measures"] = ds["air"].attrs["cell_measures"]
     expected = dict(area=["cell_area"], foo_measure=["foo"], volume=["foo"])
     actual_air = ds["air"].cf.cell_measures
-    actual_foo = ds["foo"].cf.cell_measures
+    actual_foo = ds.cf["foo_measure"].cf.cell_measures
     assert actual_air == actual_foo == expected
 
     actual = ds.cf.cell_measures

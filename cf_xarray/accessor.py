@@ -75,8 +75,8 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
             "ocean_sigma_z_coordinate",
             "ocean_double_sigma_coordinate",
         ),
-        "latitude": ("latitude", "grid_latitude"),
-        "longitude": ("longitude", "grid_longitude"),
+        "latitude": ("latitude",),
+        "longitude": ("longitude",),
     },
     "_CoordinateAxisType": {
         "T": ("Time",),

@@ -13,7 +13,7 @@ dependencies:
   - sphinx-autosummary-accessors
   - ipython
   - ipykernel
-  - pandas<1.1.0
+  - pandas
   - pip:
       - git+https://github.com/xarray-contrib/cf-xarray
       - sphinx-book-theme

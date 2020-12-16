@@ -1,7 +1,29 @@
 What's New
 ----------
-v0.2.2 (unreleased)
-===========================
+
+v0.4.0 (unreleased)
+===================
+- Support for arbitrary cell measures indexing. By `Mattia Almansi`_.
+
+v0.3.1 (Nov 25, 2020)
+=====================
+- Support ``Dataset.cf.cell_measures``. By `Deepak Cherian`_.
+- Added ``.axes`` to return a dictionary mapping available Axis standard names to variable names of an xarray object, ``.coordinates`` for Coordinates, 
+  ``.cell_measures`` for Cell Measures, and ``.standard_names`` for all variables. `Kristen Thyng`_ and `Mattia Almansi`_.
+- Changed ``get_valid_keys()`` to ``.keys()``. `Kristen Thyng`_.
+- Added ``.cf.decode_vertical_coords`` for decoding of parameterized vertical coordinate variables.
+  (:issue:`34`, :pr:`103`). `Deepak Cherian`_.
+- Added top-level ``bounds_to_vertices`` and ``vertices_to_bounds`` as well as ``.cf.bounds_to_vertices`` 
+  to convert from coordinate bounds in a CF format (shape (nx, 2)) to a vertices format (shape (nx+1)).
+  (:pr:`108`). `Pascal Bourgault`_.
+
+v0.3.0 (Sep 27, 2020)
+=====================
+This release brings changes necessary to make ``cf_xarray`` more useful with the ROMS
+model in particular. Thanks to Kristen Thyng for opening many issues.
+
+- ``vertical`` and ``Z`` are not synonyms any more. In particular, the attribute
+  ``positive: up`` now will only match ``vertical`` and not ``Z``. `Deepak Cherian`_.
 - Fixed tests that would only pass if ran in a specific order. `Julia Kent`_.
 
 v0.2.1 (Aug 06, 2020)
@@ -43,7 +65,10 @@ v0.1.3
 
 - Support expanding key to multiple dimension names.
 
+.. _`Mattia Almansi`: https://github.com/malmans2
 .. _`Anderson Banihirwe`: https://github.com/andersy005
+.. _`Pascal Bourgault`: https://github.com/aulemahal
 .. _`Deepak Cherian`: https://github.com/dcherian
 .. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Julia Kent`: https://github.com/jukent
+.. _`Kristen Thyng`: https://github.com/kthyng

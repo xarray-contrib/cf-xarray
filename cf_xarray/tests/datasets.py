@@ -20,22 +20,22 @@ popds = xr.Dataset()
 popds.coords["TLONG"] = (
     ("nlat", "nlon"),
     np.ones((20, 30)),
-    {"axis": "X", "units": "degrees_east"},
+    {"units": "degrees_east"},
 )
 popds.coords["TLAT"] = (
     ("nlat", "nlon"),
     2 * np.ones((20, 30)),
-    {"axis": "Y", "units": "degrees_north"},
+    {"units": "degrees_north"},
 )
 popds.coords["ULONG"] = (
     ("nlat", "nlon"),
     0.5 * np.ones((20, 30)),
-    {"axis": "X", "units": "degrees_east"},
+    {"units": "degrees_east"},
 )
 popds.coords["ULAT"] = (
     ("nlat", "nlon"),
     2.5 * np.ones((20, 30)),
-    {"axis": "Y", "units": "degrees_north"},
+    {"units": "degrees_north"},
 )
 popds["UVEL"] = (
     ("nlat", "nlon"),
@@ -47,7 +47,8 @@ popds["TEMP"] = (
     np.ones((20, 30)) * 15,
     {"coordinates": "TLONG TLAT", "standard_name": "sea_water_potential_temperature"},
 )
-
+popds["nlon"] = ("nlon", np.arange(popds.sizes["nlon"]), {"axis": "X"})
+popds["nlat"] = ("nlat", np.arange(popds.sizes["nlat"]), {"axis": "Y"})
 
 # This dataset has ancillary variables
 
@@ -67,7 +68,7 @@ anc["q_error_limit"] = (
     dict(standard_name="specific_humidity standard_error", units="g/g"),
 )
 anc["q_detection_limit"] = xr.DataArray(
-    1e-3, attrs=dict(standard_name="specific_humidity detection_minimum", units="g/g"),
+    1e-3, attrs=dict(standard_name="specific_humidity detection_minimum", units="g/g")
 )
 anc
 
@@ -80,3 +81,110 @@ multiple.coords["y2"] = ("y2", range(5), {"axis": "Y"})
 
 multiple["v1"] = (("x1", "y1"), np.ones((30, 20)) * 15)
 multiple["v2"] = (("x2", "y2"), np.ones((10, 5)) * 15)
+
+
+romsds = xr.Dataset()
+romsds["s_rho"] = (
+    # fmt: off
+    "s_rho",
+    [-0.983333, -0.95    , -0.916667, -0.883333, -0.85    , -0.816667,
+     -0.783333, -0.75    , -0.716667, -0.683333, -0.65    , -0.616667,
+     -0.583333, -0.55    , -0.516667, -0.483333, -0.45    , -0.416667,
+     -0.383333, -0.35    , -0.316667, -0.283333, -0.25    , -0.216667,
+     -0.183333, -0.15    , -0.116667, -0.083333, -0.05    , -0.016667],
+    # fmt: on
+    {
+        "long_name": "S-coordinate at RHO-points",
+        "valid_min": -1.0,
+        "valid_max": 0.0,
+        "standard_name": "ocean_s_coordinate_g2",
+        "formula_terms": "s: s_rho C: Cs_r eta: zeta depth: h depth_c: hc",
+        "field": "s_rho, scalar",
+    }
+)
+romsds.coords["hc"] = 20.0
+romsds.coords["h"] = 603.9
+romsds.coords["Vtransform"] = 2.0
+romsds.coords["Cs_r"] = (
+    # fmt: off
+    "s_rho",
+    [-9.33010396e-01, -8.09234736e-01, -6.98779853e-01, -6.01008926e-01,
+     -5.15058562e-01, -4.39938913e-01, -3.74609181e-01, -3.18031817e-01,
+     -2.69209327e-01, -2.27207488e-01, -1.91168387e-01, -1.60316097e-01,
+     -1.33957253e-01, -1.11478268e-01, -9.23404709e-02, -7.60741092e-02,
+     -6.22718662e-02, -5.05823390e-02, -4.07037635e-02, -3.23781605e-02,
+     -2.53860004e-02, -1.95414261e-02, -1.46880431e-02, -1.06952600e-02,
+     -7.45515186e-03, -4.87981407e-03, -2.89916971e-03, -1.45919898e-03,
+     -5.20560097e-04, -5.75774004e-05],
+    # fmt: on
+)
+romsds["zeta"] = ("ocean_time", [-0.155356, -0.127435])
+romsds["temp"] = (
+    ("ocean_time", "s_rho"),
+    [np.linspace(20, 30, 30)] * 2,
+    {"coordinates": "z_rho_dummy"},
+)
+romsds["temp"].encoding["coordinates"] = "s_rho"
+romsds.coords["z_rho_dummy"] = (
+    ("ocean_time", "s_rho"),
+    np.random.randn(2, 30),
+    {"positive": "up"},
+)
+
+
+# Dataset with random data on a grid that is some sort of Mollweide projection
+XX, YY = np.mgrid[:11, :11] * 5 - 25
+XX_bnds, YY_bnds = np.mgrid[:12, :12] * 5 - 27.5
+
+R = 50
+theta = np.arcsin(YY / (R * np.sqrt(2)))
+lat = np.rad2deg(np.arcsin((2 * theta + np.sin(2 * theta)) / np.pi))
+lon = np.rad2deg(XX * np.pi / (R * 2 * np.sqrt(2) * np.cos(theta)))
+
+theta_bnds = np.arcsin(YY_bnds / (R * np.sqrt(2)))
+lat_vertices = np.rad2deg(np.arcsin((2 * theta_bnds + np.sin(2 * theta_bnds)) / np.pi))
+lon_vertices = np.rad2deg(XX_bnds * np.pi / (R * 2 * np.sqrt(2) * np.cos(theta_bnds)))
+
+lon_bounds = np.stack(
+    (
+        lon_vertices[:-1, :-1],
+        lon_vertices[:-1, 1:],
+        lon_vertices[1:, 1:],
+        lon_vertices[1:, :-1],
+    ),
+    axis=0,
+)
+lat_bounds = np.stack(
+    (
+        lat_vertices[:-1, :-1],
+        lat_vertices[:-1, 1:],
+        lat_vertices[1:, 1:],
+        lat_vertices[1:, :-1],
+    ),
+    axis=0,
+)
+
+mollwds = xr.Dataset(
+    coords=dict(
+        lon=xr.DataArray(
+            lon,
+            dims=("x", "y"),
+            attrs={"units": "degrees_east", "bounds": "lon_bounds"},
+        ),
+        lat=xr.DataArray(
+            lat,
+            dims=("x", "y"),
+            attrs={"units": "degrees_north", "bounds": "lat_bounds"},
+        ),
+    ),
+    data_vars=dict(
+        lon_bounds=xr.DataArray(
+            lon_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_east"}
+        ),
+        lat_bounds=xr.DataArray(
+            lat_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_north"}
+        ),
+        lon_vertices=xr.DataArray(lon_vertices, dims=("x_vertices", "y_vertices")),
+        lat_vertices=xr.DataArray(lat_vertices, dims=("x_vertices", "y_vertices")),
+    ),
+)

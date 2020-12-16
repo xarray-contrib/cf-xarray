@@ -26,16 +26,68 @@ def test_describe(capsys):
         "Axes:\n\tX: ['lon']\n\tY: ['lat']\n\tZ: []\n\tT: ['time']\n"
         "\nCoordinates:\n\tlongitude: ['lon']\n\tlatitude: ['lat']"
         "\n\tvertical: []\n\ttime: ['time']\n"
-        "\nCell Measures:\n\tarea: unsupported\n\tvolume: unsupported\n"
-        "\nStandard Names:\n\t['air_temperature', 'latitude', 'longitude', 'time']\n"
+        "\nCell Measures:\n\tarea: ['cell_area']\n\tvolume: []\n"
+        "\nStandard Names:\n\tair_temperature: ['air']\n\n"
     )
     assert actual == expected
 
 
-def test_get_standard_names():
-    expected = ["air_temperature", "latitude", "longitude", "time"]
-    actual = airds.cf.get_standard_names()
+def test_axes():
+    expected = dict(T=["time"], X=["lon"], Y=["lat"])
+    actual = airds.cf.axes
     assert actual == expected
+
+    expected = dict(X=["nlon"], Y=["nlat"])
+    actual = popds.cf.axes
+    assert actual == expected
+
+
+def test_coordinates():
+    expected = dict(latitude=["lat"], longitude=["lon"], time=["time"])
+    actual = airds.cf.coordinates
+    assert actual == expected
+
+    expected = dict(latitude=["TLAT", "ULAT"], longitude=["TLONG", "ULONG"])
+    actual = popds.cf.coordinates
+    assert actual == expected
+
+
+def test_cell_measures(capsys):
+    ds = airds.copy(deep=True)
+    ds["foo"] = xr.DataArray(ds["cell_area"], attrs=dict(standard_name="foo_std_name"))
+    ds["air"].attrs["cell_measures"] += " foo_measure: foo"
+    assert ("foo_std_name" in ds.cf["air_temperature"].cf) and ("foo_measure" in ds.cf)
+
+    ds["air"].attrs["cell_measures"] += " volume: foo"
+    ds["foo"].attrs["cell_measures"] = ds["air"].attrs["cell_measures"]
+    expected = dict(area=["cell_area"], foo_measure=["foo"], volume=["foo"])
+    actual_air = ds["air"].cf.cell_measures
+    actual_foo = ds.cf["foo_measure"].cf.cell_measures
+    assert actual_air == actual_foo == expected
+
+    actual = ds.cf.cell_measures
+    assert actual == expected
+
+    ds.cf.describe()
+    actual = capsys.readouterr().out
+    expected = (
+        "\nCell Measures:\n\tarea: ['cell_area']\n\tfoo_measure: ['foo']\n\tvolume: ['foo']\n"
+        "\nStandard Names:\n\tair_temperature: ['air']\n\tfoo_std_name: ['foo']\n\n"
+    )
+    assert actual.endswith(expected)
+
+
+def test_standard_names():
+    expected = dict(
+        air_temperature=["air"], latitude=["lat"], longitude=["lon"], time=["time"]
+    )
+    actual = airds.cf.standard_names
+    assert actual == expected
+
+    dsnew = xr.Dataset()
+    dsnew["a"] = ("a", np.arange(10), {"standard_name": "a"})
+    dsnew["b"] = ("a", np.arange(10), {"standard_name": "a"})
+    assert dsnew.cf.standard_names == dict(a=["a", "b"])
 
 
 def test_getitem_standard_name():
@@ -45,7 +97,9 @@ def test_getitem_standard_name():
 
     ds = airds.copy(deep=True)
     ds["air2"] = ds.air
-    actual = ds.cf["air_temperature"]
+    with pytest.raises(ValueError):
+        ds.cf["air_temperature"]
+    actual = ds.cf[["air_temperature"]]
     expected = ds[["air", "air2"]]
     assert_identical(actual, expected)
 
@@ -196,13 +250,16 @@ def test_kwargs_expand_key_to_multiple_keys():
 @pytest.mark.parametrize(
     "obj, expected",
     [
-        (ds, {"latitude", "longitude", "time", "X", "Y", "T", "air_temperature"}),
+        (
+            ds,
+            {"latitude", "longitude", "time", "X", "Y", "T", "air_temperature", "area"},
+        ),
         (ds.air, {"latitude", "longitude", "time", "X", "Y", "T", "area"}),
         (ds_no_attrs.air, set()),
     ],
 )
-def test_get_valid_keys(obj, expected):
-    actual = obj.cf.get_valid_keys()
+def test_keys(obj, expected):
+    actual = obj.cf.keys()
     assert actual == expected
 
 
@@ -287,7 +344,7 @@ def test_getitem(obj, key, expected_key):
 
 
 @pytest.mark.parametrize("obj", objects)
-def test_getitem_errors(obj,):
+def test_getitem_errors(obj):
     with pytest.raises(KeyError):
         obj.cf["XX"]
     obj2 = obj.copy(deep=True)
@@ -296,18 +353,34 @@ def test_getitem_errors(obj,):
         obj2.cf["X"]
 
 
+def test_getitem_regression():
+    ds = xr.Dataset()
+    ds.coords["area"] = xr.DataArray(np.ones(10), attrs={"standard_name": "cell_area"})
+    assert_identical(ds.cf["cell_area"], ds["area"].reset_coords(drop=True))
+
+
 def test_getitem_uses_coordinates():
     # POP-like dataset
     ds = popds
     assert_identical(
-        ds.cf[["X"]],
+        ds.cf[["longitude"]],
         ds.reset_coords()[["ULONG", "TLONG"]].set_coords(["ULONG", "TLONG"]),
     )
     assert_identical(
-        ds.cf[["Y"]], ds.reset_coords()[["ULAT", "TLAT"]].set_coords(["ULAT", "TLAT"])
+        ds.cf[["latitude"]],
+        ds.reset_coords()[["ULAT", "TLAT"]].set_coords(["ULAT", "TLAT"]),
     )
-    assert_identical(ds.UVEL.cf["X"], ds["ULONG"].reset_coords(drop=True))
-    assert_identical(ds.TEMP.cf["X"], ds["TLONG"].reset_coords(drop=True))
+    assert_identical(ds.UVEL.cf["longitude"], ds["ULONG"].reset_coords(drop=True))
+    assert_identical(ds.TEMP.cf["latitude"], ds["TLAT"].reset_coords(drop=True))
+
+
+def test_getitem_uses_dimension_names_when_coordinates_attr():
+    # POP-like dataset
+    ds = popds
+    assert_identical(ds.cf["X"], ds["nlon"])
+    assert_identical(ds.cf["Y"], ds["nlat"])
+    assert_identical(ds.UVEL.cf["X"], ds["nlon"])
+    assert_identical(ds.TEMP.cf["Y"], ds["nlat"])
 
 
 def test_plot_xincrease_yincrease():
@@ -386,12 +459,38 @@ def test_bounds():
     assert_identical(actual, expected)
 
 
+def test_bounds_to_vertices():
+    # All available
+    ds = airds.cf.add_bounds(["lon", "lat"])
+    dsc = ds.cf.bounds_to_vertices()
+    assert "lon_vertices" in dsc
+    assert "lat_vertices" in dsc
+
+    # Giving key
+    dsc = ds.cf.bounds_to_vertices("longitude")
+    assert "lon_vertices" in dsc
+    assert "lat_vertices" not in dsc
+
+    dsc = ds.cf.bounds_to_vertices(["longitude", "latitude"])
+    assert "lon_vertices" in dsc
+    assert "lat_vertices" in dsc
+
+    # Error
+    with pytest.raises(ValueError):
+        dsc = ds.cf.bounds_to_vertices("T")
+
+    # Words on datetime arrays to
+    ds = airds.cf.add_bounds("time")
+    dsc = ds.cf.bounds_to_vertices()
+    assert "time_bounds" in dsc
+
+
 def test_docstring():
     assert "One of ('X'" in airds.cf.groupby.__doc__
     assert "One or more of ('X'" in airds.cf.mean.__doc__
 
 
-def test_guess_axis_coord():
+def test_guess_coord_axis():
     ds = xr.Dataset()
     ds["time"] = ("time", pd.date_range("2001-01-01", "2001-04-01"))
     ds["lon_rho"] = ("lon_rho", [1, 2, 3, 4, 5])
@@ -418,7 +517,7 @@ def test_dicts():
     expected = {"X": 50, "Y": 25, "T": 4, "longitude": 50, "latitude": 25, "time": 4}
     assert actual == expected
 
-    assert popds.cf.sizes == popds.sizes
+    assert popds.cf.sizes == {"X": 30, "Y": 20}
 
     with pytest.raises(AttributeError):
         multiple.cf.sizes
@@ -443,3 +542,71 @@ def test_dicts():
     actual = airds2.cf.sizes
     expected = {"lon": 50, "Y": 25, "T": 4, "latitude": 25, "time": 4}
     assert actual == expected
+
+
+def test_missing_variable_in_coordinates():
+    airds.air.attrs["coordinates"] = "lat lon time"
+    with xr.set_options(keep_attrs=True):
+        # keep bad coordinates attribute after mean
+        assert_identical(airds.time, airds.air.cf.mean(["X", "Y"]).cf["time"])
+
+
+def test_Z_vs_vertical_ROMS():
+    from .datasets import romsds
+
+    assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
+    assert_identical(
+        romsds.z_rho_dummy.reset_coords(drop=True), romsds.temp.cf["vertical"]
+    )
+
+    romsds = romsds.copy(deep=True)
+
+    romsds.temp.attrs.clear()
+    # look in encoding
+    assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
+    with pytest.raises(KeyError):
+        # z_rho is not in .encoding["coordinates"]
+        # so this won't work
+        romsds.temp.cf["vertical"]
+
+    # use .coords if coordinates attribute is not available
+    romsds.temp.encoding.clear()
+    assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
+    assert_identical(
+        romsds.z_rho_dummy.reset_coords(drop=True), romsds.temp.cf["vertical"]
+    )
+
+
+def test_param_vcoord_ocean_s_coord():
+    from .datasets import romsds
+
+    romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g2"
+    Zo_rho = (romsds.hc * romsds.s_rho + romsds.Cs_r * romsds.h) / (
+        romsds.hc + romsds.h
+    )
+    expected = romsds.zeta + (romsds.zeta + romsds.h) * Zo_rho
+    romsds.cf.decode_vertical_coords()
+    assert_allclose(
+        romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
+    )
+
+    romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g1"
+    Zo_rho = romsds.hc * (romsds.s_rho - romsds.Cs_r) + romsds.Cs_r * romsds.h
+    expected = Zo_rho + romsds.zeta * (1 + Zo_rho / romsds.h)
+    romsds.cf.decode_vertical_coords()
+    assert_allclose(
+        romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
+    )
+
+    romsds.cf.decode_vertical_coords(prefix="ZZZ")
+    assert "ZZZ_rho" in romsds.coords
+
+    copy = romsds.copy(deep=True)
+    del copy["zeta"]
+    with pytest.raises(KeyError):
+        copy.cf.decode_vertical_coords()
+
+    copy = romsds.copy(deep=True)
+    copy.s_rho.attrs["formula_terms"] = "s: s_rho C: Cs_r depth: h depth_c: hc"
+    with pytest.raises(KeyError):
+        copy.cf.decode_vertical_coords()

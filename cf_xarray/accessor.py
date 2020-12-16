@@ -460,7 +460,7 @@ def _getattr(
     attr: str,
     accessor: "CFAccessor",
     key_mappers: Mapping[str, Mapper],
-    wrap_classes: bool = False,
+    wrap_classes: bool = True,
     extra_decorator: Callable = None,
 ):
     """

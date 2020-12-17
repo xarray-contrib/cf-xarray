@@ -294,22 +294,8 @@ def test_dataarray_plot(obj):
     assert isinstance(rv, mpl.contour.QuadContourSet)
     plt.close()
 
-    rv = obj.cf.plot(x="X", y="Y", col="T")
-    assert isinstance(rv, xr.plot.FacetGrid)
-    plt.close()
-
-    rv = obj.cf.plot.contourf(x="X", y="Y", col="T")
-    assert isinstance(rv, xr.plot.FacetGrid)
-    plt.close()
-
     rv = obj.isel(lat=[0, 1], lon=1).cf.plot.line(x="T", hue="Y")
     assert all([isinstance(line, mpl.lines.Line2D) for line in rv])
-    plt.close()
-
-    obj = obj.copy(deep=True)
-    obj.time.attrs.clear()
-    rv = obj.cf.plot(x="X", y="Y", col="time")
-    assert isinstance(rv, xr.plot.FacetGrid)
     plt.close()
 
 

@@ -4,6 +4,7 @@ channels:
 dependencies:
   - pytest-cov
   - pytest
+  - pytest-xdist
   - dask
   - matplotlib-base
   - netcdf4

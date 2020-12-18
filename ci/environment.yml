@@ -5,7 +5,7 @@ dependencies:
   - pytest-cov
   - pytest
   - dask
-  - matplotlib
+  - matplotlib-base
   - netcdf4
   - pandas
   - xarray

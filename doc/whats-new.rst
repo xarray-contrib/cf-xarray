@@ -1,9 +1,13 @@
+.. currentmodule:: cf_xarray
+
 What's New
 ----------
 
-v0.4.0 (unreleased)
-===================
+v0.4.0 (Jan 22, 2021)
+=====================
 - Support for arbitrary cell measures indexing. By `Mattia Almansi`_.
+- Avoid using ``grid_latitude`` and ``grid_longitude`` for detecting latitude and longitude variables.
+  By `Pascal Bourgault`_.
 
 v0.3.1 (Nov 25, 2020)
 =====================
@@ -13,7 +17,7 @@ v0.3.1 (Nov 25, 2020)
 - Changed ``get_valid_keys()`` to ``.keys()``. `Kristen Thyng`_.
 - Added ``.cf.decode_vertical_coords`` for decoding of parameterized vertical coordinate variables.
   (:issue:`34`, :pr:`103`). `Deepak Cherian`_.
-- Added top-level ``bounds_to_vertices`` and ``vertices_to_bounds`` as well as ``.cf.bounds_to_vertices`` 
+- Added top-level :py:func:`bounds_to_vertices` and :py:func:`vertices_to_bounds` as well as ``.cf.bounds_to_vertices``
   to convert from coordinate bounds in a CF format (shape (nx, 2)) to a vertices format (shape (nx+1)).
   (:pr:`108`). `Pascal Bourgault`_.
 

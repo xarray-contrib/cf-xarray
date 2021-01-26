@@ -2,7 +2,7 @@ import functools
 import inspect
 import itertools
 import warnings
-from collections import ChainMap
+from collections import ChainMap, defaultdict
 from typing import (
     Any,
     Callable,
@@ -157,6 +157,18 @@ def _is_datetime_like(da: DataArray) -> bool:
         pass
 
     return False
+
+
+def invert_mappings(*mappings):
+    """Takes a set of mappings and iterates through, inverting to make a
+    new mapping of value: set(keys). Keys are deduplicated to avoid clashes between
+    standard_name and coordinate names."""
+    merged = defaultdict(set)
+    for mapping in mappings:
+        for k, v in mapping.items():
+            for name in v:
+                merged[name] |= set([k])
+    return merged
 
 
 # Type for Mapper functions
@@ -503,22 +515,23 @@ def _getattr(
     if isinstance(attribute, Mapping):
         if not attribute:
             return dict(attribute)
-        # attributes like chunks / sizes
+
         newmap = dict()
-        unused_keys = set(attribute.keys())
-        for key in _AXIS_NAMES + _COORD_NAMES:
-            value = set(apply_mapper(_get_axis_coord, obj, key, error=False))
-            unused_keys -= value
-            if value:
-                good_values = value & set(obj.dims)
-                if not good_values:
-                    continue
-                if len(good_values) > 1:
+        inverted = invert_mappings(
+            accessor.axes,
+            accessor.coordinates,
+            accessor.cell_measures,
+            accessor.standard_names,
+        )
+        unused_keys = set(attribute.keys()) - set(inverted)
+        for key, value in attribute.items():
+            for name in inverted[key]:
+                if name in newmap:
                     raise AttributeError(
-                        f"cf_xarray can't wrap attribute {attr!r} because there are multiple values for {key!r} viz. {good_values!r}. "
-                        f"There is no unique mapping from {key!r} to a value in {attr!r}."
+                        f"cf_xarray can't wrap attribute {attr!r} because there are multiple values for {name!r}. "
+                        f"There is no unique mapping from {name!r} to a value in {attr!r}."
                     )
-                newmap.update({key: attribute[good_values.pop()]})
+            newmap.update(dict.fromkeys(inverted[key], value))
         newmap.update({key: attribute[key] for key in unused_keys})
         return newmap
 

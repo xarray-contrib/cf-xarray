@@ -19,6 +19,12 @@ dataarrays = [airds.air, airds.air.chunk({"lat": 5})]
 objects = datasets + dataarrays
 
 
+def assert_dicts_identical(dict1, dict2):
+    assert dict1.keys() == dict2.keys()
+    for k in dict1:
+        assert_identical(dict1[k], dict2[k])
+
+
 def test_describe(capsys):
     airds.cf.describe()
     actual = capsys.readouterr().out
@@ -512,7 +518,7 @@ def test_guess_coord_axis():
     assert dsnew.y1.attrs == {"axis": "Y"}
 
 
-def test_dicts():
+def test_attributes():
     actual = airds.cf.sizes
     expected = {"X": 50, "Y": 25, "T": 4, "longitude": 50, "latitude": 25, "time": 4}
     assert actual == expected
@@ -542,6 +548,17 @@ def test_dicts():
     actual = airds2.cf.sizes
     expected = {"lon": 50, "Y": 25, "T": 4, "latitude": 25, "time": 4}
     assert actual == expected
+
+    actual = popds.cf.data_vars
+    expected = {
+        "sea_water_x_velocity": popds["UVEL"],
+        "sea_water_potential_temperature": popds["TEMP"],
+    }
+    assert_dicts_identical(actual, expected)
+
+    actual = multiple.cf.data_vars
+    expected = dict(multiple.data_vars)
+    assert_dicts_identical(actual, expected)
 
 
 def test_missing_variable_in_coordinates():

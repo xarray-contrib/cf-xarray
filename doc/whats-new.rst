@@ -6,7 +6,12 @@ What's New
 v0.4.1 (unreleased)
 ===================
 
-- Support for using ``standard_name`` in more functions. By `Deepak Cherian`_
+- Support for using ``standard_name`` in more functions. (:pr:`128`) By `Deepak Cherian`_
+- Allow ``DataArray.cf[]`` with standard names. By `Deepak Cherian`_
+- Rewrite the ``values`` of ``.cf.coords`` and ``.cf.data_vars`` with objects returned
+  by ``.cf.__getitem___``. This allows extraction of DataArrays when there are clashes
+  between DataArray names and "special" CF names like ``T``.
+  (:issue:`129`, :pr:`130`). By `Deepak Cherian`_
 
 v0.4.0 (Jan 22, 2021)
 =====================

@@ -854,12 +854,9 @@ class CFAccessor:
             text += f"\t{key}: {measures[key] if key in measures else []}\n"
 
         text += "\nStandard Names:\n"
-        if isinstance(self._obj, DataArray):
-            text += "\tunsupported\n"
-        else:
-            for key, value in sorted(self.standard_names.items()):
-                if key not in _COORD_NAMES:
-                    text += f"\t{key}: {value}\n"
+        for key, value in sorted(self.standard_names.items()):
+            if key not in _COORD_NAMES:
+                text += f"\t{key}: {value}\n"
 
         print(text)
 

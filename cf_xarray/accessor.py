@@ -2,7 +2,7 @@ import functools
 import inspect
 import itertools
 import warnings
-from collections import ChainMap, defaultdict
+from collections import ChainMap
 from typing import (
     Any,
     Callable,
@@ -21,7 +21,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 
 from .helpers import bounds_to_vertices
-from .utils import parse_cell_methods_attr
+from .utils import _is_datetime_like, invert_mappings, parse_cell_methods_attr
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (
@@ -138,37 +138,6 @@ attrs = {
 }
 attrs["time"] = attrs["T"]
 attrs["vertical"] = attrs["Z"]
-
-
-def _is_datetime_like(da: DataArray) -> bool:
-    import numpy as np
-
-    if np.issubdtype(da.dtype, np.datetime64) or np.issubdtype(
-        da.dtype, np.timedelta64
-    ):
-        return True
-
-    try:
-        import cftime
-
-        if isinstance(da.data[0], cftime.datetime):
-            return True
-    except ImportError:
-        pass
-
-    return False
-
-
-def invert_mappings(*mappings):
-    """Takes a set of mappings and iterates through, inverting to make a
-    new mapping of value: set(keys). Keys are deduplicated to avoid clashes between
-    standard_name and coordinate names."""
-    merged = defaultdict(set)
-    for mapping in mappings:
-        for k, v in mapping.items():
-            for name in v:
-                merged[name] |= set([k])
-    return merged
 
 
 # Type for Mapper functions

@@ -424,14 +424,16 @@ def _build_docstring(func):
     mapper_docstrings = {
         _get_axis_coord: f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r}",
         _get_axis_coord_single: f"One of {(_AXIS_NAMES + _COORD_NAMES)!r}",
-        # _get_measure_variable: f"One of {_CELL_MEASURES!r}",
+        _get_axis_coord_time_accessor: "Time variable accessor e.g. 'T.month'",
+        _get_with_standard_name: "Standard names",
+        _get_measure_variable: f"One of {_CELL_MEASURES!r}",
     }
 
     sig = inspect.signature(func)
     string = ""
     for k in set(sig.parameters.keys()) & set(_DEFAULT_KEY_MAPPERS):
         mappers = _DEFAULT_KEY_MAPPERS.get(k, [])
-        docstring = "; ".join(
+        docstring = ";\n\t\t\t".join(
             mapper_docstrings.get(mapper, "unknown. please open an issue.")
             for mapper in mappers
         )

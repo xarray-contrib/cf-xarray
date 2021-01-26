@@ -201,13 +201,15 @@ def apply_mapper(
     for mapper in mappers:
         results.append(_apply_single_mapper(mapper))
 
-    nresults = sum([bool(v) for v in results])
-    if nresults > 1:
-        raise KeyError(
-            f"Multiple mappers succeeded with key {key!r}.\nI was using mappers: {mappers!r}."
-            f"I received results: {results!r}.\nPlease open an issue."
-        )
-    if nresults == 0:
+    flat = list(itertools.chain(*results))
+    # de-duplicate
+    if all(not isinstance(r, DataArray) for r in flat):
+        results = list(set(flat))
+    else:
+        results = flat
+
+    nresults = any([bool(v) for v in [results]])
+    if not nresults:
         if error:
             raise KeyError(
                 f"cf-xarray cannot interpret key {key!r}. Perhaps some needed attributes are missing."
@@ -215,7 +217,7 @@ def apply_mapper(
         else:
             # none of the mappers worked. Return the default
             return default
-    return list(itertools.chain(*results))
+    return results
 
 
 def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str) -> List[str]:
@@ -370,6 +372,21 @@ def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return list(results)
 
 
+def _get_with_standard_name(
+    obj: Union[DataArray, Dataset], name: Union[str, List[str]]
+) -> List[str]:
+    """ returns a list of variable names with standard name == name. """
+    varnames = []
+    if isinstance(obj, DataArray):
+        obj = obj._to_temp_dataset()
+    for vname, var in obj.variables.items():
+        stdname = var.attrs.get("standard_name", None)
+        if stdname == name:
+            varnames.append(str(vname))
+
+    return varnames
+
+
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dim": (_get_axis_coord,),
@@ -385,22 +402,16 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dims_or_levels": (_get_axis_coord,),  # reset_index
     "window": (_get_axis_coord,),  # rolling_exp
     "coord": (_get_axis_coord_single,),  # differentiate, integrate
-    "group": (_get_axis_coord_single, _get_axis_coord_time_accessor),
+    "group": (
+        _get_axis_coord_single,
+        _get_axis_coord_time_accessor,
+        _get_with_standard_name,
+    ),
     "indexer": (_get_axis_coord_single,),  # resample
-    "variables": (_get_axis_coord,),  # sortby
+    "variables": (_get_axis_coord, _get_with_standard_name),  # sortby
     "weights": (_get_measure_variable,),  # type: ignore
+    "chunks": (_get_axis_coord,),  # chunk
 }
-
-
-def _get_with_standard_name(ds: Dataset, name: Union[str, List[str]]) -> List[str]:
-    """ returns a list of variable names with standard name == name. """
-    varnames = []
-    for vname, var in ds.variables.items():
-        stdname = var.attrs.get("standard_name", None)
-        if stdname == name:
-            varnames.append(str(vname))
-
-    return varnames
 
 
 def _guess_bounds_dim(da):

@@ -610,3 +610,25 @@ def test_param_vcoord_ocean_s_coord():
     copy.s_rho.attrs["formula_terms"] = "s: s_rho C: Cs_r depth: h depth_c: hc"
     with pytest.raises(KeyError):
         copy.cf.decode_vertical_coords()
+
+
+def test_standard_name_mapper():
+    da = xr.DataArray(
+        np.arange(6),
+        dims="time",
+        coords={
+            "label": (
+                "time",
+                ["A", "B", "B", "A", "B", "C"],
+                {"standard_name": "standard_label"},
+            )
+        },
+    )
+
+    actual = da.cf.groupby("standard_label").mean()
+    expected = da.cf.groupby("label").mean()
+    assert_identical(actual, expected)
+
+    actual = da.cf.sortby("standard_label")
+    expected = da.sortby("label")
+    assert_identical(actual, expected)

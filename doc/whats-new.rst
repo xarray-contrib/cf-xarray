@@ -3,6 +3,11 @@
 What's New
 ----------
 
+v0.4.1 (unreleased)
+===================
+
+- Support for using ``standard_name`` in more functions. By `Deepak Cherian`_
+
 v0.4.0 (Jan 22, 2021)
 =====================
 - Support for arbitrary cell measures indexing. By `Mattia Almansi`_.

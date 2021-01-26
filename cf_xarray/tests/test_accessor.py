@@ -286,7 +286,10 @@ def test_dataarray_getitem():
     with pytest.raises(KeyError):
         air.cf[["longitude"]]
     with pytest.raises(KeyError):
-        air.cf[["longitude", "latitude"]],
+        air.cf[["longitude", "latitude"]]
+
+    air["cell_area"].attrs["standard_name"] = "area_grid_cell"
+    assert_identical(air.cf["area_grid_cell"], air.cell_area.reset_coords(drop=True))
 
 
 @pytest.mark.parametrize("obj", dataarrays)
@@ -551,14 +554,27 @@ def test_attributes():
 
     actual = popds.cf.data_vars
     expected = {
-        "sea_water_x_velocity": popds["UVEL"],
-        "sea_water_potential_temperature": popds["TEMP"],
+        "sea_water_x_velocity": popds.cf["UVEL"],
+        "sea_water_potential_temperature": popds.cf["TEMP"],
     }
     assert_dicts_identical(actual, expected)
 
     actual = multiple.cf.data_vars
     expected = dict(multiple.data_vars)
     assert_dicts_identical(actual, expected)
+
+    # check that data_vars contains ancillary variables
+    assert_identical(anc.cf.data_vars["specific_humidity"], anc.cf["specific_humidity"])
+
+    # clash between var name and "special" CF name
+    # Regression test for #126
+    data = np.random.rand(4, 3)
+    times = pd.date_range("2000-01-01", periods=4)
+    locs = [30, 60, 90]
+    coords = [("time", times, {"axis": "T"}), ("space", locs)]
+    foo = xr.DataArray(data, coords, dims=["time", "space"])
+    ds1 = xr.Dataset({"T": foo})
+    assert_identical(ds1.cf.data_vars["T"], ds1["T"])
 
 
 def test_missing_variable_in_coordinates():

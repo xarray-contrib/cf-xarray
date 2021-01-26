@@ -533,6 +533,11 @@ def _getattr(
                     )
             newmap.update(dict.fromkeys(inverted[key], value))
         newmap.update({key: attribute[key] for key in unused_keys})
+
+        skip = {"data_vars": ["coords"], "coords": None}
+        if attr in ["coords", "data_vars"]:
+            for key in newmap:
+                newmap[key] = _getitem(accessor, key, skip=skip[attr])
         return newmap
 
     elif isinstance(attribute, Callable):  # type: ignore
@@ -559,6 +564,123 @@ def _getattr(
     wrapper.__doc__ = _build_docstring(func) + wrapper.__doc__
 
     return wrapper
+
+
+def _getitem(
+    accessor: "CFAccessor", key: Union[str, List[str]], skip: List[str] = None
+) -> Union[DataArray, Dataset]:
+    """
+    Index into obj using key. Attaches CF associated variables.
+
+    Parameters
+    ----------
+    accessor: CFAccessor
+    key: str, List[str]
+    skip: str, optional
+        One of ["coords", "measures"], avoid clashes with special coord names
+    """
+
+    obj = accessor._obj
+    kind = str(type(obj).__name__)
+    scalar_key = isinstance(key, str)
+
+    if isinstance(obj, DataArray) and not scalar_key:
+        raise KeyError(
+            f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
+        )
+
+    if scalar_key:
+        key = (key,)  # type: ignore
+
+    if skip is None:
+        skip = []
+
+    def check_results(names, k):
+        if scalar_key and len(names) > 1:
+            raise ValueError(
+                f"Receive multiple variables for key {k!r}: {names}. "
+                f"Expected only one. Please pass a list [{k!r}] "
+                f"instead to get all variables matching {k!r}."
+            )
+
+    varnames: List[Hashable] = []
+    coords: List[Hashable] = []
+    successful = dict.fromkeys(key, False)
+    for k in key:
+        if "coords" not in skip and k in _AXIS_NAMES + _COORD_NAMES:
+            names = _get_axis_coord(obj, k)
+            check_results(names, k)
+            successful[k] = bool(names)
+            coords.extend(names)
+        elif "measures" not in skip and k in accessor._get_all_cell_measures():
+            measure = _get_measure(obj, k)
+            check_results(measure, k)
+            successful[k] = bool(measure)
+            if measure:
+                varnames.extend(measure)
+        else:
+            stdnames = set(_get_with_standard_name(obj, k))
+            check_results(stdnames, k)
+            successful[k] = bool(stdnames)
+            objcoords = set(obj.coords)
+            varnames.extend(stdnames - objcoords)
+            coords.extend(stdnames & objcoords)
+
+    # these are not special names but could be variable names in underlying object
+    # we allow this so that we can return variables with appropriate CF auxiliary variables
+    varnames.extend([k for k, v in successful.items() if not v])
+    allnames = varnames + coords
+
+    try:
+        for name in allnames:
+            extravars = accessor.get_associated_variable_names(name)
+            # we cannot return bounds variables with scalar keys
+            if scalar_key:
+                extravars.pop("bounds")
+            coords.extend(itertools.chain(*extravars.values()))
+
+        if isinstance(obj, DataArray):
+            ds = obj._to_temp_dataset()
+        else:
+            ds = obj
+
+        if scalar_key:
+            if len(allnames) == 1:
+                da: DataArray = ds.reset_coords()[allnames[0]]  # type: ignore
+                if allnames[0] in coords:
+                    coords.remove(allnames[0])
+                for k1 in coords:
+                    da.coords[k1] = ds.variables[k1]
+                return da
+            else:
+                raise ValueError(
+                    f"Received scalar key {key[0]!r} but multiple results: {allnames!r}. "
+                    f"Please pass a list instead (['{key[0]}']) to get back a Dataset "
+                    f"with {allnames!r}."
+                )
+
+        ds = ds.reset_coords()[varnames + coords]
+        if isinstance(obj, DataArray):
+            if scalar_key and len(ds.variables) == 1:
+                # single dimension coordinates
+                assert coords
+                assert not varnames
+
+                return ds[coords[0]]
+
+            elif scalar_key and len(ds.variables) > 1:
+                raise NotImplementedError(
+                    "Not sure what to return when given scalar key for DataArray and it has multiple values. "
+                    "Please open an issue."
+                )
+
+        return ds.set_coords(coords)
+
+    except KeyError:
+        raise KeyError(
+            f"{kind}.cf does not understand the key {k!r}. "
+            f"Use {kind}.cf.describe() to see a list of key names that can be interpreted."
+        )
 
 
 class _CFWrappedClass:
@@ -1074,104 +1196,7 @@ class CFAccessor:
         return coords
 
     def __getitem__(self, key: Union[str, List[str]]):
-
-        kind = str(type(self._obj).__name__)
-        scalar_key = isinstance(key, str)
-
-        if isinstance(self._obj, DataArray) and not scalar_key:
-            raise KeyError(
-                f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
-            )
-
-        if scalar_key:
-            key = (key,)  # type: ignore
-
-        def check_results(names, k):
-            if scalar_key and len(names) > 1:
-                raise ValueError(
-                    f"Receive multiple variables for key {k!r}: {names}. "
-                    f"Expected only one. Please pass a list [{k!r}] "
-                    f"instead to get all variables matching {k!r}."
-                )
-
-        varnames: List[Hashable] = []
-        coords: List[Hashable] = []
-        successful = dict.fromkeys(key, False)
-        for k in key:
-            if k in _AXIS_NAMES + _COORD_NAMES:
-                names = _get_axis_coord(self._obj, k)
-                check_results(names, k)
-                successful[k] = bool(names)
-                coords.extend(names)
-            elif k in self._get_all_cell_measures():
-                measure = _get_measure(self._obj, k)
-                check_results(measure, k)
-                successful[k] = bool(measure)
-                if measure:
-                    varnames.extend(measure)
-            elif not isinstance(self._obj, DataArray):
-                stdnames = set(_get_with_standard_name(self._obj, k))
-                check_results(stdnames, k)
-                successful[k] = bool(stdnames)
-                objcoords = set(self._obj.coords)
-                varnames.extend(stdnames - objcoords)
-                coords.extend(stdnames & objcoords)
-
-        # these are not special names but could be variable names in underlying object
-        # we allow this so that we can return variables with appropriate CF auxiliary variables
-        varnames.extend([k for k, v in successful.items() if not v])
-        allnames = varnames + coords
-
-        try:
-            for name in allnames:
-                extravars = self.get_associated_variable_names(name)
-                # we cannot return bounds variables with scalar keys
-                if scalar_key:
-                    extravars.pop("bounds")
-                coords.extend(itertools.chain(*extravars.values()))
-
-            if isinstance(self._obj, DataArray):
-                ds = self._obj._to_temp_dataset()
-            else:
-                ds = self._obj
-
-            if scalar_key:
-                if len(allnames) == 1:
-                    da: DataArray = ds.reset_coords()[allnames[0]]  # type: ignore
-                    if allnames[0] in coords:
-                        coords.remove(allnames[0])
-                    for k1 in coords:
-                        da.coords[k1] = ds.variables[k1]
-                    return da
-                else:
-                    raise ValueError(
-                        f"Received scalar key {key[0]!r} but multiple results: {allnames!r}. "
-                        f"Please pass a list instead (['{key[0]}']) to get back a Dataset "
-                        f"with {allnames!r}."
-                    )
-
-            ds = ds.reset_coords()[varnames + coords]
-            if isinstance(self._obj, DataArray):
-                if scalar_key and len(ds.variables) == 1:
-                    # single dimension coordinates
-                    assert coords
-                    assert not varnames
-
-                    return ds[coords[0]]
-
-                elif scalar_key and len(ds.variables) > 1:
-                    raise NotImplementedError(
-                        "Not sure what to return when given scalar key for DataArray and it has multiple values. "
-                        "Please open an issue."
-                    )
-
-            return ds.set_coords(coords)
-
-        except KeyError:
-            raise KeyError(
-                f"{kind}.cf does not understand the key {k!r}. "
-                f"Use {kind}.cf.describe() to see a list of key names that can be interpreted."
-            )
+        return _getitem(self, key)
 
     def _maybe_to_dataset(self, obj=None) -> Dataset:
         if obj is None:

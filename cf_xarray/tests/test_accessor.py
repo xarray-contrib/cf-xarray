@@ -669,10 +669,9 @@ def test_standard_name_mapper():
 
 
 @pytest.mark.parametrize("obj", objects)
-@pytest.mark.parametrize(
-    "attr", ["drop", "drop_vars", "drop_sel", "set_coords", "reset_coords"]
-)
-def test_names_labels(obj, attr):
+@pytest.mark.parametrize("attr", ["drop", "drop_vars", "set_coords"])
+@pytest.mark.filterwarnings("ignore:dropping .* using `drop` .* deprecated")
+def test_drop_vars_and_set_coords(obj, attr):
 
     # DataArray object has no attribute set_coords
     if not isinstance(obj, Dataset) and attr == "set_coords":
@@ -682,26 +681,30 @@ def test_names_labels(obj, attr):
     expected = getattr(obj, attr)
     actual = getattr(obj.cf, attr)
 
-    if attr == "drop_sel":
-        # Axes
-        assert_identical(expected(lat=75), actual(Y=75))
-        # Coordinates
-        assert_identical(expected(lat=75), actual(latitude=75))
-    else:
+    # Axis
+    assert_identical(expected("lon"), actual("X"))
+    # Coordinate
+    assert_identical(expected("lon"), actual("longitude"))
+    # Cell measure
+    assert_identical(expected("cell_area"), actual("area"))
+    # Variables
+    if isinstance(obj, Dataset):
+        assert_identical(expected("air"), actual("air_temperature"))
+        assert_identical(expected(obj.variables), actual(obj.cf.keys()))
 
-        # Cannot remove index coordinates with reset_coords
-        if not attr == "reset_coords":
-            # Axes
-            assert_identical(expected("lon"), actual("X"))
-            # Coordinates
-            assert_identical(expected("lon"), actual("longitude"))
 
-        # Cell measure
-        assert_identical(expected("cell_area"), actual("area"))
+@pytest.mark.parametrize("obj", objects)
+def test_drop_sel_and_reset_coords(obj):
 
-        # Variables
-        if isinstance(obj, Dataset):
-            assert_identical(expected("air"), actual("air_temperature"))
-            # All variables
-            if not attr == "reset_coords":
-                assert_identical(expected(obj.variables), actual(obj.cf.keys()))
+    # Axis
+    assert_identical(obj.drop_sel(lat=75), obj.cf.drop_sel(Y=75))
+    # Coordinate
+    assert_identical(obj.drop_sel(lat=75), obj.cf.drop_sel(latitude=75))
+
+    # Cell measure
+    assert_identical(obj.reset_coords("cell_area"), obj.cf.reset_coords("area"))
+    # Variable
+    if isinstance(obj, Dataset):
+        assert_identical(
+            obj.reset_coords("air"), obj.cf.reset_coords("air_temperature")
+        )

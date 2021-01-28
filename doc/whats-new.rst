@@ -6,6 +6,7 @@ What's New
 v0.4.1 (unreleased)
 ===================
 
+- Automatically set ``x`` or ``y`` for ``DataArray.cf.plot``. By `Deepak Cherian`_.
 - Support for ``.drop()``, ``.drop_vars()``, ``.drop_sel()``, ``.drop_dims()``, ``.set_coords()``, ``.reset_coords()``. By `Mattia Almansi`_.
 - Support for using ``standard_name`` in more functions. (:pr:`128`) By `Deepak Cherian`_
 - Allow ``DataArray.cf[]`` with standard names. By `Deepak Cherian`_

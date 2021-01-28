@@ -716,3 +716,34 @@ def test_drop_dims(ds):
     # Axis and coordinate
     for cf_name in ["X", "longitude"]:
         assert_identical(ds.drop_dims("lon"), ds.cf.drop_dims(cf_name))
+
+
+def test_possible_x_y_plot():
+    from ..accessor import _possible_x_y_plot
+
+    # choose axes
+    assert _possible_x_y_plot(airds.air.isel(time=1), "x") == "lon"
+    assert _possible_x_y_plot(airds.air.isel(time=1), "y") == "lat"
+    assert _possible_x_y_plot(airds.air.isel(lon=1), "y") == "lat"
+    assert _possible_x_y_plot(airds.air.isel(lon=1), "x") == "time"
+
+    # choose coordinates over axes
+    assert _possible_x_y_plot(popds.UVEL, "x") == "ULONG"
+    assert _possible_x_y_plot(popds.UVEL, "y") == "ULAT"
+    assert _possible_x_y_plot(popds.TEMP, "x") == "TLONG"
+    assert _possible_x_y_plot(popds.TEMP, "y") == "TLAT"
+
+    assert _possible_x_y_plot(popds.UVEL.drop_vars("ULONG"), "x") == "nlon"
+
+    # choose X over T, Y over Z
+    def makeds(*dims):
+        coords = {dim: (dim, np.arange(3), {"axis": dim}) for dim in dims}
+        return xr.DataArray(np.zeros((3, 3)), dims=dims, coords=coords)
+
+    yzds = makeds("Y", "Z")
+    assert _possible_x_y_plot(yzds, "y") == "Z"
+    assert _possible_x_y_plot(yzds, "x") is None
+
+    xtds = makeds("X", "T")
+    assert _possible_x_y_plot(xtds, "y") is None
+    assert _possible_x_y_plot(xtds, "x") == "X"

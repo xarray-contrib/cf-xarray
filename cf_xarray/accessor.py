@@ -353,6 +353,23 @@ def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return list(results)
 
 
+def _get_with_key(obj: Union[DataArray, Dataset], key: str) -> List[str]:
+
+    try:
+        results = set(_get_axis_coord(obj, key))
+    except KeyError:
+        # Bypass
+        results = set()
+
+    for func in (_get_measure, _get_with_standard_name):
+        results.update(func(obj, key))
+
+    if not results:
+        raise KeyError(f"cf_xarray did not understand key {key!r}.")
+
+    return list(results)
+
+
 def _get_with_standard_name(
     obj: Union[DataArray, Dataset], name: Union[str, List[str]]
 ) -> List[str]:
@@ -376,7 +393,8 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dims_dict": (_get_axis_coord,),  # swap_dims, rename_dims
     "shifts": (_get_axis_coord,),  # shift, roll
     "pad_width": (_get_axis_coord,),  # shift, roll
-    # "names": something_with_all_valid_keys? # set_coords, reset_coords
+    "names": (_get_with_key,),  # set_coords, reset_coords, drop_vars
+    "labels": (_get_with_key,),  # drop
     "coords": (_get_axis_coord,),  # interp
     "indexers": (_get_axis_coord,),  # sel, isel, reindex
     # "indexes": (_get_axis_coord,),  # set_index

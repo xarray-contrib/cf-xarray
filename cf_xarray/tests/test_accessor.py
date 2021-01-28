@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
+from xarray import Dataset
 from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
@@ -665,3 +666,45 @@ def test_standard_name_mapper():
     actual = da.cf.sortby("standard_label")
     expected = da.sortby("label")
     assert_identical(actual, expected)
+
+
+@pytest.mark.parametrize("obj", objects)
+@pytest.mark.parametrize("attr", ["drop", "drop_vars", "set_coords"])
+@pytest.mark.filterwarnings("ignore:dropping .* using `drop` .* deprecated")
+def test_drop_vars_and_set_coords(obj, attr):
+
+    # DataArray object has no attribute set_coords
+    if not isinstance(obj, Dataset) and attr == "set_coords":
+        return
+
+    # Get attribute
+    expected = getattr(obj, attr)
+    actual = getattr(obj.cf, attr)
+
+    # Axis
+    assert_identical(expected("lon"), actual("X"))
+    # Coordinate
+    assert_identical(expected("lon"), actual("longitude"))
+    # Cell measure
+    assert_identical(expected("cell_area"), actual("area"))
+    # Variables
+    if isinstance(obj, Dataset):
+        assert_identical(expected("air"), actual("air_temperature"))
+        assert_identical(expected(obj.variables), actual(obj.cf.keys()))
+
+
+@pytest.mark.parametrize("obj", objects)
+def test_drop_sel_and_reset_coords(obj):
+
+    # Axis
+    assert_identical(obj.drop_sel(lat=75), obj.cf.drop_sel(Y=75))
+    # Coordinate
+    assert_identical(obj.drop_sel(lat=75), obj.cf.drop_sel(latitude=75))
+
+    # Cell measure
+    assert_identical(obj.reset_coords("cell_area"), obj.cf.reset_coords("area"))
+    # Variable
+    if isinstance(obj, Dataset):
+        assert_identical(
+            obj.reset_coords("air"), obj.cf.reset_coords("air_temperature")
+        )

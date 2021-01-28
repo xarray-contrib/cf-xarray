@@ -376,7 +376,12 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dims_dict": (_get_axis_coord,),  # swap_dims, rename_dims
     "shifts": (_get_axis_coord,),  # shift, roll
     "pad_width": (_get_axis_coord,),  # shift, roll
-    # "names": something_with_all_valid_keys? # set_coords, reset_coords
+    "names": (
+        _get_axis_coord,
+        _get_measure,
+        _get_with_standard_name,
+    ),  # set_coords, reset_coords, drop_vars
+    "labels": (_get_axis_coord, _get_measure, _get_with_standard_name),  # drop
     "coords": (_get_axis_coord,),  # interp
     "indexers": (_get_axis_coord,),  # sel, isel, reindex
     # "indexes": (_get_axis_coord,),  # set_index

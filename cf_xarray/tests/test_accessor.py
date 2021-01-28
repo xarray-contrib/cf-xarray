@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
+from xarray import Dataset
 from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
@@ -665,3 +666,42 @@ def test_standard_name_mapper():
     actual = da.cf.sortby("standard_label")
     expected = da.sortby("label")
     assert_identical(actual, expected)
+
+
+@pytest.mark.parametrize("obj", objects)
+@pytest.mark.parametrize(
+    "attr", ["drop", "drop_vars", "drop_sel", "set_coords", "reset_coords"]
+)
+def test_names_labels(obj, attr):
+
+    # DataArray object has no attribute set_coords
+    if not isinstance(obj, Dataset) and attr == "set_coords":
+        return
+
+    # Get attribute
+    expected = getattr(obj, attr)
+    actual = getattr(obj.cf, attr)
+
+    if attr == "drop_sel":
+        # Axes
+        assert_identical(expected(lat=75), actual(Y=75))
+        # Coordinates
+        assert_identical(expected(lat=75), actual(latitude=75))
+    else:
+
+        # Cannot remove index coordinates with reset_coords
+        if not attr == "reset_coords":
+            # Axes
+            assert_identical(expected("lon"), actual("X"))
+            # Coordinates
+            assert_identical(expected("lon"), actual("longitude"))
+
+        # Cell measure
+        assert_identical(expected("cell_area"), actual("area"))
+
+        # Variables
+        if isinstance(obj, Dataset):
+            assert_identical(expected("air"), actual("air_temperature"))
+            # All variables
+            if not attr == "reset_coords":
+                assert_identical(expected(obj.variables), actual(obj.cf.keys()))

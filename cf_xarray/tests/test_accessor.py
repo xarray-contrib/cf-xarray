@@ -708,3 +708,11 @@ def test_drop_sel_and_reset_coords(obj):
         assert_identical(
             obj.reset_coords("air"), obj.cf.reset_coords("air_temperature")
         )
+
+
+@pytest.mark.parametrize("ds", datasets)
+def test_drop_dims(ds):
+
+    # Axis and coordinate
+    for cf_name in ["X", "longitude"]:
+        assert_identical(ds.drop_dims("lon"), ds.cf.drop_dims(cf_name))

@@ -372,6 +372,7 @@ def _get_with_standard_name(
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dim": (_get_axis_coord,),
     "dims": (_get_axis_coord,),  # transpose
+    "drop_dims": (_get_axis_coord,),  # drop_dims
     "dimensions": (_get_axis_coord,),  # stack
     "dims_dict": (_get_axis_coord,),  # swap_dims, rename_dims
     "shifts": (_get_axis_coord,),  # shift, roll

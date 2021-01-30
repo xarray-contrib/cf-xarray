@@ -763,8 +763,14 @@ class _CFWrappedPlotMethods:
                             kwargs.setdefault(f"{key}increase", True)
                 return kwargs
 
-            kwargs = _process_x_or_y(kwargs, "x")
-            kwargs = _process_x_or_y(kwargs, "y")
+            if func.__name__ == "line":
+                if not kwargs.get("hue"):
+                    kwargs = _process_x_or_y(kwargs, "x")
+                    if not kwargs.get("x"):
+                        kwargs = _process_x_or_y(kwargs, "y")
+            else:
+                kwargs = _process_x_or_y(kwargs, "x")
+                kwargs = _process_x_or_y(kwargs, "y")
 
             return func(*args, **kwargs)
 

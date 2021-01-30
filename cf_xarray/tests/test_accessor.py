@@ -293,15 +293,20 @@ def test_dataarray_getitem():
     assert_identical(air.cf["area_grid_cell"], air.cell_area.reset_coords(drop=True))
 
 
-@pytest.mark.parametrize("obj", dataarrays)
-def test_dataarray_plot(obj):
+def test_dataarray_plot():
 
-    rv = obj.isel(time=1).cf.plot(x="X", y="Y")
+    obj = airds.air
+
+    rv = obj.isel(time=1).transpose("lon", "lat").cf.plot()
     assert isinstance(rv, mpl.collections.QuadMesh)
+    assert all(v > 180 for v in rv.axes.get_xlim())
+    assert all(v < 200 for v in rv.axes.get_ylim())
     plt.close()
 
-    rv = obj.isel(time=1).cf.plot.contourf(x="X", y="Y")
+    rv = obj.isel(time=1).transpose("lon", "lat").cf.plot.contourf()
     assert isinstance(rv, mpl.contour.QuadContourSet)
+    assert all(v > 180 for v in rv.axes.get_xlim())
+    assert all(v < 200 for v in rv.axes.get_ylim())
     plt.close()
 
     rv = obj.cf.plot(x="X", y="Y", col="T")
@@ -314,6 +319,16 @@ def test_dataarray_plot(obj):
 
     rv = obj.isel(lat=[0, 1], lon=1).cf.plot.line(x="T", hue="Y")
     assert all([isinstance(line, mpl.lines.Line2D) for line in rv])
+    plt.close()
+
+    # set y automatically
+    rv = obj.isel(time=0, lon=1).cf.plot.line()
+    np.testing.assert_equal(rv[0].get_ydata(), obj.lat.data)
+    plt.close()
+
+    # don't set y automatically
+    rv = obj.isel(time=0, lon=1).cf.plot.line(x="lat")
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lat.data)
     plt.close()
 
     obj = obj.copy(deep=True)

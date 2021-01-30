@@ -763,7 +763,10 @@ class _CFWrappedPlotMethods:
                             kwargs.setdefault(f"{key}increase", True)
                 return kwargs
 
-            if func.__name__ == "line":
+            is_line_plot = (func.__name__ == "line") or (
+                func.__name__ == "wrapper" and kwargs.get("hue")
+            )
+            if is_line_plot:
                 if not kwargs.get("hue"):
                     kwargs = _process_x_or_y(kwargs, "x")
                     if not kwargs.get("x"):

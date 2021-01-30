@@ -12,11 +12,11 @@ def main():
     Make all additional files needed to build the documentations.
     """
 
-    make_criteria()
-    make_regex()
+    make_criteria_csv()
+    make_regex_csv()
 
 
-def make_criteria():
+def make_criteria_csv():
     """
     Make criteria tables:
         _build/csv/{all,axes,coords}_criteria.csv
@@ -41,10 +41,10 @@ def make_criteria():
         subdf.to_csv(os.path.join(csv_dir, f"{name}_criteria.csv"))
 
 
-def make_regex():
+def make_regex_csv():
     """
     Make regex tables:
-        _build/csv/{axes,coords}_regex.csv
+        _build/csv/all_regex.csv
     """
 
     csv_dir = "_build/csv"

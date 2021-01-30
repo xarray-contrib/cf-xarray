@@ -33,7 +33,7 @@ This dictionary contains criteria for identifying axis and coords using CF attri
    ~accessor.coordinate_criteria
 
 .. csv-table::
-   :file: _build/csv/coordinate_criteria.csv
+   :file: _build/csv/all_criteria.csv
    :header-rows: 1
    :stub-columns: 1
 

@@ -4,33 +4,55 @@ import os
 
 from pandas import DataFrame
 
-from cf_xarray.accessor import _AXIS_NAMES, _COORD_NAMES, coordinate_criteria
+from cf_xarray.accessor import _AXIS_NAMES, _COORD_NAMES, coordinate_criteria, regex
 
 
 def main():
+    """
+    Make all additional files needed to build the documentations.
+    """
 
-    # axes, coordinates, and coordinate criteria tables
-    axes = {
-        key: {k: v for k, v in values.items() if k in _AXIS_NAMES}
-        for key, values in coordinate_criteria.items()
-    }
-    coords = {
-        key: {k: v for k, v in values.items() if k in _COORD_NAMES}
-        for key, values in coordinate_criteria.items()
-    }
+    make_criteria()
+    make_regex()
 
-    for mapper, name in zip(
-        [coordinate_criteria, axes, coords],
-        ["coordinate_criteria", "axes", "coordinates"],
-    ):
 
-        path = f"_build/csv/{name}.csv"
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        df = DataFrame.from_dict(mapper)
-        df = df.fillna("")
-        df = df.applymap(lambda x: ", ".join(sorted(x)))
-        df = df.sort_index(0).sort_index(1)
-        df.to_csv(path)
+def make_criteria():
+    """
+    Make criteria tables:
+        _build/csv/{all,axes,coords}_criteria.csv
+    """
+
+    csv_dir = "_build/csv"
+    os.makedirs(csv_dir, exist_ok=True)
+
+    # Criteria tables
+    df = DataFrame.from_dict(coordinate_criteria)
+    df = df.dropna(1, how="all")
+    df = df.applymap(lambda x: ", ".join(sorted(x)) if isinstance(x, tuple) else x)
+    df = df.sort_index(0).sort_index(1)
+
+    # All criteria
+    df.to_csv(os.path.join(csv_dir, "all_criteria.csv"))
+
+    # Axes and coordinates
+    for keys, name in zip([_AXIS_NAMES, _COORD_NAMES], ["axes", "coords"]):
+        subdf = df.loc[sorted(keys)].dropna(1, how="all")
+        subdf = subdf.dropna(1, how="all").transpose()
+        subdf.to_csv(os.path.join(csv_dir, f"{name}_criteria.csv"))
+
+
+def make_regex():
+    """
+    Make regex tables:
+        _build/csv/{axes,coords}_regex.csv
+    """
+
+    csv_dir = "_build/csv"
+    os.makedirs(csv_dir, exist_ok=True)
+    df = DataFrame(regex, index=[0])
+    df = df.applymap(lambda x: f"``{x}``")
+    df = df.sort_index(1).transpose()
+    df.to_csv(os.path.join(csv_dir, "all_regex.csv"), header=False)
 
 
 if __name__ == "__main__":

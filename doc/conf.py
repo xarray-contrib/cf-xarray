@@ -315,6 +315,10 @@ intersphinx_mapping = {
 autosummary_generate = True
 
 autodoc_typehints = "none"
-
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+    "private-members": True,
+}
 napoleon_use_param = True
 napoleon_use_rtype = True

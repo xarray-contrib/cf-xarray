@@ -26,7 +26,7 @@ Coordinates
 
 Names
 ~~~~~
-Regex used by :meth:`DataArray.cf.guess_coord_axis` and :meth:`Dataset.cf.guess_coord_axis` for identifying variables using their names.
+Regex used by :py:meth:`DataArray.cf.guess_coord_axis` and :py:meth:`Dataset.cf.guess_coord_axis` for identifying variables using their names.
 
 .. csv-table::
    :file: _build/csv/all_regex.csv

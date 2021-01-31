@@ -967,7 +967,7 @@ class CFAccessor:
 
         text += "\nStandard Names:\n"
         for key, value in sorted(self.standard_names.items()):
-            if key not in _COORD_NAMES:
+            if key not in coords:
                 text += f"\t{key}: {value}\n"
 
         print(text)

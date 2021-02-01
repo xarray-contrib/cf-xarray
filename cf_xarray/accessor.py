@@ -950,6 +950,8 @@ class CFAccessor:
         """
         Print a string repr to screen.
         """
+        star = "\t".expandtabs()[:-2] + "* "
+
         text = "Axes:\n"
         axes = self.axes
         for key in _AXIS_NAMES:
@@ -963,11 +965,16 @@ class CFAccessor:
         text += "\nCell Measures:\n"
         measures = self.cell_measures
         for key in sorted(self._get_all_cell_measures()):
-            text += f"\t{key}: {measures[key] if key in measures else []}\n"
+            if key in {**axes, **coords}:
+                text += f"{star}{key}: {measures[key] if key in measures else []}\n"
+            else:
+                text += f"\t{key}: {measures[key] if key in measures else []}\n"
 
         text += "\nStandard Names:\n"
         for key, value in sorted(self.standard_names.items()):
-            if key not in coords:
+            if key in {**axes, **coords, **measures}:
+                text += f"{star}{key}: {value}\n"
+            else:
                 text += f"\t{key}: {value}\n"
 
         print(text)

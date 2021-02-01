@@ -34,7 +34,10 @@ def test_describe(capsys):
         "\nCoordinates:\n\tlongitude: ['lon']\n\tlatitude: ['lat']"
         "\n\tvertical: []\n\ttime: ['time']\n"
         "\nCell Measures:\n\tarea: ['cell_area']\n\tvolume: []\n"
-        "\nStandard Names:\n\tair_temperature: ['air']\n\n"
+        "\nStandard Names:\n\tair_temperature: ['air']\n"
+        "      * latitude: ['lat']\n"
+        "      * longitude: ['lon']\n"
+        "      * time: ['time']\n\n"
     )
     assert actual == expected
 
@@ -78,8 +81,14 @@ def test_cell_measures(capsys):
     ds.cf.describe()
     actual = capsys.readouterr().out
     expected = (
-        "\nCell Measures:\n\tarea: ['cell_area']\n\tfoo_measure: ['foo']\n\tvolume: ['foo']\n"
-        "\nStandard Names:\n\tair_temperature: ['air']\n\tfoo_std_name: ['foo']\n\n"
+        "\nCell Measures:\n"
+        "\tarea: ['cell_area']\n\tfoo_measure: ['foo']\n"
+        "\tvolume: ['foo']\n"
+        "\nStandard Names:\n"
+        "\tair_temperature: ['air']\n\tfoo_std_name: ['foo']\n"
+        "      * latitude: ['lat']\n"
+        "      * longitude: ['lon']\n"
+        "      * time: ['time']\n\n"
     )
     assert actual.endswith(expected)
 

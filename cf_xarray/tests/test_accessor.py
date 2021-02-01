@@ -163,7 +163,6 @@ def test_rename_like():
                 reason="xarray GH4120. any test after this will fail since attrs are lost"
             ),
         ),
-        # groupby("time.day")?
     ),
 )
 def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
@@ -726,3 +725,7 @@ def test_new_standard_name_mappers():
     assert_identical(forecast.cf.chunk({"realization": 1}), forecast.chunk({"M": 1}))
     assert_identical(forecast.cf.isel({"realization": 1}), forecast.isel({"M": 1}))
     assert_identical(forecast.cf.isel(**{"realization": 1}), forecast.isel(**{"M": 1}))
+    assert_identical(
+        forecast.cf.groupby("forecast_reference_time.month").mean(),
+        forecast.groupby("S.month").mean(),
+    )

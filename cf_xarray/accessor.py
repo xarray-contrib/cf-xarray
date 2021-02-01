@@ -213,9 +213,7 @@ def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str) -> List[str
     return results
 
 
-def _get_axis_coord_time_accessor(
-    var: Union[DataArray, Dataset], key: str
-) -> List[str]:
+def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Helper method for when our key name is of the nature "T.month" and we want to
     isolate the "T" for coordinate mapping
@@ -238,7 +236,11 @@ def _get_axis_coord_time_accessor(
     if "." in key:
         key, ext = key.split(".", 1)
 
-        results = _get_axis_coord_single(var, key)
+        results = apply_mapper(
+            (_get_axis_coord, _get_with_standard_name), var, key, error=False
+        )
+        if len(results) > 1:
+            raise KeyError(f"Multiple results received for {key}.")
         return [v + "." + ext for v in results]
 
     else:
@@ -391,7 +393,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "coord": (_get_axis_coord_single,),  # differentiate, integrate
     "group": (
         _get_axis_coord_single,
-        _get_axis_coord_time_accessor,
+        _get_groupby_time_accessor,
         _get_with_standard_name,
     ),
     "indexer": (_get_axis_coord_single,),  # resample
@@ -430,7 +432,7 @@ def _build_docstring(func):
     mapper_docstrings = {
         _get_axis_coord: f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r}",
         _get_axis_coord_single: f"One of {(_AXIS_NAMES + _COORD_NAMES)!r}",
-        _get_axis_coord_time_accessor: "Time variable accessor e.g. 'T.month'",
+        _get_groupby_time_accessor: "Time variable accessor e.g. 'T.month'",
         _get_with_standard_name: "Standard names",
         _get_measure_variable: f"One of {_CELL_MEASURES!r}",
     }

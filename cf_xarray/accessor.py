@@ -561,11 +561,6 @@ def _getitem(
     kind = str(type(obj).__name__)
     scalar_key = isinstance(key, str)
 
-    if isinstance(obj, DataArray) and not scalar_key:
-        raise KeyError(
-            f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
-        )
-
     if scalar_key:
         key = (key,)  # type: ignore
 
@@ -1172,9 +1167,6 @@ class CFAccessor:
 
         return coords
 
-    def __getitem__(self, key: Union[str, List[str]]):
-        return _getitem(self, key)
-
     def _maybe_to_dataset(self, obj=None) -> Dataset:
         if obj is None:
             obj = self._obj
@@ -1283,6 +1275,37 @@ class CFAccessor:
 
 @xr.register_dataset_accessor("cf")
 class CFDatasetAccessor(CFAccessor):
+    def __getitem__(self, key: Union[str, List[str]]) -> Union[DataArray, Dataset]:
+        """
+        Index into a Dataset making use of CF attributes.
+
+        Parameters
+        ----------
+
+        key: str, Iterable[str], optional
+            One of
+              - axes names: "X", "Y", "Z", "T"
+              - coordinate names: "longitude", "latitude", "vertical", "time"
+              - cell measures: "area", "volume", or other names present in the \
+                             ``cell_measures`` attribute
+              - standard names: names present in ``standard_name`` attribute
+
+        Returns
+        -------
+        DataArray or Dataset
+          ``Dataset.cf[str]`` will return a DataArray, \
+          ``Dataset.cf[List[str]]``` will return a Dataset.
+
+        Notes
+        -----
+        In all cases, associated CF variables will be attached as coordinate variables
+        by parsing attributes such as ``bounds``, ``ancillary_variables``, etc.
+
+        ``bounds`` variables will not be attached when a DataArray is returned. This
+        is a limitation of the xarray data model.
+        """
+        return _getitem(self, key)
+
     def get_bounds(self, key: str) -> DataArray:
         """
         Get bounds variable corresponding to key.
@@ -1317,9 +1340,12 @@ class CFDatasetAccessor(CFAccessor):
         -------
         DataArray or Dataset with bounds variables added and appropriate "bounds" attribute set.
 
+        Raises
+        ------
+        KeyError
+
         Notes
         -----
-
         The bounds variables are automatically named f"{dim}_bounds" where ``dim``
         is a dimension name.
         """
@@ -1511,4 +1537,41 @@ class CFDatasetAccessor(CFAccessor):
 
 @xr.register_dataarray_accessor("cf")
 class CFDataArrayAccessor(CFAccessor):
+    def __getitem__(self, key: Union[str, List[str]]) -> DataArray:
+        """
+        Index into a DataArray making use of CF attributes.
+
+        Parameters
+        ----------
+        key: str, Iterable[str], optional
+            One of
+              - axes names: "X", "Y", "Z", "T"
+              - coordinate names: "longitude", "latitude", "vertical", "time"
+              - cell measures: "area", "volume", or other names present in the \
+                             ``cell_measures`` attribute
+              - standard names: names present in ``standard_name`` attribute of \
+                coordinate variables
+
+        Returns
+        -------
+        DataArray
+
+        Raises
+        ------
+        KeyError
+          ``DataArray.cf[List[str]]`` will raise KeyError.
+
+        Notes
+        -----
+        Associated CF variables will be attached as coordinate variables
+        by parsing attributes such as ``cell_measures``, ``coordinates`` etc.
+        """
+
+        if not isinstance(key, str):
+            raise KeyError(
+                f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
+            )
+
+        return _getitem(self, key)
+
     pass

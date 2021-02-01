@@ -42,7 +42,7 @@ Dataset
    :toctree: generated/
    :template: autosummary/accessor_method.rst
 
-    DataArray.cf.__getitem__
+    Dataset.cf.__getitem__
     Dataset.cf.add_bounds
     Dataset.cf.bounds_to_vertices
     Dataset.cf.decode_vertical_coords

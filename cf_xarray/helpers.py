@@ -2,7 +2,7 @@ from typing import Optional, Sequence
 
 import numpy as np
 import xarray as xr
-from xarray import DataArray
+from xarray import DataArray, Dataset
 
 
 def bounds_to_vertices(
@@ -119,3 +119,55 @@ def vertices_to_bounds(
             f"vertices format not understood. Got {vertices.dims} with shape {vertices.shape}."
         )
     return xr.DataArray(bnd_vals, dims=out_dims[: vertices.ndim + 1])
+
+
+def create_dataset_like(ds: Dataset) -> Dataset:
+    """Returns a dataset that looks like ``ds`` with dummy data but
+    attrs and encoding preserved."""
+    ndims = len(ds.dims)
+    sizes = range(2, ndims + 2)
+    dims = dict(zip(ds.dims.keys(), sizes))
+
+    coords = {
+        k: (k, np.arange(dims[k]), ds[k].attrs)
+        for k, v in dims.items()
+        if k in ds.coords
+    }
+    newds = Dataset(coords=coords, attrs=ds.attrs)
+    for var in ds.variables:
+        if var in newds:
+            continue
+        old = ds[var]
+        newshape = list(dims[dim] for dim in old.dims)
+        newds[var] = (
+            (old.dims),
+            np.arange(np.prod(newshape)).reshape(newshape),
+            old.attrs,
+        )
+        newds[var].encoding = ds[var].encoding
+
+    newds = newds.set_coords(ds.coords.keys())
+    return newds
+
+
+def to_dict(ds: Dataset) -> dict:
+    """
+    Returns Dataset.to_dict() with 'data' rewritten to a string with
+    an appropriate call to np.arange. Use this with output from
+    ``create_dataset_like``.
+
+    See Also
+    --------
+    create_dataset_like
+    Dataset.to_dict
+    """
+    asdict = ds.to_dict()
+    for kind in ["data_vars", "coords"]:
+        for var in asdict[kind]:
+            if var in asdict["dims"]:
+                continue
+            array = np.asarray(asdict[kind][var]["data"])
+            asdict[kind][var][
+                "data"
+            ] = f"np.arange(np.prod({array.shape})).reshape({array.shape})"
+    return asdict

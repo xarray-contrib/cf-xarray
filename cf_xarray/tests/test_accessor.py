@@ -9,8 +9,8 @@ from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
 
+from ..datasets import airds, anc, ds_no_attrs, multiple, popds
 from . import raise_if_dask_computes
-from .datasets import airds, anc, ds_no_attrs, multiple, popds
 
 mpl.use("Agg")
 

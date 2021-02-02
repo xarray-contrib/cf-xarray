@@ -655,6 +655,42 @@ def _getitem(
         )
 
 
+def _possible_x_y_plot(obj, key):
+    """Guesses a name for an x/y variable if possible."""
+    # in priority order
+    x_criteria = [
+        ("coordinates", "longitude"),
+        ("axes", "X"),
+        ("coordinates", "time"),
+        ("axes", "T"),
+    ]
+    y_criteria = [
+        ("coordinates", "vertical"),
+        ("axes", "Z"),
+        ("coordinates", "latitude"),
+        ("axes", "Y"),
+    ]
+
+    def _get_possible(accessor, criteria):
+        # is_scalar depends on NON_NUMPY_SUPPORTED_TYPES
+        # importing a private function seems better than
+        # maintaining that variable!
+        from xarray.core.utils import is_scalar
+
+        for attr, key in criteria:
+            value = getattr(accessor, attr).get(key)
+            if not value or len(value) > 1:
+                continue
+            if not is_scalar(accessor._obj[value[0]]):
+                return value[0]
+        return None
+
+    if key == "x":
+        return _get_possible(obj.cf, x_criteria)
+    elif key == "y":
+        return _get_possible(obj.cf, y_criteria)
+
+
 class _CFWrappedClass:
     """
     This class is used to wrap any class in _WRAPPED_CLASSES.
@@ -705,27 +741,34 @@ class _CFWrappedPlotMethods:
 
         @functools.wraps(func)
         def _plot_wrapper(*args, **kwargs):
-            if "x" in kwargs:
-                if kwargs["x"] in valid_keys:
-                    xvar = self.accessor[kwargs["x"]]
-                else:
-                    xvar = self._obj[kwargs["x"]]
-                if "positive" in xvar.attrs:
-                    if xvar.attrs["positive"] == "down":
-                        kwargs.setdefault("xincrease", False)
-                    else:
-                        kwargs.setdefault("xincrease", True)
+            def _process_x_or_y(kwargs, key):
+                if key not in kwargs:
+                    kwargs[key] = _possible_x_y_plot(self._obj, key)
 
-            if "y" in kwargs:
-                if kwargs["y"] in valid_keys:
-                    yvar = self.accessor[kwargs["y"]]
-                else:
-                    yvar = self._obj[kwargs["y"]]
-                if "positive" in yvar.attrs:
-                    if yvar.attrs["positive"] == "down":
-                        kwargs.setdefault("yincrease", False)
+                value = kwargs.get(key)
+                if value:
+                    if value in valid_keys:
+                        var = self.accessor[value]
                     else:
-                        kwargs.setdefault("yincrease", True)
+                        var = self._obj[value]
+                    if "positive" in var.attrs:
+                        if var.attrs["positive"] == "down":
+                            kwargs.setdefault(f"{key}increase", False)
+                        else:
+                            kwargs.setdefault(f"{key}increase", True)
+                return kwargs
+
+            is_line_plot = (func.__name__ == "line") or (
+                func.__name__ == "wrapper" and kwargs.get("hue")
+            )
+            if is_line_plot:
+                if not kwargs.get("hue"):
+                    kwargs = _process_x_or_y(kwargs, "x")
+                    if not kwargs.get("x"):
+                        kwargs = _process_x_or_y(kwargs, "y")
+            else:
+                kwargs = _process_x_or_y(kwargs, "x")
+                kwargs = _process_x_or_y(kwargs, "y")
 
             return func(*args, **kwargs)
 

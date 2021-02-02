@@ -36,7 +36,7 @@ _WRAPPED_CLASSES = (
 _AXIS_NAMES = ("X", "Y", "Z", "T")
 
 #:  `coordinate` types understood by cf_xarray.
-_COORD_NAMES = ("longitude", "latitude", "vertical", "time")
+_COORD_NAMES = ("longitude", "latitude", "vertical", "time", "parametric")
 
 #:  Cell measures understood by cf_xarray.
 _CELL_MEASURES = ("area", "volume")
@@ -63,6 +63,19 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
         ),
         "Z": (
             "model_level_number",
+            "atmosphere_ln_pressure_coordinate",
+            "atmosphere_sigma_coordinate",
+            "atmosphere_hybrid_sigma_pressure_coordinate",
+            "atmosphere_hybrid_height_coordinate",
+            "atmosphere_sleve_coordinate",
+            "ocean_sigma_coordinate",
+            "ocean_s_coordinate",
+            "ocean_s_coordinate_g1",
+            "ocean_s_coordinate_g2",
+            "ocean_sigma_z_coordinate",
+            "ocean_double_sigma_coordinate",
+        ),
+        "parametric": (
             "atmosphere_ln_pressure_coordinate",
             "atmosphere_sigma_coordinate",
             "atmosphere_hybrid_sigma_pressure_coordinate",
@@ -115,10 +128,8 @@ coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 #: regular expressions for guess_coord_axis
 regex = {
     "time": "time[0-9]*|min|hour|day|week|month|year",
-    "vertical": (
-        "(lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|isobaric|pres|"
-        "isotherm)[a-z_]*[0-9]*"
-    ),
+    "vertical": ("(h(ei)?ght|altitude|depth|isobaric|pres|" "isotherm)[a-z_]*[0-9]*"),
+    "Z": ("(lv_|bottom_top|sigma)[a-z_]*[0-9]*"),
     "Y": "y",
     "latitude": "y?lat[a-z0-9]*",
     "X": "x",

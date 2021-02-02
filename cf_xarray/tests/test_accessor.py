@@ -9,8 +9,8 @@ from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
 
+from ..datasets import airds, anc, ds_no_attrs, multiple, popds, romsds
 from . import raise_if_dask_computes
-from .datasets import airds, anc, ds_no_attrs, multiple, popds
 
 mpl.use("Agg")
 
@@ -614,7 +614,7 @@ def test_missing_variable_in_coordinates():
 
 
 def test_Z_vs_vertical_ROMS():
-    from .datasets import romsds
+    from ..datasets import romsds
 
     assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
     assert_identical(
@@ -640,8 +640,6 @@ def test_Z_vs_vertical_ROMS():
 
 
 def test_param_vcoord_ocean_s_coord():
-    from .datasets import romsds
-
     romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g2"
     Zo_rho = (romsds.hc * romsds.s_rho + romsds.Cs_r * romsds.h) / (
         romsds.hc + romsds.h

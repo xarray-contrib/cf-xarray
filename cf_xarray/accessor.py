@@ -563,11 +563,6 @@ def _getitem(
     kind = str(type(obj).__name__)
     scalar_key = isinstance(key, str)
 
-    if isinstance(obj, DataArray) and not scalar_key:
-        raise KeyError(
-            f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
-        )
-
     if scalar_key:
         key = (key,)  # type: ignore
 
@@ -662,6 +657,42 @@ def _getitem(
         )
 
 
+def _possible_x_y_plot(obj, key):
+    """Guesses a name for an x/y variable if possible."""
+    # in priority order
+    x_criteria = [
+        ("coordinates", "longitude"),
+        ("axes", "X"),
+        ("coordinates", "time"),
+        ("axes", "T"),
+    ]
+    y_criteria = [
+        ("coordinates", "vertical"),
+        ("axes", "Z"),
+        ("coordinates", "latitude"),
+        ("axes", "Y"),
+    ]
+
+    def _get_possible(accessor, criteria):
+        # is_scalar depends on NON_NUMPY_SUPPORTED_TYPES
+        # importing a private function seems better than
+        # maintaining that variable!
+        from xarray.core.utils import is_scalar
+
+        for attr, key in criteria:
+            value = getattr(accessor, attr).get(key)
+            if not value or len(value) > 1:
+                continue
+            if not is_scalar(accessor._obj[value[0]]):
+                return value[0]
+        return None
+
+    if key == "x":
+        return _get_possible(obj.cf, x_criteria)
+    elif key == "y":
+        return _get_possible(obj.cf, y_criteria)
+
+
 class _CFWrappedClass:
     """
     This class is used to wrap any class in _WRAPPED_CLASSES.
@@ -712,27 +743,34 @@ class _CFWrappedPlotMethods:
 
         @functools.wraps(func)
         def _plot_wrapper(*args, **kwargs):
-            if "x" in kwargs:
-                if kwargs["x"] in valid_keys:
-                    xvar = self.accessor[kwargs["x"]]
-                else:
-                    xvar = self._obj[kwargs["x"]]
-                if "positive" in xvar.attrs:
-                    if xvar.attrs["positive"] == "down":
-                        kwargs.setdefault("xincrease", False)
-                    else:
-                        kwargs.setdefault("xincrease", True)
+            def _process_x_or_y(kwargs, key):
+                if key not in kwargs:
+                    kwargs[key] = _possible_x_y_plot(self._obj, key)
 
-            if "y" in kwargs:
-                if kwargs["y"] in valid_keys:
-                    yvar = self.accessor[kwargs["y"]]
-                else:
-                    yvar = self._obj[kwargs["y"]]
-                if "positive" in yvar.attrs:
-                    if yvar.attrs["positive"] == "down":
-                        kwargs.setdefault("yincrease", False)
+                value = kwargs.get(key)
+                if value:
+                    if value in valid_keys:
+                        var = self.accessor[value]
                     else:
-                        kwargs.setdefault("yincrease", True)
+                        var = self._obj[value]
+                    if "positive" in var.attrs:
+                        if var.attrs["positive"] == "down":
+                            kwargs.setdefault(f"{key}increase", False)
+                        else:
+                            kwargs.setdefault(f"{key}increase", True)
+                return kwargs
+
+            is_line_plot = (func.__name__ == "line") or (
+                func.__name__ == "wrapper" and kwargs.get("hue")
+            )
+            if is_line_plot:
+                if not kwargs.get("hue"):
+                    kwargs = _process_x_or_y(kwargs, "x")
+                    if not kwargs.get("x"):
+                        kwargs = _process_x_or_y(kwargs, "y")
+            else:
+                kwargs = _process_x_or_y(kwargs, "x")
+                kwargs = _process_x_or_y(kwargs, "y")
 
             return func(*args, **kwargs)
 
@@ -1177,9 +1215,6 @@ class CFAccessor:
 
         return coords
 
-    def __getitem__(self, key: Union[str, List[str]]):
-        return _getitem(self, key)
-
     def _maybe_to_dataset(self, obj=None) -> Dataset:
         if obj is None:
             obj = self._obj
@@ -1288,6 +1323,37 @@ class CFAccessor:
 
 @xr.register_dataset_accessor("cf")
 class CFDatasetAccessor(CFAccessor):
+    def __getitem__(self, key: Union[str, List[str]]) -> Union[DataArray, Dataset]:
+        """
+        Index into a Dataset making use of CF attributes.
+
+        Parameters
+        ----------
+
+        key: str, Iterable[str], optional
+            One of
+              - axes names: "X", "Y", "Z", "T"
+              - coordinate names: "longitude", "latitude", "vertical", "time"
+              - cell measures: "area", "volume", or other names present in the \
+                             ``cell_measures`` attribute
+              - standard names: names present in ``standard_name`` attribute
+
+        Returns
+        -------
+        DataArray or Dataset
+          ``Dataset.cf[str]`` will return a DataArray, \
+          ``Dataset.cf[List[str]]``` will return a Dataset.
+
+        Notes
+        -----
+        In all cases, associated CF variables will be attached as coordinate variables
+        by parsing attributes such as ``bounds``, ``ancillary_variables``, etc.
+
+        ``bounds`` variables will not be attached when a DataArray is returned. This
+        is a limitation of the xarray data model.
+        """
+        return _getitem(self, key)
+
     def get_bounds(self, key: str) -> DataArray:
         """
         Get bounds variable corresponding to key.
@@ -1322,9 +1388,12 @@ class CFDatasetAccessor(CFAccessor):
         -------
         DataArray or Dataset with bounds variables added and appropriate "bounds" attribute set.
 
+        Raises
+        ------
+        KeyError
+
         Notes
         -----
-
         The bounds variables are automatically named f"{dim}_bounds" where ``dim``
         is a dimension name.
         """
@@ -1516,4 +1585,41 @@ class CFDatasetAccessor(CFAccessor):
 
 @xr.register_dataarray_accessor("cf")
 class CFDataArrayAccessor(CFAccessor):
+    def __getitem__(self, key: Union[str, List[str]]) -> DataArray:
+        """
+        Index into a DataArray making use of CF attributes.
+
+        Parameters
+        ----------
+        key: str, Iterable[str], optional
+            One of
+              - axes names: "X", "Y", "Z", "T"
+              - coordinate names: "longitude", "latitude", "vertical", "time"
+              - cell measures: "area", "volume", or other names present in the \
+                             ``cell_measures`` attribute
+              - standard names: names present in ``standard_name`` attribute of \
+                coordinate variables
+
+        Returns
+        -------
+        DataArray
+
+        Raises
+        ------
+        KeyError
+          ``DataArray.cf[List[str]]`` will raise KeyError.
+
+        Notes
+        -----
+        Associated CF variables will be attached as coordinate variables
+        by parsing attributes such as ``cell_measures``, ``coordinates`` etc.
+        """
+
+        if not isinstance(key, str):
+            raise KeyError(
+                f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
+            )
+
+        return _getitem(self, key)
+
     pass

@@ -9,8 +9,8 @@ from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
 
+from ..datasets import airds, anc, ds_no_attrs, forecast, multiple, popds, romsds
 from . import raise_if_dask_computes
-from .datasets import airds, anc, ds_no_attrs, forecast, multiple, popds
 
 mpl.use("Agg")
 
@@ -292,15 +292,20 @@ def test_dataarray_getitem():
     assert_identical(air.cf["area_grid_cell"], air.cell_area.reset_coords(drop=True))
 
 
-@pytest.mark.parametrize("obj", dataarrays)
-def test_dataarray_plot(obj):
+def test_dataarray_plot():
 
-    rv = obj.isel(time=1).cf.plot(x="X", y="Y")
+    obj = airds.air
+
+    rv = obj.isel(time=1).transpose("lon", "lat").cf.plot()
     assert isinstance(rv, mpl.collections.QuadMesh)
+    assert all(v > 180 for v in rv.axes.get_xlim())
+    assert all(v < 200 for v in rv.axes.get_ylim())
     plt.close()
 
-    rv = obj.isel(time=1).cf.plot.contourf(x="X", y="Y")
+    rv = obj.isel(time=1).transpose("lon", "lat").cf.plot.contourf()
     assert isinstance(rv, mpl.contour.QuadContourSet)
+    assert all(v > 180 for v in rv.axes.get_xlim())
+    assert all(v < 200 for v in rv.axes.get_ylim())
     plt.close()
 
     rv = obj.cf.plot(x="X", y="Y", col="T")
@@ -313,6 +318,29 @@ def test_dataarray_plot(obj):
 
     rv = obj.isel(lat=[0, 1], lon=1).cf.plot.line(x="T", hue="Y")
     assert all([isinstance(line, mpl.lines.Line2D) for line in rv])
+    plt.close()
+
+    # set y automatically
+    rv = obj.isel(time=0, lon=1).cf.plot.line()
+    np.testing.assert_equal(rv[0].get_ydata(), obj.lat.data)
+    plt.close()
+
+    # don't set y automatically
+    rv = obj.isel(time=0, lon=1).cf.plot.line(x="lat")
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lat.data)
+    plt.close()
+
+    # various line plots and automatic guessing
+    rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot.line()
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
+    plt.close()
+
+    # rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot(hue="Y")
+    # np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
+    # plt.close()
+
+    rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot.line()
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
     plt.close()
 
     obj = obj.copy(deep=True)
@@ -585,7 +613,7 @@ def test_missing_variable_in_coordinates():
 
 
 def test_Z_vs_vertical_ROMS():
-    from .datasets import romsds
+    from ..datasets import romsds
 
     assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
     assert_identical(
@@ -611,8 +639,6 @@ def test_Z_vs_vertical_ROMS():
 
 
 def test_param_vcoord_ocean_s_coord():
-    from .datasets import romsds
-
     romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g2"
     Zo_rho = (romsds.hc * romsds.s_rho + romsds.Cs_r * romsds.h) / (
         romsds.hc + romsds.h
@@ -729,3 +755,34 @@ def test_new_standard_name_mappers():
         forecast.cf.groupby("forecast_reference_time.month").mean(),
         forecast.groupby("S.month").mean(),
     )
+
+
+def test_possible_x_y_plot():
+    from ..accessor import _possible_x_y_plot
+
+    # choose axes
+    assert _possible_x_y_plot(airds.air.isel(time=1), "x") == "lon"
+    assert _possible_x_y_plot(airds.air.isel(time=1), "y") == "lat"
+    assert _possible_x_y_plot(airds.air.isel(lon=1), "y") == "lat"
+    assert _possible_x_y_plot(airds.air.isel(lon=1), "x") == "time"
+
+    # choose coordinates over axes
+    assert _possible_x_y_plot(popds.UVEL, "x") == "ULONG"
+    assert _possible_x_y_plot(popds.UVEL, "y") == "ULAT"
+    assert _possible_x_y_plot(popds.TEMP, "x") == "TLONG"
+    assert _possible_x_y_plot(popds.TEMP, "y") == "TLAT"
+
+    assert _possible_x_y_plot(popds.UVEL.drop_vars("ULONG"), "x") == "nlon"
+
+    # choose X over T, Y over Z
+    def makeds(*dims):
+        coords = {dim: (dim, np.arange(3), {"axis": dim}) for dim in dims}
+        return xr.DataArray(np.zeros((3, 3)), dims=dims, coords=coords)
+
+    yzds = makeds("Y", "Z")
+    assert _possible_x_y_plot(yzds, "y") == "Z"
+    assert _possible_x_y_plot(yzds, "x") is None
+
+    xtds = makeds("X", "T")
+    assert _possible_x_y_plot(xtds, "y") is None
+    assert _possible_x_y_plot(xtds, "x") == "X"

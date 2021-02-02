@@ -9,7 +9,7 @@ from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
 
-from ..datasets import airds, anc, ds_no_attrs, multiple, popds, romsds
+from ..datasets import airds, anc, ds_no_attrs, forecast, multiple, popds, romsds
 from . import raise_if_dask_computes
 
 mpl.use("Agg")
@@ -163,7 +163,6 @@ def test_rename_like():
                 reason="xarray GH4120. any test after this will fail since attrs are lost"
             ),
         ),
-        # groupby("time.day")?
     ),
 )
 def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
@@ -742,6 +741,20 @@ def test_drop_dims(ds):
     # Axis and coordinate
     for cf_name in ["X", "longitude"]:
         assert_identical(ds.drop_dims("lon"), ds.cf.drop_dims(cf_name))
+
+
+def test_new_standard_name_mappers():
+    assert_identical(forecast.cf.mean("realization"), forecast.mean("M"))
+    assert_identical(
+        forecast.cf.mean(["realization", "forecast_period"]), forecast.mean(["M", "L"])
+    )
+    assert_identical(forecast.cf.chunk({"realization": 1}), forecast.chunk({"M": 1}))
+    assert_identical(forecast.cf.isel({"realization": 1}), forecast.isel({"M": 1}))
+    assert_identical(forecast.cf.isel(**{"realization": 1}), forecast.isel(**{"M": 1}))
+    assert_identical(
+        forecast.cf.groupby("forecast_reference_time.month").mean(),
+        forecast.groupby("S.month").mean(),
+    )
 
 
 def test_possible_x_y_plot():

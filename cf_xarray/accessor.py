@@ -213,9 +213,7 @@ def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str) -> List[str
     return results
 
 
-def _get_axis_coord_time_accessor(
-    var: Union[DataArray, Dataset], key: str
-) -> List[str]:
+def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Helper method for when our key name is of the nature "T.month" and we want to
     isolate the "T" for coordinate mapping
@@ -238,7 +236,11 @@ def _get_axis_coord_time_accessor(
     if "." in key:
         key, ext = key.split(".", 1)
 
-        results = _get_axis_coord_single(var, key)
+        results = apply_mapper(
+            (_get_axis_coord, _get_with_standard_name), var, key, error=False
+        )
+        if len(results) > 1:
+            raise KeyError(f"Multiple results received for {key}.")
         return [v + "." + ext for v in results]
 
     else:
@@ -370,34 +372,34 @@ def _get_with_standard_name(
 
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
-    "dim": (_get_axis_coord,),
-    "dims": (_get_axis_coord,),  # transpose
-    "drop_dims": (_get_axis_coord,),  # drop_dims
-    "dimensions": (_get_axis_coord,),  # stack
-    "dims_dict": (_get_axis_coord,),  # swap_dims, rename_dims
-    "shifts": (_get_axis_coord,),  # shift, roll
-    "pad_width": (_get_axis_coord,),  # shift, roll
+    "dim": (_get_axis_coord, _get_with_standard_name),
+    "dims": (_get_axis_coord, _get_with_standard_name),  # transpose
+    "drop_dims": (_get_axis_coord, _get_with_standard_name),  # drop_dims
+    "dimensions": (_get_axis_coord, _get_with_standard_name),  # stack
+    "dims_dict": (_get_axis_coord, _get_with_standard_name),  # swap_dims, rename_dims
+    "shifts": (_get_axis_coord, _get_with_standard_name),  # shift, roll
+    "pad_width": (_get_axis_coord, _get_with_standard_name),  # shift, roll
     "names": (
         _get_axis_coord,
         _get_measure,
         _get_with_standard_name,
     ),  # set_coords, reset_coords, drop_vars
     "labels": (_get_axis_coord, _get_measure, _get_with_standard_name),  # drop
-    "coords": (_get_axis_coord,),  # interp
-    "indexers": (_get_axis_coord,),  # sel, isel, reindex
+    "coords": (_get_axis_coord, _get_with_standard_name),  # interp
+    "indexers": (_get_axis_coord, _get_with_standard_name),  # sel, isel, reindex
     # "indexes": (_get_axis_coord,),  # set_index
-    "dims_or_levels": (_get_axis_coord,),  # reset_index
-    "window": (_get_axis_coord,),  # rolling_exp
+    "dims_or_levels": (_get_axis_coord, _get_with_standard_name),  # reset_index
+    "window": (_get_axis_coord, _get_with_standard_name),  # rolling_exp
     "coord": (_get_axis_coord_single,),  # differentiate, integrate
     "group": (
         _get_axis_coord_single,
-        _get_axis_coord_time_accessor,
+        _get_groupby_time_accessor,
         _get_with_standard_name,
     ),
     "indexer": (_get_axis_coord_single,),  # resample
     "variables": (_get_axis_coord, _get_with_standard_name),  # sortby
     "weights": (_get_measure_variable,),  # type: ignore
-    "chunks": (_get_axis_coord,),  # chunk
+    "chunks": (_get_axis_coord, _get_with_standard_name),  # chunk
 }
 
 
@@ -430,7 +432,7 @@ def _build_docstring(func):
     mapper_docstrings = {
         _get_axis_coord: f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r}",
         _get_axis_coord_single: f"One of {(_AXIS_NAMES + _COORD_NAMES)!r}",
-        _get_axis_coord_time_accessor: "Time variable accessor e.g. 'T.month'",
+        _get_groupby_time_accessor: "Time variable accessor e.g. 'T.month'",
         _get_with_standard_name: "Standard names",
         _get_measure_variable: f"One of {_CELL_MEASURES!r}",
     }
@@ -900,7 +902,10 @@ class CFAccessor:
 
         # allow multiple return values here.
         # these are valid for .sel, .isel, .coarsen
-        all_mappers = ChainMap(key_mappers, dict.fromkeys(var_kws, (_get_axis_coord,)))
+        all_mappers = ChainMap(
+            key_mappers,
+            dict.fromkeys(var_kws, (_get_axis_coord, _get_with_standard_name)),
+        )
 
         for key in set(all_mappers) & set(kwargs):
             value = kwargs[key]

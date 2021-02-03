@@ -19,6 +19,7 @@ from typing import (
 
 import xarray as xr
 from xarray import DataArray, Dataset
+from xarray.core.arithmetic import SupportsArithmetic
 
 from .helpers import bounds_to_vertices
 from .utils import _is_datetime_like, invert_mappings, parse_cell_methods_attr
@@ -693,7 +694,7 @@ def _possible_x_y_plot(obj, key):
         return _get_possible(obj.cf, y_criteria)
 
 
-class _CFWrappedClass:
+class _CFWrappedClass(SupportsArithmetic):
     """
     This class is used to wrap any class in _WRAPPED_CLASSES.
     """
@@ -720,6 +721,9 @@ class _CFWrappedClass:
             accessor=self.accessor,
             key_mappers=_DEFAULT_KEY_MAPPERS,
         )
+
+    def __iter__(self):
+        return iter(self.wrapped)
 
 
 class _CFWrappedPlotMethods:

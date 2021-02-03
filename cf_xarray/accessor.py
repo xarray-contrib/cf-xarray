@@ -1016,13 +1016,10 @@ class CFAccessor:
             tab = len(star) * " "
             subtitle = f"- {subtitle}:"
 
-            # Sort keys
-            if not valid_keys:
-                # Alphabetical order
-                vardict = {key: vardict[key] for key in sorted(vardict)}
-            else:
-                # Hardcoded order
-                vardict = {key: vardict[key] for key in valid_keys if key in vardict}
+            # Sort keys: Valid keys + additional in alphabetical order
+            valid_keys = [] if not valid_keys else list(valid_keys)
+            ordered_keys = valid_keys + sorted(set(vardict) - set(valid_keys))
+            vardict = {key: vardict[key] for key in ordered_keys if key in vardict}
 
             # Keep only valid values (e.g., coords or data_vars)
             vardict = {

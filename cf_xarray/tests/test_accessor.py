@@ -157,6 +157,7 @@ def test_cell_measures():
     expected = """\
     Data Variables:
     - Cell Measures:   volume: ['foo']
+                       foo_measure: ['foo']
                        area: n/a
 
     - Standard Names:   air_temperature: ['air']

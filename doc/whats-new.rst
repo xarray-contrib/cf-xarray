@@ -6,7 +6,7 @@ What's New
 v0.4.1 (unreleased)
 ===================
 
-- Replace ``cf.describe`` with :py:meth:`DataArray.cf.__repr__` and :py:meth:`Dataset.cf.__repr__`. By `Mattia Almansi`_.
+- Replace ``cf.describe`` with :py:meth:`Dataset.cf.__repr__`. By `Mattia Almansi`_.
 - Added scripts to document CF criteria with tables. By `Mattia Almansi`_.
 - Support for ``.drop()``, ``.drop_vars()``, ``.drop_sel()``, ``.drop_dims()``, ``.set_coords()``, ``.reset_coords()``. By `Mattia Almansi`_.
 - Support for using ``standard_name`` in more functions. (:pr:`128`) By `Deepak Cherian`_

@@ -656,7 +656,7 @@ def _getitem(
     except KeyError:
         raise KeyError(
             f"{kind}.cf does not understand the key {k!r}. "
-            f"Use print({kind}.cf) to see a list of key names that can be interpreted."
+            f"Use 'repr({kind}.cf)' (or '{kind}.cf' in a Jupyter environment) to see a list of key names that can be interpreted."
         )
 
 
@@ -953,10 +953,10 @@ class CFAccessor:
 
         warnings.warn(
             "'obj.cf.describe()' will be removed in a future version. "
-            "Use instead 'print(obj.cf)''",
+            "Use instead 'repr(obj.cf)' or 'obj.cf' in a Jupyter environment.",
             DeprecationWarning,
         )
-        print(self.__repr__())
+        print(repr(self))
 
     def __repr__(self):
 

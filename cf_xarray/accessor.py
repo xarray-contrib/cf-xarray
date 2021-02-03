@@ -950,34 +950,67 @@ class CFAccessor:
         """
         Print a string repr to screen.
         """
-        star = "\t".expandtabs()[:-2] + "* "
 
-        text = "Axes:\n"
-        axes = self.axes
-        for key in _AXIS_NAMES:
-            text += f"\t{key}: {axes[key] if key in axes else []}\n"
+        warnings.warn(
+            "'obj.cf.describe()' will be removed in a future version. "
+            "Use instead 'print(obj.cf)''",
+            DeprecationWarning,
+        )
+        print(self.__repr__())
 
-        text += "\nCoordinates:\n"
-        coords = self.coordinates
-        for key in _COORD_NAMES:
-            text += f"\t{key}: {coords[key] if key in coords else []}\n"
+    def __repr__(self):
 
-        text += "\nCell Measures:\n"
-        measures = self.cell_measures
-        for key in sorted(self._get_all_cell_measures()):
-            if key in {**axes, **coords}:
-                text += f"{star}{key}: {measures[key] if key in measures else []}\n"
-            else:
-                text += f"\t{key}: {measures[key] if key in measures else []}\n"
+        # Prefixes
+        tab = "\t".expandtabs()
+        star = tab[:-2] + "* "
+        dash = 2 * " " + "- "
 
-        text += "\nStandard Names:\n"
-        for key, value in sorted(self.standard_names.items()):
-            if key in {**axes, **coords, **measures}:
-                text += f"{star}{key}: {value}\n"
-            else:
-                text += f"\t{key}: {value}\n"
+        coords = self._obj.coords
+        dims = self._obj.dims
 
-        print(text)
+        def make_text_section(vardict, valid_values, valid_keys=None):
+
+            # Keep only valid values (e.g., coords or data_vars)
+            vardict = {
+                key: sorted(set(value).intersection(valid_values))
+                for key, value in vardict.items()
+                if set(value) <= set(valid_values)
+            }
+
+            # Star for key dims, tab otherwise
+            rows = [
+                f"{star if set(value) <= set(dims) else tab}{key}: {value}"
+                for key, value in vardict.items()
+                if value
+            ]
+
+            # Valid keys missing
+            missing_keys = set(valid_keys) - set(vardict) if valid_keys else {}
+            if missing_keys:
+                rows += [tab + ", ".join(sorted(missing_keys)) + ": n/a"]
+            elif not rows:
+                rows = [tab + "n/a"]
+
+            return "\n".join(rows) + "\n"
+
+        text = "Coordinates:"
+        text += f"\n{dash}CF Axes:\n"
+        text += make_text_section(self.axes, coords, _AXIS_NAMES)
+        text += f"\n{dash}CF Coordinates:\n"
+        text += make_text_section(self.coordinates, coords, _COORD_NAMES)
+        text += f"\n{dash}Cell Measures:\n"
+        text += make_text_section(self.cell_measures, coords, _CELL_MEASURES)
+        text += f"\n{dash}Standard Names:\n"
+        text += make_text_section(self.standard_names, coords)
+        if isinstance(self._obj, Dataset):
+            data_vars = self._obj.data_vars
+            text += "\nData Variables:"
+            text += f"\n{dash}Cell Measures:\n"
+            text += make_text_section(self.cell_measures, data_vars, _CELL_MEASURES)
+            text += f"\n{dash}Standard Names:\n"
+            text += make_text_section(self.standard_names, data_vars)
+
+        return text
 
     def get_valid_keys(self) -> Set[str]:
 

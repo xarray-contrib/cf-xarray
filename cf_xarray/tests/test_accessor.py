@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
@@ -26,20 +28,99 @@ def assert_dicts_identical(dict1, dict2):
         assert_identical(dict1[k], dict2[k])
 
 
-def test_describe(capsys):
-    airds.cf.describe()
-    actual = capsys.readouterr().out
-    expected = (
-        "Axes:\n\tX: ['lon']\n\tY: ['lat']\n\tZ: []\n\tT: ['time']\n"
-        "\nCoordinates:\n\tlongitude: ['lon']\n\tlatitude: ['lat']"
-        "\n\tvertical: []\n\ttime: ['time']\n"
-        "\nCell Measures:\n\tarea: ['cell_area']\n\tvolume: []\n"
-        "\nStandard Names:\n\tair_temperature: ['air']\n"
-        "      * latitude: ['lat']\n"
-        "      * longitude: ['lon']\n"
-        "      * time: ['time']\n\n"
-    )
-    assert actual == expected
+def test_repr():
+    # Dataset.
+    # Stars: axes, coords, and std names
+    actual = airds.cf.__repr__()
+    expected = """\
+    Coordinates:
+      - CF Axes:
+          * X: ['lon']
+          * Y: ['lat']
+          * T: ['time']
+            Z: n/a
+
+      - CF Coordinates:
+          * longitude: ['lon']
+          * latitude: ['lat']
+          * time: ['time']
+            vertical: n/a
+
+      - Cell Measures:
+            area: ['cell_area']
+            volume: n/a
+
+      - Standard Names:
+          * latitude: ['lat']
+          * longitude: ['lon']
+          * time: ['time']
+
+    Data Variables:
+      - Cell Measures:
+            area, volume: n/a
+
+      - Standard Names:
+            air_temperature: ['air']
+    """
+    assert actual == dedent(expected)
+
+    # DataArray (Coordinates section same as Dataset)
+    assert airds.cf.__repr__().startswith(airds["air"].cf.__repr__())
+    actual = airds["air"].cf.__repr__()
+    expected = """\
+    Coordinates:
+      - CF Axes:
+          * X: ['lon']
+          * Y: ['lat']
+          * T: ['time']
+            Z: n/a
+
+      - CF Coordinates:
+          * longitude: ['lon']
+          * latitude: ['lat']
+          * time: ['time']
+            vertical: n/a
+
+      - Cell Measures:
+            area: ['cell_area']
+            volume: n/a
+
+      - Standard Names:
+          * latitude: ['lat']
+          * longitude: ['lon']
+          * time: ['time']
+    """
+    assert actual == dedent(expected)
+
+    # Empty Standard Names
+    actual = popds.cf.__repr__()
+    expected = """\
+    Coordinates:
+      - CF Axes:
+          * X: ['nlon']
+          * Y: ['nlat']
+            T, Z: n/a
+
+      - CF Coordinates:
+            longitude: ['TLONG', 'ULONG']
+            latitude: ['TLAT', 'ULAT']
+            time, vertical: n/a
+
+      - Cell Measures:
+            area, volume: n/a
+
+      - Standard Names:
+            n/a
+
+    Data Variables:
+      - Cell Measures:
+            area, volume: n/a
+
+      - Standard Names:
+            sea_water_x_velocity: ['UVEL']
+            sea_water_potential_temperature: ['TEMP']
+    """
+    assert actual == dedent(expected)
 
 
 def test_axes():
@@ -62,7 +143,7 @@ def test_coordinates():
     assert actual == expected
 
 
-def test_cell_measures(capsys):
+def test_cell_measures():
     ds = airds.copy(deep=True)
     ds["foo"] = xr.DataArray(ds["cell_area"], attrs=dict(standard_name="foo_std_name"))
     ds["air"].attrs["cell_measures"] += " foo_measure: foo"
@@ -78,19 +159,20 @@ def test_cell_measures(capsys):
     actual = ds.cf.cell_measures
     assert actual == expected
 
-    ds.cf.describe()
-    actual = capsys.readouterr().out
-    expected = (
-        "\nCell Measures:\n"
-        "\tarea: ['cell_area']\n\tfoo_measure: ['foo']\n"
-        "\tvolume: ['foo']\n"
-        "\nStandard Names:\n"
-        "\tair_temperature: ['air']\n\tfoo_std_name: ['foo']\n"
-        "      * latitude: ['lat']\n"
-        "      * longitude: ['lon']\n"
-        "      * time: ['time']\n\n"
-    )
-    assert actual.endswith(expected)
+    # Additional cell measure in repr
+    actual = ds.cf.__repr__()
+    expected = """\
+    Data Variables:
+      - Cell Measures:
+            foo_measure: ['foo']
+            volume: ['foo']
+            area: n/a
+
+      - Standard Names:
+            air_temperature: ['air']
+            foo_std_name: ['foo']
+    """
+    assert actual.endswith(dedent(expected))
 
 
 def test_standard_names():

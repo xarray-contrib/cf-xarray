@@ -9,7 +9,16 @@ from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
 
-from ..datasets import airds, anc, ds_no_attrs, forecast, multiple, popds, romsds
+from ..datasets import (
+    airds,
+    anc,
+    ds_no_attrs,
+    forecast,
+    mollwds,
+    multiple,
+    popds,
+    romsds,
+)
 from . import raise_if_dask_computes
 
 mpl.use("Agg")
@@ -520,6 +529,15 @@ def test_bounds_to_vertices():
     ds = airds.cf.add_bounds("time")
     dsc = ds.cf.bounds_to_vertices()
     assert "time_bounds" in dsc
+
+
+def test_get_bounds_dim_name():
+    ds = airds.copy(deep=True).cf.add_bounds("lat")
+    assert ds.cf.get_bounds_dim_name("latitude") == "bounds"
+    assert ds.cf.get_bounds_dim_name("lat") == "bounds"
+
+    assert mollwds.cf.get_bounds_dim_name("longitude") == "bounds"
+    assert mollwds.cf.get_bounds_dim_name("lon") == "bounds"
 
 
 def test_docstring():

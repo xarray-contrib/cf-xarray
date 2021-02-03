@@ -81,6 +81,7 @@ Methods
     Dataset.cf.decode_vertical_coords
     Dataset.cf.describe
     Dataset.cf.get_bounds
+    Dataset.cf.get_bounds_dim_name
     Dataset.cf.guess_coord_axis
     Dataset.cf.keys
     Dataset.cf.rename_like

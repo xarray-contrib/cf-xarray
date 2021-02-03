@@ -1374,6 +1374,27 @@ class CFDatasetAccessor(CFAccessor):
         obj = self._maybe_to_dataset()
         return obj[bounds]
 
+    def get_bounds_dim_name(self, key: str) -> str:
+        """
+        Get bounds dim name for variable corresponding to key.
+
+        Parameters
+        ----------
+        key : str
+            Name of variable whose bounds dimension name is desired.
+
+        Returns
+        -------
+        str
+        """
+        crd = self[key]
+        bounds = self.get_bounds(key)
+        bounds_dims = set(bounds.dims) - set(crd.dims)
+        assert len(bounds_dims) == 1
+        bounds_dim = bounds_dims.pop()
+        assert self._obj.sizes[bounds_dim] in [2, 4]
+        return bounds_dim
+
     def add_bounds(self, dims: Union[Hashable, Iterable[Hashable]]):
         """
         Returns a new object with bounds variables. The bounds values are guessed assuming

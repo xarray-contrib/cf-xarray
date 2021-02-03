@@ -1010,15 +1010,19 @@ class CFAccessor:
         coords = self._obj.coords
         dims = self._obj.dims
 
-        def make_text_section(subtitle, vardict, valid_values, valid_keys=None):
+        def make_text_section(subtitle, vardict, valid_values, default_keys=None):
 
             star = " * "
             tab = len(star) * " "
             subtitle = f"- {subtitle}:"
 
-            # Sort keys: Valid keys + additional in alphabetical order
-            valid_keys = [] if not valid_keys else list(valid_keys)
-            ordered_keys = valid_keys + sorted(set(vardict) - set(valid_keys))
+            # Sort keys: Order alphabetically if extra keys are available,
+            # otherwise preserve default keys order
+            default_keys = [] if not default_keys else list(default_keys)
+            extra_keys = list(set(vardict) - set(default_keys))
+            ordered_keys = (
+                sorted(default_keys + extra_keys) if extra_keys else default_keys
+            )
             vardict = {key: vardict[key] for key in ordered_keys if key in vardict}
 
             # Keep only valid values (e.g., coords or data_vars)
@@ -1035,8 +1039,8 @@ class CFAccessor:
             ]
 
             # Add valid keys missing followed by n/a
-            if valid_keys:
-                missing_keys = [key for key in valid_keys if key not in vardict]
+            if default_keys:
+                missing_keys = [key for key in default_keys if key not in vardict]
                 if missing_keys:
                     rows += [tab + ", ".join(missing_keys) + ": n/a"]
             elif not rows:

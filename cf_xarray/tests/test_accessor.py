@@ -156,8 +156,8 @@ def test_cell_measures():
     actual = ds.cf.__repr__()
     expected = """\
     Data Variables:
-    - Cell Measures:   volume: ['foo']
-                       foo_measure: ['foo']
+    - Cell Measures:   foo_measure: ['foo']
+                       volume: ['foo']
                        area: n/a
 
     - Standard Names:   air_temperature: ['air']

@@ -656,7 +656,7 @@ def _getitem(
     except KeyError:
         raise KeyError(
             f"{kind}.cf does not understand the key {k!r}. "
-            f"Use {kind}.cf.describe() to see a list of key names that can be interpreted."
+            f"Use print({kind}.cf) to see a list of key names that can be interpreted."
         )
 
 

@@ -34,33 +34,27 @@ def test_repr():
     actual = airds.cf.__repr__()
     expected = """\
     Coordinates:
-      - CF Axes:
-          * X: ['lon']
-          * Y: ['lat']
-          * T: ['time']
-            Z: n/a
+    - CF Axes: * X: ['lon']
+               * Y: ['lat']
+               * T: ['time']
+                 Z: n/a
 
-      - CF Coordinates:
-          * longitude: ['lon']
-          * latitude: ['lat']
-          * time: ['time']
-            vertical: n/a
+    - CF Coordinates: * longitude: ['lon']
+                      * latitude: ['lat']
+                      * time: ['time']
+                        vertical: n/a
 
-      - Cell Measures:
-            area: ['cell_area']
-            volume: n/a
+    - Cell Measures:   area: ['cell_area']
+                       volume: n/a
 
-      - Standard Names:
-          * latitude: ['lat']
-          * longitude: ['lon']
-          * time: ['time']
+    - Standard Names: * latitude: ['lat']
+                      * longitude: ['lon']
+                      * time: ['time']
 
     Data Variables:
-      - Cell Measures:
-            area, volume: n/a
+    - Cell Measures:   area, volume: n/a
 
-      - Standard Names:
-            air_temperature: ['air']
+    - Standard Names:   air_temperature: ['air']
     """
     assert actual == dedent(expected)
 
@@ -69,26 +63,22 @@ def test_repr():
     actual = airds["air"].cf.__repr__()
     expected = """\
     Coordinates:
-      - CF Axes:
-          * X: ['lon']
-          * Y: ['lat']
-          * T: ['time']
-            Z: n/a
+    - CF Axes: * X: ['lon']
+               * Y: ['lat']
+               * T: ['time']
+                 Z: n/a
 
-      - CF Coordinates:
-          * longitude: ['lon']
-          * latitude: ['lat']
-          * time: ['time']
-            vertical: n/a
+    - CF Coordinates: * longitude: ['lon']
+                      * latitude: ['lat']
+                      * time: ['time']
+                        vertical: n/a
 
-      - Cell Measures:
-            area: ['cell_area']
-            volume: n/a
+    - Cell Measures:   area: ['cell_area']
+                       volume: n/a
 
-      - Standard Names:
-          * latitude: ['lat']
-          * longitude: ['lon']
-          * time: ['time']
+    - Standard Names: * latitude: ['lat']
+                      * longitude: ['lon']
+                      * time: ['time']
     """
     assert actual == dedent(expected)
 
@@ -96,29 +86,23 @@ def test_repr():
     actual = popds.cf.__repr__()
     expected = """\
     Coordinates:
-      - CF Axes:
-          * X: ['nlon']
-          * Y: ['nlat']
-            T, Z: n/a
+    - CF Axes: * X: ['nlon']
+               * Y: ['nlat']
+                 Z, T: n/a
 
-      - CF Coordinates:
-            longitude: ['TLONG', 'ULONG']
-            latitude: ['TLAT', 'ULAT']
-            time, vertical: n/a
+    - CF Coordinates:   longitude: ['TLONG', 'ULONG']
+                        latitude: ['TLAT', 'ULAT']
+                        vertical, time: n/a
 
-      - Cell Measures:
-            area, volume: n/a
+    - Cell Measures:   area, volume: n/a
 
-      - Standard Names:
-            n/a
+    - Standard Names:   n/a
 
     Data Variables:
-      - Cell Measures:
-            area, volume: n/a
+    - Cell Measures:   area, volume: n/a
 
-      - Standard Names:
-            sea_water_x_velocity: ['UVEL']
-            sea_water_potential_temperature: ['TEMP']
+    - Standard Names:   sea_water_potential_temperature: ['TEMP']
+                        sea_water_x_velocity: ['UVEL']
     """
     assert actual == dedent(expected)
 
@@ -163,14 +147,11 @@ def test_cell_measures():
     actual = ds.cf.__repr__()
     expected = """\
     Data Variables:
-      - Cell Measures:
-            foo_measure: ['foo']
-            volume: ['foo']
-            area: n/a
+    - Cell Measures:   volume: ['foo']
+                       area: n/a
 
-      - Standard Names:
-            air_temperature: ['air']
-            foo_std_name: ['foo']
+    - Standard Names:   air_temperature: ['air']
+                        foo_std_name: ['foo']
     """
     assert actual.endswith(dedent(expected))
 

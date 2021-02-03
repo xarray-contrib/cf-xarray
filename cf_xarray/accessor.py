@@ -960,55 +960,68 @@ class CFAccessor:
 
     def __repr__(self):
 
-        # Prefixes
-        tab = "\t".expandtabs()
-        star = tab[:-2] + "* "
-        dash = 2 * " " + "- "
-
         coords = self._obj.coords
         dims = self._obj.dims
 
-        def make_text_section(vardict, valid_values, valid_keys=None):
+        def make_text_section(subtitle, vardict, valid_values, valid_keys=None):
+
+            star = " * "
+            tab = len(star) * " "
+            subtitle = f"- {subtitle}:"
+
+            # Sort keys
+            if not valid_keys:
+                # Alphabetical order
+                vardict = {key: vardict[key] for key in sorted(vardict)}
+            else:
+                # Hardcoded order
+                vardict = {key: vardict[key] for key in valid_keys if key in vardict}
 
             # Keep only valid values (e.g., coords or data_vars)
             vardict = {
-                key: sorted(set(value).intersection(valid_values))
+                key: set(value).intersection(valid_values)
                 for key, value in vardict.items()
-                if set(value) <= set(valid_values)
+                if set(value).intersection(valid_values)
             }
 
-            # Star for key dims, tab otherwise
+            # Star for keys with dims only, tab otherwise
             rows = [
-                f"{star if set(value) <= set(dims) else tab}{key}: {value}"
+                f"{star if set(value) <= set(dims) else tab}{key}: {sorted(value)}"
                 for key, value in vardict.items()
-                if value
             ]
 
-            # Valid keys missing
-            missing_keys = set(valid_keys) - set(vardict) if valid_keys else {}
-            if missing_keys:
-                rows += [tab + ", ".join(sorted(missing_keys)) + ": n/a"]
+            # Add valid keys missing followed by n/a
+            if valid_keys:
+                missing_keys = [key for key in valid_keys if key not in vardict]
+                if missing_keys:
+                    rows += [tab + ", ".join(missing_keys) + ": n/a"]
             elif not rows:
                 rows = [tab + "n/a"]
+
+            # Add subtitle to the first row, align other rows
+            rows = [
+                "\n" + subtitle + row if i == 0 else len(subtitle) * " " + row
+                for i, row in enumerate(rows)
+            ]
 
             return "\n".join(rows) + "\n"
 
         text = "Coordinates:"
-        text += f"\n{dash}CF Axes:\n"
-        text += make_text_section(self.axes, coords, _AXIS_NAMES)
-        text += f"\n{dash}CF Coordinates:\n"
-        text += make_text_section(self.coordinates, coords, _COORD_NAMES)
-        text += f"\n{dash}Cell Measures:\n"
-        text += make_text_section(self.cell_measures, coords, _CELL_MEASURES)
-        text += f"\n{dash}Standard Names:\n"
-        text += make_text_section(self.standard_names, coords)
+        text += make_text_section("CF Axes", self.axes, coords, _AXIS_NAMES)
+        text += make_text_section(
+            "CF Coordinates", self.coordinates, coords, _COORD_NAMES
+        )
+        text += make_text_section(
+            "Cell Measures", self.cell_measures, coords, _CELL_MEASURES
+        )
+        text += make_text_section("Standard Names", self.standard_names, coords)
         if isinstance(self._obj, Dataset):
             data_vars = self._obj.data_vars
             text += "\nData Variables:"
-            text += f"\n{dash}Cell Measures:\n"
-            text += make_text_section(self.cell_measures, data_vars, _CELL_MEASURES)
-            text += f"\n{dash}Standard Names:\n"
-            text += make_text_section(self.standard_names, data_vars)
+            text += make_text_section(
+                "Cell Measures", self.cell_measures, data_vars, _CELL_MEASURES
+            )
+            text += make_text_section("Standard Names", self.standard_names, data_vars)
 
         return text
 

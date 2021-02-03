@@ -804,3 +804,18 @@ def test_possible_x_y_plot():
     xtds = makeds("X", "T")
     assert _possible_x_y_plot(xtds, "y") is None
     assert _possible_x_y_plot(xtds, "x") == "X"
+
+
+def test_groupby_special_ops():
+    cfgrouped = airds.cf.groupby_bins("latitude", np.arange(20, 50, 10))
+    grouped = airds.groupby_bins("lat", np.arange(20, 50, 10))
+
+    # __iter__
+    for (label, group), (cflabel, cfgroup) in zip(grouped, cfgrouped):
+        assert label == cflabel
+        assert_identical(group, cfgroup)
+
+    # arithmetic
+    expected = grouped - grouped.mean()
+    actual = grouped - cfgrouped.mean()
+    assert_identical(expected, actual)

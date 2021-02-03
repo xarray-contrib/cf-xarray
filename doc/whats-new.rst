@@ -7,7 +7,8 @@ v0.4.1 (unreleased)
 ===================
 
 - Replace ``cf.describe()`` with :py:meth:`Dataset.cf.__repr__`. By `Mattia Almansi`_.
-- Added scripts to document CF criteria with tables. By `Mattia Almansi`_.
+- Automatically set ``x`` or ``y`` for :py:attr:`DataArray.cf.plot`. By `Deepak Cherian`_.
+- Added scripts to document :ref:`criteria` with tables. By `Mattia Almansi`_.
 - Support for ``.drop()``, ``.drop_vars()``, ``.drop_sel()``, ``.drop_dims()``, ``.set_coords()``, ``.reset_coords()``. By `Mattia Almansi`_.
 - Support for using ``standard_name`` in more functions. (:pr:`128`) By `Deepak Cherian`_
 - Allow :py:meth:`DataArray.cf.__getitem__` with standard names. By `Deepak Cherian`_
@@ -15,6 +16,8 @@ v0.4.1 (unreleased)
   by :py:meth:`Dataset.cf.__getitem__`. This allows extraction of DataArrays when there are clashes
   between DataArray names and "special" CF names like ``T``.
   (:issue:`129`, :pr:`130`). By `Deepak Cherian`_
+- Retrieve bounds dimension name with :py:meth:`Dataset.cf.get_bounds_dim_name`. By `Pascal Bourgault`_.
+- Fix iteration and arithmetic with ``GroupBy`` objects. By `Deepak Cherian`_.
 
 v0.4.0 (Jan 22, 2021)
 =====================

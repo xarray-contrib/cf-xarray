@@ -19,6 +19,7 @@ from typing import (
 
 import xarray as xr
 from xarray import DataArray, Dataset
+from xarray.core.arithmetic import SupportsArithmetic
 
 from .helpers import bounds_to_vertices
 from .utils import _is_datetime_like, invert_mappings, parse_cell_methods_attr
@@ -213,9 +214,7 @@ def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str) -> List[str
     return results
 
 
-def _get_axis_coord_time_accessor(
-    var: Union[DataArray, Dataset], key: str
-) -> List[str]:
+def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Helper method for when our key name is of the nature "T.month" and we want to
     isolate the "T" for coordinate mapping
@@ -238,7 +237,11 @@ def _get_axis_coord_time_accessor(
     if "." in key:
         key, ext = key.split(".", 1)
 
-        results = _get_axis_coord_single(var, key)
+        results = apply_mapper(
+            (_get_axis_coord, _get_with_standard_name), var, key, error=False
+        )
+        if len(results) > 1:
+            raise KeyError(f"Multiple results received for {key}.")
         return [v + "." + ext for v in results]
 
     else:
@@ -370,34 +373,34 @@ def _get_with_standard_name(
 
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
-    "dim": (_get_axis_coord,),
-    "dims": (_get_axis_coord,),  # transpose
-    "drop_dims": (_get_axis_coord,),  # drop_dims
-    "dimensions": (_get_axis_coord,),  # stack
-    "dims_dict": (_get_axis_coord,),  # swap_dims, rename_dims
-    "shifts": (_get_axis_coord,),  # shift, roll
-    "pad_width": (_get_axis_coord,),  # shift, roll
+    "dim": (_get_axis_coord, _get_with_standard_name),
+    "dims": (_get_axis_coord, _get_with_standard_name),  # transpose
+    "drop_dims": (_get_axis_coord, _get_with_standard_name),  # drop_dims
+    "dimensions": (_get_axis_coord, _get_with_standard_name),  # stack
+    "dims_dict": (_get_axis_coord, _get_with_standard_name),  # swap_dims, rename_dims
+    "shifts": (_get_axis_coord, _get_with_standard_name),  # shift, roll
+    "pad_width": (_get_axis_coord, _get_with_standard_name),  # shift, roll
     "names": (
         _get_axis_coord,
         _get_measure,
         _get_with_standard_name,
     ),  # set_coords, reset_coords, drop_vars
     "labels": (_get_axis_coord, _get_measure, _get_with_standard_name),  # drop
-    "coords": (_get_axis_coord,),  # interp
-    "indexers": (_get_axis_coord,),  # sel, isel, reindex
+    "coords": (_get_axis_coord, _get_with_standard_name),  # interp
+    "indexers": (_get_axis_coord, _get_with_standard_name),  # sel, isel, reindex
     # "indexes": (_get_axis_coord,),  # set_index
-    "dims_or_levels": (_get_axis_coord,),  # reset_index
-    "window": (_get_axis_coord,),  # rolling_exp
+    "dims_or_levels": (_get_axis_coord, _get_with_standard_name),  # reset_index
+    "window": (_get_axis_coord, _get_with_standard_name),  # rolling_exp
     "coord": (_get_axis_coord_single,),  # differentiate, integrate
     "group": (
         _get_axis_coord_single,
-        _get_axis_coord_time_accessor,
+        _get_groupby_time_accessor,
         _get_with_standard_name,
     ),
     "indexer": (_get_axis_coord_single,),  # resample
     "variables": (_get_axis_coord, _get_with_standard_name),  # sortby
     "weights": (_get_measure_variable,),  # type: ignore
-    "chunks": (_get_axis_coord,),  # chunk
+    "chunks": (_get_axis_coord, _get_with_standard_name),  # chunk
 }
 
 
@@ -430,7 +433,7 @@ def _build_docstring(func):
     mapper_docstrings = {
         _get_axis_coord: f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r}",
         _get_axis_coord_single: f"One of {(_AXIS_NAMES + _COORD_NAMES)!r}",
-        _get_axis_coord_time_accessor: "Time variable accessor e.g. 'T.month'",
+        _get_groupby_time_accessor: "Time variable accessor e.g. 'T.month'",
         _get_with_standard_name: "Standard names",
         _get_measure_variable: f"One of {_CELL_MEASURES!r}",
     }
@@ -561,11 +564,6 @@ def _getitem(
     kind = str(type(obj).__name__)
     scalar_key = isinstance(key, str)
 
-    if isinstance(obj, DataArray) and not scalar_key:
-        raise KeyError(
-            f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
-        )
-
     if scalar_key:
         key = (key,)  # type: ignore
 
@@ -660,7 +658,43 @@ def _getitem(
         )
 
 
-class _CFWrappedClass:
+def _possible_x_y_plot(obj, key):
+    """Guesses a name for an x/y variable if possible."""
+    # in priority order
+    x_criteria = [
+        ("coordinates", "longitude"),
+        ("axes", "X"),
+        ("coordinates", "time"),
+        ("axes", "T"),
+    ]
+    y_criteria = [
+        ("coordinates", "vertical"),
+        ("axes", "Z"),
+        ("coordinates", "latitude"),
+        ("axes", "Y"),
+    ]
+
+    def _get_possible(accessor, criteria):
+        # is_scalar depends on NON_NUMPY_SUPPORTED_TYPES
+        # importing a private function seems better than
+        # maintaining that variable!
+        from xarray.core.utils import is_scalar
+
+        for attr, key in criteria:
+            value = getattr(accessor, attr).get(key)
+            if not value or len(value) > 1:
+                continue
+            if not is_scalar(accessor._obj[value[0]]):
+                return value[0]
+        return None
+
+    if key == "x":
+        return _get_possible(obj.cf, x_criteria)
+    elif key == "y":
+        return _get_possible(obj.cf, y_criteria)
+
+
+class _CFWrappedClass(SupportsArithmetic):
     """
     This class is used to wrap any class in _WRAPPED_CLASSES.
     """
@@ -688,6 +722,9 @@ class _CFWrappedClass:
             key_mappers=_DEFAULT_KEY_MAPPERS,
         )
 
+    def __iter__(self):
+        return iter(self.wrapped)
+
 
 class _CFWrappedPlotMethods:
     """
@@ -710,27 +747,34 @@ class _CFWrappedPlotMethods:
 
         @functools.wraps(func)
         def _plot_wrapper(*args, **kwargs):
-            if "x" in kwargs:
-                if kwargs["x"] in valid_keys:
-                    xvar = self.accessor[kwargs["x"]]
-                else:
-                    xvar = self._obj[kwargs["x"]]
-                if "positive" in xvar.attrs:
-                    if xvar.attrs["positive"] == "down":
-                        kwargs.setdefault("xincrease", False)
-                    else:
-                        kwargs.setdefault("xincrease", True)
+            def _process_x_or_y(kwargs, key):
+                if key not in kwargs:
+                    kwargs[key] = _possible_x_y_plot(self._obj, key)
 
-            if "y" in kwargs:
-                if kwargs["y"] in valid_keys:
-                    yvar = self.accessor[kwargs["y"]]
-                else:
-                    yvar = self._obj[kwargs["y"]]
-                if "positive" in yvar.attrs:
-                    if yvar.attrs["positive"] == "down":
-                        kwargs.setdefault("yincrease", False)
+                value = kwargs.get(key)
+                if value:
+                    if value in valid_keys:
+                        var = self.accessor[value]
                     else:
-                        kwargs.setdefault("yincrease", True)
+                        var = self._obj[value]
+                    if "positive" in var.attrs:
+                        if var.attrs["positive"] == "down":
+                            kwargs.setdefault(f"{key}increase", False)
+                        else:
+                            kwargs.setdefault(f"{key}increase", True)
+                return kwargs
+
+            is_line_plot = (func.__name__ == "line") or (
+                func.__name__ == "wrapper" and kwargs.get("hue")
+            )
+            if is_line_plot:
+                if not kwargs.get("hue"):
+                    kwargs = _process_x_or_y(kwargs, "x")
+                    if not kwargs.get("x"):
+                        kwargs = _process_x_or_y(kwargs, "y")
+            else:
+                kwargs = _process_x_or_y(kwargs, "x")
+                kwargs = _process_x_or_y(kwargs, "y")
 
             return func(*args, **kwargs)
 
@@ -862,7 +906,10 @@ class CFAccessor:
 
         # allow multiple return values here.
         # these are valid for .sel, .isel, .coarsen
-        all_mappers = ChainMap(key_mappers, dict.fromkeys(var_kws, (_get_axis_coord,)))
+        all_mappers = ChainMap(
+            key_mappers,
+            dict.fromkeys(var_kws, (_get_axis_coord, _get_with_standard_name)),
+        )
 
         for key in set(all_mappers) & set(kwargs):
             value = kwargs[key]
@@ -1225,9 +1272,6 @@ class CFAccessor:
 
         return coords
 
-    def __getitem__(self, key: Union[str, List[str]]):
-        return _getitem(self, key)
-
     def _maybe_to_dataset(self, obj=None) -> Dataset:
         if obj is None:
             obj = self._obj
@@ -1336,6 +1380,37 @@ class CFAccessor:
 
 @xr.register_dataset_accessor("cf")
 class CFDatasetAccessor(CFAccessor):
+    def __getitem__(self, key: Union[str, List[str]]) -> Union[DataArray, Dataset]:
+        """
+        Index into a Dataset making use of CF attributes.
+
+        Parameters
+        ----------
+
+        key: str, Iterable[str], optional
+            One of
+              - axes names: "X", "Y", "Z", "T"
+              - coordinate names: "longitude", "latitude", "vertical", "time"
+              - cell measures: "area", "volume", or other names present in the \
+                             ``cell_measures`` attribute
+              - standard names: names present in ``standard_name`` attribute
+
+        Returns
+        -------
+        DataArray or Dataset
+          ``Dataset.cf[str]`` will return a DataArray, \
+          ``Dataset.cf[List[str]]``` will return a Dataset.
+
+        Notes
+        -----
+        In all cases, associated CF variables will be attached as coordinate variables
+        by parsing attributes such as ``bounds``, ``ancillary_variables``, etc.
+
+        ``bounds`` variables will not be attached when a DataArray is returned. This
+        is a limitation of the xarray data model.
+        """
+        return _getitem(self, key)
+
     def get_bounds(self, key: str) -> DataArray:
         """
         Get bounds variable corresponding to key.
@@ -1356,6 +1431,27 @@ class CFDatasetAccessor(CFAccessor):
         obj = self._maybe_to_dataset()
         return obj[bounds]
 
+    def get_bounds_dim_name(self, key: str) -> str:
+        """
+        Get bounds dim name for variable corresponding to key.
+
+        Parameters
+        ----------
+        key : str
+            Name of variable whose bounds dimension name is desired.
+
+        Returns
+        -------
+        str
+        """
+        crd = self[key]
+        bounds = self.get_bounds(key)
+        bounds_dims = set(bounds.dims) - set(crd.dims)
+        assert len(bounds_dims) == 1
+        bounds_dim = bounds_dims.pop()
+        assert self._obj.sizes[bounds_dim] in [2, 4]
+        return bounds_dim
+
     def add_bounds(self, dims: Union[Hashable, Iterable[Hashable]]):
         """
         Returns a new object with bounds variables. The bounds values are guessed assuming
@@ -1370,9 +1466,12 @@ class CFDatasetAccessor(CFAccessor):
         -------
         DataArray or Dataset with bounds variables added and appropriate "bounds" attribute set.
 
+        Raises
+        ------
+        KeyError
+
         Notes
         -----
-
         The bounds variables are automatically named f"{dim}_bounds" where ``dim``
         is a dimension name.
         """
@@ -1564,4 +1663,41 @@ class CFDatasetAccessor(CFAccessor):
 
 @xr.register_dataarray_accessor("cf")
 class CFDataArrayAccessor(CFAccessor):
+    def __getitem__(self, key: Union[str, List[str]]) -> DataArray:
+        """
+        Index into a DataArray making use of CF attributes.
+
+        Parameters
+        ----------
+        key: str, Iterable[str], optional
+            One of
+              - axes names: "X", "Y", "Z", "T"
+              - coordinate names: "longitude", "latitude", "vertical", "time"
+              - cell measures: "area", "volume", or other names present in the \
+                             ``cell_measures`` attribute
+              - standard names: names present in ``standard_name`` attribute of \
+                coordinate variables
+
+        Returns
+        -------
+        DataArray
+
+        Raises
+        ------
+        KeyError
+          ``DataArray.cf[List[str]]`` will raise KeyError.
+
+        Notes
+        -----
+        Associated CF variables will be attached as coordinate variables
+        by parsing attributes such as ``cell_measures``, ``coordinates`` etc.
+        """
+
+        if not isinstance(key, str):
+            raise KeyError(
+                f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
+            )
+
+        return _getitem(self, key)
+
     pass

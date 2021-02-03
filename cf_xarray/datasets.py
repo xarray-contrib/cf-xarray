@@ -188,3 +188,95 @@ mollwds = xr.Dataset(
         lat_vertices=xr.DataArray(lat_vertices, dims=("x_vertices", "y_vertices")),
     ),
 )
+
+forecast = xr.decode_cf(
+    xr.Dataset.from_dict(
+        {
+            "coords": {
+                "L": {
+                    "dims": ("L",),
+                    "attrs": {
+                        "long_name": "Lead",
+                        "standard_name": "forecast_period",
+                        "pointwidth": 1.0,
+                        "gridtype": 0,
+                        "units": "months",
+                    },
+                    "data": [0, 1],
+                },
+                "M": {
+                    "dims": ("M",),
+                    "attrs": {
+                        "standard_name": "realization",
+                        "long_name": "Ensemble Member",
+                        "pointwidth": 1.0,
+                        "gridtype": 0,
+                        "units": "unitless",
+                    },
+                    "data": [0, 1, 2],
+                },
+                "S": {
+                    "dims": ("S",),
+                    "attrs": {
+                        "calendar": "360_day",
+                        "long_name": "Forecast Start Time",
+                        "standard_name": "forecast_reference_time",
+                        "pointwidth": 0,
+                        "gridtype": 0,
+                        "units": "months since 1960-01-01",
+                    },
+                    "data": [0, 1, 2, 3],
+                },
+                "X": {
+                    "dims": ("X",),
+                    "attrs": {
+                        "standard_name": "longitude",
+                        "pointwidth": 1.0,
+                        "gridtype": 1,
+                        "units": "degree_east",
+                    },
+                    "data": [0, 1, 2, 3, 4],
+                },
+                "Y": {
+                    "dims": ("Y",),
+                    "attrs": {
+                        "standard_name": "latitude",
+                        "pointwidth": 1.0,
+                        "gridtype": 0,
+                        "units": "degree_north",
+                    },
+                    "data": [0, 1, 2, 3, 4, 5],
+                },
+            },
+            "attrs": {"Conventions": "IRIDL"},
+            "dims": {"L": 2, "M": 3, "S": 4, "X": 5, "Y": 6},
+            "data_vars": {
+                "sst": {
+                    "dims": ("S", "L", "M", "Y", "X"),
+                    "attrs": {
+                        "pointwidth": 0,
+                        "PDS_TimeRange": 3,
+                        "center": "US Weather Service - National Met. Center",
+                        "grib_name": "TMP",
+                        "gribNumBits": 21,
+                        "gribcenter": 7,
+                        "gribparam": 11,
+                        "gribleveltype": 1,
+                        "GRIBgridcode": 3,
+                        "process": 'Spectral Statistical Interpolation (SSI) analysis from "Final" run.',
+                        "PTVersion": 2,
+                        "gribfield": 1,
+                        "units": "Celsius_scale",
+                        "scale_min": -69.97389221191406,
+                        "scale_max": 43.039306640625,
+                        "long_name": "Sea Surface Temperature",
+                        "standard_name": "sea_surface_temperature",
+                    },
+                    "data": np.arange(np.prod((4, 2, 3, 6, 5))).reshape(
+                        (4, 2, 3, 6, 5)
+                    ),
+                }
+            },
+        }
+    )
+)

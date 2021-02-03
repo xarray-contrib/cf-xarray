@@ -3,7 +3,7 @@ from xarray.testing import assert_equal
 
 import cf_xarray as cfxr  # noqa
 
-from .datasets import airds, mollwds
+from ..datasets import airds, mollwds
 
 try:
     from dask.array import Array as DaskArray

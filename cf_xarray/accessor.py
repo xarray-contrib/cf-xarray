@@ -2,7 +2,7 @@ import functools
 import inspect
 import itertools
 import warnings
-from collections import ChainMap
+from collections import ChainMap, Counter
 from typing import (
     Any,
     Callable,
@@ -1298,8 +1298,6 @@ class CFAccessor:
         ``other``, that variable will be renamed to match the "longitude" variable in
         ``other``.
 
-        For now, this function only matches ``("latitude", "longitude", "vertical", "time")``
-
         Parameters
         ----------
         other: DataArray, Dataset
@@ -1312,18 +1310,21 @@ class CFAccessor:
         ourkeys = self.keys()
         theirkeys = other.cf.keys()
 
-        good_keys = set(_COORD_NAMES) & ourkeys & theirkeys
-        if not good_keys:
-            raise ValueError(
-                "No common coordinate variables between these two objects."
-            )
-
+        good_keys = ourkeys & theirkeys
         renamer = {}
         for key in good_keys:
-            ours = _get_axis_coord_single(self._obj, key)[0]
-            theirs = _get_axis_coord_single(other, key)[0]
-            renamer[ours] = theirs
+            ours = apply_mapper(
+                (_get_axis_coord, _get_with_standard_name), self._obj, key, error=False
+            )
+            theirs = apply_mapper(
+                (_get_axis_coord, _get_with_standard_name), other, key, error=False
+            )
+            if len(ours) > 1 or len(theirs) > 1:
+                continue
+            renamer[ours[0]] = theirs[0]
 
+        count = Counter(renamer.values())
+        renamer = {k: v for k, v in renamer.items() if count[v] == 1}
         newobj = self._obj.rename(renamer)
 
         # rename variable names in the coordinates attribute

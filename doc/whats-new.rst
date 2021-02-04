@@ -10,7 +10,7 @@ v0.4.1 (unreleased)
 - Automatically set ``x`` or ``y`` for :py:attr:`DataArray.cf.plot`. By `Deepak Cherian`_.
 - Added scripts to document :ref:`criteria` with tables. By `Mattia Almansi`_.
 - Support for ``.drop()``, ``.drop_vars()``, ``.drop_sel()``, ``.drop_dims()``, ``.set_coords()``, ``.reset_coords()``. By `Mattia Almansi`_.
-- Support for using ``standard_name`` in more functions. (:pr:`128`) By `Deepak Cherian`_
+- Support for using ``standard_name`` in more functions. (:pr:`128`, :pr:`165`) By `Deepak Cherian`_
 - Allow :py:meth:`DataArray.cf.__getitem__` with standard names. By `Deepak Cherian`_
 - Rewrite the ``values`` of :py:attr:`Dataset.coords` and :py:attr:`Dataset.data_vars` with objects returned
   by :py:meth:`Dataset.cf.__getitem__`. This allows extraction of DataArrays when there are clashes

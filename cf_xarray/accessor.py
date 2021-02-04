@@ -1016,13 +1016,11 @@ class CFAccessor:
             tab = len(star) * " "
             subtitle = f"- {subtitle}:"
 
-            # Sort keys: Order alphabetically if extra keys are available,
-            # otherwise preserve default keys order
+            # Sort keys if there aren't extra keys,
+            # preserve default keys order otherwise.
             default_keys = [] if not default_keys else list(default_keys)
             extra_keys = list(set(vardict) - set(default_keys))
-            ordered_keys = (
-                sorted(default_keys + extra_keys) if extra_keys else default_keys
-            )
+            ordered_keys = sorted(vardict) if extra_keys else default_keys
             vardict = {key: vardict[key] for key in ordered_keys if key in vardict}
 
             # Keep only valid values (e.g., coords or data_vars)
@@ -1038,7 +1036,7 @@ class CFAccessor:
                 for key, value in vardict.items()
             ]
 
-            # Add valid keys missing followed by n/a
+            # Append missing default keys followed by n/a
             if default_keys:
                 missing_keys = [key for key in default_keys if key not in vardict]
                 if missing_keys:

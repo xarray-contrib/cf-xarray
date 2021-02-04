@@ -577,6 +577,15 @@ def test_bounds():
     expected = ds["lat_bounds"]
     assert_identical(actual, expected)
 
+    # Do not attempt to get bounds when extracting a DataArray
+    # raise a warning when extracting a Dataset and bounds do not exists
+    ds["time"].attrs["bounds"] = "foo"
+    with pytest.warns(None) as record:
+        ds.cf["air"]
+    assert len(record) == 0
+    with pytest.warns(UserWarning) as record:
+        ds.cf[["air"]]
+
 
 def test_bounds_to_vertices():
     # All available

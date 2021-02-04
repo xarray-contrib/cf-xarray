@@ -583,7 +583,7 @@ def test_bounds():
     with pytest.warns(None) as record:
         ds.cf["air"]
     assert len(record) == 0
-    with pytest.warns(UserWarning) as record:
+    with pytest.warns(UserWarning, match="{'foo'} not found in object"):
         ds.cf[["air"]]
 
 

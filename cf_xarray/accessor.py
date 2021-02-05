@@ -12,6 +12,7 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
+    Optional,
     Set,
     Tuple,
     Union,
@@ -608,10 +609,9 @@ def _getitem(
 
     try:
         for name in allnames:
-            extravars = accessor.get_associated_variable_names(name)
-            # we cannot return bounds variables with scalar keys
-            if scalar_key:
-                extravars.pop("bounds")
+            extravars = accessor.get_associated_variable_names(
+                name, skip_bounds=scalar_key
+            )
             coords.extend(itertools.chain(*extravars.values()))
 
         if isinstance(obj, DataArray):
@@ -1209,7 +1209,9 @@ class CFAccessor:
 
         return {k: sorted(v) for k, v in vardict.items()}
 
-    def get_associated_variable_names(self, name: Hashable) -> Dict[str, List[str]]:
+    def get_associated_variable_names(
+        self, name: Hashable, skip_bounds: Optional[bool] = None
+    ) -> Dict[str, List[str]]:
         """
         Returns a dict mapping
             1. "ancillary_variables"
@@ -1222,6 +1224,8 @@ class CFAccessor:
         ----------
 
         name: Hashable
+
+        skip_bounds: bool, optional
 
         Returns
         ------
@@ -1248,13 +1252,13 @@ class CFAccessor:
                 "ancillary_variables"
             ].split(" ")
 
-        if "bounds" in attrs_or_encoding:
-            coords["bounds"] = [attrs_or_encoding["bounds"]]
-
-        for dim in self._obj[name].dims:
-            dbounds = self._obj[dim].attrs.get("bounds", None)
-            if dbounds:
-                coords["bounds"].append(dbounds)
+        if not skip_bounds:
+            if "bounds" in attrs_or_encoding:
+                coords["bounds"] = [attrs_or_encoding["bounds"]]
+            for dim in self._obj[name].dims:
+                dbounds = self._obj[dim].attrs.get("bounds", None)
+                if dbounds:
+                    coords["bounds"].append(dbounds)
 
         allvars = itertools.chain(*coords.values())
         missing = set(allvars) - set(self._maybe_to_dataset().variables)

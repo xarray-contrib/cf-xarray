@@ -12,6 +12,7 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
+    Optional,
     Set,
     Tuple,
     Union,
@@ -609,7 +610,7 @@ def _getitem(
     try:
         for name in allnames:
             extravars = accessor.get_associated_variable_names(
-                name, get_bounds=not scalar_key
+                name, skip_bounds=scalar_key
             )
             coords.extend(itertools.chain(*extravars.values()))
 
@@ -1209,7 +1210,7 @@ class CFAccessor:
         return {k: sorted(v) for k, v in vardict.items()}
 
     def get_associated_variable_names(
-        self, name: Hashable, get_bounds=True
+        self, name: Hashable, skip_bounds: Optional[bool] = None
     ) -> Dict[str, List[str]]:
         """
         Returns a dict mapping
@@ -1224,7 +1225,7 @@ class CFAccessor:
 
         name: Hashable
 
-        get_bounds: bool
+        skip_bounds: bool, optional
 
         Returns
         ------
@@ -1251,11 +1252,9 @@ class CFAccessor:
                 "ancillary_variables"
             ].split(" ")
 
-        if get_bounds:
-
+        if not skip_bounds:
             if "bounds" in attrs_or_encoding:
                 coords["bounds"] = [attrs_or_encoding["bounds"]]
-
             for dim in self._obj[name].dims:
                 dbounds = self._obj[dim].attrs.get("bounds", None)
                 if dbounds:

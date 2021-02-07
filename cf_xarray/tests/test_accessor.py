@@ -399,7 +399,7 @@ def test_dataarray_plot():
     plt.close()
 
     rv = obj.isel(lat=[0, 1], lon=1).cf.plot.line(x="T", hue="Y")
-    assert all([isinstance(line, mpl.lines.Line2D) for line in rv])
+    assert all(isinstance(line, mpl.lines.Line2D) for line in rv)
     plt.close()
 
     # set y automatically

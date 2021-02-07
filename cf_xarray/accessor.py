@@ -191,7 +191,7 @@ def apply_mapper(
     else:
         results = flat
 
-    nresults = any([bool(v) for v in [results]])
+    nresults = any(bool(v) for v in [results])
     if not nresults:
         if error:
             raise KeyError(

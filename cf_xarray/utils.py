@@ -51,5 +51,5 @@ def invert_mappings(*mappings):
     for mapping in mappings:
         for k, v in mapping.items():
             for name in v:
-                merged[name] |= set([k])
+                merged[name] |= {k}
     return merged

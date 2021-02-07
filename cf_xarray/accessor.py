@@ -191,7 +191,7 @@ def apply_mapper(
     else:
         results = flat
 
-    nresults = any([bool(v) for v in [results]])
+    nresults = any(bool(v) for v in [results])
     if not nresults:
         if error:
             raise KeyError(
@@ -497,7 +497,7 @@ def _getattr(
         if not attribute:
             return dict(attribute)
 
-        newmap = dict()
+        newmap = {}
         inverted = invert_mappings(
             accessor.axes,
             accessor.coordinates,
@@ -1165,7 +1165,7 @@ class CFAccessor:
                 da.attrs.get("cell_measures", "") for da in obj.data_vars.values()
             ]
 
-        measures: Dict[str, List[str]] = dict()
+        measures: Dict[str, List[str]] = {}
         for attr in all_attrs:
             for key, value in parse_cell_methods_attr(attr).items():
                 measures[key] = measures.setdefault(key, []) + [value]
@@ -1201,7 +1201,7 @@ class CFAccessor:
         elif isinstance(self._obj, DataArray):
             variables = self._obj.coords
 
-        vardict: Dict[str, List[str]] = dict()
+        vardict: Dict[str, List[str]] = {}
         for k, v in variables.items():
             if "standard_name" in v.attrs:
                 std_name = v.attrs["standard_name"]

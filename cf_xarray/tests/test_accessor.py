@@ -517,7 +517,7 @@ def test_plot_xincrease_yincrease():
 @pytest.mark.parametrize("dims", ["lat", "time", ["lat", "lon"]])
 @pytest.mark.parametrize("obj", [airds])
 def test_add_bounds(obj, dims):
-    expected = dict()
+    expected = {}
     expected["lat"] = xr.concat(
         [
             obj.lat.copy(data=np.arange(76.25, 16.0, -2.5)),

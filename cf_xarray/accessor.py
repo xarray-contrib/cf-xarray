@@ -222,9 +222,9 @@ def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List
 
     Parameters
     ----------
-    var: DataArray, Dataset
+    var : DataArray, Dataset
         DataArray belonging to the coordinate to be checked
-    key: str, [e.g. "T.month"]
+    key : str, [e.g. "T.month"]
         key to check for.
 
     Returns
@@ -255,14 +255,14 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
 
     Parameters
     ----------
-    var: DataArray, Dataset
+    var : DataArray, Dataset
         DataArray belonging to the coordinate to be checked
-    key: str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
+    key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
         key to check for.
-    error: bool
+    error : bool
         raise errors when key is not found or interpretable. Use False and provide default
         to replicate dict.get(k, None).
-    default: Any
+    default : Any
         default value to return when error is False.
 
     Returns
@@ -330,9 +330,9 @@ def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
 
     Parameters
     ----------
-    obj: DataArray, Dataset
+    obj : DataArray, Dataset
         DataArray belonging to the coordinate to be checked
-    key: str
+    key : str
         key to check for.
 
     Returns
@@ -471,18 +471,17 @@ def _getattr(
 
     Parameters
     ----------
-
     obj : DataArray, Dataset
     attr : Name of attribute in obj that will be shadowed.
     accessor : High level accessor object: CFAccessor
     key_mappers : dict
         dict(key_name: mapper)
-    wrap_classes: bool
+    wrap_classes : bool
         Should we wrap the return value with _CFWrappedClass?
         Only True for the high level CFAccessor.
         Facilitates code reuse for _CFWrappedClass and _CFWrapppedPlotMethods
         For both of those, wrap_classes is False.
-    extra_decorator: Callable (optional)
+    extra_decorator : Callable (optional)
         An extra decorator, if necessary. This is used by _CFPlotMethods to set default
         kwargs based on CF attributes.
     """
@@ -555,9 +554,9 @@ def _getitem(
 
     Parameters
     ----------
-    accessor: CFAccessor
-    key: str, List[str]
-    skip: str, optional
+    accessor : CFAccessor
+    key : str, List[str]
+    skip : str, optional
         One of ["coords", "measures"], avoid clashes with special coord names
     """
 
@@ -889,12 +888,12 @@ class CFAccessor:
 
         Parameters
         ----------
-        kwargs: Mapping
+        kwargs : Mapping
             Mapping from kwarg name to value
-        key_mappers: Mapping
+        key_mappers : Mapping
             Mapping from kwarg name to a Mapper function that will convert a
             given CF "special" name to an xarray name.
-        var_kws: List[str]
+        var_kws : List[str]
             List of variable kwargs that need special treatment.
             e.g. **indexers_kwargs in isel
 
@@ -1188,8 +1187,7 @@ class CFAccessor:
 
         Parameters
         ----------
-
-        obj: DataArray, Dataset
+        obj : DataArray, Dataset
             Xarray object to process
 
         Returns
@@ -1222,14 +1220,10 @@ class CFAccessor:
 
         Parameters
         ----------
-
-        name: Hashable
-
-        skip_bounds: bool, optional
-
+        name : Hashable
+        skip_bounds : bool, optional
         Returns
         ------
-
         Dict with keys "ancillary_variables", "cell_measures", "coordinates", "bounds"
         """
         keys = ["ancillary_variables", "cell_measures", "coordinates", "bounds"]
@@ -1306,7 +1300,7 @@ class CFAccessor:
 
         Parameters
         ----------
-        other: DataArray, Dataset
+        other : DataArray, Dataset
             Variables will be renamed to match variable names in this xarray object
 
         Returns
@@ -1351,7 +1345,7 @@ class CFAccessor:
 
         Parameters
         ----------
-        verbose: bool
+        verbose : bool
             Print extra info to screen
 
         Returns
@@ -1420,7 +1414,7 @@ class CFDatasetAccessor(CFAccessor):
 
         Parameters
         ----------
-        key: str
+        key : str
             Name of variable whose bounds are desired
 
         Returns
@@ -1462,7 +1456,7 @@ class CFDatasetAccessor(CFAccessor):
 
         Parameters
         ----------
-        dims: Hashable or Iterable[Hashable]
+        dims : Hashable or Iterable[Hashable]
             Either a single dimension name or a list of dimension names.
 
         Returns
@@ -1584,7 +1578,7 @@ class CFDatasetAccessor(CFAccessor):
 
         Parameters
         ----------
-        prefix: str, optional
+        prefix : str, optional
             Prefix for newly created z variables.
             E.g. ``s_rho`` becomes ``z_rho``
 
@@ -1594,7 +1588,6 @@ class CFDatasetAccessor(CFAccessor):
 
         Notes
         -----
-
         Will only decode when the ``formula_terms`` and ``standard_name`` attributes
         are set on the parameter (e.g ``s_rho`` )
 

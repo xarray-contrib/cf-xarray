@@ -17,7 +17,7 @@ def bounds_to_vertices(
 
     Parameters
     ----------
-    bounds: DataArray
+    bounds : DataArray
         The bounds to convert. Must be of shape (N, 2) or (N, M, 4).
     bounds_dim : str
         The name of the bounds dimension of `bounds` (the one of length 2 or 4).
@@ -93,7 +93,7 @@ def vertices_to_bounds(
 
     Parameters
     ----------
-    bounds: DataArray
+    bounds : DataArray
         The bounds to convert. Must be of shape (N, 2) or (N, M, 4).
     out_dims : Sequence[str],
         The name of the dimension in the output. The first is the 'bounds'

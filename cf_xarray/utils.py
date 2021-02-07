@@ -29,7 +29,7 @@ def parse_cell_methods_attr(attr: str) -> Dict[str, str]:
 
     Parameters
     ----------
-    attr: str
+    attr : str
         String to parse
 
     Returns

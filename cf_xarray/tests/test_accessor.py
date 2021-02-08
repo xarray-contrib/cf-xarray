@@ -186,7 +186,7 @@ def test_getitem_standard_name():
 
     ds = airds.copy(deep=True)
     ds["air2"] = ds.air
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         ds.cf["air_temperature"]
     actual = ds.cf[["air_temperature"]]
     expected = ds[["air", "air2"]]
@@ -507,7 +507,7 @@ def test_plot_xincrease_yincrease():
     ds.lon.attrs["positive"] = "down"
     ds.lat.attrs["positive"] = "down"
 
-    f, ax = plt.subplots(1, 1)
+    _, ax = plt.subplots(1, 1)
     ds.air.isel(time=1).cf.plot(ax=ax, x="X", y="Y")
 
     for lim in [ax.get_xlim(), ax.get_ylim()]:

@@ -118,13 +118,13 @@ coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 regex = {
     "time": "\\bt\\b|time[0-9]*|min|hour|day|week|month|year",
     "vertical": (
-        "\\bz\\b|[a-z_]*[0-9]*_lev|(gdep|lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|isobaric|pres|"
-        "isotherm)[a-z_]*[0-9]*"
+        "\\bz\\b|(nav_)?(lev|gdep|lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|"
+        "isobaric|pres|isotherm)[a-z_]*[0-9]*"
     ),
     "Y": "y",
-    "latitude": "(y?(lat|gphi)[a-z0-9]*)|[a-z0-9]*_lat",
+    "latitude": "(y|nav_)?(lat|gphi)[a-z0-9]*",
     "X": "x",
-    "longitude": "(x?(lon|glam)[a-z0-9]*)|[a-z0-9]*_lon",
+    "longitude": "(x|nav_)?(lon|glam)[a-z0-9]*",
 }
 regex["Z"] = regex["vertical"]
 regex["T"] = regex["time"]

@@ -118,7 +118,7 @@ coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 regex = {
     "time": "\\bt\\b|time[0-9]*|min|hour|day|week|month|year",
     "vertical": (
-        "\\bz\\b|(gdep|lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|isobaric|pres|"
+        "\\bz\\b|[a-z_]*[0-9]*_lev|(gdep|lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|isobaric|pres|"
         "isotherm)[a-z_]*[0-9]*"
     ),
     "Y": "y",

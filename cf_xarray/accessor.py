@@ -116,15 +116,15 @@ coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 
 #: regular expressions for guess_coord_axis
 regex = {
-    "time": "(\\bt\\b|time|min|hour|day|week|month|year)[0-9]*",
+    "time": "\\bt\\b|(time|min|hour|day|week|month|year)[0-9]*",
     "vertical": (
-        "\\bz\\b|(nav_)?(lev|gdep|lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|"
+        "\\bz\\b|(nav_lev|gdep|lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|"
         "isobaric|pres|isotherm)[a-z_]*[0-9]*"
     ),
     "Y": "y",
-    "latitude": "(y|nav_)?(lat|gphi)[a-z0-9]*",
+    "latitude": "y?(nav_lat|lat|gphi)[a-z0-9]*",
     "X": "x",
-    "longitude": "(x|nav_)?(lon|glam)[a-z0-9]*",
+    "longitude": "x?(nav_lon|lon|glam)[a-z0-9]*",
 }
 regex["Z"] = regex["vertical"]
 regex["T"] = regex["time"]

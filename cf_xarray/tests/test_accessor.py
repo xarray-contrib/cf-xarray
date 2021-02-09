@@ -1,3 +1,4 @@
+import itertools
 from textwrap import dedent
 
 import matplotlib as mpl
@@ -627,26 +628,77 @@ def test_docstring():
     assert "One or more of ('X'" in airds.cf.mean.__doc__
 
 
-def test_guess_coord_axis():
+def _make_names(prefixes):
+    suffixes = ["", "a", "_a", "0", "_0"]
+    return [
+        f"{prefix}{suffix}" for prefix, suffix in itertools.product(prefixes, suffixes)
+    ]
+
+
+_TIME_NAMES = _make_names(
+    [
+        "time",
+        "min",
+        "hour",
+        "day",
+        "week",
+        "month",
+        "year",
+    ]
+)
+_VERTICAL_NAMES = _make_names(
+    [
+        "lv_1",
+        "bottom_top",
+        "sigma",
+        "sigma_w",
+        "hght",
+        "height",
+        "altitude",
+        "depth",
+        "isobaric",
+        "pressure",
+        "isotherm",
+    ]
+)
+_X_NAMES = _make_names(["x"])
+_Y_NAMES = _make_names(["y"])
+_Z_NAMES = _VERTICAL_NAMES
+_LATITUDE_NAMES = _make_names(["lat", "latitude"])
+_LONGITUDE_NAMES = _make_names(["lon", "longitude"])
+
+
+@pytest.mark.parametrize(
+    "kind, names",
+    [
+        ["X", _X_NAMES],
+        ["Y", _Y_NAMES],
+        ["Z", _Z_NAMES],
+        ["T", _TIME_NAMES],
+        ["latitude", _LATITUDE_NAMES],
+        ["longitude", _LONGITUDE_NAMES],
+    ],
+)
+def test_guess_coord_axis(kind, names):
+    from cf_xarray.accessor import ATTRS
+
+    for varname in names:
+        ds = xr.Dataset()
+        ds[varname] = (varname, [1, 2, 3, 4, 5])
+        dsnew = ds.cf.guess_coord_axis()
+        assert dsnew[varname].attrs == ATTRS[kind]
+
+        varname = varname.upper()
+        ds[varname] = (varname, [1, 2, 3, 4, 5])
+        dsnew = ds.cf.guess_coord_axis()
+        assert dsnew[varname].attrs == ATTRS[kind]
+
+
+def test_guess_coord_axis_datetime():
     ds = xr.Dataset()
     ds["time"] = ("time", pd.date_range("2001-01-01", "2001-04-01"))
-    ds["lon_rho"] = ("lon_rho", [1, 2, 3, 4, 5])
-    ds["lat_rho"] = ("lat_rho", [1, 2, 3, 4, 5])
-    ds["x1"] = ("x1", [1, 2, 3, 4, 5])
-    ds["y1"] = ("y1", [1, 2, 3, 4, 5])
-
     dsnew = ds.cf.guess_coord_axis()
     assert dsnew.time.attrs == {"standard_name": "time", "axis": "T"}
-    assert dsnew.lon_rho.attrs == {
-        "standard_name": "longitude",
-        "units": "degrees_east",
-    }
-    assert dsnew.lat_rho.attrs == {
-        "standard_name": "latitude",
-        "units": "degrees_north",
-    }
-    assert dsnew.x1.attrs == {"axis": "X"}
-    assert dsnew.y1.attrs == {"axis": "Y"}
 
 
 def test_attributes():

@@ -116,7 +116,7 @@ coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
 
 #: regular expressions for guess_coord_axis
 regex = {
-    "time": "time[0-9]*|min|hour|day|week|month|year",
+    "time": "(time|min|hour|day|week|month|year)[0-9]*",
     "vertical": (
         "(lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|isobaric|pres|"
         "isotherm)[a-z_]*[0-9]*"
@@ -130,7 +130,7 @@ regex["Z"] = regex["vertical"]
 regex["T"] = regex["time"]
 
 
-attrs = {
+ATTRS = {
     "X": {"axis": "X"},
     "T": {"axis": "T", "standard_name": "time"},
     "Y": {"axis": "Y"},
@@ -138,8 +138,8 @@ attrs = {
     "latitude": {"units": "degrees_north", "standard_name": "latitude"},
     "longitude": {"units": "degrees_east", "standard_name": "longitude"},
 }
-attrs["time"] = attrs["T"]
-attrs["vertical"] = attrs["Z"]
+ATTRS["time"] = ATTRS["T"]
+ATTRS["vertical"] = ATTRS["Z"]
 
 
 # Type for Mapper functions
@@ -1361,7 +1361,7 @@ class CFAccessor:
                     print(
                         f"I think {var!r} is of type 'time'. It has a datetime-like type."
                     )
-                obj[var].attrs = dict(ChainMap(obj[var].attrs, attrs["time"]))
+                obj[var].attrs = dict(ChainMap(obj[var].attrs, ATTRS["time"]))
                 continue  # prevent second detection
 
             for axis, pattern in regex.items():
@@ -1371,7 +1371,7 @@ class CFAccessor:
                         print(
                             f"I think {var!r} is of type {axis!r}. It matched {pattern!r}"
                         )
-                    obj[var].attrs = dict(ChainMap(obj[var].attrs, attrs[axis]))
+                    obj[var].attrs = dict(ChainMap(obj[var].attrs, ATTRS[axis]))
         return obj
 
 

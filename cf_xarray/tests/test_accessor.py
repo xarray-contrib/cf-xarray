@@ -646,8 +646,9 @@ _TIME_NAMES = ["t"] + _make_names(
         "year",
     ]
 )
-_VERTICAL_NAMES = ["z"] + _make_names(
+_VERTICAL_NAMES = _make_names(
     [
+        "z",
         "lv_1",
         "bottom_top",
         "sigma",

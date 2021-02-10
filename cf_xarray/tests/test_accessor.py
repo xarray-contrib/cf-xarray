@@ -629,13 +629,13 @@ def test_docstring():
 
 
 def _make_names(prefixes):
-    suffixes = ["", "a", "_a", "0", "_0"]
+    suffixes = ["", "a", "_a", "0", "_0", "a_0a"]
     return [
         f"{prefix}{suffix}" for prefix, suffix in itertools.product(prefixes, suffixes)
     ]
 
 
-_TIME_NAMES = _make_names(
+_TIME_NAMES = ["t"] + _make_names(
     [
         "time",
         "min",
@@ -648,6 +648,7 @@ _TIME_NAMES = _make_names(
 )
 _VERTICAL_NAMES = _make_names(
     [
+        "z",
         "lv_1",
         "bottom_top",
         "sigma",
@@ -659,13 +660,15 @@ _VERTICAL_NAMES = _make_names(
         "isobaric",
         "pressure",
         "isotherm",
+        "gdep",
+        "nav_lev",
     ]
 )
 _X_NAMES = _make_names(["x"])
 _Y_NAMES = _make_names(["y"])
 _Z_NAMES = _VERTICAL_NAMES
-_LATITUDE_NAMES = _make_names(["lat", "latitude"])
-_LONGITUDE_NAMES = _make_names(["lon", "longitude"])
+_LATITUDE_NAMES = _make_names(["lat", "latitude", "gphi", "nav_lat"])
+_LONGITUDE_NAMES = _make_names(["lon", "longitude", "glam", "nav_lon"])
 
 
 @pytest.mark.parametrize(

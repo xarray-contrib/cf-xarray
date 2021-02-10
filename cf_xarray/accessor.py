@@ -167,7 +167,7 @@ def apply_mapper(
 
         try:
             results = mapper(obj, key)
-        except Exception as e:
+        except KeyError as e:
             if error:
                 raise e
             else:
@@ -319,7 +319,7 @@ def _get_measure_variable(
     """ tiny wrapper since xarray does not support providing str for weights."""
     varnames = apply_mapper(_get_measure, da, key, error, default)
     if len(varnames) > 1:
-        raise ValueError(f"Multiple measures found for key {key!r}: {varnames!r}.")
+        raise KeyError(f"Multiple measures found for key {key!r}: {varnames!r}.")
     return [da[varnames[0]]]
 
 
@@ -572,7 +572,7 @@ def _getitem(
 
     def check_results(names, k):
         if scalar_key and len(names) > 1:
-            raise ValueError(
+            raise KeyError(
                 f"Receive multiple variables for key {k!r}: {names}. "
                 f"Expected only one. Please pass a list [{k!r}] "
                 f"instead to get all variables matching {k!r}."
@@ -627,7 +627,7 @@ def _getitem(
                     da.coords[k1] = ds.variables[k1]
                 return da
             else:
-                raise ValueError(
+                raise KeyError(
                     f"Received scalar key {key[0]!r} but multiple results: {allnames!r}. "
                     f"Please pass a list instead (['{key[0]}']) to get back a Dataset "
                     f"with {allnames!r}."

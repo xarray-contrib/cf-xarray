@@ -70,7 +70,6 @@ anc["q_error_limit"] = (
 anc["q_detection_limit"] = xr.DataArray(
     1e-3, attrs=dict(standard_name="specific_humidity detection_minimum", units="g/g")
 )
-anc
 
 
 multiple = xr.Dataset()

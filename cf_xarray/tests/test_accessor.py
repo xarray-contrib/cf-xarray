@@ -849,8 +849,7 @@ def test_standard_name_mapper():
 
 
 @pytest.mark.parametrize("obj", objects)
-@pytest.mark.parametrize("attr", ["drop", "drop_vars", "set_coords"])
-@pytest.mark.filterwarnings("ignore:dropping .* using `drop` .* deprecated")
+@pytest.mark.parametrize("attr", ["drop_vars", "set_coords"])
 def test_drop_vars_and_set_coords(obj, attr):
 
     # DataArray object has no attribute set_coords

@@ -372,36 +372,46 @@ def _get_with_standard_name(
     return varnames
 
 
+def _get_all(obj: Union[DataArray, Dataset], key: Union[str, List[str]]) -> List[str]:
+    all_mappers = (_get_axis_coord, _get_measure, _get_with_standard_name, _get_measure)
+    results = apply_mapper(all_mappers, obj, key, error=False, default=None)
+    return results
+
+
+def _get_dims(obj: Union[DataArray, Dataset], key: Union[str, List[str]]):
+    return [k for k in _get_all(obj, key) if k in obj.dims]
+
+
+def _get_indexes(obj: Union[DataArray, Dataset], key: Union[str, List[str]]):
+    return [k for k in _get_all(obj, key) if k in obj.indexes]
+
+
+def _get_coords(obj: Union[DataArray, Dataset], key: Union[str, List[str]]):
+    return [k for k in _get_all(obj, key) if k in obj.coords]
+
+
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
-    "dim": (_get_axis_coord, _get_with_standard_name),
-    "dims": (_get_axis_coord, _get_with_standard_name),  # transpose
-    "drop_dims": (_get_axis_coord, _get_with_standard_name),  # drop_dims
-    "dimensions": (_get_axis_coord, _get_with_standard_name),  # stack
-    "dims_dict": (_get_axis_coord, _get_with_standard_name),  # swap_dims, rename_dims
-    "shifts": (_get_axis_coord, _get_with_standard_name),  # shift, roll
-    "pad_width": (_get_axis_coord, _get_with_standard_name),  # shift, roll
-    "names": (
-        _get_axis_coord,
-        _get_measure,
-        _get_with_standard_name,
-    ),  # set_coords, reset_coords, drop_vars
-    "labels": (_get_axis_coord, _get_measure, _get_with_standard_name),  # drop
-    "coords": (_get_axis_coord, _get_with_standard_name),  # interp
-    "indexers": (_get_axis_coord, _get_with_standard_name),  # sel, isel, reindex
+    "dim": (_get_dims,),  # (_get_axis_coord, _get_with_standard_name),
+    "dims": (_get_dims,),  # (_get_axis_coord, _get_with_standard_name),  # transpose
+    "drop_dims": (_get_dims,),  # drop_dims
+    "dimensions": (_get_dims,),  # stack
+    "dims_dict": (_get_dims,),  # swap_dims, rename_dims
+    "shifts": (_get_dims,),  # shift, roll
+    "pad_width": (_get_dims,),  # shift, roll
+    "names": (_get_all,),  # set_coords, reset_coords, drop_vars
+    "labels": (_get_indexes,),  # drop_sel
+    "coords": (_get_dims,),  # interp
+    "indexers": (_get_indexes,),  # sel, isel, reindex
     # "indexes": (_get_axis_coord,),  # set_index
-    "dims_or_levels": (_get_axis_coord, _get_with_standard_name),  # reset_index
-    "window": (_get_axis_coord, _get_with_standard_name),  # rolling_exp
+    "dims_or_levels": (_get_dims,),  # reset_index
+    "window": (_get_dims,),  # rolling_exp
     "coord": (_get_axis_coord_single,),  # differentiate, integrate
-    "group": (
-        _get_axis_coord_single,
-        _get_groupby_time_accessor,
-        _get_with_standard_name,
-    ),
-    "indexer": (_get_axis_coord_single,),  # resample
-    "variables": (_get_axis_coord, _get_with_standard_name),  # sortby
+    "group": (_get_all, _get_groupby_time_accessor),  # groupby
+    "indexer": (_get_indexes,),  # resample
+    "variables": (_get_all,),  # sortby
     "weights": (_get_measure_variable,),  # type: ignore
-    "chunks": (_get_axis_coord, _get_with_standard_name),  # chunk
+    "chunks": (_get_dims,),  # chunk
 }
 
 
@@ -430,6 +440,9 @@ def _build_docstring(func):
     can be used for arguments.
     """
 
+    get_all_docstring = (
+        f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r};\n\t\t\tor standard names"
+    )
     # this list will need to be updated any time a new mapper is added
     mapper_docstrings = {
         _get_axis_coord: f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r}",
@@ -437,6 +450,10 @@ def _build_docstring(func):
         _get_groupby_time_accessor: "Time variable accessor e.g. 'T.month'",
         _get_with_standard_name: "Standard names",
         _get_measure_variable: f"One of {_CELL_MEASURES!r}",
+        _get_all: get_all_docstring,
+        _get_indexes: get_all_docstring + "present in .indexes",
+        _get_dims: get_all_docstring + "present in .dims",
+        _get_coords: get_all_docstring + "present in .coords",
     }
 
     sig = inspect.signature(func)
@@ -1373,6 +1390,12 @@ class CFAccessor:
                         )
                     obj[var].attrs = dict(ChainMap(obj[var].attrs, ATTRS[axis]))
         return obj
+
+    def drop(self, *args, **kwargs):
+        raise NotImplementedError(
+            "cf-xarray does not support .drop."
+            "Please use .cf.drop_vars or .cf.drop_sel as appropriate."
+        )
 
 
 @xr.register_dataset_accessor("cf")

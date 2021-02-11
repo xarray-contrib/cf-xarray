@@ -315,42 +315,6 @@ def _get_axis_coord(
     return list(results)
 
 
-def _get_all(var: Union[DataArray, Dataset], key: str) -> List[str]:
-
-    results = set(_get_axis_coord(var, key, error=False))
-    for func in (_get_measure, _get_with_standard_name):
-        results.update(func(var, key))
-
-    return list(results)
-
-
-def _get_dims(var: Union[DataArray, Dataset], key: str) -> List[str]:
-    results = set(_get_all(var, key)).intersection(var.dims)
-    return list(results)
-
-
-def _get_single_dim(var: Union[DataArray, Dataset], key: str) -> List[str]:
-    return _get_single(var, key, _get_dims)
-
-
-def _get_coords(var: Union[DataArray, Dataset], key: str) -> List[str]:
-    results = set(_get_all(var, key)).intersection(var.coords)
-    return list(results)
-
-
-def _get_single_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
-    return _get_single(var, key, _get_coords)
-
-
-def _get_indexes(var: Union[DataArray, Dataset], key: str) -> List[str]:
-    results = set(_get_all(var, key)).intersection(var.indexes)
-    return list(results)
-
-
-def _get_single_index(var: Union[DataArray, Dataset], key: str) -> List[str]:
-    return _get_single(var, key, _get_indexes)
-
-
 def _get_single(var: Union[DataArray, Dataset], key: str, func):
 
     results = func(var, key)
@@ -424,28 +388,28 @@ def _get_with_standard_name(
     return varnames
 
 
-def _get_all(obj: Union[DataArray, Dataset], key: Union[str, List[str]]) -> List[str]:
-    all_mappers = (_get_axis_coord, _get_measure, _get_with_standard_name, _get_measure)
+def _get_all(obj: Union[DataArray, Dataset], key: str) -> List[str]:
+    all_mappers = (_get_axis_coord, _get_measure, _get_with_standard_name)
     results = apply_mapper(all_mappers, obj, key, error=False, default=None)
     return results
 
 
-def _get_dims(obj: Union[DataArray, Dataset], key: Union[str, List[str]]):
+def _get_dims(obj: Union[DataArray, Dataset], key: str):
     return [k for k in _get_all(obj, key) if k in obj.dims]
 
 
-def _get_indexes(obj: Union[DataArray, Dataset], key: Union[str, List[str]]):
+def _get_indexes(obj: Union[DataArray, Dataset], key: str):
     return [k for k in _get_all(obj, key) if k in obj.indexes]
 
 
-def _get_coords(obj: Union[DataArray, Dataset], key: Union[str, List[str]]):
+def _get_coords(obj: Union[DataArray, Dataset], key: str):
     return [k for k in _get_all(obj, key) if k in obj.coords]
 
 
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
-    "dim": (_get_dims,),  # (_get_axis_coord, _get_with_standard_name),
-    "dims": (_get_dims,),  # (_get_axis_coord, _get_with_standard_name),  # transpose
+    "dim": (_get_dims,),
+    "dims": (_get_dims,),  # transpose
     "drop_dims": (_get_dims,),  # drop_dims
     "dimensions": (_get_dims,),  # stack
     "dims_dict": (_get_dims,),  # swap_dims, rename_dims

@@ -624,6 +624,7 @@ def test_get_bounds_dim_name():
 
 
 def test_docstring():
+    print(airds.cf.groupby.__doc__)
     assert "One of ('X'" in airds.cf.groupby.__doc__
     assert "One or more of ('X'" in airds.cf.mean.__doc__
 

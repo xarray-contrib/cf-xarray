@@ -3,6 +3,7 @@ import inspect
 import itertools
 import warnings
 from collections import ChainMap
+from functools import wraps
 from typing import (
     Any,
     Callable,
@@ -249,9 +250,7 @@ def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List
         return []
 
 
-def _get_axis_coord(
-    var: Union[DataArray, Dataset], key: str, error: bool = True
-) -> List[str]:
+def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Translate from axis or coord name to variable name
 
@@ -285,7 +284,7 @@ def _get_axis_coord(
     """
 
     valid_keys = _COORD_NAMES + _AXIS_NAMES
-    if error and key not in valid_keys:
+    if key not in valid_keys:
         raise KeyError(
             f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
         )
@@ -313,20 +312,6 @@ def _get_axis_coord(
                     results.update((coord,))
 
     return list(results)
-
-
-def _get_single(var: Union[DataArray, Dataset], key: str, func):
-
-    results = func(var, key)
-
-    if len(results) > 1:
-        raise KeyError(
-            f"Multiple results for {key!r} found: {results!r}. I expected only one."
-        )
-    elif len(results) == 0:
-        raise KeyError(f"No results found for {key!r}.")
-
-    return results
 
 
 def _get_measure_variable(
@@ -406,6 +391,21 @@ def _get_coords(obj: Union[DataArray, Dataset], key: str):
     return [k for k in _get_all(obj, key) if k in obj.coords]
 
 
+def _single(func):
+    @wraps(func)
+    def get_single(obj: Union[DataArray, Dataset], key: str):
+        results = func(obj, key)
+        if len(results) > 1:
+            raise KeyError(
+                f"Multiple results for {key!r} found: {results!r}. I expected only one."
+            )
+        elif len(results) == 0:
+            raise KeyError(f"No results found for {key!r}.")
+        return results
+
+    return get_single
+
+
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dim": (_get_dims,),
@@ -423,8 +423,8 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dims_or_levels": (_get_dims,),  # reset_index
     "window": (_get_dims,),  # rolling_exp
     "coord": (_get_axis_coord_single,),  # differentiate, integrate
-    "group": (_get_all, _get_groupby_time_accessor),  # groupby
-    "indexer": (_get_indexes,),  # resample
+    "group": (_single(_get_all), _get_groupby_time_accessor),  # groupby
+    "indexer": (_single(_get_indexes),),  # resample
     "variables": (_get_all,),  # sortby
     "weights": (_get_measure_variable,),  # type: ignore
     "chunks": (_get_dims,),  # chunk
@@ -466,6 +466,7 @@ def _build_docstring(func):
         _get_groupby_time_accessor: "Time variable accessor e.g. 'T.month'",
         _get_with_standard_name: "Standard names",
         _get_measure_variable: f"One of {_CELL_MEASURES!r}",
+        _single(_get_all): get_all_docstring.replace("One or more of", "One of"),
         _get_all: get_all_docstring,
         _get_indexes: get_all_docstring + "present in .indexes",
         _get_dims: get_all_docstring + "present in .dims",
@@ -477,7 +478,7 @@ def _build_docstring(func):
     for k in set(sig.parameters.keys()) & set(_DEFAULT_KEY_MAPPERS):
         mappers = _DEFAULT_KEY_MAPPERS.get(k, [])
         docstring = ";\n\t\t\t".join(
-            mapper_docstrings.get(mapper, "unknown. please open an issue.")
+            mapper_docstrings.get(id(mapper), "unknown. please open an issue.")
             for mapper in mappers
         )
         string += f"\t\t{k}: {docstring} \n"

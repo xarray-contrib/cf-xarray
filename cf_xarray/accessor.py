@@ -478,7 +478,7 @@ def _build_docstring(func):
     for k in set(sig.parameters.keys()) & set(_DEFAULT_KEY_MAPPERS):
         mappers = _DEFAULT_KEY_MAPPERS.get(k, [])
         docstring = ";\n\t\t\t".join(
-            mapper_docstrings.get(id(mapper), "unknown. please open an issue.")
+            mapper_docstrings.get(mapper, "unknown. please open an issue.")
             for mapper in mappers
         )
         string += f"\t\t{k}: {docstring} \n"

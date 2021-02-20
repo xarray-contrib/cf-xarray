@@ -208,6 +208,19 @@ def apply_mapper(
     return results
 
 
+def _set_doc(doc):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+
+        wrapper.__doc__ = doc
+        return cast(F, wrapper)
+
+    return decorator
+
+
+@_set_doc("Time variable accessor e.g. 'T.month'")
 def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Helper method for when our key name is of the nature "T.month" and we want to
@@ -231,18 +244,13 @@ def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List
     if "." in key:
         key, ext = key.split(".", 1)
 
-        results = apply_mapper(
-            (_get_axis_coord, _get_with_standard_name), var, key, error=False
-        )
+        results = apply_mapper((_get_all,), var, key, error=False)
         if len(results) > 1:
             raise KeyError(f"Multiple results received for {key}.")
         return [v + "." + ext for v in results]
 
     else:
         return []
-
-
-_get_groupby_time_accessor.__doc__ = "Time variable accessor e.g. 'T.month'"
 
 
 def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
@@ -343,11 +351,6 @@ def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return list(results)
 
 
-_get_measure.__doc__ = (
-    f"One or more of {_CELL_MEASURES!r};" "\n\t\t\tor arbitraty measures"
-)
-
-
 def _get_with_standard_name(
     obj: Union[DataArray, Dataset], name: Union[str, List[str]]
 ) -> List[str]:
@@ -363,37 +366,29 @@ def _get_with_standard_name(
     return varnames
 
 
+@_set_doc(
+    f"One or more of {(_AXIS_NAMES + _COORD_NAMES + _CELL_MEASURES)!r},"
+    "\n\t\t\tor arbitraty measures, or standard names"
+)
 def _get_all(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     all_mappers = (_get_axis_coord, _get_measure, _get_with_standard_name)
     results = apply_mapper(all_mappers, obj, key, error=False, default=None)
     return results
 
 
-_get_all.__doc__ = (
-    f"One or more of {(_AXIS_NAMES + _COORD_NAMES + _CELL_MEASURES)!r};"
-    "\n\t\t\tor arbitraty measures, or standard names"
-)
-
-
+@_set_doc(_get_all.__doc__ + " present in .dims")
 def _get_dims(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return [k for k in _get_all(obj, key) if k in obj.dims]
 
 
-_get_dims.__doc__ = _get_all.__doc__ + " present in .dims"
-
-
+@_set_doc(_get_all.__doc__ + " present in .indexes")
 def _get_indexes(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return [k for k in _get_all(obj, key) if k in obj.indexes]
 
 
-_get_indexes.__doc__ = _get_all.__doc__ + " present in .indexes"
-
-
+@_set_doc(_get_all.__doc__ + " present in .coords")
 def _get_coords(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return [k for k in _get_all(obj, key) if k in obj.coords]
-
-
-_get_coords.__doc__ = _get_all.__doc__ + " present in .coords"
 
 
 def _variables(func: F) -> F:
@@ -835,7 +830,7 @@ class _CFWrappedPlotMethods:
             obj=self._obj.plot,
             attr=attr,
             accessor=self.accessor,
-            key_mappers=dict.fromkeys(self._keys, (_single(_get_all),)),
+            key_mappers=dict.fromkeys(self._keys, (_single(_get_coords),)),
             # TODO: "extra_decorator" is more complex than I would like it to be.
             # Not sure if there is a better way though
             extra_decorator=self._plot_decorator,

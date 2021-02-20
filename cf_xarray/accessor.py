@@ -814,7 +814,7 @@ class _CFWrappedPlotMethods:
             obj=self._obj,
             attr="plot",
             accessor=self.accessor,
-            key_mappers=dict.fromkeys(self._keys, (_single(_get_all),)),
+            key_mappers=dict.fromkeys(self._keys, (_single(_get_coords),)),
         )
         return self._plot_decorator(plot)(*args, **kwargs)
 

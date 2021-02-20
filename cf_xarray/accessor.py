@@ -17,7 +17,7 @@ from typing import (
     Tuple,
     TypeVar,
     Union,
-    cast
+    cast,
 )
 
 import xarray as xr
@@ -416,7 +416,11 @@ def _single(func: F) -> F:
             raise KeyError(f"No results found for {key!r}.")
         return results
 
-    wrapper.__doc__ = func.__doc__.replace("One or more of", "One of") if func.__doc__ else func.__doc__
+    wrapper.__doc__ = (
+        func.__doc__.replace("One or more of", "One of")
+        if func.__doc__
+        else func.__doc__
+    )
 
     return cast(F, wrapper)
 

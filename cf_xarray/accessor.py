@@ -3,7 +3,6 @@ import inspect
 import itertools
 import warnings
 from collections import ChainMap
-from functools import wraps
 from typing import (
     Any,
     Callable,
@@ -250,6 +249,9 @@ def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List
         return []
 
 
+_get_groupby_time_accessor.__doc__ = "Time variable accessor e.g. 'T.month'"
+
+
 def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Translate from axis or coord name to variable name
@@ -314,16 +316,6 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
     return list(results)
 
 
-def _get_measure_variable(
-    da: DataArray, key: str, error: bool = True, default: str = None
-) -> List[DataArray]:
-    """ tiny wrapper since xarray does not support providing str for weights."""
-    varnames = apply_mapper(_get_measure, da, key, error, default)
-    if len(varnames) > 1:
-        raise KeyError(f"Multiple measures found for key {key!r}: {varnames!r}.")
-    return [da[varnames[0]]]
-
-
 def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Translate from cell measures to appropriate variable name.
@@ -358,6 +350,11 @@ def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return list(results)
 
 
+_get_measure.__doc__ = (
+    f"One or more of {_CELL_MEASURES!r};" "\n\t\t\tor arbitraty measures"
+)
+
+
 def _get_with_standard_name(
     obj: Union[DataArray, Dataset], name: Union[str, List[str]]
 ) -> List[str]:
@@ -379,20 +376,49 @@ def _get_all(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return results
 
 
-def _get_dims(obj: Union[DataArray, Dataset], key: str):
-    return [k for k in _get_all(obj, key) if k in obj.dims]
+_get_all.__doc__ = (
+    f"One or more of {(_AXIS_NAMES + _COORD_NAMES + _CELL_MEASURES)!r};"
+    "\n\t\t\tor arbitraty measures, or standard names"
+)
 
 
-def _get_indexes(obj: Union[DataArray, Dataset], key: str):
-    return [k for k in _get_all(obj, key) if k in obj.indexes]
+def _dims(func):
+    @functools.wraps(func)
+    def get_dims(obj: Union[DataArray, Dataset], key: str):
+        return [k for k in func(obj, key) if k in obj.dims]
+
+    get_dims.__doc__ = func.__doc__ + " present in .dims"
+    return get_dims
 
 
-def _get_coords(obj: Union[DataArray, Dataset], key: str):
-    return [k for k in _get_all(obj, key) if k in obj.coords]
+def _indexes(func):
+    @functools.wraps(func)
+    def get_indexes(obj: Union[DataArray, Dataset], key: str):
+        return [k for k in func(obj, key) if k in obj.dims]
+
+    get_indexes.__doc__ = func.__doc__ + " present in .indexes"
+    return get_indexes
+
+
+def _coords(func):
+    @functools.wraps(func)
+    def get_coords(obj: Union[DataArray, Dataset], key: str):
+        return [k for k in func(obj, key) if k in obj.coords]
+
+    get_coords.__doc__ = func.__doc__ + " present in .coords"
+    return get_coords
+
+
+def _variables(func):
+    @functools.wraps(func)
+    def get_variables(obj: Union[DataArray, Dataset], key: str):
+        return [obj[k] for k in func(obj, key)]
+
+    return get_variables
 
 
 def _single(func):
-    @wraps(func)
+    @functools.wraps(func)
     def get_single(obj: Union[DataArray, Dataset], key: str):
         results = func(obj, key)
         if len(results) > 1:
@@ -403,31 +429,33 @@ def _single(func):
             raise KeyError(f"No results found for {key!r}.")
         return results
 
+    get_single.__doc__ = func.__doc__.replace("One or more of", "One of")
+
     return get_single
 
 
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
-    "dim": (_get_dims,),
-    "dims": (_get_dims,),  # transpose
-    "drop_dims": (_get_dims,),  # drop_dims
-    "dimensions": (_get_dims,),  # stack
-    "dims_dict": (_get_dims,),  # swap_dims, rename_dims
-    "shifts": (_get_dims,),  # shift, roll
-    "pad_width": (_get_dims,),  # shift, roll
+    "dim": (_dims(_get_all),),
+    "dims": (_dims(_get_all),),  # transpose
+    "drop_dims": (_dims(_get_all),),  # drop_dims
+    "dimensions": (_dims(_get_all),),  # stack
+    "dims_dict": (_dims(_get_all),),  # swap_dims, rename_dims
+    "shifts": (_dims(_get_all),),  # shift, roll
+    "pad_width": (_dims(_get_all),),  # shift, roll
     "names": (_get_all,),  # set_coords, reset_coords, drop_vars
-    "labels": (_get_indexes,),  # drop_sel
-    "coords": (_get_dims,),  # interp
-    "indexers": (_get_indexes,),  # sel, isel, reindex
+    "labels": (_indexes(_get_all),),  # drop_sel
+    "coords": (_dims(_get_all),),  # interp
+    "indexers": (_dims(_get_all),),  # sel, isel, reindex
     # "indexes": (_get_axis_coord,),  # set_index
-    "dims_or_levels": (_get_dims,),  # reset_index
-    "window": (_get_dims,),  # rolling_exp
-    "coord": (_get_axis_coord_single,),  # differentiate, integrate
+    "dims_or_levels": (_dims(_get_all),),  # reset_index
+    "window": (_dims(_get_all),),  # rolling_exp
+    "coord": (_single(_coords(_get_all)),),  # differentiate, integrate
     "group": (_single(_get_all), _get_groupby_time_accessor),  # groupby
-    "indexer": (_single(_get_indexes),),  # resample
+    "indexer": (_single(_indexes(_get_all)),),  # resample
     "variables": (_get_all,),  # sortby
-    "weights": (_get_measure_variable,),  # type: ignore
-    "chunks": (_get_dims,),  # chunk
+    "weights": (_variables(_single(_get_all)),),  # type: ignore
+    "chunks": (_dims(_get_all),),  # chunk
 }
 
 
@@ -456,36 +484,19 @@ def _build_docstring(func):
     can be used for arguments.
     """
 
-    get_all_docstring = (
-        f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r};\n\t\t\tor standard names"
-    )
-    # this list will need to be updated any time a new mapper is added
-    mapper_docstrings = {
-        _get_axis_coord: f"One or more of {(_AXIS_NAMES + _COORD_NAMES)!r}",
-        _get_axis_coord_single: f"One of {(_AXIS_NAMES + _COORD_NAMES)!r}",
-        _get_groupby_time_accessor: "Time variable accessor e.g. 'T.month'",
-        _get_with_standard_name: "Standard names",
-        _get_measure_variable: f"One of {_CELL_MEASURES!r}",
-        _single(_get_all): get_all_docstring.replace("One or more of", "One of"),
-        _get_all: get_all_docstring,
-        _get_indexes: get_all_docstring + "present in .indexes",
-        _get_dims: get_all_docstring + "present in .dims",
-        _get_coords: get_all_docstring + "present in .coords",
-    }
-
     sig = inspect.signature(func)
     string = ""
     for k in set(sig.parameters.keys()) & set(_DEFAULT_KEY_MAPPERS):
         mappers = _DEFAULT_KEY_MAPPERS.get(k, [])
         docstring = ";\n\t\t\t".join(
-            mapper_docstrings.get(mapper, "unknown. please open an issue.")
+            mapper.__doc__ if mapper.__doc__ else "unknown. please open an issue."
             for mapper in mappers
         )
         string += f"\t\t{k}: {docstring} \n"
 
     for param in sig.parameters:
         if sig.parameters[param].kind is inspect.Parameter.VAR_KEYWORD:
-            string += f"\t\t{param}: {mapper_docstrings[_get_axis_coord]} \n\n"
+            string += f"\t\t{param}: {_get_all.__doc__} \n\n"
     return (
         f"\n\tThe following arguments will be processed by cf_xarray: \n{string}"
         "\n\t----\n\t"

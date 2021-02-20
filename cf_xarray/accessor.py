@@ -15,7 +15,9 @@ from typing import (
     Optional,
     Set,
     Tuple,
+    TypeVar,
     Union,
+    cast
 )
 
 import xarray as xr
@@ -144,6 +146,9 @@ ATTRS["vertical"] = ATTRS["Z"]
 
 # Type for Mapper functions
 Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]
+
+# Type for decorators
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 def apply_mapper(
@@ -370,38 +375,38 @@ _get_all.__doc__ = (
 )
 
 
-def _get_dims(obj: Union[DataArray, Dataset], key: str):
+def _get_dims(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return [k for k in _get_all(obj, key) if k in obj.dims]
 
 
 _get_dims.__doc__ = _get_all.__doc__ + " present in .dims"
 
 
-def _get_indexes(obj: Union[DataArray, Dataset], key: str):
+def _get_indexes(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return [k for k in _get_all(obj, key) if k in obj.indexes]
 
 
 _get_indexes.__doc__ = _get_all.__doc__ + " present in .indexes"
 
 
-def _get_coords(obj: Union[DataArray, Dataset], key: str):
+def _get_coords(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return [k for k in _get_all(obj, key) if k in obj.coords]
 
 
 _get_coords.__doc__ = _get_all.__doc__ + " present in .coords"
 
 
-def _variables(func):
+def _variables(func: F) -> F:
     @functools.wraps(func)
-    def get_variables(obj: Union[DataArray, Dataset], key: str):
+    def wrapper(obj: Union[DataArray, Dataset], key: str) -> List[DataArray]:
         return [obj[k] for k in func(obj, key)]
 
-    return get_variables
+    return cast(F, wrapper)
 
 
-def _single(func):
+def _single(func: F) -> F:
     @functools.wraps(func)
-    def get_single(obj: Union[DataArray, Dataset], key: str):
+    def wrapper(obj: Union[DataArray, Dataset], key: str):
         results = func(obj, key)
         if len(results) > 1:
             raise KeyError(
@@ -411,9 +416,9 @@ def _single(func):
             raise KeyError(f"No results found for {key!r}.")
         return results
 
-    get_single.__doc__ = func.__doc__.replace("One or more of", "One of")
+    wrapper.__doc__ = func.__doc__.replace("One or more of", "One of") if func.__doc__ else func.__doc__
 
-    return get_single
+    return cast(F, wrapper)
 
 
 #: Default mappers for common keys.

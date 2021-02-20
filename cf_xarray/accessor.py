@@ -203,18 +203,6 @@ def apply_mapper(
     return results
 
 
-def _get_axis_coord_single(var: Union[DataArray, Dataset], key: str) -> List[str]:
-    """ Helper method for when we really want only one result per key. """
-    results = _get_axis_coord(var, key)
-    if len(results) > 1:
-        raise KeyError(
-            f"Multiple results for {key!r} found: {results!r}. I expected only one."
-        )
-    elif len(results) == 0:
-        raise KeyError(f"No results found for {key!r}.")
-    return results
-
-
 def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Helper method for when our key name is of the nature "T.month" and we want to
@@ -826,7 +814,7 @@ class _CFWrappedPlotMethods:
             obj=self._obj,
             attr="plot",
             accessor=self.accessor,
-            key_mappers=dict.fromkeys(self._keys, (_get_axis_coord_single,)),
+            key_mappers=dict.fromkeys(self._keys, (_single(_get_all),)),
         )
         return self._plot_decorator(plot)(*args, **kwargs)
 
@@ -838,7 +826,7 @@ class _CFWrappedPlotMethods:
             obj=self._obj.plot,
             attr=attr,
             accessor=self.accessor,
-            key_mappers=dict.fromkeys(self._keys, (_get_axis_coord_single,)),
+            key_mappers=dict.fromkeys(self._keys, (_single(_get_all),)),
             # TODO: "extra_decorator" is more complex than I would like it to be.
             # Not sure if there is a better way though
             extra_decorator=self._plot_decorator,
@@ -1001,7 +989,7 @@ class CFAccessor:
             if vkw in kwargs:
                 maybe_update = {
                     # TODO: this is assuming key_mappers[k] is always
-                    # _get_axis_coord_single
+                    # _single(_get_all)
                     k: apply_mapper(
                         key_mappers[k], self._obj, v, error=False, default=[v]
                     )[0]
@@ -1357,8 +1345,8 @@ class CFAccessor:
 
         renamer = {}
         for key in good_keys:
-            ours = _get_axis_coord_single(self._obj, key)[0]
-            theirs = _get_axis_coord_single(other, key)[0]
+            ours = _single(_get_all)(self._obj, key)[0]
+            theirs = _single(_get_all)(other, key)[0]
             renamer[ours] = theirs
 
         newobj = self._obj.rename(renamer)
@@ -1467,7 +1455,7 @@ class CFDatasetAccessor(CFAccessor):
         DataArray
         """
         name = apply_mapper(
-            _get_axis_coord_single, self._obj, key, error=False, default=[key]
+            _single(_get_all), self._obj, key, error=False, default=[key]
         )[0]
         bounds = self._obj[name].attrs["bounds"]
         obj = self._maybe_to_dataset()

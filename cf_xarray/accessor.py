@@ -382,31 +382,25 @@ _get_all.__doc__ = (
 )
 
 
-def _dims(func):
-    @functools.wraps(func)
-    def get_dims(obj: Union[DataArray, Dataset], key: str):
-        return [k for k in func(obj, key) if k in obj.dims]
-
-    get_dims.__doc__ = func.__doc__ + " present in .dims"
-    return get_dims
+def _get_dims(obj: Union[DataArray, Dataset], key: str):
+    return [k for k in _get_all(obj, key) if k in obj.dims]
 
 
-def _indexes(func):
-    @functools.wraps(func)
-    def get_indexes(obj: Union[DataArray, Dataset], key: str):
-        return [k for k in func(obj, key) if k in obj.dims]
-
-    get_indexes.__doc__ = func.__doc__ + " present in .indexes"
-    return get_indexes
+_get_dims.__doc__ = _get_all.__doc__ + " present in .dims"
 
 
-def _coords(func):
-    @functools.wraps(func)
-    def get_coords(obj: Union[DataArray, Dataset], key: str):
-        return [k for k in func(obj, key) if k in obj.coords]
+def _get_indexes(obj: Union[DataArray, Dataset], key: str):
+    return [k for k in _get_all(obj, key) if k in obj.indexes]
 
-    get_coords.__doc__ = func.__doc__ + " present in .coords"
-    return get_coords
+
+_get_indexes.__doc__ = _get_all.__doc__ + " present in .indexes"
+
+
+def _get_coords(obj: Union[DataArray, Dataset], key: str):
+    return [k for k in _get_all(obj, key) if k in obj.coords]
+
+
+_get_coords.__doc__ = _get_all.__doc__ + " present in .coords"
 
 
 def _variables(func):
@@ -436,26 +430,26 @@ def _single(func):
 
 #: Default mappers for common keys.
 _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
-    "dim": (_dims(_get_all),),
-    "dims": (_dims(_get_all),),  # transpose
-    "drop_dims": (_dims(_get_all),),  # drop_dims
-    "dimensions": (_dims(_get_all),),  # stack
-    "dims_dict": (_dims(_get_all),),  # swap_dims, rename_dims
-    "shifts": (_dims(_get_all),),  # shift, roll
-    "pad_width": (_dims(_get_all),),  # shift, roll
+    "dim": (_get_dims,),
+    "dims": (_get_dims,),  # transpose
+    "drop_dims": (_get_dims,),  # drop_dims
+    "dimensions": (_get_dims,),  # stack
+    "dims_dict": (_get_dims,),  # swap_dims, rename_dims
+    "shifts": (_get_dims,),  # shift, roll
+    "pad_width": (_get_dims,),  # shift, roll
     "names": (_get_all,),  # set_coords, reset_coords, drop_vars
-    "labels": (_indexes(_get_all),),  # drop_sel
-    "coords": (_dims(_get_all),),  # interp
-    "indexers": (_dims(_get_all),),  # sel, isel, reindex
+    "labels": (_get_indexes,),  # drop_sel
+    "coords": (_get_dims,),  # interp
+    "indexers": (_get_dims,),  # sel, isel, reindex
     # "indexes": (_get_axis_coord,),  # set_index
-    "dims_or_levels": (_dims(_get_all),),  # reset_index
-    "window": (_dims(_get_all),),  # rolling_exp
-    "coord": (_single(_coords(_get_all)),),  # differentiate, integrate
+    "dims_or_levels": (_get_dims,),  # reset_index
+    "window": (_get_dims,),  # rolling_exp
+    "coord": (_single(_get_coords),),  # differentiate, integrate
     "group": (_single(_get_all), _get_groupby_time_accessor),  # groupby
-    "indexer": (_single(_indexes(_get_all)),),  # resample
+    "indexer": (_single(_get_indexes),),  # resample
     "variables": (_get_all,),  # sortby
     "weights": (_variables(_single(_get_all)),),  # type: ignore
-    "chunks": (_dims(_get_all),),  # chunk
+    "chunks": (_get_dims,),  # chunk
 }
 
 

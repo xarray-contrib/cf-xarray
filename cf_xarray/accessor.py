@@ -436,7 +436,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "labels": (_get_indexes,),  # drop_sel
     "coords": (_get_dims,),  # interp
     "indexers": (_get_dims,),  # sel, isel, reindex
-    # "indexes": (_get_axis_coord,),  # set_index
+    "indexes": (_get_dims,),  # set_index TODO: cf_xarray decodes keys, not values
     "dims_or_levels": (_get_dims,),  # reset_index
     "window": (_get_dims,),  # rolling_exp
     "coord": (_single(_get_coords),),  # differentiate, integrate
@@ -617,12 +617,12 @@ def _getitem(
     successful = dict.fromkeys(key, False)
     for k in key:
         if "coords" not in skip and k in _AXIS_NAMES + _COORD_NAMES:
-            names = _get_axis_coord(obj, k)
+            names = _get_all(obj, k)
             check_results(names, k)
             successful[k] = bool(names)
             coords.extend(names)
         elif "measures" not in skip and k in accessor._get_all_cell_measures():
-            measure = _get_measure(obj, k)
+            measure = _get_all(obj, k)
             check_results(measure, k)
             successful[k] = bool(measure)
             if measure:
@@ -1145,10 +1145,7 @@ class CFAccessor:
         Dictionary of valid Axis names that can be used with ``__getitem__`` or ``.cf[key]``.
         Will be ("X", "Y", "Z", "T") or a subset thereof.
         """
-        vardict = {
-            key: apply_mapper(_get_axis_coord, self._obj, key, error=False)
-            for key in _AXIS_NAMES
-        }
+        vardict = {key: _get_coords(self._obj, key) for key in _AXIS_NAMES}
 
         return {k: sorted(v) for k, v in vardict.items() if v}
 
@@ -1167,10 +1164,7 @@ class CFAccessor:
         Dictionary of valid Coordinate names that can be used with ``__getitem__`` or ``.cf[key]``.
         Will be ("longitude", "latitude", "vertical", "time") or a subset thereof.
         """
-        vardict = {
-            key: apply_mapper(_get_axis_coord, self._obj, key, error=False)
-            for key in _COORD_NAMES
-        }
+        vardict = {key: _get_coords(self._obj, key) for key in _COORD_NAMES}
 
         return {k: sorted(v) for k, v in vardict.items() if v}
 
@@ -1197,10 +1191,10 @@ class CFAccessor:
                 da.attrs.get("cell_measures", "") for da in obj.data_vars.values()
             ]
 
-        measures: Dict[str, List[str]] = {}
+        keys = {}
         for attr in all_attrs:
-            for key, value in parse_cell_methods_attr(attr).items():
-                measures[key] = measures.setdefault(key, []) + [value]
+            keys.update(parse_cell_methods_attr(attr))
+        measures = {key: _get_all(self._obj, key) for key in keys}
 
         return {k: sorted(set(v)) for k, v in measures.items() if v}
 
@@ -1638,7 +1632,7 @@ class CFDatasetAccessor(CFAccessor):
         import re
 
         ds = self._obj
-        dims = _get_axis_coord(ds, "Z")
+        dims = _get_dims(ds, "Z")
 
         requirements = {
             "ocean_s_coordinate_g1": {"depth_c", "depth", "s", "C", "eta"},

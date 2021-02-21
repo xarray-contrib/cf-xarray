@@ -638,7 +638,7 @@ def test_docstring():
         + cf_xarray.accessor._COORD_NAMES
         + cf_xarray.accessor._CELL_MEASURES
     )
-    expected = f"One or more of {all_keys!r}, or arbitraty measures, or standard names"
+    expected = f"One or more of {all_keys!r}, or arbitrary measures, or standard names"
     assert get_all_doc.split() == expected.split()
     for name in ["dims", "indexes", "coords"]:
         actual = getattr(cf_xarray.accessor, f"_get_{name}").__doc__

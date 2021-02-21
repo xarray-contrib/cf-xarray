@@ -360,7 +360,7 @@ def _get_with_standard_name(
 def _get_all(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
-    'area', 'volume'), or arbitraty measures, or standard names
+    'area', 'volume'), or arbitrary measures, or standard names
     """
     all_mappers = (_get_axis_coord, _get_measure, _get_with_standard_name)
     results = apply_mapper(all_mappers, obj, key, error=False, default=None)
@@ -370,7 +370,7 @@ def _get_all(obj: Union[DataArray, Dataset], key: str) -> List[str]:
 def _get_dims(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
-    'area', 'volume'), or arbitraty measures, or standard names present in .dims
+    'area', 'volume'), or arbitrary measures, or standard names present in .dims
     """
     return [k for k in _get_all(obj, key) if k in obj.dims]
 
@@ -378,7 +378,7 @@ def _get_dims(obj: Union[DataArray, Dataset], key: str) -> List[str]:
 def _get_indexes(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
-    'area', 'volume'), or arbitraty measures, or standard names present in .indexes
+    'area', 'volume'), or arbitrary measures, or standard names present in .indexes
     """
     return [k for k in _get_all(obj, key) if k in obj.indexes]
 
@@ -386,7 +386,7 @@ def _get_indexes(obj: Union[DataArray, Dataset], key: str) -> List[str]:
 def _get_coords(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
-    'area', 'volume'), or arbitraty measures, or standard names present in .coords
+    'area', 'volume'), or arbitrary measures, or standard names present in .coords
     """
     return [k for k in _get_all(obj, key) if k in obj.coords]
 

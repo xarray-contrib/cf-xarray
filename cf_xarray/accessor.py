@@ -208,20 +208,10 @@ def apply_mapper(
     return results
 
 
-def _set_doc(doc):
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-
-        wrapper.__doc__ = doc
-        return cast(F, wrapper)
-
-    return decorator
-
-
-@_set_doc("Time variable accessor e.g. 'T.month'")
 def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List[str]:
+    """
+    Time variable accessor e.g. 'T.month'
+    """
     """
     Helper method for when our key name is of the nature "T.month" and we want to
     isolate the "T" for coordinate mapping
@@ -241,6 +231,7 @@ def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List
     -----
     Returns an empty list if there is no frequency extension specified.
     """
+
     if "." in key:
         key, ext = key.split(".", 1)
 
@@ -366,28 +357,37 @@ def _get_with_standard_name(
     return varnames
 
 
-@_set_doc(
-    f"One or more of {(_AXIS_NAMES + _COORD_NAMES + _CELL_MEASURES)!r},"
-    "\n\t\t\tor arbitraty measures, or standard names"
-)
 def _get_all(obj: Union[DataArray, Dataset], key: str) -> List[str]:
+    """
+    One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
+    'area', 'volume'), or arbitraty measures, or standard names
+    """
     all_mappers = (_get_axis_coord, _get_measure, _get_with_standard_name)
     results = apply_mapper(all_mappers, obj, key, error=False, default=None)
     return results
 
 
-@_set_doc(_get_all.__doc__ + " present in .dims")
 def _get_dims(obj: Union[DataArray, Dataset], key: str) -> List[str]:
+    """
+    One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
+    'area', 'volume'), or arbitraty measures, or standard names present in .dims
+    """
     return [k for k in _get_all(obj, key) if k in obj.dims]
 
 
-@_set_doc(_get_all.__doc__ + " present in .indexes")
 def _get_indexes(obj: Union[DataArray, Dataset], key: str) -> List[str]:
+    """
+    One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
+    'area', 'volume'), or arbitraty measures, or standard names present in .indexes
+    """
     return [k for k in _get_all(obj, key) if k in obj.indexes]
 
 
-@_set_doc(_get_all.__doc__ + " present in .coords")
 def _get_coords(obj: Union[DataArray, Dataset], key: str) -> List[str]:
+    """
+    One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
+    'area', 'volume'), or arbitraty measures, or standard names present in .coords
+    """
     return [k for k in _get_all(obj, key) if k in obj.coords]
 
 
@@ -830,7 +830,7 @@ class _CFWrappedPlotMethods:
             obj=self._obj.plot,
             attr=attr,
             accessor=self.accessor,
-            key_mappers=dict.fromkeys(self._keys, (_single(_get_coords),)),
+            key_mappers=dict.fromkeys(self._keys, (_single(_get_all),)),
             # TODO: "extra_decorator" is more complex than I would like it to be.
             # Not sure if there is a better way though
             extra_decorator=self._plot_decorator,
@@ -992,8 +992,6 @@ class CFAccessor:
         for vkw in var_kws:
             if vkw in kwargs:
                 maybe_update = {
-                    # TODO: this is assuming key_mappers[k] is always
-                    # _single(_get_all)
                     k: apply_mapper(
                         key_mappers[k], self._obj, v, error=False, default=[v]
                     )[0]

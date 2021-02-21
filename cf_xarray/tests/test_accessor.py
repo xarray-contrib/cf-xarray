@@ -624,9 +624,26 @@ def test_get_bounds_dim_name():
 
 
 def test_docstring():
-    print(airds.cf.groupby.__doc__)
     assert "One of ('X'" in airds.cf.groupby.__doc__
+    assert "Time variable accessor e.g. 'T.month'" in airds.cf.groupby.__doc__
     assert "One or more of ('X'" in airds.cf.mean.__doc__
+    assert "present in .dims" in airds.cf.drop_dims.__doc__
+    assert "present in .coords" in airds.cf.integrate.__doc__
+    assert "present in .indexes" in airds.cf.resample.__doc__
+
+    # Make sure docs are up to date
+    get_all_doc = cf_xarray.accessor._get_all.__doc__
+    all_keys = (
+        cf_xarray.accessor._AXIS_NAMES
+        + cf_xarray.accessor._COORD_NAMES
+        + cf_xarray.accessor._CELL_MEASURES
+    )
+    expected = f"One or more of {all_keys!r}, or arbitraty measures, or standard names"
+    assert get_all_doc.split() == expected.split()
+    for name in ["dims", "indexes", "coords"]:
+        actual = getattr(cf_xarray.accessor, f"_get_{name}").__doc__
+        expected = get_all_doc + f" present in .{name}"
+        assert actual.split() == expected.split()
 
 
 def _make_names(prefixes):

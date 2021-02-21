@@ -413,6 +413,10 @@ def test_dataarray_plot():
     np.testing.assert_equal(rv[0].get_xdata(), obj.lat.data)
     plt.close()
 
+    rv = obj.isel(time=0, lon=1).cf.plot(x="lat")
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lat.data)
+    plt.close()
+
     # various line plots and automatic guessing
     rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot.line()
     np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
@@ -864,6 +868,8 @@ def test_standard_name_mapper():
     actual = da.cf.sortby("standard_label")
     expected = da.sortby("label")
     assert_identical(actual, expected)
+
+    assert cf_xarray.accessor._get_with_standard_name(da, None) == []
 
 
 @pytest.mark.parametrize("obj", objects)

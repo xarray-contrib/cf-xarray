@@ -346,6 +346,9 @@ def _get_with_standard_name(
     obj: Union[DataArray, Dataset], name: Union[str, List[str]]
 ) -> List[str]:
     """ returns a list of variable names with standard name == name. """
+    if name is None:
+        return []
+
     varnames = []
     if isinstance(obj, DataArray):
         obj = obj._to_temp_dataset()
@@ -769,9 +772,9 @@ class _CFWrappedPlotMethods:
     def _plot_decorator(self, func):
         """
         This decorator is used to set default kwargs on plotting functions.
-
-        For now, this is setting ``xincrease`` and ``yincrease``. It could set
-        other arguments in the future.
+        For now, this can
+        1. set ``xincrease`` and ``yincrease``.
+        2. automatically set ``x`` or ``y``.
         """
         valid_keys = self.accessor.keys()
 
@@ -795,7 +798,8 @@ class _CFWrappedPlotMethods:
                 return kwargs
 
             is_line_plot = (func.__name__ == "line") or (
-                func.__name__ == "wrapper" and kwargs.get("hue")
+                func.__name__ == "wrapper"
+                and (kwargs.get("hue") or self._obj.ndim == 1)
             )
             if is_line_plot:
                 if not kwargs.get("hue"):
@@ -818,7 +822,7 @@ class _CFWrappedPlotMethods:
             obj=self._obj,
             attr="plot",
             accessor=self.accessor,
-            key_mappers=dict.fromkeys(self._keys, (_single(_get_coords),)),
+            key_mappers=dict.fromkeys(self._keys, (_single(_get_all),)),
         )
         return self._plot_decorator(plot)(*args, **kwargs)
 

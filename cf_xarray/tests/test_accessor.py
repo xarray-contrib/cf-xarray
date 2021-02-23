@@ -215,10 +215,13 @@ def test_getitem_ancillary_variables():
 def test_rename_like():
     original = popds.copy(deep=True)
 
-    with pytest.raises(KeyError):
-        popds.cf.rename_like(airds)
+    # it'll match for axis: X (lon, nlon) and coordinate="longitude" (lon, TLONG)
+    # so delete the axis attributes
+    newair = airds.copy(deep=True)
+    del newair.lon.attrs["axis"]
+    del newair.lat.attrs["axis"]
 
-    renamed = popds.cf["TEMP"].cf.rename_like(airds)
+    renamed = popds.cf["TEMP"].cf.rename_like(newair)
     for k in ["TLONG", "TLAT"]:
         assert k not in renamed.coords
         assert k in original.coords
@@ -227,6 +230,20 @@ def test_rename_like():
     assert "lon" in renamed.coords
     assert "lat" in renamed.coords
     assert renamed.attrs["coordinates"] == "lon lat"
+
+    # standard name matching
+    newroms = romsds.expand_dims(latitude=[1], longitude=[1]).cf.guess_coord_axis()
+    renamed = popds.cf["UVEL"].cf.rename_like(newroms)
+    assert renamed.attrs["coordinates"] == "longitude latitude"
+    assert "longitude" in renamed.coords
+    assert "latitude" in renamed.coords
+    assert "ULON" not in renamed.coords
+    assert "ULAT" not in renamed.coords
+
+    # should change "temp" to "TEMP"
+    renamed = romsds.cf.rename_like(popds)
+    assert "temp" not in renamed
+    assert "TEMP" in renamed
 
 
 @pytest.mark.parametrize("obj", objects)
@@ -410,6 +427,10 @@ def test_dataarray_plot():
 
     # don't set y automatically
     rv = obj.isel(time=0, lon=1).cf.plot.line(x="lat")
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lat.data)
+    plt.close()
+
+    rv = obj.isel(time=0, lon=1).cf.plot(x="lat")
     np.testing.assert_equal(rv[0].get_xdata(), obj.lat.data)
     plt.close()
 
@@ -625,7 +646,25 @@ def test_get_bounds_dim_name():
 
 def test_docstring():
     assert "One of ('X'" in airds.cf.groupby.__doc__
+    assert "Time variable accessor e.g. 'T.month'" in airds.cf.groupby.__doc__
     assert "One or more of ('X'" in airds.cf.mean.__doc__
+    assert "present in .dims" in airds.cf.drop_dims.__doc__
+    assert "present in .coords" in airds.cf.integrate.__doc__
+    assert "present in .indexes" in airds.cf.resample.__doc__
+
+    # Make sure docs are up to date
+    get_all_doc = cf_xarray.accessor._get_all.__doc__
+    all_keys = (
+        cf_xarray.accessor._AXIS_NAMES
+        + cf_xarray.accessor._COORD_NAMES
+        + cf_xarray.accessor._CELL_MEASURES
+    )
+    expected = f"One or more of {all_keys!r}, or arbitrary measures, or standard names"
+    assert get_all_doc.split() == expected.split()
+    for name in ["dims", "indexes", "coords"]:
+        actual = getattr(cf_xarray.accessor, f"_get_{name}").__doc__
+        expected = get_all_doc + f" present in .{name}"
+        assert actual.split() == expected.split()
 
 
 def _make_names(prefixes):
@@ -847,10 +886,11 @@ def test_standard_name_mapper():
     expected = da.sortby("label")
     assert_identical(actual, expected)
 
+    assert cf_xarray.accessor._get_with_standard_name(da, None) == []
+
 
 @pytest.mark.parametrize("obj", objects)
-@pytest.mark.parametrize("attr", ["drop", "drop_vars", "set_coords"])
-@pytest.mark.filterwarnings("ignore:dropping .* using `drop` .* deprecated")
+@pytest.mark.parametrize("attr", ["drop_vars", "set_coords"])
 def test_drop_vars_and_set_coords(obj, attr):
 
     # DataArray object has no attribute set_coords
@@ -893,9 +933,28 @@ def test_drop_sel_and_reset_coords(obj):
 @pytest.mark.parametrize("ds", datasets)
 def test_drop_dims(ds):
 
+    # Add data_var and coord to test _get_dims
+    ds["lon_var"] = ds["lon"]
+    ds = ds.assign_coords(lon_coord=ds["lon"])
+
     # Axis and coordinate
     for cf_name in ["X", "longitude"]:
         assert_identical(ds.drop_dims("lon"), ds.cf.drop_dims(cf_name))
+
+
+@pytest.mark.parametrize("ds", datasets)
+def test_differentiate(ds):
+
+    # Add data_var and coord to test _get_coords
+    ds["lon_var"] = ds["lon"]
+    ds = ds.assign_coords(lon_coord=ds["lon"])
+
+    # Coordinate
+    assert_identical(ds.differentiate("lon"), ds.cf.differentiate("lon"))
+
+    # Multiple coords (test error raised by _single)
+    with pytest.raises(KeyError, match=".*I expected only one."):
+        assert_identical(ds.differentiate("lon"), ds.cf.differentiate("X"))
 
 
 def test_new_standard_name_mappers():

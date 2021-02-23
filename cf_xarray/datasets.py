@@ -70,6 +70,7 @@ anc["q_error_limit"] = (
 anc["q_detection_limit"] = xr.DataArray(
     1e-3, attrs=dict(standard_name="specific_humidity detection_minimum", units="g/g")
 )
+anc
 
 
 multiple = xr.Dataset()
@@ -121,7 +122,7 @@ romsds["zeta"] = ("ocean_time", [-0.155356, -0.127435])
 romsds["temp"] = (
     ("ocean_time", "s_rho"),
     [np.linspace(20, 30, 30)] * 2,
-    {"coordinates": "z_rho_dummy"},
+    {"coordinates": "z_rho_dummy", "standard_name": "sea_water_potential_temperature"},
 )
 romsds["temp"].encoding["coordinates"] = "s_rho"
 romsds.coords["z_rho_dummy"] = (

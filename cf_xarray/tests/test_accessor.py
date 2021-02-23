@@ -215,10 +215,13 @@ def test_getitem_ancillary_variables():
 def test_rename_like():
     original = popds.copy(deep=True)
 
-    with pytest.raises(KeyError):
-        popds.cf.rename_like(airds)
+    # it'll match for axis: X (lon, nlon) and coordinate="longitude" (lon, TLONG)
+    # so delete the axis attributes
+    newair = airds.copy(deep=True)
+    del newair.lon.attrs["axis"]
+    del newair.lat.attrs["axis"]
 
-    renamed = popds.cf["TEMP"].cf.rename_like(airds)
+    renamed = popds.cf["TEMP"].cf.rename_like(newair)
     for k in ["TLONG", "TLAT"]:
         assert k not in renamed.coords
         assert k in original.coords
@@ -227,6 +230,20 @@ def test_rename_like():
     assert "lon" in renamed.coords
     assert "lat" in renamed.coords
     assert renamed.attrs["coordinates"] == "lon lat"
+
+    # standard name matching
+    newroms = romsds.expand_dims(latitude=[1], longitude=[1]).cf.guess_coord_axis()
+    renamed = popds.cf["UVEL"].cf.rename_like(newroms)
+    assert renamed.attrs["coordinates"] == "longitude latitude"
+    assert "longitude" in renamed.coords
+    assert "latitude" in renamed.coords
+    assert "ULON" not in renamed.coords
+    assert "ULAT" not in renamed.coords
+
+    # should change "temp" to "TEMP"
+    renamed = romsds.cf.rename_like(popds)
+    assert "temp" not in renamed
+    assert "TEMP" in renamed
 
 
 @pytest.mark.parametrize("obj", objects)

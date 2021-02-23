@@ -932,10 +932,31 @@ def test_drop_sel_and_reset_coords(obj):
 
 @pytest.mark.parametrize("ds", datasets)
 def test_drop_dims(ds):
+    # Testing _get_dims
+
+    # Add data_var and coord to test _get_dims
+    ds["lon_var"] = ds["lon"]
+    ds = ds.assign_coords(lon_coord=ds["lon"])
 
     # Axis and coordinate
     for cf_name in ["X", "longitude"]:
         assert_identical(ds.drop_dims("lon"), ds.cf.drop_dims(cf_name))
+
+
+@pytest.mark.parametrize("ds", datasets)
+def test_differentiate(ds):
+    # Testing _single(_get_coords)
+
+    # Add data_var and coord to test _get_dims
+    ds["lon_var"] = ds["lon"]
+    ds = ds.assign_coords(lon_coord=ds["lon"])
+
+    # Axis
+    assert_identical(ds.differentiate("lon"), ds.cf.differentiate("lon"))
+
+    # Multiple keys
+    with pytest.raises(KeyError, match=".*I expected only one."):
+        assert_identical(ds.differentiate("lon"), ds.cf.differentiate("X"))
 
 
 def test_new_standard_name_mappers():

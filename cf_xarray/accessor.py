@@ -173,7 +173,7 @@ def apply_mapper(
         try:
             results = mapper(obj, key)
         except KeyError as e:
-            if error:
+            if error or "I expected only one." in repr(e):
                 raise e
             else:
                 results = []

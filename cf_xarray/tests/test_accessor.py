@@ -932,7 +932,6 @@ def test_drop_sel_and_reset_coords(obj):
 
 @pytest.mark.parametrize("ds", datasets)
 def test_drop_dims(ds):
-    # Testing _get_dims
 
     # Add data_var and coord to test _get_dims
     ds["lon_var"] = ds["lon"]
@@ -945,16 +944,15 @@ def test_drop_dims(ds):
 
 @pytest.mark.parametrize("ds", datasets)
 def test_differentiate(ds):
-    # Testing _single(_get_coords)
 
-    # Add data_var and coord to test _get_dims
+    # Add data_var and coord to test _get_coords
     ds["lon_var"] = ds["lon"]
     ds = ds.assign_coords(lon_coord=ds["lon"])
 
-    # Axis
+    # Coordinate
     assert_identical(ds.differentiate("lon"), ds.cf.differentiate("lon"))
 
-    # Multiple keys
+    # Multiple coords (test error raised by _single)
     with pytest.raises(KeyError, match=".*I expected only one."):
         assert_identical(ds.differentiate("lon"), ds.cf.differentiate("X"))
 

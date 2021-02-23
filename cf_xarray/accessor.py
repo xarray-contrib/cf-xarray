@@ -436,7 +436,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "labels": (_get_indexes,),  # drop_sel
     "coords": (_get_dims,),  # interp
     "indexers": (_get_dims,),  # sel, isel, reindex
-    "indexes": (_get_dims,),  # set_index TODO: cf_xarray decodes keys, not values
+    #  "indexes": (_single(_get_dims),),  # set_index this decodes keys but not values
     "dims_or_levels": (_get_dims,),  # reset_index
     "window": (_get_dims,),  # rolling_exp
     "coord": (_single(_get_coords),),  # differentiate, integrate

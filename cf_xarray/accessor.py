@@ -1138,7 +1138,7 @@ class CFAccessor:
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
-        However, it will only return the Axis names, not Coordinate names.
+        However, it will only return the Axis names present in ``.coords``, not Coordinate names.
 
         Returns
         -------
@@ -1157,7 +1157,7 @@ class CFAccessor:
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
-        However, it will only return the Coordinate names, not Axis names.
+        However, it will only return the Coordinate names present in ``.coords``, not Axis names.
 
         Returns
         -------

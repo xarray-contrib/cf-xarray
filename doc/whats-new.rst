@@ -4,7 +4,7 @@ What's New
 ----------
 
 v0.5.0 (Feb 24, 2021)
-===================
+=====================
 
 - Replace ``cf.describe()`` with :py:meth:`Dataset.cf.__repr__`. By `Mattia Almansi`_.
 - Automatically set ``x`` or ``y`` for :py:attr:`DataArray.cf.plot`. By `Deepak Cherian`_.

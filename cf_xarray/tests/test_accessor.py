@@ -185,6 +185,10 @@ def test_getitem_standard_name():
     expected = airds["air"]
     assert_identical(actual, expected)
 
+    actual = airds.lat.cf["latitude"]
+    expected = airds["lat"]
+    assert_identical(actual, expected)
+
     ds = airds.copy(deep=True)
     ds["air2"] = ds.air
     with pytest.raises(KeyError):

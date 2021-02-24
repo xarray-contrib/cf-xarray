@@ -3,6 +3,11 @@
 What's New
 ----------
 
+v0.5.1 (Feb 24, 2021)
+=====================
+
+Minor bugfix release, thanks to `Pasical Bourgault`_.
+
 v0.5.0 (Feb 24, 2021)
 =====================
 

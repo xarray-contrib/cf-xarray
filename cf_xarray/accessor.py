@@ -351,7 +351,7 @@ def _get_with_standard_name(
 
     varnames = []
     if isinstance(obj, DataArray):
-        obj = obj._to_temp_dataset()
+        obj = obj.coords.to_dataset()
     for vname, var in obj.variables.items():
         stdname = var.attrs.get("standard_name", None)
         if stdname == name:

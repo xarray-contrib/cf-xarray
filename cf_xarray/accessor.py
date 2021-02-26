@@ -629,9 +629,11 @@ def _getitem(
                 varnames.extend(measure)
         else:
             stdnames = set(_get_with_standard_name(obj, k))
+            objcoords = set(obj.coords)
+            if "coords" in skip:
+                stdnames -= objcoords
             check_results(stdnames, k)
             successful[k] = bool(stdnames)
-            objcoords = set(obj.coords)
             varnames.extend(stdnames - objcoords)
             coords.extend(stdnames & objcoords)
 

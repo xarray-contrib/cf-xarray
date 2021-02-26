@@ -1347,15 +1347,13 @@ class CFAccessor:
             renamer[ours] = theirs
 
         conflicts = {
-            k: renamer[k]
-            for k in sorted(renamer)
-            if list(renamer.values()).count(renamer[k]) > 1
+            k: v for k, v in renamer.items() if list(renamer.values()).count(v) > 1
         }
         if conflicts:
             renamer = {k: v for k, v in renamer.items() if k not in conflicts}
             warnings.warn(
                 "Conflicting variables skipped:\n"
-                + "\n".join([f"{k}: {v}" for k, v in conflicts.items()]),
+                + "\n".join([f"{k}: {conflicts[k]}" for k in sorted(conflicts)]),
                 UserWarning,
             )
 

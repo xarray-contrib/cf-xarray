@@ -1346,6 +1346,19 @@ class CFAccessor:
             theirs = _single(_get_all)(other, key)[0]
             renamer[ours] = theirs
 
+        conflicts = {
+            k: renamer[k]
+            for k in sorted(renamer)
+            if list(renamer.values()).count(renamer[k]) > 1
+        }
+        if conflicts:
+            renamer = {k: v for k, v in renamer.items() if k not in conflicts}
+            warnings.warn(
+                "Conflicting variables skipped:\n"
+                + "\n".join([f"{k}: {v}" for k, v in conflicts.items()]),
+                UserWarning,
+            )
+
         newobj = self._obj.rename(renamer)
 
         # rename variable names in the coordinates attribute

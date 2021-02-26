@@ -639,7 +639,6 @@ def _getitem(
                 check_results(stdvars, k)
                 successful[k] = bool(stdvars)
             varnames.extend(stdvars)
-            
 
     # these are not special names but could be variable names in underlying object
     # we allow this so that we can return variables with appropriate CF auxiliary variables

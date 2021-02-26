@@ -630,15 +630,12 @@ def _getitem(
         else:
             stdnames = set(_get_with_standard_name(obj, k))
             objcoords = set(obj.coords)
-            stdvars = stdnames - objcoords
-            if "coords" not in skip:
-                check_results(stdnames, k)
-                successful[k] = bool(stdnames)
-                coords.extend(stdnames & objcoords)
-            else:
-                check_results(stdvars, k)
-                successful[k] = bool(stdvars)
-            varnames.extend(stdvars)
+            if "coords" in skip:
+                stdnames -= objcoords
+            check_results(stdnames, k)
+            successful[k] = bool(stdnames)
+            varnames.extend(stdnames - objcoords)
+            coords.extend(stdnames & objcoords)
 
     # these are not special names but could be variable names in underlying object
     # we allow this so that we can return variables with appropriate CF auxiliary variables

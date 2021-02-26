@@ -801,6 +801,13 @@ def test_attributes():
     foo = xr.DataArray(data, coords, dims=["time", "space"])
     ds1 = xr.Dataset({"T": foo})
     assert_identical(ds1.cf.data_vars["T"], ds1["T"])
+    
+    # multiple latitudes but only one latitude data_var
+    ds = popds.copy(deep=True)
+    for var in ["ULAT", "TLAT"]:
+        ds[var].attrs["standard_name"] = "latitude"
+    ds = ds.reset_coords("ULAT")
+    assert_identical(ds.cf.data_vars["latitude"], ds.cf["ULAT"])
 
 
 def test_missing_variable_in_coordinates():

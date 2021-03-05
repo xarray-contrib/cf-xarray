@@ -1340,23 +1340,36 @@ class CFAccessor:
         theirkeys = other.cf.keys()
 
         good_keys = ourkeys & theirkeys
-        renamer = {}
+        keydict = {}
         for key in good_keys:
             ours = _single(_get_all)(self._obj, key)[0]
             theirs = _single(_get_all)(other, key)[0]
-            renamer[ours] = theirs
+            keydict[key] = dict(ours=ours, theirs=theirs)
 
-        conflicts = {
-            k: v for k, v in renamer.items() if list(renamer.values()).count(v) > 1
-        }
+        conflicts = {}
+        for k0, v0 in keydict.items():
+            for v1 in keydict.values():
+                # Conflicts have same ours but different theirs or vice versa
+                if sum([v0["ours"] == v1["ours"], v0["theirs"] == v1["theirs"]]) == 1:
+                    conflicts[k0] = v0
+                    break
         if conflicts:
-            renamer = {k: v for k, v in renamer.items() if k not in conflicts}
             warnings.warn(
                 "Conflicting variables skipped:\n"
-                + "\n".join([f"{k}: {conflicts[k]}" for k in sorted(conflicts)]),
+                + "\n".join(
+                    [
+                        f"{v['ours']}: {v['theirs']} ({k})"
+                        for k, v in sorted(
+                            conflicts.items(), key=lambda item: item[1]["ours"]
+                        )
+                    ]
+                ),
                 UserWarning,
             )
 
+        renamer = {
+            v["ours"]: v["theirs"] for k, v in keydict.items() if k not in conflicts
+        }
         newobj = self._obj.rename(renamer)
 
         # rename variable names in the coordinates attribute

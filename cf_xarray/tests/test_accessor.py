@@ -251,7 +251,7 @@ def test_rename_like():
 
     # skip conflicting variables
     with pytest.warns(UserWarning, match="Conflicting variables skipped:.*"):
-        popds.cf["TEMP"].cf.rename_like(airds)
+        popds.cf.rename_like(airds)
 
 
 @pytest.mark.parametrize("obj", objects)

@@ -1341,16 +1341,21 @@ class CFAccessor:
 
         good_keys = ourkeys & theirkeys
         keydict = {}
-        for key in good_keys:
-            ours = _single(_get_all)(self._obj, key)[0]
-            theirs = _single(_get_all)(other, key)[0]
-            keydict[key] = dict(ours=ours, theirs=theirs)
-
         conflicts = {}
+        for key in good_keys:
+            ours = _get_all(self._obj, key)
+            theirs = _get_all(other, key)
+            if ours and theirs:
+                keydict[key] = dict(ours=ours, theirs=theirs)
+
         for k0, v0 in keydict.items():
             for v1 in keydict.values():
                 # Conflicts have same ours but different theirs or vice versa
-                if sum([v0["ours"] == v1["ours"], v0["theirs"] == v1["theirs"]]) == 1:
+                if (
+                    sum([v0["ours"] == v1["ours"], v0["theirs"] == v1["theirs"]]) == 1
+                    or len(ours) > 1
+                    or len(theirs) > 1
+                ):
                     conflicts[k0] = v0
                     break
         if conflicts:
@@ -1358,9 +1363,9 @@ class CFAccessor:
                 "Conflicting variables skipped:\n"
                 + "\n".join(
                     [
-                        f"{v['ours']}: {v['theirs']} ({k})"
+                        f"{sorted(v['ours'])}: {sorted(v['theirs'])} ({k})"
                         for k, v in sorted(
-                            conflicts.items(), key=lambda item: item[1]["ours"]
+                            conflicts.items(), key=lambda item: sorted(item[1]["ours"])
                         )
                     ]
                 ),
@@ -1368,7 +1373,9 @@ class CFAccessor:
             )
 
         renamer = {
-            v["ours"]: v["theirs"] for k, v in keydict.items() if k not in conflicts
+            v["ours"][0]: v["theirs"][0]
+            for k, v in keydict.items()
+            if k not in conflicts
         }
         newobj = self._obj.rename(renamer)
 

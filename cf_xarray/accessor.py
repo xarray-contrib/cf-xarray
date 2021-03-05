@@ -1348,7 +1348,7 @@ class CFAccessor:
 
         conflicts = {}
         for k0, v0 in keydict.items():
-            if len(v0["ours"]) > 1 or len(v0["ours"]) > 1:
+            if len(v0["ours"]) > 1 or len(v0["theirs"]) > 1:
                 conflicts[k0] = v0
                 continue
             for v1 in keydict.values():

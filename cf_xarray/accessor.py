@@ -1348,13 +1348,12 @@ class CFAccessor:
 
         conflicts = {}
         for k0, v0 in keydict.items():
+            if len(v0["ours"]) > 1 or len(v0["ours"]) > 1:
+                conflicts[k0] = v0
+                continue
             for v1 in keydict.values():
                 # Conflicts have same ours but different theirs or vice versa
-                if (
-                    sum([v0["ours"] == v1["ours"], v0["theirs"] == v1["theirs"]]) == 1
-                    or len(ours) > 1
-                    or len(theirs) > 1
-                ):
+                if sum([v0["ours"] == v1["ours"], v0["theirs"] == v1["theirs"]]) == 1:
                     conflicts[k0] = v0
                     break
         if conflicts:

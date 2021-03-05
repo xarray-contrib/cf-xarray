@@ -1341,13 +1341,12 @@ class CFAccessor:
 
         good_keys = ourkeys & theirkeys
         keydict = {}
-        conflicts = {}
         for key in good_keys:
             ours = _get_all(self._obj, key)
             theirs = _get_all(other, key)
-            if ours and theirs:
-                keydict[key] = dict(ours=ours, theirs=theirs)
+            keydict[key] = dict(ours=ours, theirs=theirs)
 
+        conflicts = {}
         for k0, v0 in keydict.items():
             for v1 in keydict.values():
                 # Conflicts have same ours but different theirs or vice versa

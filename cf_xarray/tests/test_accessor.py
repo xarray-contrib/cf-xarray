@@ -249,6 +249,10 @@ def test_rename_like():
     assert "temp" not in renamed
     assert "TEMP" in renamed
 
+    # skip conflicting variables
+    with pytest.warns(UserWarning, match="Conflicting variables skipped:.*"):
+        popds.cf.rename_like(airds)
+
 
 @pytest.mark.parametrize("obj", objects)
 @pytest.mark.parametrize(

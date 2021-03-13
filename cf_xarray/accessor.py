@@ -433,6 +433,8 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "shifts": (_get_dims,),  # shift, roll
     "pad_width": (_get_dims,),  # shift, roll
     "names": (_get_all,),  # set_coords, reset_coords, drop_vars
+    "name_dict": (_get_all,),  # rename
+    "new_name_or_name_dict": (_get_all,),  # rename
     "labels": (_get_indexes,),  # drop_sel
     "coords": (_get_dims,),  # interp
     "indexers": (_get_dims,),  # sel, isel, reindex

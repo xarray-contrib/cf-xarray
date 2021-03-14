@@ -957,6 +957,17 @@ def test_drop_dims(ds):
         assert_identical(ds.drop_dims("lon"), ds.cf.drop_dims(cf_name))
 
 
+@pytest.mark.parametrize("obj", objects)
+def test_rename(obj):
+
+    cf_dict = {
+        "air_temperature" if isinstance(obj, Dataset) else "longitude": "renamed"
+    }
+    xr_dict = {"air" if isinstance(obj, Dataset) else "lon": "renamed"}
+    assert_identical(obj.rename(xr_dict), obj.cf.rename(cf_dict))
+    assert_identical(obj.rename(**xr_dict), obj.cf.rename(**cf_dict))
+
+
 @pytest.mark.parametrize("ds", datasets)
 def test_differentiate(ds):
 

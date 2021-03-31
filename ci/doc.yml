@@ -6,6 +6,7 @@ dependencies:
   - python=3.8
   - matplotlib-base
   - netcdf4
+  - pooch
   - xarray
   - sphinx
   - nbsphinx

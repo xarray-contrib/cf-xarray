@@ -9,5 +9,6 @@ dependencies:
   - matplotlib-base
   - netcdf4
   - pandas
+  - pooch
   - pip:
     - git+https://github.com/pydata/xarray

@@ -9,4 +9,5 @@ dependencies:
   - matplotlib-base
   - netcdf4
   - pandas
+  - pooch
   - xarray

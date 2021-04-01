@@ -1041,3 +1041,13 @@ def test_groupby_special_ops():
     expected = grouped - grouped.mean()
     actual = grouped - cfgrouped.mean()
     assert_identical(expected, actual)
+
+
+@pytest.mark.parametrize("obj", objects)
+def test_stack(obj):
+    expected = obj.stack(latlon=["lat", "lon"])
+    actual = obj.cf.stack(latlon=["latitude", "longitude"])
+    assert_identical(expected, actual)
+
+    actual = obj.cf.stack({"latlon": ["latitude", "longitude"]})
+    assert_identical(expected, actual)

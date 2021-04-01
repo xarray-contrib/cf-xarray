@@ -428,7 +428,6 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, Tuple[Mapper, ...]] = {
     "dim": (_get_dims,),
     "dims": (_get_dims,),  # transpose
     "drop_dims": (_get_dims,),  # drop_dims
-    "dimensions": (_get_dims,),  # stack
     "dims_dict": (_get_dims,),  # swap_dims, rename_dims
     "shifts": (_get_dims,),  # shift, roll
     "pad_width": (_get_dims,),  # shift, roll
@@ -1434,6 +1433,23 @@ class CFAccessor:
             "cf-xarray does not support .drop."
             "Please use .cf.drop_vars or .cf.drop_sel as appropriate."
         )
+
+    def stack(self, dimensions=None, **dimensions_kwargs):
+        # stack needs to rewrite the _values_ of a dict
+        # our other machinery rewrites the _keys_ of a dict
+        # This seems somewhat rare, so do it explicitly for now
+
+        if dimensions is None:
+            dimensions = dimensions_kwargs
+        for key, values in dimensions.items():
+            updates = [
+                apply_mapper(
+                    (_single(_get_dims),), self._obj, v, error=True, default=[v]
+                )
+                for v in values
+            ]
+            dimensions.update({key: tuple(itertools.chain(*updates))})
+        return self._obj.stack(dimensions)
 
 
 @xr.register_dataset_accessor("cf")

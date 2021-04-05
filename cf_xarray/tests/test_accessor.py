@@ -507,6 +507,30 @@ def test_getitem_regression():
     ds.coords["area"] = xr.DataArray(np.ones(10), attrs={"standard_name": "cell_area"})
     assert_identical(ds.cf["cell_area"], ds["area"].reset_coords(drop=True))
 
+    ds = xr.Dataset()
+    ds["time"] = (
+        "time",
+        np.arange(10),
+        {"standard_name": "time", "bounds": "time_bounds"},
+    )
+    ds["time_bounds"] = (
+        ("time", "bounds"),
+        np.ones((10, 2)),
+        {"standard_name": "time"},
+    )
+
+    ds["lat"] = (
+        "lat",
+        np.arange(10),
+        {"units": "degrees_north", "bounds": "lat_bounds"},
+    )
+    ds["lat_bounds"] = (
+        ("lat", "bounds"),
+        np.ones((10, 2)),
+        {"units": "degrees_north"},
+    )
+    assert_identical(ds["lat"], ds.cf["latitude"])
+
 
 def test_getitem_uses_coordinates():
     # POP-like dataset

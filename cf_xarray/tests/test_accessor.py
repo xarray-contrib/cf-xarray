@@ -502,7 +502,23 @@ def test_getitem_errors(obj):
         obj2.cf["X"]
 
 
-def test_getitem_regression():
+def test_getitem_ignores_bad_measure_attribute():
+    air2 = airds.copy(deep=True)
+    air2.air.attrs["cell_measures"] = "asd"
+    with pytest.warns(UserWarning):
+        assert_identical(air2.air.drop_vars("cell_area"), air2.cf["air"])
+
+    with pytest.raises(ValueError):
+        air2.cf.cell_measures
+    with pytest.raises(ValueError):
+        air2.air.cf.cell_measures
+    with pytest.raises(ValueError):
+        air2.cf.get_associated_variable_names("air", error=True)
+    with pytest.warns(UserWarning):
+        air2.cf.get_associated_variable_names("air", error=False)
+
+
+def test_getitem_clash_standard_name():
     ds = xr.Dataset()
     ds.coords["area"] = xr.DataArray(np.ones(10), attrs={"standard_name": "cell_area"})
     assert_identical(ds.cf["cell_area"], ds["area"].reset_coords(drop=True))

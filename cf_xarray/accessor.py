@@ -12,7 +12,6 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
-    Optional,
     Set,
     Tuple,
     TypeVar,
@@ -623,6 +622,12 @@ def _getitem(
                 f"instead to get all variables matching {key!r}."
             )
 
+    try:
+        measures = accessor._get_all_cell_measures()
+    except ValueError:
+        measures = []
+        warnings.warn("Ignoring bad cell_measures attribute.", UserWarning)
+
     varnames: List[Hashable] = []
     coords: List[Hashable] = []
     successful = dict.fromkeys(key, False)
@@ -633,7 +638,7 @@ def _getitem(
             check_results(names, k)
             successful[k] = bool(names)
             coords.extend(names)
-        elif "measures" not in skip and k in accessor._get_all_cell_measures():
+        elif "measures" not in skip and k in measures:
             measure = _get_all(obj, k)
             check_results(measure, k)
             successful[k] = bool(measure)
@@ -658,7 +663,7 @@ def _getitem(
     try:
         for name in allnames:
             extravars = accessor.get_associated_variable_names(
-                name, skip_bounds=scalar_key
+                name, skip_bounds=scalar_key, error=False
             )
             coords.extend(itertools.chain(*extravars.values()))
 
@@ -1250,7 +1255,7 @@ class CFAccessor:
         return {k: sorted(v) for k, v in vardict.items()}
 
     def get_associated_variable_names(
-        self, name: Hashable, skip_bounds: Optional[bool] = None
+        self, name: Hashable, skip_bounds: bool = False, error: bool = True
     ) -> Dict[str, List[str]]:
         """
         Returns a dict mapping
@@ -1264,6 +1269,9 @@ class CFAccessor:
         ----------
         name : Hashable
         skip_bounds : bool, optional
+        error: bool, optional
+            Raise or ignore errors.
+
         Returns
         ------
         Dict with keys "ancillary_variables", "cell_measures", "coordinates", "bounds"
@@ -1276,9 +1284,20 @@ class CFAccessor:
             coords["coordinates"] = attrs_or_encoding["coordinates"].split(" ")
 
         if "cell_measures" in attrs_or_encoding:
-            coords["cell_measures"] = list(
-                parse_cell_methods_attr(attrs_or_encoding["cell_measures"]).values()
-            )
+            try:
+                coords["cell_measures"] = list(
+                    parse_cell_methods_attr(attrs_or_encoding["cell_measures"]).values()
+                )
+            except ValueError as e:
+                if error:
+                    msg = e.args[0] + " Ignore this error by passing 'error=False'"
+                    raise ValueError(msg)
+                else:
+                    warnings.warn(
+                        f"Ignoring bad cell_measures attribute: {attrs_or_encoding['cell_measures']}",
+                        UserWarning,
+                    )
+                    coords["cell_measures"] = []
 
         if (
             isinstance(self._obj, Dataset)

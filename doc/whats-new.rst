@@ -3,6 +3,12 @@
 What's New
 ----------
 
+v0.5.0 (unreleased)
+===================
+
+- :py:meth:`DataArray.cf.differentiate` and :py:meth:`Dataset.cf.differentiate` can optionally correct
+  sign of the derivative by interpreting the ``"positive"`` attribute. By `Deepak Cherian`_.
+
 v0.5.1 (Feb 24, 2021)
 =====================
 

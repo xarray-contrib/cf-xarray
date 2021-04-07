@@ -3,6 +3,7 @@ r"""Module to provide unit support via pint approximating UDUNITS/CF.
 Reused with modification from MetPy under the terms of the BSD 3-Clause License.
 Copyright (c) 2015,2017,2019 MetPy Developers.
 """
+import functools
 import re
 
 import pint

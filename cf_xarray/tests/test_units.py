@@ -4,7 +4,11 @@ Reused with modification from MetPy under the terms of the BSD 3-Clause License.
 Copyright (c) 2017 MetPy Developers.
 """
 
+import pytest
+
 from ..units import units
+
+pytest.importskip("pint")
 
 
 def test_added_degrees_units():

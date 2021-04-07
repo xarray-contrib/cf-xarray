@@ -12,7 +12,6 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
-    Optional,
     Set,
     Tuple,
     TypeVar,
@@ -605,13 +604,29 @@ def _getitem(
     if skip is None:
         skip = []
 
-    def check_results(names, k):
+    def drop_bounds(names):
+        # sometimes bounds variables have the same standard_name as the
+        # actual variable. It seems practical to ignore them when indexing
+        # with a scalar key. Hopefully these will soon get decoded to IntervalIndex
+        # and we can move on...
+        if scalar_key:
+            bounds = set([obj[k].attrs.get("bounds", None) for k in names])
+            names = set(names) - bounds
+        return names
+
+    def check_results(names, key):
         if scalar_key and len(names) > 1:
             raise KeyError(
-                f"Receive multiple variables for key {k!r}: {names}. "
-                f"Expected only one. Please pass a list [{k!r}] "
-                f"instead to get all variables matching {k!r}."
+                f"Receive multiple variables for key {key!r}: {names}. "
+                f"Expected only one. Please pass a list [{key!r}] "
+                f"instead to get all variables matching {key!r}."
             )
+
+    try:
+        measures = accessor._get_all_cell_measures()
+    except ValueError:
+        measures = []
+        warnings.warn("Ignoring bad cell_measures attribute.", UserWarning)
 
     varnames: List[Hashable] = []
     coords: List[Hashable] = []
@@ -619,10 +634,11 @@ def _getitem(
     for k in key:
         if "coords" not in skip and k in _AXIS_NAMES + _COORD_NAMES:
             names = _get_all(obj, k)
+            names = drop_bounds(names)
             check_results(names, k)
             successful[k] = bool(names)
             coords.extend(names)
-        elif "measures" not in skip and k in accessor._get_all_cell_measures():
+        elif "measures" not in skip and k in measures:
             measure = _get_all(obj, k)
             check_results(measure, k)
             successful[k] = bool(measure)
@@ -631,6 +647,7 @@ def _getitem(
         else:
             stdnames = set(_get_with_standard_name(obj, k))
             objcoords = set(obj.coords)
+            stdnames = drop_bounds(stdnames)
             if "coords" in skip:
                 stdnames -= objcoords
             check_results(stdnames, k)
@@ -646,7 +663,7 @@ def _getitem(
     try:
         for name in allnames:
             extravars = accessor.get_associated_variable_names(
-                name, skip_bounds=scalar_key
+                name, skip_bounds=scalar_key, error=False
             )
             coords.extend(itertools.chain(*extravars.values()))
 
@@ -1238,7 +1255,7 @@ class CFAccessor:
         return {k: sorted(v) for k, v in vardict.items()}
 
     def get_associated_variable_names(
-        self, name: Hashable, skip_bounds: Optional[bool] = None
+        self, name: Hashable, skip_bounds: bool = False, error: bool = True
     ) -> Dict[str, List[str]]:
         """
         Returns a dict mapping
@@ -1252,6 +1269,9 @@ class CFAccessor:
         ----------
         name : Hashable
         skip_bounds : bool, optional
+        error: bool, optional
+            Raise or ignore errors.
+
         Returns
         ------
         Dict with keys "ancillary_variables", "cell_measures", "coordinates", "bounds"
@@ -1264,9 +1284,20 @@ class CFAccessor:
             coords["coordinates"] = attrs_or_encoding["coordinates"].split(" ")
 
         if "cell_measures" in attrs_or_encoding:
-            coords["cell_measures"] = list(
-                parse_cell_methods_attr(attrs_or_encoding["cell_measures"]).values()
-            )
+            try:
+                coords["cell_measures"] = list(
+                    parse_cell_methods_attr(attrs_or_encoding["cell_measures"]).values()
+                )
+            except ValueError as e:
+                if error:
+                    msg = e.args[0] + " Ignore this error by passing 'error=False'"
+                    raise ValueError(msg)
+                else:
+                    warnings.warn(
+                        f"Ignoring bad cell_measures attribute: {attrs_or_encoding['cell_measures']}",
+                        UserWarning,
+                    )
+                    coords["cell_measures"] = []
 
         if (
             isinstance(self._obj, Dataset)

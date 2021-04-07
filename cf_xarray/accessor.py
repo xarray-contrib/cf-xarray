@@ -1547,7 +1547,7 @@ class CFAccessor:
         """
 
         coord = apply_mapper(
-            (_single(_get_coords),), self._obj, coord, error=False, default=coord
+            (_single(_get_coords),), self._obj, coord, error=False, default=[coord]
         )[0]
         result = self._obj.differentiate(
             coord, edge_order=edge_order, datetime_unit=datetime_unit

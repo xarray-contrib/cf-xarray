@@ -6,9 +6,9 @@ Copyright (c) 2017 MetPy Developers.
 
 import pytest
 
-from ..units import units
-
 pytest.importorskip("pint")
+
+from ..units import units
 
 
 def test_added_degrees_units():

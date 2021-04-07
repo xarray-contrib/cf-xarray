@@ -8,7 +8,7 @@ import pytest
 
 from ..units import units
 
-pytest.importskip("pint")
+pytest.importorskip("pint")
 
 
 def test_added_degrees_units():

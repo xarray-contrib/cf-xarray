@@ -10,7 +10,6 @@ import warnings
 import pint
 from pint import DimensionalityError, UndefinedUnitError, UnitStrippedWarning
 
-
 # Create registry, with preprocessors for UDUNITS-style powers (m2 s-2) and percent signs
 units = pint.UnitRegistry(
     autoconvert_offset_to_baseunit=True,
@@ -22,7 +21,7 @@ units = pint.UnitRegistry(
         ),
         lambda string: string.replace("%", "percent"),
     ],
-    force_ndarray_like=True
+    force_ndarray_like=True,
 )
 
 units.define(

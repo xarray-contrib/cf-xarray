@@ -41,7 +41,7 @@ def test_gpm_unit():
 def test_psu_unit():
     """Test that the psu unit are present in the registry."""
     x = 1 * units("psu")
-    assert str(x.units) == "practical_salinity_units"
+    assert str(x.units) == "practical_salinity_unit"
 
 
 def test_percent_units():

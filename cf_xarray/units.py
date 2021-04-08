@@ -5,12 +5,11 @@ Copyright (c) 2015,2017,2019 MetPy Developers.
 """
 import functools
 import re
+import warnings
 
 import pint
+from pint import DimensionalityError, UndefinedUnitError, UnitStrippedWarning
 
-UndefinedUnitError = pint.UndefinedUnitError
-DimensionalityError = pint.DimensionalityError
-UnitStrippedWarning = pint.UnitStrippedWarning
 
 # Create registry, with preprocessors for UDUNITS-style powers (m2 s-2) and percent signs
 units = pint.UnitRegistry(
@@ -23,6 +22,7 @@ units = pint.UnitRegistry(
         ),
         lambda string: string.replace("%", "percent"),
     ],
+    force_ndarray_like=True
 )
 
 units.define(
@@ -37,9 +37,18 @@ units.define(
     "degrees_east = degree = degrees_E = degreesE = degree_east = degree_E = degreeE"
 )
 units.define("@alias meter = gpm")
-units.define("practical_salinity_units = [] = psu")
+units.define("practical_salinity_unit = [] = psu")
 
 # Enable pint's built-in matplotlib support
-units.setup_matplotlib()
+try:
+    units.setup_matplotlib()
+except ImportError:
+    warnings.warn(
+        "Import(s) unavailable to set up matplotlib support...skipping this portion "
+        "of the setup."
+    )
+
+# Set as application registry
+pint.set_application_registry(units)
 
 del pint

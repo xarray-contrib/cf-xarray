@@ -1093,41 +1093,52 @@ def test_stack(obj):
     assert_identical(expected, actual)
 
 
-def test_differentiate_positive_upward():
-    da = xr.DataArray(
-        np.arange(10)[::-1],  # like ocean temperature
-        dims="z",
-        coords={"z": ("z", np.arange(10), {"positive": "down"})},
-    )
+da = xr.DataArray(
+    np.arange(10)[::-1],  # like ocean temperature
+    dims="z",
+    coords={"z": ("z", np.arange(10))},
+    name="test",
+)
 
-    expected = da.differentiate("z", 2)
-    actual = da.cf.differentiate("z", 2)
+
+@pytest.mark.parametrize("obj", [da, da.to_dataset()])
+def test_differentiate_positive_upward(obj):
+    obj.z.attrs["positive"] = "down"
+    expected = obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2)
     assert_identical(expected, actual)
 
-    expected = -1 * da.differentiate("z", 2)
-    actual = da.cf.differentiate("z", 2, positive_upward=True)
+    obj.z.attrs["positive"] = "up"
+    expected = obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
     assert_identical(expected, actual)
 
-    with da.isel(z=slice(None, None, -1)) as da:
-        expected = -1 * da.differentiate("z", 2)
-        actual = da.cf.differentiate("z", 2, positive_upward=True)
-        assert_identical(expected, actual)
+    obj.z.attrs["positive"] = "down"
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    obj = obj.isel(z=slice(None, None, -1))
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+    obj = obj.isel(z=slice(None, None, -1))
 
     with xr.set_options(keep_attrs=True):
-        da["z"] = da.z * -1
-    expected = -1 * da.differentiate("z", 2)
-    actual = da.cf.differentiate("z", 2, positive_upward=True)
+        da["z"] = obj.z * -1
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
     assert_identical(expected, actual)
 
-    da = da.isel(z=slice(None, None, -1))
-    expected = -1 * da.differentiate("z", 2)
-    actual = da.cf.differentiate("z", 2, positive_upward=True)
+    obj = obj.isel(z=slice(None, None, -1))
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
     assert_identical(expected, actual)
 
-    del da.z.attrs["positive"]
+    del obj.z.attrs["positive"]
     with pytest.raises(ValueError):
-        da.cf.differentiate("z", positive_upward=True)
+        obj.cf.differentiate("z", positive_upward=True)
 
-    da.z.attrs["positive"] = "zzz"
+    obj.z.attrs["positive"] = "zzz"
     with pytest.raises(ValueError):
-        da.cf.differentiate("z", positive_upward=True)
+        obj.cf.differentiate("z", positive_upward=True)

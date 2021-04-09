@@ -1091,3 +1091,54 @@ def test_stack(obj):
 
     actual = obj.cf.stack({"latlon": ["latitude", "longitude"]})
     assert_identical(expected, actual)
+
+
+da = xr.DataArray(
+    np.arange(10)[::-1],  # like ocean temperature
+    dims="z",
+    coords={"z": ("z", np.arange(10))},
+    name="test",
+)
+
+
+@pytest.mark.parametrize("obj", [da, da.to_dataset()])
+def test_differentiate_positive_upward(obj):
+    obj.z.attrs["positive"] = "down"
+    expected = obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2)
+    assert_identical(expected, actual)
+
+    obj.z.attrs["positive"] = "up"
+    expected = obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    obj.z.attrs["positive"] = "down"
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    obj = obj.isel(z=slice(None, None, -1))
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+    obj = obj.isel(z=slice(None, None, -1))
+
+    with xr.set_options(keep_attrs=True):
+        da["z"] = obj.z * -1
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    obj = obj.isel(z=slice(None, None, -1))
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    del obj.z.attrs["positive"]
+    with pytest.raises(ValueError):
+        obj.cf.differentiate("z", positive_upward=True)
+
+    obj.z.attrs["positive"] = "zzz"
+    with pytest.raises(ValueError):
+        obj.cf.differentiate("z", positive_upward=True)

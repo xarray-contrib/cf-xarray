@@ -1482,6 +1482,46 @@ class CFAccessor:
             dimensions.update({key: tuple(itertools.chain(*updates))})
         return self._obj.stack(dimensions)
 
+    def differentiate(
+        self, coord, *xr_args, positive_upward: bool = False, **xr_kwargs
+    ):
+        """
+        Parameters
+        ----------
+        xr_args, xr_kwargs are passed directly to the underlying xarray function.
+        The following are added by cf_xarray:
+
+        positive_upward: optional, bool
+            Change sign of the derivative based on the ``"positive"`` attribute of ``coord``
+            so that positive values indicate increasing upward.
+            If ``positive=="down"``, then multiplied by -1.
+
+        See Also
+        --------
+        DataArray.cf.differentiate
+        Dataset.cf.differentiate
+        xarray.DataArray.differentiate: underlying xarray function
+        xarray.Dataset.differentiate: underlying xarray function
+        """
+        coord = apply_mapper(
+            (_single(_get_coords),), self._obj, coord, error=False, default=[coord]
+        )[0]
+        result = self._obj.differentiate(coord, *xr_args, **xr_kwargs)
+        if positive_upward:
+            coord = self._obj[coord]
+            attrs = coord.attrs
+            if "positive" not in attrs:
+                raise ValueError(
+                    f"positive_upward=True and 'positive' attribute not present on {coord.name}"
+                )
+            if attrs["positive"] not in ["up", "down"]:
+                raise ValueError(
+                    f"positive_upward=True and received attrs['positive']={attrs['positive']}. Expected one of ['up', 'down'] "
+                )
+            if attrs["positive"] == "down":
+                result *= -1
+        return result
+
 
 @xr.register_dataset_accessor("cf")
 class CFDatasetAccessor(CFAccessor):

@@ -3,7 +3,7 @@
 What's New
 ----------
 
-v0.5.0 (unreleased)
+v0.5.2 (unreleased)
 ===================
 
 - :py:meth:`DataArray.cf.differentiate` and :py:meth:`Dataset.cf.differentiate` can optionally correct

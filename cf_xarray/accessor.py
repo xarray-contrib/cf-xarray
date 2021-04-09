@@ -1500,6 +1500,8 @@ class CFAccessor:
         --------
         DataArray.cf.differentiate
         Dataset.cf.differentiate
+        xarray.DataArray.differentiate: underlying xarray function
+        xarray.Dataset.differentiate: underlying xarray function
         """
         coord = apply_mapper(
             (_single(_get_coords),), self._obj, coord, error=False, default=[coord]

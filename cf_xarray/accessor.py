@@ -1486,14 +1486,15 @@ class CFAccessor:
         self, coord, *xr_args, positive_upward: bool = False, **xr_kwargs
     ):
         """
-        CF-xarray Parameters
-        --------------------
+        Parameters
+        ----------
+        xr_args, xr_kwargs are passed directly to the underlying xarray function.
+        The following are added by cf_xarray:
+
         positive_upward: optional, bool
             Change sign of the derivative based on the ``"positive"`` attribute of ``coord``
             so that positive values indicate increasing upward.
             If ``positive=="down"``, then multiplied by -1.
-
-        xr_args, xr_kwargs are passed directly to the underlying xarray function
 
         See Also
         --------

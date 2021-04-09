@@ -1093,7 +1093,7 @@ def test_stack(obj):
     assert_identical(expected, actual)
 
 
-def test_differentiate_follow_positive():
+def test_differentiate_positive_upward():
     da = xr.DataArray(
         np.arange(10)[::-1],  # like ocean temperature
         dims="z",
@@ -1105,29 +1105,29 @@ def test_differentiate_follow_positive():
     assert_identical(expected, actual)
 
     expected = -1 * da.differentiate("z", 2)
-    actual = da.cf.differentiate("z", 2, follow_positive=True)
+    actual = da.cf.differentiate("z", 2, positive_upward=True)
     assert_identical(expected, actual)
 
     with da.isel(z=slice(None, None, -1)) as da:
         expected = -1 * da.differentiate("z", 2)
-        actual = da.cf.differentiate("z", 2, follow_positive=True)
+        actual = da.cf.differentiate("z", 2, positive_upward=True)
         assert_identical(expected, actual)
 
     with xr.set_options(keep_attrs=True):
         da["z"] = da.z * -1
     expected = -1 * da.differentiate("z", 2)
-    actual = da.cf.differentiate("z", 2, follow_positive=True)
+    actual = da.cf.differentiate("z", 2, positive_upward=True)
     assert_identical(expected, actual)
 
     da = da.isel(z=slice(None, None, -1))
     expected = -1 * da.differentiate("z", 2)
-    actual = da.cf.differentiate("z", 2, follow_positive=True)
+    actual = da.cf.differentiate("z", 2, positive_upward=True)
     assert_identical(expected, actual)
 
     del da.z.attrs["positive"]
     with pytest.raises(ValueError):
-        da.cf.differentiate("z", follow_positive=True)
+        da.cf.differentiate("z", positive_upward=True)
 
     da.z.attrs["positive"] = "zzz"
     with pytest.raises(ValueError):
-        da.cf.differentiate("z", follow_positive=True)
+        da.cf.differentiate("z", positive_upward=True)

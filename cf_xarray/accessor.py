@@ -1483,85 +1483,37 @@ class CFAccessor:
         return self._obj.stack(dimensions)
 
     def differentiate(
-        self,
-        coord,
-        edge_order: int = 1,
-        datetime_unit: str = None,
-        follow_positive: bool = False,
+        self, coord, *xr_args, positive_upward: bool = False, **xr_kwargs
     ):
-        """ Differentiate the array with the second order accurate central
-        differences.
-
-        .. note::
-            This feature is limited to simple cartesian geometry, i.e. coord
-            must be one dimensional.
-
-        Parameters
-        ----------
-        coord : hashable
-            The coordinate to be used to compute the gradient.
-        edge_order : {1, 2}, default: 1
-            N-th order accurate differences at the boundaries.
-        datetime_unit : {"Y", "M", "W", "D", "h", "m", "s", "ms", \
-                         "us", "ns", "ps", "fs", "as"} or None, optional
-            Unit to compute gradient. Only valid for datetime coordinate.
-        follow_positive: optional, bool
-            Fix sign of the derivative based on the ``"positive"`` attribute of ``coord``.
+        """
+        CF-xarray Parameters
+        --------------------
+        positive_upward: optional, bool
+            Change sign of the derivative based on the ``"positive"`` attribute of ``coord``
+            so that positive values indicate increasing upward.
             If ``positive=="down"``, then multiplied by -1.
 
-        Returns
-        -------
-        differentiated: DataArray
+        xr_args, xr_kwargs are passed directly to the underlying xarray function
 
-        See also
+        See Also
         --------
-        numpy.gradient: corresponding numpy function
-
-        Examples
-        --------
-
-        >>> da = xr.DataArray(
-        ...     np.arange(12).reshape(4, 3),
-        ...     dims=["x", "y"],
-        ...     coords={"x": [0, 0.1, 1.1, 1.2]},
-        ... )
-        >>> da
-        <xarray.DataArray (x: 4, y: 3)>
-        array([[ 0,  1,  2],
-               [ 3,  4,  5],
-               [ 6,  7,  8],
-               [ 9, 10, 11]])
-        Coordinates:
-          * x        (x) float64 0.0 0.1 1.1 1.2
-        Dimensions without coordinates: y
-        >>>
-        >>> da.differentiate("x")
-        <xarray.DataArray (x: 4, y: 3)>
-        array([[30.        , 30.        , 30.        ],
-               [27.54545455, 27.54545455, 27.54545455],
-               [27.54545455, 27.54545455, 27.54545455],
-               [30.        , 30.        , 30.        ]])
-        Coordinates:
-          * x        (x) float64 0.0 0.1 1.1 1.2
-        Dimensions without coordinates: y
+        DataArray.cf.differentiate
+        Dataset.cf.differentiate
         """
-
         coord = apply_mapper(
             (_single(_get_coords),), self._obj, coord, error=False, default=[coord]
         )[0]
-        result = self._obj.differentiate(
-            coord, edge_order=edge_order, datetime_unit=datetime_unit
-        )
-        if follow_positive:
+        result = self._obj.differentiate(coord, *xr_args, **xr_kwargs)
+        if positive_upward:
             coord = self._obj[coord]
             attrs = coord.attrs
             if "positive" not in attrs:
                 raise ValueError(
-                    f"follow_positive=True and 'positive' attribute not present on {coord.name}"
+                    f"positive_upward=True and 'positive' attribute not present on {coord.name}"
                 )
             if attrs["positive"] not in ["up", "down"]:
                 raise ValueError(
-                    f"follow_positive=True and received attrs['positive']={attrs['positive']}. Expected one of ['up', 'down'] "
+                    f"positive_upward=True and received attrs['positive']={attrs['positive']}. Expected one of ['up', 'down'] "
                 )
             if attrs["positive"] == "down":
                 result *= -1

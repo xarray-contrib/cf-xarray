@@ -55,14 +55,14 @@ def test_repr():
                         vertical: n/a
 
     - Cell Measures:   area: ['cell_area']
-                       volume: n/a
+                       thickness, volume: n/a
 
     - Standard Names: * latitude: ['lat']
                       * longitude: ['lon']
                       * time: ['time']
 
     Data Variables:
-    - Cell Measures:   area, volume: n/a
+    - Cell Measures:   thickness, area, volume: n/a
 
     - Standard Names:   air_temperature: ['air']
     """
@@ -84,7 +84,7 @@ def test_repr():
                         vertical: n/a
 
     - Cell Measures:   area: ['cell_area']
-                       volume: n/a
+                       thickness, volume: n/a
 
     - Standard Names: * latitude: ['lat']
                       * longitude: ['lon']
@@ -104,12 +104,12 @@ def test_repr():
                         latitude: ['TLAT', 'ULAT']
                         vertical, time: n/a
 
-    - Cell Measures:   area, volume: n/a
+    - Cell Measures:   thickness, area, volume: n/a
 
     - Standard Names:   n/a
 
     Data Variables:
-    - Cell Measures:   area, volume: n/a
+    - Cell Measures:   thickness, area, volume: n/a
 
     - Standard Names:   sea_water_potential_temperature: ['TEMP']
                         sea_water_x_velocity: ['UVEL']
@@ -159,7 +159,7 @@ def test_cell_measures():
     Data Variables:
     - Cell Measures:   foo_measure: ['foo']
                        volume: ['foo']
-                       area: n/a
+                       thickness, area: n/a
 
     - Standard Names:   air_temperature: ['air']
                         foo_std_name: ['foo']

@@ -4,7 +4,8 @@ import os
 
 from pandas import DataFrame
 
-from cf_xarray.accessor import _AXIS_NAMES, _COORD_NAMES, coordinate_criteria, regex
+from cf_xarray.accessor import _AXIS_NAMES, _COORD_NAMES
+from cf_xarray.criteria import coordinate_criteria, regex
 
 
 def main():

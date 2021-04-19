@@ -23,6 +23,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
 
+from .criteria import coordinate_criteria, regex
 from .helpers import bounds_to_vertices
 from .utils import _is_datetime_like, invert_mappings, parse_cell_methods_attr
 
@@ -43,93 +44,6 @@ _COORD_NAMES = ("longitude", "latitude", "vertical", "time")
 
 #:  Cell measures understood by cf_xarray.
 _CELL_MEASURES = ("area", "volume")
-
-# Define the criteria for coordinate matches
-# Copied from metpy
-# Internally we only use X, Y, Z, T
-coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
-    "standard_name": {
-        "X": ("projection_x_coordinate",),
-        "Y": ("projection_y_coordinate",),
-        "T": ("time",),
-        "time": ("time",),
-        "vertical": (
-            "air_pressure",
-            "height",
-            "depth",
-            "geopotential_height",
-            # computed dimensional coordinate name
-            "altitude",
-            "height_above_geopotential_datum",
-            "height_above_reference_ellipsoid",
-            "height_above_mean_sea_level",
-        ),
-        "Z": (
-            "model_level_number",
-            "atmosphere_ln_pressure_coordinate",
-            "atmosphere_sigma_coordinate",
-            "atmosphere_hybrid_sigma_pressure_coordinate",
-            "atmosphere_hybrid_height_coordinate",
-            "atmosphere_sleve_coordinate",
-            "ocean_sigma_coordinate",
-            "ocean_s_coordinate",
-            "ocean_s_coordinate_g1",
-            "ocean_s_coordinate_g2",
-            "ocean_sigma_z_coordinate",
-            "ocean_double_sigma_coordinate",
-        ),
-        "latitude": ("latitude",),
-        "longitude": ("longitude",),
-    },
-    "_CoordinateAxisType": {
-        "T": ("Time",),
-        "Z": ("GeoZ", "Height", "Pressure"),
-        "Y": ("GeoY",),
-        "latitude": ("Lat",),
-        "X": ("GeoX",),
-        "longitude": ("Lon",),
-    },
-    "axis": {"T": ("T",), "Z": ("Z",), "Y": ("Y",), "X": ("X",)},
-    "cartesian_axis": {"T": ("T",), "Z": ("Z",), "Y": ("Y",), "X": ("X",)},
-    "positive": {"vertical": ("up", "down")},
-    "units": {
-        "latitude": (
-            "degree_north",
-            "degree_N",
-            "degreeN",
-            "degrees_north",
-            "degrees_N",
-            "degreesN",
-        ),
-        "longitude": (
-            "degree_east",
-            "degree_E",
-            "degreeE",
-            "degrees_east",
-            "degrees_E",
-            "degreesE",
-        ),
-    },
-}
-
-# "long_name" and "standard_name" criteria are the same. For convenience.
-coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
-
-#: regular expressions for guess_coord_axis
-regex = {
-    "time": "\\bt\\b|(time|min|hour|day|week|month|year)[0-9]*",
-    "vertical": (
-        "(z|nav_lev|gdep|lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|"
-        "isobaric|pres|isotherm)[a-z_]*[0-9]*"
-    ),
-    "Y": "y",
-    "latitude": "y?(nav_lat|lat|gphi)[a-z0-9]*",
-    "X": "x",
-    "longitude": "x?(nav_lon|lon|glam)[a-z0-9]*",
-}
-regex["Z"] = regex["vertical"]
-regex["T"] = regex["time"]
-
 
 ATTRS = {
     "X": {"axis": "X"},

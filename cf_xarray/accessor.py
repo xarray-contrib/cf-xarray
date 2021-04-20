@@ -1,6 +1,7 @@
 import functools
 import inspect
 import itertools
+import re
 import warnings
 from collections import ChainMap
 from typing import (
@@ -1480,6 +1481,16 @@ class CFDatasetAccessor(CFAccessor):
         """
         return _getitem(self, key)
 
+    @property
+    def formula_terms(self) -> Dict[str, Dict[str, str]]:
+        """
+        Property that returns a dictionary
+            {parametric_coord_name: {standard_term_name: variable_name}}
+        """
+        return {
+            dim: self._obj[dim].cf.formula_terms for dim in _get_dims(self._obj, "Z")
+        }
+
     def get_bounds(self, key: str) -> DataArray:
         """
         Get bounds variable corresponding to key.
@@ -1668,36 +1679,29 @@ class CFDatasetAccessor(CFAccessor):
         .. warning::
            Very lightly tested. Please double check the results.
         """
-        import re
-
         ds = self._obj
-        dims = _get_dims(ds, "Z")
 
         requirements = {
             "ocean_s_coordinate_g1": {"depth_c", "depth", "s", "C", "eta"},
             "ocean_s_coordinate_g2": {"depth_c", "depth", "s", "C", "eta"},
         }
 
-        for dim in dims:
+        allterms = self.formula_terms
+        for dim in allterms:
             suffix = dim.split("_")
             zname = f"{prefix}_" + "_".join(suffix[1:])
 
-            if (
-                "formula_terms" not in ds[dim].attrs
-                or "standard_name" not in ds[dim].attrs
-            ):
+            if "standard_name" not in ds[dim].attrs:
                 continue
-
-            formula_terms = ds[dim].attrs["formula_terms"]
             stdname = ds[dim].attrs["standard_name"]
 
             # map "standard" formula term names to actual variable names
             terms = {}
-            for mapping in re.sub(": ", ":", formula_terms).split(" "):
-                key, value = mapping.split(":")
+            for key, value in allterms[dim].items():
                 if value not in ds:
                     raise KeyError(
-                        f"Variable {value!r} is required to decode coordinate for {dim} but it is absent in the Dataset."
+                        f"Variable {value!r} is required to decode coordinate for {dim!r}"
+                        " but it is absent in the Dataset."
                     )
                 terms[key] = ds[value]
 
@@ -1725,12 +1729,27 @@ class CFDatasetAccessor(CFAccessor):
 
             else:
                 raise NotImplementedError(
-                    f"Coordinate function for {stdname} not implemented yet. Contributions welcome!"
+                    f"Coordinate function for {stdname!r} not implemented yet. Contributions welcome!"
                 )
 
 
 @xr.register_dataarray_accessor("cf")
 class CFDataArrayAccessor(CFAccessor):
+    @property
+    def formula_terms(self) -> Dict[str, str]:
+        """
+        Property that returns a dictionary
+            {parametric_coord_name: {standard_term_name: variable_name}}
+        """
+        da = self._obj
+        dims = _single(_get_dims)(da, "Z")[0]
+        terms = {}
+        formula_terms = da[dims].attrs.get("formula_terms", "")
+        for mapping in re.sub(r"\s*:\s*", ":", formula_terms).split():
+            key, value = mapping.split(":")
+            terms[key] = value
+        return terms
+
     def __getitem__(self, key: Union[str, List[str]]) -> DataArray:
         """
         Index into a DataArray making use of CF attributes.

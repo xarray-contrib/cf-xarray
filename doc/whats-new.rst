@@ -6,6 +6,8 @@ What's New
 v0.5.2 (unreleased)
 ===================
 
+- Added :py:attr:`DataArray.cf.formula_terms` and :py:attr:`Dataset.cf.formula_terms`.
+  By `Deepak Cherian`_.
 - :py:meth:`DataArray.cf.differentiate` and :py:meth:`Dataset.cf.differentiate` can optionally correct
   sign of the derivative by interpreting the ``"positive"`` attribute. By `Deepak Cherian`_.
 

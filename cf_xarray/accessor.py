@@ -1363,8 +1363,6 @@ class CFAccessor:
         -------
         DataArray or Dataset with appropriate attributes added
         """
-        import re
-
         obj = self._obj.copy(deep=True)
         for var in obj.coords.variables:
             if obj[var].ndim == 1 and _is_datetime_like(obj[var]):
@@ -1375,14 +1373,14 @@ class CFAccessor:
                 obj[var].attrs = dict(ChainMap(obj[var].attrs, ATTRS["time"]))
                 continue  # prevent second detection
 
-            for axis, pattern in regex.items():
+            for name, pattern in regex.items():
                 # match variable names
-                if re.match(pattern, var.lower()):
+                if pattern.match(var.lower()):
                     if verbose:
                         print(
-                            f"I think {var!r} is of type {axis!r}. It matched {pattern!r}"
+                            f"I think {var!r} is of type {name!r}. It matched {pattern!r}"
                         )
-                    obj[var].attrs = dict(ChainMap(obj[var].attrs, ATTRS[axis]))
+                    obj[var].attrs = dict(ChainMap(obj[var].attrs, ATTRS[name]))
         return obj
 
     def drop(self, *args, **kwargs):

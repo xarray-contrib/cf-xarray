@@ -7,4 +7,4 @@ try:
     __version__ = get_distribution("cf_xarray").version
 except DistributionNotFound:
     # package is not installed
-    __version__ = 'unknown'
+    __version__ = "unknown"

@@ -12,7 +12,6 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
-    Optional,
     Set,
     Tuple,
     TypeVar,
@@ -1264,7 +1263,7 @@ class CFAccessor:
     def rename_like(
         self,
         other: Union[DataArray, Dataset],
-        skip: Optional[Union[str, Iterable[str]]] = None,
+        skip: Union[str, Iterable[str]] = None,
     ) -> Union[DataArray, Dataset]:
         """
         Renames variables in object to match names of like-variables in ``other``.

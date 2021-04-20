@@ -269,14 +269,7 @@ def test_rename_like():
         ("groupby", {"group": "time"}, {"group": "T"}),
         ("groupby", {"group": "time.month"}, {"group": "T.month"}),
         ("groupby_bins", {"group": "lat", "bins": 5}, {"group": "latitude", "bins": 5}),
-        pytest.param(
-            "coarsen",
-            {"lon": 2, "lat": 5},
-            {"X": 2, "Y": 5},
-            marks=pytest.mark.skip(
-                reason="xarray GH4120. any test after this will fail since attrs are lost"
-            ),
-        ),
+        ("coarsen", {"lon": 2, "lat": 5}, {"X": 2, "Y": 5}),
     ),
 )
 def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
@@ -483,18 +476,14 @@ def test_dataset_plot(obj):
         ("longitude", "lon"),
         ("latitude", "lat"),
         ("time", "time"),
-        pytest.param(
-            "area",
-            "cell_area",
-            marks=pytest.mark.xfail(reason="measures not implemented for dataset"),
-        ),
+        ("area", "cell_area"),
     ),
 )
 def test_getitem(obj, key, expected_key):
     assert key in obj.cf
 
     actual = obj.cf[key]
-    expected = obj[expected_key]
+    expected = obj[expected_key].reset_coords(drop=True)
     assert_identical(actual, expected)
 
 

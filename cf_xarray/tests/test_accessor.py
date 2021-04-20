@@ -250,8 +250,14 @@ def test_rename_like():
     assert "TEMP" in renamed
 
     # skip conflicting variables
+    da = popds.cf["TEMP"]
     with pytest.warns(UserWarning, match="Conflicting variables skipped:.*"):
-        popds.cf.rename_like(airds)
+        expected = {"longitude": ["TLONG"], "latitude": ["TLAT"]}
+        actual = da.cf.rename_like(airds).cf.coordinates
+        assert expected == actual
+    expected = {"longitude": ["lon"], "latitude": ["lat"]}
+    actual = da.cf.rename_like(airds, skip="axes").cf.coordinates
+    assert expected == actual
 
 
 @pytest.mark.parametrize("obj", objects)

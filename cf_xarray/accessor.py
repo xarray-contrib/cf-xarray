@@ -12,6 +12,7 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
+    Optional,
     Set,
     Tuple,
     TypeVar,
@@ -1261,7 +1262,9 @@ class CFAccessor:
             return obj
 
     def rename_like(
-        self, other: Union[DataArray, Dataset]
+        self,
+        other: Union[DataArray, Dataset],
+        skip: Optional[Union[str, Iterable[str]]] = None,
     ) -> Union[DataArray, Dataset]:
         """
         Renames variables in object to match names of like-variables in ``other``.
@@ -1277,20 +1280,30 @@ class CFAccessor:
         ----------
         other : DataArray, Dataset
             Variables will be renamed to match variable names in this xarray object
+        skip: str, Iterable[str], optional
+            Limit the renaming excluding
+            ("axes", "cell_measures", "coordinates", "standard_names")
+            or a subset thereof.
 
         Returns
         -------
         DataArray or Dataset with renamed variables
         """
+        skip = [skip] if isinstance(skip, str) else skip or []
+
         ourkeys = self.keys()
         theirkeys = other.cf.keys()
 
         good_keys = ourkeys & theirkeys
         keydict = {}
         for key in good_keys:
-            ours = _get_all(self._obj, key)
-            theirs = _get_all(other, key)
-            keydict[key] = dict(ours=ours, theirs=theirs)
+            ours = set(_get_all(self._obj, key))
+            theirs = set(_get_all(other, key))
+            for attr in skip:
+                ours -= set(getattr(self, attr).get(key, []))
+                theirs -= set(getattr(other.cf, attr).get(key, []))
+            if ours and theirs:
+                keydict[key] = dict(ours=list(ours), theirs=list(theirs))
 
         conflicts = {}
         for k0, v0 in keydict.items():
@@ -1299,7 +1312,7 @@ class CFAccessor:
                 continue
             for v1 in keydict.values():
                 # Conflicts have same ours but different theirs or vice versa
-                if sum([v0["ours"] == v1["ours"], v0["theirs"] == v1["theirs"]]) == 1:
+                if (v0["ours"] == v1["ours"]) != (v0["theirs"] == v1["theirs"]):
                     conflicts[k0] = v0
                     break
         if conflicts:

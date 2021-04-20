@@ -30,8 +30,8 @@ Attributes
     DataArray.cf.axes
     DataArray.cf.cell_measures
     DataArray.cf.coordinates
-    DataArray.cf.standard_names
     DataArray.cf.formula_terms
+    DataArray.cf.standard_names
     DataArray.cf.plot
 
 

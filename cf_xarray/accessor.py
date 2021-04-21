@@ -257,7 +257,7 @@ def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
 
 def _get_bounds(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     """
-    Translate from key (either CF key or variable name) to appropriate bounds names.
+    Translate from key (either CF key or variable name) to its bounds' variable names.
     This function interprets the ``bounds`` attribute on DataArrays.
 
     Parameters
@@ -269,15 +269,15 @@ def _get_bounds(obj: Union[DataArray, Dataset], key: str) -> List[str]:
 
     Returns
     -------
-    List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
+    List[str], Variable name(s) in parent xarray object that are bounds of `key`
     """
 
-    results = []
+    results = set()
     for var in apply_mapper(_get_all, obj, key, error=False, default=[key]):
         if "bounds" in obj[var].attrs:
-            results += [obj[var].attrs["bounds"]]
+            results |= {obj[var].attrs["bounds"]}
 
-    return results
+    return list(results)
 
 
 def _get_with_standard_name(
@@ -1162,11 +1162,12 @@ class CFAccessor:
     @property
     def bounds(self) -> Dict[str, List[str]]:
         """
-        Property that returns a dictionary mapping valid keys to variable names of their bounds.
+        Property that returns a dictionary mapping valid keys
+        to the variable names of their bounds.
 
         Returns
         -------
-        Dictionary mapping valid keys to variable names of their bounds.
+        Dictionary mapping valid keys to the variable names of their bounds.
         """
 
         obj = self._obj
@@ -1191,7 +1192,7 @@ class CFAccessor:
     @property
     def standard_names(self) -> Dict[str, List[str]]:
         """
-        Returns a sorted list of standard names in Dataset.
+        Returns a dictionary mapping standard names to variable names.
 
         Parameters
         ----------
@@ -1200,7 +1201,7 @@ class CFAccessor:
 
         Returns
         -------
-        Dictionary of standard names in dataset
+        Dictionary mapping standard names to variable names.
         """
         if isinstance(self._obj, Dataset):
             variables = self._obj.variables

@@ -61,10 +61,14 @@ def test_repr():
                       * longitude: ['lon']
                       * time: ['time']
 
+    - Bounds:   n/a
+
     Data Variables:
     - Cell Measures:   area, volume: n/a
 
     - Standard Names:   air_temperature: ['air']
+
+    - Bounds:   n/a
     """
     assert actual == dedent(expected)
 
@@ -89,6 +93,8 @@ def test_repr():
     - Standard Names: * latitude: ['lat']
                       * longitude: ['lon']
                       * time: ['time']
+
+    - Bounds:   n/a
     """
     assert actual == dedent(expected)
 
@@ -108,11 +114,15 @@ def test_repr():
 
     - Standard Names:   n/a
 
+    - Bounds:   n/a
+
     Data Variables:
     - Cell Measures:   area, volume: n/a
 
     - Standard Names:   sea_water_potential_temperature: ['TEMP']
                         sea_water_x_velocity: ['UVEL']
+
+    - Bounds:   n/a
     """
     assert actual == dedent(expected)
 
@@ -163,6 +173,8 @@ def test_cell_measures():
 
     - Standard Names:   air_temperature: ['air']
                         foo_std_name: ['foo']
+
+    - Bounds:   n/a
     """
     assert actual.endswith(dedent(expected))
 
@@ -625,6 +637,11 @@ def test_add_bounds(obj, dims):
 
 def test_bounds():
     ds = airds.copy(deep=True).cf.add_bounds("lat")
+
+    actual = ds.cf.bounds
+    expected = {"Y": ["lat_bounds"], "lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
+    assert ds.cf.bounds == ds.cf["air"].cf.bounds == expected
+
     actual = ds.cf[["lat"]]
     expected = ds[["lat", "lat_bounds"]]
     assert_identical(actual, expected)
@@ -650,6 +667,19 @@ def test_bounds():
     assert len(record) == 0
     with pytest.warns(UserWarning, match="{'foo'} not found in object"):
         ds.cf[["air"]]
+
+    # Dataset has bounds
+    expected = """\
+    - Bounds:   Y: ['lat_bounds']
+                lat: ['lat_bounds']
+                latitude: ['lat_bounds']
+    """
+    assert dedent(expected) in ds.cf.__repr__()
+
+    # DataArray does not have bounds
+    expected = airds.cf["air"].cf.__repr__()
+    actual = ds.cf["air"].cf.__repr__()
+    assert actual == expected
 
 
 def test_bounds_to_vertices():

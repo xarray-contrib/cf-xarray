@@ -1529,6 +1529,7 @@ class CFDatasetAccessor(CFAccessor):
             dim: self._obj[dim].cf.formula_terms for dim in _get_dims(self._obj, "Z")
         }
 
+    @property
     def bounds(self) -> Dict[str, List[str]]:
         """
         Property that returns a dictionary mapping valid keys

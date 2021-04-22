@@ -461,6 +461,14 @@ def _getattr(
     try:
         attribute: Union[Mapping, Callable] = getattr(obj, attr)
     except AttributeError:
+        if getattr(
+            CFDatasetAccessor if isinstance(obj, DataArray) else CFDataArrayAccessor,
+            attr,
+            None,
+        ):
+            raise AttributeError(
+                f"{obj.__class__.__name__+'.cf'!r} object has no attribute {attr!r}"
+            )
         raise AttributeError(
             f"{attr!r} is not a valid attribute on the underlying xarray object."
         )
@@ -1001,7 +1009,9 @@ class CFAccessor:
         coords = self._obj.coords
         dims = self._obj.dims
 
-        def make_text_section(subtitle, vardict, valid_values, default_keys=None):
+        def make_text_section(subtitle, attr, valid_values, default_keys=None):
+
+            vardict = getattr(self, attr, {})
 
             star = " * "
             tab = len(star) * " "
@@ -1044,23 +1054,21 @@ class CFAccessor:
             return "\n".join(rows) + "\n"
 
         text = "Coordinates:"
-        text += make_text_section("CF Axes", self.axes, coords, _AXIS_NAMES)
+        text += make_text_section("CF Axes", "axes", coords, _AXIS_NAMES)
+        text += make_text_section("CF Coordinates", "coordinates", coords, _COORD_NAMES)
         text += make_text_section(
-            "CF Coordinates", self.coordinates, coords, _COORD_NAMES
+            "Cell Measures", "cell_measures", coords, _CELL_MEASURES
         )
-        text += make_text_section(
-            "Cell Measures", self.cell_measures, coords, _CELL_MEASURES
-        )
-        text += make_text_section("Standard Names", self.standard_names, coords)
-        text += make_text_section("Bounds", self.bounds, coords)
+        text += make_text_section("Standard Names", "standard_names", coords)
+        text += make_text_section("Bounds", "bounds", coords)
         if isinstance(self._obj, Dataset):
             data_vars = self._obj.data_vars
             text += "\nData Variables:"
             text += make_text_section(
-                "Cell Measures", self.cell_measures, data_vars, _CELL_MEASURES
+                "Cell Measures", "cell_measures", data_vars, _CELL_MEASURES
             )
-            text += make_text_section("Standard Names", self.standard_names, data_vars)
-            text += make_text_section("Bounds", self.bounds, data_vars)
+            text += make_text_section("Standard Names", "standard_names", data_vars)
+            text += make_text_section("Bounds", "bounds", data_vars)
 
         return text
 
@@ -1158,27 +1166,6 @@ class CFAccessor:
         measures = {key: _get_all(self._obj, key) for key in keys}
 
         return {k: sorted(set(v)) for k, v in measures.items() if v}
-
-    @property
-    def bounds(self) -> Dict[str, List[str]]:
-        """
-        Property that returns a dictionary mapping valid keys
-        to the variable names of their bounds.
-
-        Returns
-        -------
-        Dictionary mapping valid keys to the variable names of their bounds.
-        """
-
-        obj = self._obj
-        keys = self.keys()
-        keys |= set(obj.variables if isinstance(obj, Dataset) else obj.coords)
-
-        vardict = {
-            key: apply_mapper(_get_bounds, obj, key, error=False) for key in keys
-        }
-
-        return {k: sorted(v) for k, v in vardict.items() if v}
 
     def get_standard_names(self) -> List[str]:
 
@@ -1527,6 +1514,27 @@ class CFDatasetAccessor(CFAccessor):
         is a limitation of the xarray data model.
         """
         return _getitem(self, key)
+
+    @property
+    def bounds(self) -> Dict[str, List[str]]:
+        """
+        Property that returns a dictionary mapping valid keys
+        to the variable names of their bounds.
+
+        Returns
+        -------
+        Dictionary mapping valid keys to the variable names of their bounds.
+        """
+
+        obj = self._obj
+        keys = self.keys()
+        keys |= set(obj.variables if isinstance(obj, Dataset) else obj.coords)
+
+        vardict = {
+            key: apply_mapper(_get_bounds, obj, key, error=False) for key in keys
+        }
+
+        return {k: sorted(v) for k, v in vardict.items() if v}
 
     def get_bounds(self, key: str) -> DataArray:
         """

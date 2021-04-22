@@ -640,7 +640,7 @@ def test_bounds():
 
     actual = ds.cf.bounds
     expected = {"Y": ["lat_bounds"], "lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
-    assert ds.cf.bounds == ds.cf["air"].cf.bounds == expected
+    assert ds.cf.bounds == expected
 
     actual = ds.cf[["lat"]]
     expected = ds[["lat", "lat_bounds"]]

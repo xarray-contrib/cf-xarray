@@ -1527,8 +1527,7 @@ class CFDatasetAccessor(CFAccessor):
         """
 
         obj = self._obj
-        keys = self.keys()
-        keys |= set(obj.variables if isinstance(obj, Dataset) else obj.coords)
+        keys = self.keys() | set(obj.variables)
 
         vardict = {
             key: apply_mapper(_get_bounds, obj, key, error=False) for key in keys

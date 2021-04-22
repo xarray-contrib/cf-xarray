@@ -28,7 +28,6 @@ Attributes
    :template: autosummary/accessor_attribute.rst
 
     DataArray.cf.axes
-    DataArray.cf.bounds
     DataArray.cf.cell_measures
     DataArray.cf.coordinates
     DataArray.cf.standard_names

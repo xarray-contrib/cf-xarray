@@ -255,6 +255,31 @@ def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     return list(results)
 
 
+def _get_bounds(obj: Union[DataArray, Dataset], key: str) -> List[str]:
+    """
+    Translate from key (either CF key or variable name) to its bounds' variable names.
+    This function interprets the ``bounds`` attribute on DataArrays.
+
+    Parameters
+    ----------
+    obj : DataArray, Dataset
+        DataArray belonging to the coordinate to be checked
+    key : str
+        key to check for.
+
+    Returns
+    -------
+    List[str], Variable name(s) in parent xarray object that are bounds of `key`
+    """
+
+    results = set()
+    for var in apply_mapper(_get_all, obj, key, error=False, default=[key]):
+        if "bounds" in obj[var].attrs:
+            results |= {obj[var].attrs["bounds"]}
+
+    return list(results)
+
+
 def _get_with_standard_name(
     obj: Union[DataArray, Dataset], name: Union[str, List[str]]
 ) -> List[str]:
@@ -436,6 +461,14 @@ def _getattr(
     try:
         attribute: Union[Mapping, Callable] = getattr(obj, attr)
     except AttributeError:
+        if getattr(
+            CFDatasetAccessor if isinstance(obj, DataArray) else CFDataArrayAccessor,
+            attr,
+            None,
+        ):
+            raise AttributeError(
+                f"{obj.__class__.__name__+'.cf'!r} object has no attribute {attr!r}"
+            )
         raise AttributeError(
             f"{attr!r} is not a valid attribute on the underlying xarray object."
         )
@@ -976,7 +1009,9 @@ class CFAccessor:
         coords = self._obj.coords
         dims = self._obj.dims
 
-        def make_text_section(subtitle, vardict, valid_values, default_keys=None):
+        def make_text_section(subtitle, attr, valid_values, default_keys=None):
+
+            vardict = getattr(self, attr, {})
 
             star = " * "
             tab = len(star) * " "
@@ -1019,21 +1054,21 @@ class CFAccessor:
             return "\n".join(rows) + "\n"
 
         text = "Coordinates:"
-        text += make_text_section("CF Axes", self.axes, coords, _AXIS_NAMES)
+        text += make_text_section("CF Axes", "axes", coords, _AXIS_NAMES)
+        text += make_text_section("CF Coordinates", "coordinates", coords, _COORD_NAMES)
         text += make_text_section(
-            "CF Coordinates", self.coordinates, coords, _COORD_NAMES
+            "Cell Measures", "cell_measures", coords, _CELL_MEASURES
         )
-        text += make_text_section(
-            "Cell Measures", self.cell_measures, coords, _CELL_MEASURES
-        )
-        text += make_text_section("Standard Names", self.standard_names, coords)
+        text += make_text_section("Standard Names", "standard_names", coords)
+        text += make_text_section("Bounds", "bounds", coords)
         if isinstance(self._obj, Dataset):
             data_vars = self._obj.data_vars
             text += "\nData Variables:"
             text += make_text_section(
-                "Cell Measures", self.cell_measures, data_vars, _CELL_MEASURES
+                "Cell Measures", "cell_measures", data_vars, _CELL_MEASURES
             )
-            text += make_text_section("Standard Names", self.standard_names, data_vars)
+            text += make_text_section("Standard Names", "standard_names", data_vars)
+            text += make_text_section("Bounds", "bounds", data_vars)
 
         return text
 
@@ -1144,7 +1179,7 @@ class CFAccessor:
     @property
     def standard_names(self) -> Dict[str, List[str]]:
         """
-        Returns a sorted list of standard names in Dataset.
+        Returns a dictionary mapping standard names to variable names.
 
         Parameters
         ----------
@@ -1153,7 +1188,7 @@ class CFAccessor:
 
         Returns
         -------
-        Dictionary of standard names in dataset
+        Dictionary mapping standard names to variable names.
         """
         if isinstance(self._obj, Dataset):
             variables = self._obj.variables
@@ -1480,6 +1515,26 @@ class CFDatasetAccessor(CFAccessor):
         """
         return _getitem(self, key)
 
+    @property
+    def bounds(self) -> Dict[str, List[str]]:
+        """
+        Property that returns a dictionary mapping valid keys
+        to the variable names of their bounds.
+
+        Returns
+        -------
+        Dictionary mapping valid keys to the variable names of their bounds.
+        """
+
+        obj = self._obj
+        keys = self.keys() | set(obj.variables)
+
+        vardict = {
+            key: apply_mapper(_get_bounds, obj, key, error=False) for key in keys
+        }
+
+        return {k: sorted(v) for k, v in vardict.items() if v}
+
     def get_bounds(self, key: str) -> DataArray:
         """
         Get bounds variable corresponding to key.
@@ -1493,12 +1548,8 @@ class CFDatasetAccessor(CFAccessor):
         -------
         DataArray
         """
-        name = apply_mapper(
-            _single(_get_all), self._obj, key, error=False, default=[key]
-        )[0]
-        bounds = self._obj[name].attrs["bounds"]
-        obj = self._maybe_to_dataset()
-        return obj[bounds]
+
+        return apply_mapper(_variables(_single(_get_bounds)), self._obj, key)[0]
 
     def get_bounds_dim_name(self, key: str) -> str:
         """

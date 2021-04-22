@@ -63,6 +63,7 @@ Attributes
    :template: autosummary/accessor_attribute.rst
 
     Dataset.cf.axes
+    Dataset.cf.bounds
     Dataset.cf.cell_measures
     Dataset.cf.coordinates
     Dataset.cf.standard_names

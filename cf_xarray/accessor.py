@@ -1796,9 +1796,12 @@ class CFDataArrayAccessor(CFAccessor):
             {parametric_coord_name: {standard_term_name: variable_name}}
         """
         da = self._obj
-        dims = _single(_get_dims)(da, "Z")[0]
+        if "formula_terms" not in da.attrs:
+            var = da[_single(_get_dims)(da, "Z")[0]]
+        else:
+            var = da
         terms = {}
-        formula_terms = da[dims].attrs.get("formula_terms", "")
+        formula_terms = var.attrs.get("formula_terms", "")
         for mapping in re.sub(r"\s*:\s*", ":", formula_terms).split():
             key, value = mapping.split(":")
             terms[key] = value

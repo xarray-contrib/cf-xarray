@@ -956,6 +956,12 @@ def test_formula_terms():
     assert romsds.cf.formula_terms == {"s_rho": srhoterms}
     assert romsds["temp"].cf.formula_terms == srhoterms
     assert romsds["s_rho"].cf.formula_terms == srhoterms
+
+    s_rho = romsds["s_rho"].copy(deep=True)
+    del s_rho.attrs["standard_name"]
+    del s_rho.s_rho.attrs["standard_name"]  # TODO: xarray bug
+    assert s_rho.cf.formula_terms == srhoterms
+
     with pytest.raises(KeyError):
         # x,y,t variable
         romsds["zeta"].cf.formula_terms

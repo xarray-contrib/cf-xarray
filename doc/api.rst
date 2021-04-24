@@ -30,6 +30,7 @@ Attributes
     DataArray.cf.axes
     DataArray.cf.cell_measures
     DataArray.cf.coordinates
+    DataArray.cf.formula_terms
     DataArray.cf.standard_names
     DataArray.cf.plot
 
@@ -66,6 +67,7 @@ Attributes
     Dataset.cf.bounds
     Dataset.cf.cell_measures
     Dataset.cf.coordinates
+    Dataset.cf.formula_terms
     Dataset.cf.standard_names
 
 .. _dsmeth:

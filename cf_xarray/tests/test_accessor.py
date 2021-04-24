@@ -945,6 +945,28 @@ def test_param_vcoord_ocean_s_coord():
         copy.cf.decode_vertical_coords()
 
 
+def test_formula_terms():
+    srhoterms = {
+        "s": "s_rho",
+        "C": "Cs_r",
+        "eta": "zeta",
+        "depth": "h",
+        "depth_c": "hc",
+    }
+    assert romsds.cf.formula_terms == {"s_rho": srhoterms}
+    assert romsds["temp"].cf.formula_terms == srhoterms
+    assert romsds["s_rho"].cf.formula_terms == srhoterms
+
+    s_rho = romsds["s_rho"].copy(deep=True)
+    del s_rho.attrs["standard_name"]
+    del s_rho.s_rho.attrs["standard_name"]  # TODO: xarray bug
+    assert s_rho.cf.formula_terms == srhoterms
+
+    with pytest.raises(KeyError):
+        # x,y,t variable
+        romsds["zeta"].cf.formula_terms
+
+
 def test_standard_name_mapper():
     da = xr.DataArray(
         np.arange(6),

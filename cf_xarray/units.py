@@ -8,7 +8,11 @@ import re
 import warnings
 
 import pint
-from pint import DimensionalityError, UndefinedUnitError, UnitStrippedWarning
+from pint import (  # noqa: F401
+    DimensionalityError,
+    UndefinedUnitError,
+    UnitStrippedWarning,
+)
 
 # Create registry, with preprocessors for UDUNITS-style powers (m2 s-2) and percent signs
 units = pint.UnitRegistry(

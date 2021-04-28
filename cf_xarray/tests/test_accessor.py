@@ -61,10 +61,14 @@ def test_repr():
                       * longitude: ['lon']
                       * time: ['time']
 
+    - Bounds:   n/a
+
     Data Variables:
     - Cell Measures:   area, volume: n/a
 
     - Standard Names:   air_temperature: ['air']
+
+    - Bounds:   n/a
     """
     assert actual == dedent(expected)
 
@@ -89,6 +93,8 @@ def test_repr():
     - Standard Names: * latitude: ['lat']
                       * longitude: ['lon']
                       * time: ['time']
+
+    - Bounds:   n/a
     """
     assert actual == dedent(expected)
 
@@ -108,11 +114,15 @@ def test_repr():
 
     - Standard Names:   n/a
 
+    - Bounds:   n/a
+
     Data Variables:
     - Cell Measures:   area, volume: n/a
 
     - Standard Names:   sea_water_potential_temperature: ['TEMP']
                         sea_water_x_velocity: ['UVEL']
+
+    - Bounds:   n/a
     """
     assert actual == dedent(expected)
 
@@ -163,6 +173,8 @@ def test_cell_measures():
 
     - Standard Names:   air_temperature: ['air']
                         foo_std_name: ['foo']
+
+    - Bounds:   n/a
     """
     assert actual.endswith(dedent(expected))
 
@@ -250,8 +262,14 @@ def test_rename_like():
     assert "TEMP" in renamed
 
     # skip conflicting variables
+    da = popds.cf["TEMP"]
     with pytest.warns(UserWarning, match="Conflicting variables skipped:.*"):
-        popds.cf.rename_like(airds)
+        expected = {"longitude": ["TLONG"], "latitude": ["TLAT"]}
+        actual = da.cf.rename_like(airds).cf.coordinates
+        assert expected == actual
+    expected = {"longitude": ["lon"], "latitude": ["lat"]}
+    actual = da.cf.rename_like(airds, skip="axes").cf.coordinates
+    assert expected == actual
 
 
 @pytest.mark.parametrize("obj", objects)
@@ -263,14 +281,7 @@ def test_rename_like():
         ("groupby", {"group": "time"}, {"group": "T"}),
         ("groupby", {"group": "time.month"}, {"group": "T.month"}),
         ("groupby_bins", {"group": "lat", "bins": 5}, {"group": "latitude", "bins": 5}),
-        pytest.param(
-            "coarsen",
-            {"lon": 2, "lat": 5},
-            {"X": 2, "Y": 5},
-            marks=pytest.mark.skip(
-                reason="xarray GH4120. any test after this will fail since attrs are lost"
-            ),
-        ),
+        ("coarsen", {"lon": 2, "lat": 5}, {"X": 2, "Y": 5}),
     ),
 )
 def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
@@ -477,18 +488,14 @@ def test_dataset_plot(obj):
         ("longitude", "lon"),
         ("latitude", "lat"),
         ("time", "time"),
-        pytest.param(
-            "area",
-            "cell_area",
-            marks=pytest.mark.xfail(reason="measures not implemented for dataset"),
-        ),
+        ("area", "cell_area"),
     ),
 )
 def test_getitem(obj, key, expected_key):
     assert key in obj.cf
 
     actual = obj.cf[key]
-    expected = obj[expected_key]
+    expected = obj[expected_key].reset_coords(drop=True)
     assert_identical(actual, expected)
 
 
@@ -502,10 +509,50 @@ def test_getitem_errors(obj):
         obj2.cf["X"]
 
 
-def test_getitem_regression():
+def test_getitem_ignores_bad_measure_attribute():
+    air2 = airds.copy(deep=True)
+    air2.air.attrs["cell_measures"] = "asd"
+    with pytest.warns(UserWarning):
+        assert_identical(air2.air.drop_vars("cell_area"), air2.cf["air"])
+
+    with pytest.raises(ValueError):
+        air2.cf.cell_measures
+    with pytest.raises(ValueError):
+        air2.air.cf.cell_measures
+    with pytest.raises(ValueError):
+        air2.cf.get_associated_variable_names("air", error=True)
+    with pytest.warns(UserWarning):
+        air2.cf.get_associated_variable_names("air", error=False)
+
+
+def test_getitem_clash_standard_name():
     ds = xr.Dataset()
     ds.coords["area"] = xr.DataArray(np.ones(10), attrs={"standard_name": "cell_area"})
     assert_identical(ds.cf["cell_area"], ds["area"].reset_coords(drop=True))
+
+    ds = xr.Dataset()
+    ds["time"] = (
+        "time",
+        np.arange(10),
+        {"standard_name": "time", "bounds": "time_bounds"},
+    )
+    ds["time_bounds"] = (
+        ("time", "bounds"),
+        np.ones((10, 2)),
+        {"standard_name": "time"},
+    )
+
+    ds["lat"] = (
+        "lat",
+        np.arange(10),
+        {"units": "degrees_north", "bounds": "lat_bounds"},
+    )
+    ds["lat_bounds"] = (
+        ("lat", "bounds"),
+        np.ones((10, 2)),
+        {"units": "degrees_north"},
+    )
+    assert_identical(ds["lat"], ds.cf["latitude"])
 
 
 def test_getitem_uses_coordinates():
@@ -590,6 +637,11 @@ def test_add_bounds(obj, dims):
 
 def test_bounds():
     ds = airds.copy(deep=True).cf.add_bounds("lat")
+
+    actual = ds.cf.bounds
+    expected = {"Y": ["lat_bounds"], "lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
+    assert ds.cf.bounds == expected
+
     actual = ds.cf[["lat"]]
     expected = ds[["lat", "lat_bounds"]]
     assert_identical(actual, expected)
@@ -615,6 +667,19 @@ def test_bounds():
     assert len(record) == 0
     with pytest.warns(UserWarning, match="{'foo'} not found in object"):
         ds.cf[["air"]]
+
+    # Dataset has bounds
+    expected = """\
+    - Bounds:   Y: ['lat_bounds']
+                lat: ['lat_bounds']
+                latitude: ['lat_bounds']
+    """
+    assert dedent(expected) in ds.cf.__repr__()
+
+    # DataArray does not have bounds
+    expected = airds.cf["air"].cf.__repr__()
+    actual = ds.cf["air"].cf.__repr__()
+    assert actual == expected
 
 
 def test_bounds_to_vertices():
@@ -880,6 +945,28 @@ def test_param_vcoord_ocean_s_coord():
         copy.cf.decode_vertical_coords()
 
 
+def test_formula_terms():
+    srhoterms = {
+        "s": "s_rho",
+        "C": "Cs_r",
+        "eta": "zeta",
+        "depth": "h",
+        "depth_c": "hc",
+    }
+    assert romsds.cf.formula_terms == {"s_rho": srhoterms}
+    assert romsds["temp"].cf.formula_terms == srhoterms
+    assert romsds["s_rho"].cf.formula_terms == srhoterms
+
+    s_rho = romsds["s_rho"].copy(deep=True)
+    del s_rho.attrs["standard_name"]
+    del s_rho.s_rho.attrs["standard_name"]  # TODO: xarray bug
+    assert s_rho.cf.formula_terms == srhoterms
+
+    with pytest.raises(KeyError):
+        # x,y,t variable
+        romsds["zeta"].cf.formula_terms
+
+
 def test_standard_name_mapper():
     da = xr.DataArray(
         np.arange(6),
@@ -1051,3 +1138,54 @@ def test_stack(obj):
 
     actual = obj.cf.stack({"latlon": ["latitude", "longitude"]})
     assert_identical(expected, actual)
+
+
+da = xr.DataArray(
+    np.arange(10)[::-1],  # like ocean temperature
+    dims="z",
+    coords={"z": ("z", np.arange(10))},
+    name="test",
+)
+
+
+@pytest.mark.parametrize("obj", [da, da.to_dataset()])
+def test_differentiate_positive_upward(obj):
+    obj.z.attrs["positive"] = "down"
+    expected = obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2)
+    assert_identical(expected, actual)
+
+    obj.z.attrs["positive"] = "up"
+    expected = obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    obj.z.attrs["positive"] = "down"
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    obj = obj.isel(z=slice(None, None, -1))
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+    obj = obj.isel(z=slice(None, None, -1))
+
+    with xr.set_options(keep_attrs=True):
+        da["z"] = obj.z * -1
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    obj = obj.isel(z=slice(None, None, -1))
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    del obj.z.attrs["positive"]
+    with pytest.raises(ValueError):
+        obj.cf.differentiate("z", positive_upward=True)
+
+    obj.z.attrs["positive"] = "zzz"
+    with pytest.raises(ValueError):
+        obj.cf.differentiate("z", positive_upward=True)

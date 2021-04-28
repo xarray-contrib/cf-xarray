@@ -30,6 +30,7 @@ Attributes
     DataArray.cf.axes
     DataArray.cf.cell_measures
     DataArray.cf.coordinates
+    DataArray.cf.formula_terms
     DataArray.cf.standard_names
     DataArray.cf.plot
 
@@ -45,6 +46,7 @@ Methods
 
     DataArray.cf.__getitem__
     DataArray.cf.__repr__
+    DataArray.cf.differentiate
     DataArray.cf.guess_coord_axis
     DataArray.cf.keys
     DataArray.cf.rename_like
@@ -62,8 +64,10 @@ Attributes
    :template: autosummary/accessor_attribute.rst
 
     Dataset.cf.axes
+    Dataset.cf.bounds
     Dataset.cf.cell_measures
     Dataset.cf.coordinates
+    Dataset.cf.formula_terms
     Dataset.cf.standard_names
 
 .. _dsmeth:
@@ -80,6 +84,7 @@ Methods
     Dataset.cf.add_bounds
     Dataset.cf.bounds_to_vertices
     Dataset.cf.decode_vertical_coords
+    Dataset.cf.differentiate
     Dataset.cf.get_bounds
     Dataset.cf.get_bounds_dim_name
     Dataset.cf.guess_coord_axis

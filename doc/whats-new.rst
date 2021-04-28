@@ -3,6 +3,15 @@
 What's New
 ----------
 
+v0.5.2 (unreleased)
+===================
+
+- Added :py:attr:`DataArray.cf.formula_terms` and :py:attr:`Dataset.cf.formula_terms`.
+  By `Deepak Cherian`_.
+- Added :py:attr:`Dataset.cf.bounds` to return a dictionary mapping valid keys to the variable names of their bounds. By `Mattia Almansi`_.
+- :py:meth:`DataArray.cf.differentiate` and :py:meth:`Dataset.cf.differentiate` can optionally correct
+  sign of the derivative by interpreting the ``"positive"`` attribute. By `Deepak Cherian`_.
+
 v0.5.1 (Feb 24, 2021)
 =====================
 

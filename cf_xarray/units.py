@@ -15,7 +15,9 @@ units = pint.UnitRegistry(
     autoconvert_offset_to_baseunit=True,
     preprocessors=[
         functools.partial(
-            re.compile(r"(?<=[A-Za-z])(?![A-Za-z])(?<![0-9\-][eE])(?<![0-9\-])(?=[0-9\-])").sub,
+            re.compile(
+                r"(?<=[A-Za-z])(?![A-Za-z])(?<![0-9\-][eE])(?<![0-9\-])(?=[0-9\-])"
+            ).sub,
             "**",
         ),
         lambda string: string.replace("%", "percent"),

@@ -634,6 +634,10 @@ def test_add_bounds(obj, dims):
         assert added[dim].attrs["bounds"] == name
         assert_allclose(added[name].reset_coords(drop=True), expected[dim])
 
+    # Test multiple dimensions
+    assert not {"x1_bounds", "x2_bounds"} <= set(multiple.variables)
+    assert {"x1_bounds", "x2_bounds"} <= set(multiple.cf.add_bounds("X").variables)
+
 
 def test_bounds():
     ds = airds.copy(deep=True).cf.add_bounds("lat")

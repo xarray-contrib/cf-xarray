@@ -1586,15 +1586,15 @@ class CFDatasetAccessor(CFAccessor):
         assert self._obj.sizes[bounds_dim] in [2, 4]
         return bounds_dim
 
-    def add_bounds(self, dims: Union[Hashable, Iterable[Hashable]]):
+    def add_bounds(self, keys: Union[str, Iterable[str]]):
         """
         Returns a new object with bounds variables. The bounds values are guessed assuming
         equal spacing on either side of a coordinate label.
 
         Parameters
         ----------
-        dims : Hashable or Iterable[Hashable]
-            Either a single dimension name or a list of dimension names.
+        keys : str or Iterable[str]
+            Either a single key or a list of keys corresponding to dimensions.
 
         Returns
         -------
@@ -1609,12 +1609,16 @@ class CFDatasetAccessor(CFAccessor):
         The bounds variables are automatically named f"{dim}_bounds" where ``dim``
         is a dimension name.
         """
-        if isinstance(dims, Hashable):
-            dimensions = (dims,)
-        else:
-            dimensions = dims
+        if isinstance(keys, str):
+            keys = [keys]
 
-        bad_dims: Set[Hashable] = set(dimensions) - set(self._obj.dims)
+        dimensions = set()
+        for key in keys:
+            dimensions |= set(
+                apply_mapper(_get_dims, self._obj, key, error=False, default=[key])
+            )
+
+        bad_dims: Set[str] = dimensions - set(self._obj.dims)
         if bad_dims:
             raise ValueError(
                 f"{bad_dims!r} are not dimensions in the underlying object."

@@ -1340,7 +1340,7 @@ class CFAccessor:
             if ours and theirs:
                 keydict[key] = dict(ours=list(ours), theirs=list(theirs))
 
-        def get_renamer_and_conflict():
+        def get_renamer_and_conflicts():
             conflicts = {}
             for k0, v0 in keydict.items():
                 if len(v0["ours"]) > 1 or len(v0["theirs"]) > 1:
@@ -1360,9 +1360,9 @@ class CFAccessor:
 
             return renamer, conflicts
 
-        # Run get_renamer_and_conflict twice.
+        # Run get_renamer_and_conflicts twice.
         # The second time add the bounds associated with variables to rename
-        renamer, conflicts = get_renamer_and_conflict()
+        renamer, conflicts = get_renamer_and_conflicts()
         if "bounds" not in skip:
             for k, v in renamer.items():
                 ours = set(getattr(self, "bounds", {}).get(k, ""))
@@ -1371,7 +1371,7 @@ class CFAccessor:
                     ours |= set(keydict.get(k, {}).get("ours", []))
                     theirs |= set(keydict.get(k, {}).get("theirs", []))
                     keydict[k] = dict(ours=list(ours), theirs=list(theirs))
-            renamer, conflicts = get_renamer_and_conflict()
+            renamer, conflicts = get_renamer_and_conflicts()
 
         # Rename and warn
         if conflicts:

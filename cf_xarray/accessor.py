@@ -1317,7 +1317,7 @@ class CFAccessor:
             Variables will be renamed to match variable names in this xarray object
         skip: str, Iterable[str], optional
             Limit the renaming excluding
-            ("axes", "cell_measures", "coordinates", "standard_names")
+            ("axes", "bounds", cell_measures", "coordinates", "standard_names")
             or a subset thereof.
 
         Returns
@@ -1332,24 +1332,48 @@ class CFAccessor:
         good_keys = ourkeys & theirkeys
         keydict = {}
         for key in good_keys:
-            ours = set(_get_all(self._obj, key))
-            theirs = set(_get_all(other, key))
+            ours = set(apply_mapper(_get_all, self._obj, key))
+            theirs = set(apply_mapper(_get_all, other, key))
             for attr in skip:
                 ours -= set(getattr(self, attr).get(key, []))
                 theirs -= set(getattr(other.cf, attr).get(key, []))
             if ours and theirs:
                 keydict[key] = dict(ours=list(ours), theirs=list(theirs))
 
-        conflicts = {}
-        for k0, v0 in keydict.items():
-            if len(v0["ours"]) > 1 or len(v0["theirs"]) > 1:
-                conflicts[k0] = v0
-                continue
-            for v1 in keydict.values():
-                # Conflicts have same ours but different theirs or vice versa
-                if (v0["ours"] == v1["ours"]) != (v0["theirs"] == v1["theirs"]):
+        def get_renamer_and_conflict():
+            conflicts = {}
+            for k0, v0 in keydict.items():
+                if len(v0["ours"]) > 1 or len(v0["theirs"]) > 1:
                     conflicts[k0] = v0
-                    break
+                    continue
+                for v1 in keydict.values():
+                    # Conflicts have same ours but different theirs or vice versa
+                    if (v0["ours"] == v1["ours"]) != (v0["theirs"] == v1["theirs"]):
+                        conflicts[k0] = v0
+                        break
+
+            renamer = {
+                v["ours"][0]: v["theirs"][0]
+                for k, v in keydict.items()
+                if k not in conflicts
+            }
+
+            return renamer, conflicts
+
+        # Run get_renamer_and_conflict twice.
+        # The second time add the bounds associated with variables to rename
+        renamer, conflicts = get_renamer_and_conflict()
+        if "bounds" not in skip:
+            for k, v in renamer.items():
+                ours = set(getattr(self, "bounds", {}).get(k, ""))
+                theirs = set(getattr(other.cf, "bounds", {}).get(v, ""))
+                if ours and theirs:
+                    ours |= set(keydict.get(k, {}).get("ours", []))
+                    theirs |= set(keydict.get(k, {}).get("theirs", []))
+                    keydict[k] = dict(ours=list(ours), theirs=list(theirs))
+            renamer, conflicts = get_renamer_and_conflict()
+
+        # Rename and warn
         if conflicts:
             warnings.warn(
                 "Conflicting variables skipped:\n"
@@ -1363,23 +1387,28 @@ class CFAccessor:
                 ),
                 UserWarning,
             )
-
-        renamer = {
-            v["ours"][0]: v["theirs"][0]
-            for k, v in keydict.items()
-            if k not in conflicts
-        }
         newobj = self._obj.rename(renamer)
 
-        # rename variable names in the coordinates attribute
+        # rename variable names in the attributes
         # if present
         ds = self._maybe_to_dataset(newobj)
         for _, variable in ds.variables.items():
-            coordinates = variable.attrs.get("coordinates", None)
-            if coordinates:
-                for k, v in renamer.items():
-                    coordinates = coordinates.replace(k, v)
-                variable.attrs["coordinates"] = coordinates
+            for attr in ("bounds", "coordinates", "cell_measures"):
+                if attr == "cell_measures":
+                    varlist = [
+                        f"{k}: {renamer.get(v, v)}"
+                        for k, v in parse_cell_methods_attr(
+                            variable.attrs.get(attr, "")
+                        ).items()
+                    ]
+                else:
+                    varlist = [
+                        renamer.get(var, var)
+                        for var in variable.attrs.get(attr, "").split()
+                    ]
+
+                if varlist:
+                    variable.attrs[attr] = " ".join(varlist)
         return self._maybe_to_dataarray(ds)
 
     def guess_coord_axis(self, verbose: bool = False) -> Union[DataArray, Dataset]:

@@ -6,6 +6,7 @@ What's New
 v0.5.2 (unreleased)
 ===================
 
+- Replace the ``dims`` argument of :py:meth:`Dataset.cf.add_bounds` with ``keys``, allowing to use CF keys. By `Mattia Almansi`_.
 - Added :py:attr:`DataArray.cf.formula_terms` and :py:attr:`Dataset.cf.formula_terms`.
   By `Deepak Cherian`_.
 - Added :py:attr:`Dataset.cf.bounds` to return a dictionary mapping valid keys to the variable names of their bounds. By `Mattia Almansi`_.

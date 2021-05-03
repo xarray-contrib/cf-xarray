@@ -1365,8 +1365,8 @@ class CFAccessor:
         renamer, conflicts = get_renamer_and_conflicts()
         if "bounds" not in skip:
             for k, v in renamer.items():
-                ours = set(getattr(self, "bounds", {}).get(k, ""))
-                theirs = set(getattr(other.cf, "bounds", {}).get(v, ""))
+                ours = set(getattr(self, "bounds", {}).get(k, []))
+                theirs = set(getattr(other.cf, "bounds", {}).get(v, []))
                 if ours and theirs:
                     ours |= set(keydict.get(k, {}).get("ours", []))
                     theirs |= set(keydict.get(k, {}).get("theirs", []))

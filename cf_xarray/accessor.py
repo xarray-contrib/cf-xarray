@@ -1614,7 +1614,7 @@ class CFDatasetAccessor(CFAccessor):
 
         dimensions = set()
         for key in keys:
-            dimensions |= set(
+            dimensions.update(
                 apply_mapper(_get_dims, self._obj, key, error=False, default=[key])
             )
 

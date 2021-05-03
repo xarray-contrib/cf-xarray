@@ -1335,8 +1335,8 @@ class CFAccessor:
             ours = set(apply_mapper(_get_all, self._obj, key))
             theirs = set(apply_mapper(_get_all, other, key))
             for attr in skip:
-                ours -= set(getattr(self, attr).get(key, []))
-                theirs -= set(getattr(other.cf, attr).get(key, []))
+                ours.difference_update(getattr(self, attr).get(key, []))
+                theirs.difference_update(getattr(other.cf, attr).get(key, []))
             if ours and theirs:
                 keydict[key] = dict(ours=list(ours), theirs=list(theirs))
 
@@ -1368,8 +1368,8 @@ class CFAccessor:
                 ours = set(getattr(self, "bounds", {}).get(k, []))
                 theirs = set(getattr(other.cf, "bounds", {}).get(v, []))
                 if ours and theirs:
-                    ours |= set(keydict.get(k, {}).get("ours", []))
-                    theirs |= set(keydict.get(k, {}).get("theirs", []))
+                    ours.update(keydict.get(k, {}).get("ours", []))
+                    theirs.update(keydict.get(k, {}).get("theirs", []))
                     keydict[k] = dict(ours=list(ours), theirs=list(theirs))
             renamer, conflicts = get_renamer_and_conflicts()
 

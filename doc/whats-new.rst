@@ -6,6 +6,8 @@ What's New
 v0.5.2 (unreleased)
 ===================
 
+- :py:meth:`Dataset.cf.rename_like` also updates the ``bounds`` and ``cell_measures`` attributes. By `Mattia Almansi`_.
+- Added :py:attr:`DataArray.cf.formula_terms` and :py:attr:`Dataset.cf.formula_terms`.
 - Added :py:attr:`DataArray.cf.formula_terms` and :py:attr:`Dataset.cf.formula_terms`.
   By `Deepak Cherian`_.
 - Added :py:attr:`Dataset.cf.bounds` to return a dictionary mapping valid keys to the variable names of their bounds. By `Mattia Almansi`_.

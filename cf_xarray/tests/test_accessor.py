@@ -780,9 +780,9 @@ _VERTICAL_NAMES = _make_names(
         "nav_lev",
     ]
 )
-_X_NAMES = _make_names(["x"])
-_Y_NAMES = _make_names(["y"])
-_Z_NAMES = _VERTICAL_NAMES
+_X_NAMES = _make_names(["x", "nlon", "i", "ni"])
+_Y_NAMES = _make_names(["y", "nlat", "j", "nj"])
+_Z_NAMES = _VERTICAL_NAMES + ["olevel", "level", "zlevel"]
 _LATITUDE_NAMES = _make_names(["lat", "latitude", "gphi", "nav_lat"])
 _LONGITUDE_NAMES = _make_names(["lon", "longitude", "glam", "nav_lon"])
 
@@ -1193,3 +1193,24 @@ def test_differentiate_positive_upward(obj):
     obj.z.attrs["positive"] = "zzz"
     with pytest.raises(ValueError):
         obj.cf.differentiate("z", positive_upward=True)
+
+
+def test_cmip6_attrs():
+    da = xr.DataArray(
+        np.ones((10, 10)),
+        dims=("nlon", "nlat"),
+        coords={
+            "nlon": (
+                "nlon",
+                np.arange(10),
+                {"long_name": "cell index along first dimension"},
+            ),
+            "nlat": (
+                "nlat",
+                np.arange(10),
+                {"long_name": "cell index along second dimension"},
+            ),
+        },
+    )
+    assert da.cf.axes["X"] == ["nlon"]
+    assert da.cf.axes["Y"] == ["nlat"]

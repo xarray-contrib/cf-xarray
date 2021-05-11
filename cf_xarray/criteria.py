@@ -91,5 +91,4 @@ regex = {
     "X": re.compile("x|i|nlon|ni"),
     "longitude": re.compile("x?(nav_lon|lon|glam)[a-z0-9]*"),
 }
-# regex["Z"] = regex["vertical"]
 regex["T"] = regex["time"]

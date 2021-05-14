@@ -35,3 +35,5 @@ A lightweight convenience wrapper for using CF attributes on xarray objects.
 For example you can use ``.cf.mean("latitude")`` instead of ``.mean("lat")`` if appropriate attributes are set! This allows you to write code that does not require knowledge of specific dimension or coordinate names particular to a dataset.
 
 See more in the introductory notebook `here <https://cf-xarray.readthedocs.io/en/latest/examples/introduction.html>`_.
+
+Try out our Earthcube 2021 Annual Meeting notebook submission `here <https://binder.pangeo.io/v2/gh/malmans2/cf-xarray-earthcube/main?filepath=DC_01_cf-xarray.ipynb>`_.

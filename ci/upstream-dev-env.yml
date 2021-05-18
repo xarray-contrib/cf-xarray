@@ -12,3 +12,4 @@ dependencies:
   - pooch
   - pip:
     - git+https://github.com/pydata/xarray
+    - git+https://github.com/hgrecco/pint

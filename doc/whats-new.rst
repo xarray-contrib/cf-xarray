@@ -3,6 +3,11 @@
 What's New
 ----------
 
+v0.5.3 (unreleased)
+===================
+- Begin adding support for units with a unit registry for pint arrays. :pr:`197`.
+  By `Jon Thielen`_ and `Justus Magin`_.
+
 v0.5.2 (May 11, 2021)
 =====================
 
@@ -102,6 +107,8 @@ v0.1.3
 - Support expanding key to multiple dimension names.
 
 .. _`Mattia Almansi`: https://github.com/malmans2
+.. _`Justus Magin`: https://github.com/keewis
+.. _`Jon Thielen`: https://github.com/jthielen
 .. _`Anderson Banihirwe`: https://github.com/andersy005
 .. _`Pascal Bourgault`: https://github.com/aulemahal
 .. _`Deepak Cherian`: https://github.com/dcherian

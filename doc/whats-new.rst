@@ -3,11 +3,16 @@
 What's New
 ----------
 
-v0.5.2 (unreleased)
+v0.5.3 (unreleased)
 ===================
-
 - Begin adding support for units with a unit registry for pint arrays. :pr:`197`.
   By `Jon Thielen`_ and `Justus Magin`_.
+
+v0.5.2 (May 11, 2021)
+=====================
+
+- Add some explicit support for CMIP6 output. By `Deepak Cherian`_.
+- Replace the ``dims`` argument of :py:meth:`Dataset.cf.add_bounds` with ``keys``, allowing to use CF keys. By `Mattia Almansi`_.
 - Added :py:attr:`DataArray.cf.formula_terms` and :py:attr:`Dataset.cf.formula_terms`.
   By `Deepak Cherian`_.
 - Added :py:attr:`Dataset.cf.bounds` to return a dictionary mapping valid keys to the variable names of their bounds. By `Mattia Almansi`_.

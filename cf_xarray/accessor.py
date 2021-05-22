@@ -857,11 +857,20 @@ class CFAccessor:
             elif sig.parameters[param].kind is inspect.Parameter.VAR_POSITIONAL:
                 var_args.append(param)
 
-        posargs = []
+        # Catch DataArrays and return them as they are
+        args = list(args)
+        arguments = {}
+        posargs = [
+            args.pop(i) for i, arg in enumerate(args) if isinstance(arg, DataArray)
+        ]
+        for key, value in dict(kwargs).items():
+            if isinstance(value, DataArray):
+                arguments[key] = kwargs.pop(key)
+
         if args or kwargs:
             bound = sig.bind(*args, **kwargs)
-            arguments = self._rewrite_values(
-                bound.arguments, key_mappers, tuple(var_kws)
+            arguments.update(
+                **self._rewrite_values(bound.arguments, key_mappers, tuple(var_kws))
             )
 
             # unwrap the *args type arguments
@@ -875,8 +884,6 @@ class CFAccessor:
                 value = arguments.pop(kw, None)
                 if value:
                     arguments.update(**value)
-        else:
-            arguments = {}
 
         return posargs, arguments
 

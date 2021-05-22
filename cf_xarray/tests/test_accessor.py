@@ -317,8 +317,13 @@ def test_weighted(obj):
     with raise_if_dask_computes(max_computes=2):
         # weights are checked for nans
         expected = obj.weighted(obj["cell_area"]).sum("lat")
-        actual = obj.cf.weighted("area").sum("Y")
-    assert_identical(expected, actual)
+        actuals = [
+            obj.cf.weighted("area").sum("Y"),
+            obj.cf.weighted(obj["cell_area"]).sum("Y"),
+            obj.cf.weighted(weights=obj["cell_area"]).sum("Y"),
+        ]
+    for actual in actuals:
+        assert_identical(expected, actual)
 
 
 @pytest.mark.parametrize("obj", objects)

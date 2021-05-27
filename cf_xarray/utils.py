@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Dict
+from typing import Any, Dict, Iterable
 
 from xarray import DataArray
 
@@ -53,3 +53,7 @@ def invert_mappings(*mappings):
             for name in v:
                 merged[name] |= {k}
     return merged
+
+
+def always_iterable(obj: Any) -> Iterable:
+    return [obj] if not isinstance(obj, (tuple, list, set, dict)) else obj

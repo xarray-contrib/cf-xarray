@@ -1340,7 +1340,7 @@ class CFAccessor:
             if ours and theirs:
                 keydict[key] = dict(ours=list(ours), theirs=list(theirs))
 
-        def get_renamer_and_conflicts():
+        def get_renamer_and_conflicts(keydict):
             conflicts = {}
             for k0, v0 in keydict.items():
                 if len(v0["ours"]) > 1 or len(v0["theirs"]) > 1:

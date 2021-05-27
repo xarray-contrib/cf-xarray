@@ -7,5 +7,6 @@ dependencies:
   - netcdf4
   - pip
   - xarray
+  - pooch
   - pip:
     - git+https://github.com/xarray-contrib/cf-xarray

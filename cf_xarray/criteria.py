@@ -5,6 +5,7 @@ Copyright (c) 2017 MetPy Developers.
 """
 
 
+import copy
 import re
 from typing import MutableMapping, Tuple
 
@@ -74,19 +75,20 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
 }
 
 # "long_name" and "standard_name" criteria are the same. For convenience.
-coordinate_criteria["long_name"] = coordinate_criteria["standard_name"]
+coordinate_criteria["long_name"] = copy.deepcopy(coordinate_criteria["standard_name"])
+coordinate_criteria["long_name"]["X"] += ("cell index along first dimension",)
+coordinate_criteria["long_name"]["Y"] += ("cell index along second dimension",)
 
 #: regular expressions for guess_coord_axis
 regex = {
     "time": re.compile("\\bt\\b|(time|min|hour|day|week|month|year)[0-9]*"),
-    "vertical": re.compile(
-        "(z|nav_lev|gdep|lv_|bottom_top|sigma|h(ei)?ght|altitude|depth|"
+    "Z": re.compile(
+        "(z|nav_lev|gdep|lv_|[o]*lev|bottom_top|sigma|h(ei)?ght|altitude|depth|"
         "isobaric|pres|isotherm)[a-z_]*[0-9]*"
     ),
-    "Y": re.compile("y"),
+    "Y": re.compile("y|j|nlat|nj"),
     "latitude": re.compile("y?(nav_lat|lat|gphi)[a-z0-9]*"),
-    "X": re.compile("x"),
+    "X": re.compile("x|i|nlon|ni"),
     "longitude": re.compile("x?(nav_lon|lon|glam)[a-z0-9]*"),
 }
-regex["Z"] = regex["vertical"]
 regex["T"] = regex["time"]

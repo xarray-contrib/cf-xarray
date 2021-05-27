@@ -68,7 +68,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 def apply_mapper(
     mappers: Union[Mapper, Tuple[Mapper, ...]],
     obj: Union[DataArray, Dataset],
-    key: str,
+    key: Any,
     error: bool = True,
     default: Any = None,
 ) -> List[Any]:
@@ -79,6 +79,10 @@ def apply_mapper(
     It should return a list in all other cases including when there are no
     results for a good key.
     """
+
+    if not isinstance(key, str) and default is not None:
+        return default
+
     if default is None:
         default = []
 
@@ -857,20 +861,11 @@ class CFAccessor:
             elif sig.parameters[param].kind is inspect.Parameter.VAR_POSITIONAL:
                 var_args.append(param)
 
-        # Catch DataArrays and return them as they are
-        args = list(args)
-        arguments = {}
-        posargs = [
-            args.pop(i) for i, arg in enumerate(args) if isinstance(arg, DataArray)
-        ]
-        for key, value in dict(kwargs).items():
-            if isinstance(value, DataArray):
-                arguments[key] = kwargs.pop(key)
-
+        posargs = []
         if args or kwargs:
             bound = sig.bind(*args, **kwargs)
-            arguments.update(
-                **self._rewrite_values(bound.arguments, key_mappers, tuple(var_kws))
+            arguments = self._rewrite_values(
+                bound.arguments, key_mappers, tuple(var_kws)
             )
 
             # unwrap the *args type arguments
@@ -884,6 +879,8 @@ class CFAccessor:
                 value = arguments.pop(kw, None)
                 if value:
                     arguments.update(**value)
+        else:
+            arguments = {}
 
         return posargs, arguments
 
@@ -924,7 +921,9 @@ class CFAccessor:
             value = kwargs[key]
             mappers = all_mappers[key]
 
-            if isinstance(value, str):
+            if isinstance(value, (str, DataArray, Dataset)) or not isinstance(
+                value, Iterable
+            ):
                 value = [value]
 
             if isinstance(value, dict):

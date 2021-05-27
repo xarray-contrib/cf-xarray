@@ -90,8 +90,7 @@ def apply_mapper(
             raise ValueError("`default` must be provided when `key` is not a string.")
         return list(always_iterable(default))
 
-    if default is None:
-        default = []
+    default = [] if default is None else list(always_iterable(default))
 
     def _apply_single_mapper(mapper):
 

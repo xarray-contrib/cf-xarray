@@ -1362,7 +1362,7 @@ class CFAccessor:
 
         # Run get_renamer_and_conflicts twice.
         # The second time add the bounds associated with variables to rename
-        renamer, conflicts = get_renamer_and_conflicts()
+        renamer, conflicts = get_renamer_and_conflicts(keydict)
         if "bounds" not in skip:
             for k, v in renamer.items():
                 ours = set(getattr(self, "bounds", {}).get(k, []))

@@ -1371,7 +1371,7 @@ class CFAccessor:
                     ours.update(keydict.get(k, {}).get("ours", []))
                     theirs.update(keydict.get(k, {}).get("theirs", []))
                     keydict[k] = dict(ours=list(ours), theirs=list(theirs))
-            renamer, conflicts = get_renamer_and_conflicts()
+            renamer, conflicts = get_renamer_and_conflicts(keydict)
 
         # Rename and warn
         if conflicts:

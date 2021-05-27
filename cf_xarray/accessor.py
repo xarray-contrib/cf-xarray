@@ -26,7 +26,12 @@ from xarray.core.arithmetic import SupportsArithmetic
 
 from .criteria import coordinate_criteria, regex
 from .helpers import bounds_to_vertices
-from .utils import _is_datetime_like, invert_mappings, parse_cell_methods_attr
+from .utils import (
+    _is_datetime_like,
+    always_iterable,
+    invert_mappings,
+    parse_cell_methods_attr,
+)
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (
@@ -68,7 +73,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 def apply_mapper(
     mappers: Union[Mapper, Tuple[Mapper, ...]],
     obj: Union[DataArray, Dataset],
-    key: str,
+    key: Any,
     error: bool = True,
     default: Any = None,
 ) -> List[Any]:
@@ -79,8 +84,13 @@ def apply_mapper(
     It should return a list in all other cases including when there are no
     results for a good key.
     """
-    if default is None:
-        default = []
+
+    if not isinstance(key, str):
+        if default is None:
+            raise ValueError("`default` must be provided when `key` is not a string.")
+        return list(always_iterable(default))
+
+    default = [] if default is None else list(always_iterable(default))
 
     def _apply_single_mapper(mapper):
 
@@ -917,8 +927,7 @@ class CFAccessor:
             value = kwargs[key]
             mappers = all_mappers[key]
 
-            if isinstance(value, str):
-                value = [value]
+            value = always_iterable(value)
 
             if isinstance(value, dict):
                 # this for things like isel where **kwargs captures things like T=5

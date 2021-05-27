@@ -241,7 +241,7 @@ def test_rename_like():
     for k in ["TLONG", "TLAT"]:
         assert k not in renamed.coords
         assert k in original.coords
-        assert original.TEMP.attrs["coordinates"] == "TLONG TLAT"
+    assert original.TEMP.attrs["coordinates"] == "TLONG TLAT"
 
     assert "lon" in renamed.coords
     assert "lat" in renamed.coords
@@ -270,6 +270,20 @@ def test_rename_like():
     expected = {"longitude": ["lon"], "latitude": ["lat"]}
     actual = da.cf.rename_like(airds, skip="axes").cf.coordinates
     assert expected == actual
+
+    # rename bounds
+    original = airds.cf[["air"]].cf.add_bounds("lon")
+    other = popds.cf[["TEMP"]].cf.add_bounds("nlon")
+    renamed = original.cf.rename_like(other, skip="coordinates")
+    assert renamed.cf.bounds["nlon"] == ["nlon_bounds"]
+
+    # rename cell measures
+    other = airds.cf["air"].cf.rename(area="CELL_AREA")
+    other.attrs["cell_measures"] = other.attrs["cell_measures"].replace(
+        "cell_area", "CELL_AREA"
+    )
+    renamed = airds.cf["air"].cf.rename_like(other)
+    assert renamed.cf.cell_measures["area"] == ["CELL_AREA"]
 
 
 @pytest.mark.parametrize("obj", objects)

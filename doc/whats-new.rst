@@ -7,6 +7,7 @@ v0.5.3 (unreleased)
 ===================
 - Begin adding support for units with a unit registry for pint arrays. :pr:`197`.
   By `Jon Thielen`_ and `Justus Magin`_.
+- :py:meth:`Dataset.cf.rename_like` also updates the ``bounds`` and ``cell_measures`` attributes. By `Mattia Almansi`_.
 
 v0.5.2 (May 11, 2021)
 =====================

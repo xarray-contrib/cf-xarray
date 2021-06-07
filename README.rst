@@ -26,6 +26,8 @@
     :target: https://anaconda.org/conda-forge/cf_xarray
     :alt: Conda Version
 
+.. image:: https://zenodo.org/badge/267381269.svg
+   :target: https://zenodo.org/badge/latestdoi/267381269
 
 cf-xarray
 =========

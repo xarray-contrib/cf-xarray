@@ -4,6 +4,7 @@ import itertools
 import re
 import warnings
 from collections import ChainMap
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -31,6 +32,7 @@ from .utils import (
     always_iterable,
     invert_mappings,
     parse_cell_methods_attr,
+    parse_cf_table,
 )
 
 #: Classes wrapped by cf_xarray.
@@ -62,6 +64,12 @@ ATTRS = {
 ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
 
+#:  Link to CF standard name table
+CF_TABLE_URL = (
+    "https://raw.githubusercontent.com/cf-convention/"
+    "cf-convention.github.io/master/Data/cf-standard-names/current/src/"
+    "cf-standard-name-table.xml"
+)
 
 # Type for Mapper functions
 Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]
@@ -1522,6 +1530,68 @@ class CFAccessor:
             if attrs["positive"] == "down":
                 result *= -1
         return result
+
+    def add_cf_attributes(
+        self,
+        override: bool = False,
+        skip: Union[str, Iterable[str]] = None,
+        verbose: bool = False,
+        cf_table_uri: Union[str, Path] = None,
+    ) -> Union[Dataset, DataArray]:
+        """
+        Add CF attributes to variables with standard names. Attributes are oarsed from
+        the official cf standard names table.
+
+        Parameters
+        ----------
+        override: bool
+            Override existing attributes
+        skip: str, iterable, optional
+            Attribute keys to skip: {"units", "grib", "amip", "description"}
+        verbose: bool
+            Print added attributes to screen
+        cf_table_uri: str, Path, optional
+            Location of the cf standard names table in xml format.
+            By default, read the latest table from
+            https://github.com/cf-convention/cf-convention.github.io
+
+        Returns
+        -------
+        DataArray or Dataset with attributes added
+        """
+
+        # Defaults
+        cf_table_uri = cf_table_uri or CF_TABLE_URL
+        skip = always_iterable(skip)
+
+        # Parse table
+        table_dict, aliases = parse_cf_table(cf_table_uri, verbose)
+
+        # Loop aver standard names
+        ds = self._maybe_to_dataset()
+        attrs_to_print: dict = {}
+        for std_name, var_names in ds.cf.standard_names.items():
+
+            for var_name in var_names:
+                old_attrs = ds[var_name].attrs
+                std_name = aliases.get(std_name, std_name)
+                new_attrs = table_dict.get(std_name, {})
+
+                for key, value in new_attrs.items():
+                    if value and key not in skip and (override or key not in old_attrs):
+                        ds[var_name].attrs[key] = value
+                        attrs_to_print.setdefault(var_name, {})
+                        attrs_to_print[var_name][key] = value
+
+        if verbose:
+            print("\nAttributes added:")
+            for varname, attrs in attrs_to_print.items():
+                print(f"- {varname}:")
+                for key, value in attrs.items():
+                    print(f"    * {key}: {value}")
+                print()
+
+        return self._maybe_to_dataarray(ds)
 
 
 @xr.register_dataset_accessor("cf")

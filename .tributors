@@ -1,0 +1,48 @@
+{
+    "dcherian": {
+        "name": "Deepak Cherian",
+        "bio": "physical oceanographer",
+        "blog": "http://www.cherian.net",
+        "orcid": "0000-0002-6861-8734",
+        "affiliation": "National Center for Atmospheric Research"
+    },
+    "malmans2": {
+        "name": "Mattia Almansi",
+        "blog": "https://malmans2.github.io",
+        "orcid": "0000-0001-6849-3647",
+        "affiliation": "National Oceanography Centre"
+    },
+    "aulemahal": {
+        "name": "Pascal Bourgault",
+        "bio": "Physical oceanography graduate turned climate science specialist and scientific developer.",
+        "orcid": "0000-0003-1192-0403",
+        "affiliation": "Ouranos Inc"
+    },
+    "keewis": {
+        "name": "Justus Magin"
+    },
+    "jukent": {
+        "name": "Julia Kent",
+        "affiliation": "National Center for Atmospheric Research",
+        "orcid": "0000-0002-5611-8986"
+    },
+    "kthyng": {
+        "name": "Kristen Thyng",
+        "bio": "MetOcean Data Scientist at Axiom Data Science. Associate Editor in Chief at the Journal for Open Source Software (JOSS). Wrote cmocean colormaps.",
+        "blog": "http://kristenthyng.com",
+        "orcid": "0000-0002-8746-614X",
+        "affiliation": "Axiom Data Science"
+    },
+    "jhamman": {
+        "name": "Joe Hamman",
+        "bio": "Scientist and Engineer and Human.\r\n",
+        "blog": "http://joehamman.com",
+        "orcid": "0000-0001-7479-8439",
+        "affiliation": "CarbonPlan"
+    },
+    "withshubh": {
+        "name": "Shubhendra Singh Chauhan",
+        "bio": "Developer Advocate at @deepsourcelabs  🥑 \r\n👨🏻‍💻 work profile: @shubhendra-deepsource",
+        "blog": "camelcaseguy.com"
+    }
+}

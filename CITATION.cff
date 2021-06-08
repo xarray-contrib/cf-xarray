@@ -1,0 +1,43 @@
+# YAML 1.2
+# Metadata for citation of this software according to the CFF format (https://citation-file-format.github.io/)
+cff-version: 1.0.3
+message: If you use this software, please cite it using these metadata.
+title: cf_xarray
+doi: 10.5281/zenodo.4749736
+repository-code: https://github.com/xarray-contrib/cf-xarray
+license: Apache-2.0
+version: 0.5.2
+date-released: 2021-05-11
+keywords:
+- cf-conventions
+- xarray
+- metadata
+
+authors:
+- affiliation: National Center for Atmospheric Research, USA
+  family-names: Cherian
+  given-names: Deepak
+  orcid: https://orcid.org/0000-0002-6861-8734
+- affiliation: National Oceanography Centre, Southampton, UK
+  family-names: Almansi
+  given-names: Mattia
+  orcid: https://orcid.org/0000-0001-6849-3647
+- affiliation: Ouranos, Inc.
+  family-names: Bourgault
+  given-names: Pascal
+  orcid: https://orcid.org/0000-0003-1192-0403
+- affiliation: National Center for Atmospheric Research, USA
+  family-names: Kent
+  given-names: Julia
+  orcid: https://orcid.org/0000-0002-5611-8986
+- family-names: Magin
+  given-names: Justus
+- family-names: Thielen
+  given-names: Jon
+  orcid: https://orcid.org/0000-0002-5479-0189
+  affiliation: Iowa State University, Ames, IA, USA
+- affiliation: Axiom Data Science
+  family-names: Thyng
+  given-names: Kristen
+  orcid: https://orcid.org/0000-0002-8746-614X
+...

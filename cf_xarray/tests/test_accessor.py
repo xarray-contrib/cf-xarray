@@ -447,6 +447,7 @@ def test_dataarray_plot():
     plt.close()
 
     rv = obj.cf.plot(x="X", y="Y", col="T")
+    rv.map_dataarray(xr.plot.contourf, x="X", y="Y", col="T")
     plt.close()
 
     rv = obj.cf.plot.contourf(x="X", y="Y", col="T")
@@ -486,6 +487,7 @@ def test_dataarray_plot():
     obj = obj.copy(deep=True)
     obj.time.attrs.clear()
     rv = obj.cf.plot(x="X", y="Y", col="time")
+    plt.close()
 
 
 @pytest.mark.parametrize("obj", datasets)

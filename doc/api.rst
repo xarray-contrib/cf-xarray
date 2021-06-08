@@ -1,52 +1,5 @@
-.. currentmodule:: xarray
-
 API
 ===
-
-DataArray
----------
-
-.. autosummary::
-   :toctree: generated/
-   :template: autosummary/accessor_attribute.rst
-
-    DataArray.cf.plot
-
-.. autosummary::
-   :toctree: generated/
-   :template: autosummary/accessor_method.rst
-
-    DataArray.cf.describe
-    DataArray.cf.standard_names
-    DataArray.cf.keys
-    DataArray.cf.axes
-    DataArray.cf.coordinates
-    DataArray.cf.cell_measures
-    DataArray.cf.guess_coord_axis
-    DataArray.cf.rename_like
-
-Dataset
--------
-
-.. autosummary::
-   :toctree: generated/
-   :template: autosummary/accessor_attribute.rst
-
-.. autosummary::
-   :toctree: generated/
-   :template: autosummary/accessor_method.rst
-
-    Dataset.cf.add_bounds
-    Dataset.cf.decode_vertical_coords
-    Dataset.cf.describe
-    Dataset.cf.get_bounds
-    Dataset.cf.bounds_to_vertices
-    Dataset.cf.standard_names
-    Dataset.cf.keys
-    Dataset.cf.axes
-    Dataset.cf.coordinates
-    Dataset.cf.guess_coord_axis
-    Dataset.cf.rename_like
 
 .. currentmodule:: cf_xarray
 
@@ -58,3 +11,82 @@ Top-level API
 
     bounds_to_vertices
     vertices_to_bounds
+
+
+.. currentmodule:: xarray
+
+DataArray
+---------
+
+.. _daattr:
+
+Attributes
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+   :template: autosummary/accessor_attribute.rst
+
+    DataArray.cf.axes
+    DataArray.cf.cell_measures
+    DataArray.cf.coordinates
+    DataArray.cf.formula_terms
+    DataArray.cf.standard_names
+    DataArray.cf.plot
+
+
+.. _dameth:
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+   :template: autosummary/accessor_method.rst
+
+    DataArray.cf.__getitem__
+    DataArray.cf.__repr__
+    DataArray.cf.differentiate
+    DataArray.cf.guess_coord_axis
+    DataArray.cf.keys
+    DataArray.cf.rename_like
+
+Dataset
+-------
+
+.. _dsattr:
+
+Attributes
+~~~~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+   :template: autosummary/accessor_attribute.rst
+
+    Dataset.cf.axes
+    Dataset.cf.bounds
+    Dataset.cf.cell_measures
+    Dataset.cf.coordinates
+    Dataset.cf.formula_terms
+    Dataset.cf.standard_names
+
+.. _dsmeth:
+
+Methods
+~~~~~~~
+
+.. autosummary::
+   :toctree: generated/
+   :template: autosummary/accessor_method.rst
+
+    Dataset.cf.__getitem__
+    Dataset.cf.__repr__
+    Dataset.cf.add_bounds
+    Dataset.cf.bounds_to_vertices
+    Dataset.cf.decode_vertical_coords
+    Dataset.cf.differentiate
+    Dataset.cf.get_bounds
+    Dataset.cf.get_bounds_dim_name
+    Dataset.cf.guess_coord_axis
+    Dataset.cf.keys
+    Dataset.cf.rename_like

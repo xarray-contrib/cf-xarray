@@ -2,7 +2,7 @@ name: CI
 on:
   push:
     branches:
-      - "*"
+      - "main"
   pull_request:
     branches:
       - "*"
@@ -47,6 +47,29 @@ jobs:
           env_vars: OS,PYTHON
           name: codecov-umbrella
           fail_ci_if_error: false
+
+  no-optional-deps:
+    name: no-optional-deps
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          channels: conda-forge
+          mamba-version: "*"
+          activate-environment: cf_xarray_test
+          auto-update-conda: false
+          python-version: ${{ matrix.python-version }}
+      - name: Set up conda environment
+        shell: bash -l {0}
+        run: |
+          mamba env update -f ci/environment-no-optional-deps.yml
+          python -m pip install -e .
+          conda list
+      - name: Run Tests
+        shell: bash -l {0}
+        run: |
+          pytest -n 2
 
   upstream-dev:
     name: upstream-dev

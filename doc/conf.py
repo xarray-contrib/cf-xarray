@@ -18,6 +18,9 @@ import sys
 import sphinx_autosummary_accessors
 
 import cf_xarray  # noqa
+from cf_xarray.scripts import make_doc
+
+make_doc.main()
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -312,6 +315,10 @@ intersphinx_mapping = {
 autosummary_generate = True
 
 autodoc_typehints = "none"
-
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": True,
+    "private-members": True,
+}
 napoleon_use_param = True
 napoleon_use_rtype = True

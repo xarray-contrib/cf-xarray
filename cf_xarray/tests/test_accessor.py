@@ -1,15 +1,28 @@
+import itertools
+from textwrap import dedent
+
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
+from xarray import Dataset
 from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
 
+from ..datasets import (
+    airds,
+    anc,
+    ds_no_attrs,
+    forecast,
+    mollwds,
+    multiple,
+    popds,
+    romsds,
+)
 from . import raise_if_dask_computes
-from .datasets import airds, anc, ds_no_attrs, multiple, popds
 
 mpl.use("Agg")
 
@@ -19,17 +32,99 @@ dataarrays = [airds.air, airds.air.chunk({"lat": 5})]
 objects = datasets + dataarrays
 
 
-def test_describe(capsys):
-    airds.cf.describe()
-    actual = capsys.readouterr().out
-    expected = (
-        "Axes:\n\tX: ['lon']\n\tY: ['lat']\n\tZ: []\n\tT: ['time']\n"
-        "\nCoordinates:\n\tlongitude: ['lon']\n\tlatitude: ['lat']"
-        "\n\tvertical: []\n\ttime: ['time']\n"
-        "\nCell Measures:\n\tarea: ['cell_area']\n\tvolume: []\n"
-        "\nStandard Names:\n\tair_temperature: ['air']\n\n"
-    )
-    assert actual == expected
+def assert_dicts_identical(dict1, dict2):
+    assert dict1.keys() == dict2.keys()
+    for k in dict1:
+        assert_identical(dict1[k], dict2[k])
+
+
+def test_repr():
+    # Dataset.
+    # Stars: axes, coords, and std names
+    actual = airds.cf.__repr__()
+    expected = """\
+    Coordinates:
+    - CF Axes: * X: ['lon']
+               * Y: ['lat']
+               * T: ['time']
+                 Z: n/a
+
+    - CF Coordinates: * longitude: ['lon']
+                      * latitude: ['lat']
+                      * time: ['time']
+                        vertical: n/a
+
+    - Cell Measures:   area: ['cell_area']
+                       volume: n/a
+
+    - Standard Names: * latitude: ['lat']
+                      * longitude: ['lon']
+                      * time: ['time']
+
+    - Bounds:   n/a
+
+    Data Variables:
+    - Cell Measures:   area, volume: n/a
+
+    - Standard Names:   air_temperature: ['air']
+
+    - Bounds:   n/a
+    """
+    assert actual == dedent(expected)
+
+    # DataArray (Coordinates section same as Dataset)
+    assert airds.cf.__repr__().startswith(airds["air"].cf.__repr__())
+    actual = airds["air"].cf.__repr__()
+    expected = """\
+    Coordinates:
+    - CF Axes: * X: ['lon']
+               * Y: ['lat']
+               * T: ['time']
+                 Z: n/a
+
+    - CF Coordinates: * longitude: ['lon']
+                      * latitude: ['lat']
+                      * time: ['time']
+                        vertical: n/a
+
+    - Cell Measures:   area: ['cell_area']
+                       volume: n/a
+
+    - Standard Names: * latitude: ['lat']
+                      * longitude: ['lon']
+                      * time: ['time']
+
+    - Bounds:   n/a
+    """
+    assert actual == dedent(expected)
+
+    # Empty Standard Names
+    actual = popds.cf.__repr__()
+    expected = """\
+    Coordinates:
+    - CF Axes: * X: ['nlon']
+               * Y: ['nlat']
+                 Z, T: n/a
+
+    - CF Coordinates:   longitude: ['TLONG', 'ULONG']
+                        latitude: ['TLAT', 'ULAT']
+                        vertical, time: n/a
+
+    - Cell Measures:   area, volume: n/a
+
+    - Standard Names:   n/a
+
+    - Bounds:   n/a
+
+    Data Variables:
+    - Cell Measures:   area, volume: n/a
+
+    - Standard Names:   sea_water_potential_temperature: ['TEMP']
+                        sea_water_x_velocity: ['UVEL']
+
+    - Bounds:   n/a
+    """
+    assert actual == dedent(expected)
 
 
 def test_axes():
@@ -52,7 +147,7 @@ def test_coordinates():
     assert actual == expected
 
 
-def test_cell_measures(capsys):
+def test_cell_measures():
     ds = airds.copy(deep=True)
     ds["foo"] = xr.DataArray(ds["cell_area"], attrs=dict(standard_name="foo_std_name"))
     ds["air"].attrs["cell_measures"] += " foo_measure: foo"
@@ -68,13 +163,20 @@ def test_cell_measures(capsys):
     actual = ds.cf.cell_measures
     assert actual == expected
 
-    ds.cf.describe()
-    actual = capsys.readouterr().out
-    expected = (
-        "\nCell Measures:\n\tarea: ['cell_area']\n\tfoo_measure: ['foo']\n\tvolume: ['foo']\n"
-        "\nStandard Names:\n\tair_temperature: ['air']\n\tfoo_std_name: ['foo']\n\n"
-    )
-    assert actual.endswith(expected)
+    # Additional cell measure in repr
+    actual = ds.cf.__repr__()
+    expected = """\
+    Data Variables:
+    - Cell Measures:   foo_measure: ['foo']
+                       volume: ['foo']
+                       area: n/a
+
+    - Standard Names:   air_temperature: ['air']
+                        foo_std_name: ['foo']
+
+    - Bounds:   n/a
+    """
+    assert actual.endswith(dedent(expected))
 
 
 def test_standard_names():
@@ -95,9 +197,13 @@ def test_getitem_standard_name():
     expected = airds["air"]
     assert_identical(actual, expected)
 
+    actual = airds.lat.cf["latitude"]
+    expected = airds["lat"]
+    assert_identical(actual, expected)
+
     ds = airds.copy(deep=True)
     ds["air2"] = ds.air
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         ds.cf["air_temperature"]
     actual = ds.cf[["air_temperature"]]
     expected = ds[["air", "air2"]]
@@ -125,18 +231,59 @@ def test_getitem_ancillary_variables():
 def test_rename_like():
     original = popds.copy(deep=True)
 
-    with pytest.raises(KeyError):
-        popds.cf.rename_like(airds)
+    # it'll match for axis: X (lon, nlon) and coordinate="longitude" (lon, TLONG)
+    # so delete the axis attributes
+    newair = airds.copy(deep=True)
+    del newair.lon.attrs["axis"]
+    del newair.lat.attrs["axis"]
 
-    renamed = popds.cf["TEMP"].cf.rename_like(airds)
+    renamed = popds.cf["TEMP"].cf.rename_like(newair)
     for k in ["TLONG", "TLAT"]:
         assert k not in renamed.coords
         assert k in original.coords
-        assert original.TEMP.attrs["coordinates"] == "TLONG TLAT"
+    assert original.TEMP.attrs["coordinates"] == "TLONG TLAT"
 
     assert "lon" in renamed.coords
     assert "lat" in renamed.coords
     assert renamed.attrs["coordinates"] == "lon lat"
+
+    # standard name matching
+    newroms = romsds.expand_dims(latitude=[1], longitude=[1]).cf.guess_coord_axis()
+    renamed = popds.cf["UVEL"].cf.rename_like(newroms)
+    assert renamed.attrs["coordinates"] == "longitude latitude"
+    assert "longitude" in renamed.coords
+    assert "latitude" in renamed.coords
+    assert "ULON" not in renamed.coords
+    assert "ULAT" not in renamed.coords
+
+    # should change "temp" to "TEMP"
+    renamed = romsds.cf.rename_like(popds)
+    assert "temp" not in renamed
+    assert "TEMP" in renamed
+
+    # skip conflicting variables
+    da = popds.cf["TEMP"]
+    with pytest.warns(UserWarning, match="Conflicting variables skipped:.*"):
+        expected = {"longitude": ["TLONG"], "latitude": ["TLAT"]}
+        actual = da.cf.rename_like(airds).cf.coordinates
+        assert expected == actual
+    expected = {"longitude": ["lon"], "latitude": ["lat"]}
+    actual = da.cf.rename_like(airds, skip="axes").cf.coordinates
+    assert expected == actual
+
+    # rename bounds
+    original = airds.cf[["air"]].cf.add_bounds("lon")
+    other = popds.cf[["TEMP"]].cf.add_bounds("nlon")
+    renamed = original.cf.rename_like(other, skip="coordinates")
+    assert renamed.cf.bounds["nlon"] == ["nlon_bounds"]
+
+    # rename cell measures
+    other = airds.cf["air"].cf.rename(area="CELL_AREA")
+    other.attrs["cell_measures"] = other.attrs["cell_measures"].replace(
+        "cell_area", "CELL_AREA"
+    )
+    renamed = airds.cf["air"].cf.rename_like(other)
+    assert renamed.cf.cell_measures["area"] == ["CELL_AREA"]
 
 
 @pytest.mark.parametrize("obj", objects)
@@ -148,15 +295,7 @@ def test_rename_like():
         ("groupby", {"group": "time"}, {"group": "T"}),
         ("groupby", {"group": "time.month"}, {"group": "T.month"}),
         ("groupby_bins", {"group": "lat", "bins": 5}, {"group": "latitude", "bins": 5}),
-        pytest.param(
-            "coarsen",
-            {"lon": 2, "lat": 5},
-            {"X": 2, "Y": 5},
-            marks=pytest.mark.skip(
-                reason="xarray GH4120. any test after this will fail since attrs are lost"
-            ),
-        ),
-        # groupby("time.day")?
+        ("coarsen", {"lon": 2, "lat": 5}, {"X": 2, "Y": 5}),
     ),
 )
 def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
@@ -192,8 +331,13 @@ def test_weighted(obj):
     with raise_if_dask_computes(max_computes=2):
         # weights are checked for nans
         expected = obj.weighted(obj["cell_area"]).sum("lat")
-        actual = obj.cf.weighted("area").sum("Y")
-    assert_identical(expected, actual)
+        actuals = [
+            obj.cf.weighted("area").sum("Y"),
+            obj.cf.weighted(obj["cell_area"]).sum("Y"),
+            obj.cf.weighted(weights=obj["cell_area"]).sum("Y"),
+        ]
+    for actual in actuals:
+        assert_identical(expected, actual)
 
 
 @pytest.mark.parametrize("obj", objects)
@@ -280,18 +424,26 @@ def test_dataarray_getitem():
     with pytest.raises(KeyError):
         air.cf[["longitude"]]
     with pytest.raises(KeyError):
-        air.cf[["longitude", "latitude"]],
+        air.cf[["longitude", "latitude"]]
+
+    air["cell_area"].attrs["standard_name"] = "area_grid_cell"
+    assert_identical(air.cf["area_grid_cell"], air.cell_area.reset_coords(drop=True))
 
 
-@pytest.mark.parametrize("obj", dataarrays)
-def test_dataarray_plot(obj):
+def test_dataarray_plot():
 
-    rv = obj.isel(time=1).cf.plot(x="X", y="Y")
+    obj = airds.air
+
+    rv = obj.isel(time=1).transpose("lon", "lat").cf.plot()
     assert isinstance(rv, mpl.collections.QuadMesh)
+    assert all(v > 180 for v in rv.axes.get_xlim())
+    assert all(v < 200 for v in rv.axes.get_ylim())
     plt.close()
 
-    rv = obj.isel(time=1).cf.plot.contourf(x="X", y="Y")
+    rv = obj.isel(time=1).transpose("lon", "lat").cf.plot.contourf()
     assert isinstance(rv, mpl.contour.QuadContourSet)
+    assert all(v > 180 for v in rv.axes.get_xlim())
+    assert all(v < 200 for v in rv.axes.get_ylim())
     plt.close()
 
     rv = obj.cf.plot(x="X", y="Y", col="T")
@@ -301,7 +453,34 @@ def test_dataarray_plot(obj):
     plt.close()
 
     rv = obj.isel(lat=[0, 1], lon=1).cf.plot.line(x="T", hue="Y")
-    assert all([isinstance(line, mpl.lines.Line2D) for line in rv])
+    assert all(isinstance(line, mpl.lines.Line2D) for line in rv)
+    plt.close()
+
+    # set y automatically
+    rv = obj.isel(time=0, lon=1).cf.plot.line()
+    np.testing.assert_equal(rv[0].get_ydata(), obj.lat.data)
+    plt.close()
+
+    # don't set y automatically
+    rv = obj.isel(time=0, lon=1).cf.plot.line(x="lat")
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lat.data)
+    plt.close()
+
+    rv = obj.isel(time=0, lon=1).cf.plot(x="lat")
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lat.data)
+    plt.close()
+
+    # various line plots and automatic guessing
+    rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot.line()
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
+    plt.close()
+
+    # rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot(hue="Y")
+    # np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
+    # plt.close()
+
+    rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot.line()
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
     plt.close()
 
     obj = obj.copy(deep=True)
@@ -324,18 +503,14 @@ def test_dataset_plot(obj):
         ("longitude", "lon"),
         ("latitude", "lat"),
         ("time", "time"),
-        pytest.param(
-            "area",
-            "cell_area",
-            marks=pytest.mark.xfail(reason="measures not implemented for dataset"),
-        ),
+        ("area", "cell_area"),
     ),
 )
 def test_getitem(obj, key, expected_key):
     assert key in obj.cf
 
     actual = obj.cf[key]
-    expected = obj[expected_key]
+    expected = obj[expected_key].reset_coords(drop=True)
     assert_identical(actual, expected)
 
 
@@ -349,10 +524,50 @@ def test_getitem_errors(obj):
         obj2.cf["X"]
 
 
-def test_getitem_regression():
+def test_getitem_ignores_bad_measure_attribute():
+    air2 = airds.copy(deep=True)
+    air2.air.attrs["cell_measures"] = "asd"
+    with pytest.warns(UserWarning):
+        assert_identical(air2.air.drop_vars("cell_area"), air2.cf["air"])
+
+    with pytest.raises(ValueError):
+        air2.cf.cell_measures
+    with pytest.raises(ValueError):
+        air2.air.cf.cell_measures
+    with pytest.raises(ValueError):
+        air2.cf.get_associated_variable_names("air", error=True)
+    with pytest.warns(UserWarning):
+        air2.cf.get_associated_variable_names("air", error=False)
+
+
+def test_getitem_clash_standard_name():
     ds = xr.Dataset()
     ds.coords["area"] = xr.DataArray(np.ones(10), attrs={"standard_name": "cell_area"})
     assert_identical(ds.cf["cell_area"], ds["area"].reset_coords(drop=True))
+
+    ds = xr.Dataset()
+    ds["time"] = (
+        "time",
+        np.arange(10),
+        {"standard_name": "time", "bounds": "time_bounds"},
+    )
+    ds["time_bounds"] = (
+        ("time", "bounds"),
+        np.ones((10, 2)),
+        {"standard_name": "time"},
+    )
+
+    ds["lat"] = (
+        "lat",
+        np.arange(10),
+        {"units": "degrees_north", "bounds": "lat_bounds"},
+    )
+    ds["lat_bounds"] = (
+        ("lat", "bounds"),
+        np.ones((10, 2)),
+        {"units": "degrees_north"},
+    )
+    assert_identical(ds["lat"], ds.cf["latitude"])
 
 
 def test_getitem_uses_coordinates():
@@ -384,7 +599,7 @@ def test_plot_xincrease_yincrease():
     ds.lon.attrs["positive"] = "down"
     ds.lat.attrs["positive"] = "down"
 
-    f, ax = plt.subplots(1, 1)
+    _, ax = plt.subplots(1, 1)
     ds.air.isel(time=1).cf.plot(ax=ax, x="X", y="Y")
 
     for lim in [ax.get_xlim(), ax.get_ylim()]:
@@ -394,7 +609,7 @@ def test_plot_xincrease_yincrease():
 @pytest.mark.parametrize("dims", ["lat", "time", ["lat", "lon"]])
 @pytest.mark.parametrize("obj", [airds])
 def test_add_bounds(obj, dims):
-    expected = dict()
+    expected = {}
     expected["lat"] = xr.concat(
         [
             obj.lat.copy(data=np.arange(76.25, 16.0, -2.5)),
@@ -434,9 +649,18 @@ def test_add_bounds(obj, dims):
         assert added[dim].attrs["bounds"] == name
         assert_allclose(added[name].reset_coords(drop=True), expected[dim])
 
+    # Test multiple dimensions
+    assert not {"x1_bounds", "x2_bounds"} <= set(multiple.variables)
+    assert {"x1_bounds", "x2_bounds"} <= set(multiple.cf.add_bounds("X").variables)
+
 
 def test_bounds():
     ds = airds.copy(deep=True).cf.add_bounds("lat")
+
+    actual = ds.cf.bounds
+    expected = {"Y": ["lat_bounds"], "lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
+    assert ds.cf.bounds == expected
+
     actual = ds.cf[["lat"]]
     expected = ds[["lat", "lat_bounds"]]
     assert_identical(actual, expected)
@@ -453,6 +677,28 @@ def test_bounds():
     actual = ds.cf.get_bounds("lat")
     expected = ds["lat_bounds"]
     assert_identical(actual, expected)
+
+    # Do not attempt to get bounds when extracting a DataArray
+    # raise a warning when extracting a Dataset and bounds do not exists
+    ds["time"].attrs["bounds"] = "foo"
+    with pytest.warns(None) as record:
+        ds.cf["air"]
+    assert len(record) == 0
+    with pytest.warns(UserWarning, match="{'foo'} not found in object"):
+        ds.cf[["air"]]
+
+    # Dataset has bounds
+    expected = """\
+    - Bounds:   Y: ['lat_bounds']
+                lat: ['lat_bounds']
+                latitude: ['lat_bounds']
+    """
+    assert dedent(expected) in ds.cf.__repr__()
+
+    # DataArray does not have bounds
+    expected = airds.cf["air"].cf.__repr__()
+    actual = ds.cf["air"].cf.__repr__()
+    assert actual == expected
 
 
 def test_bounds_to_vertices():
@@ -481,34 +727,115 @@ def test_bounds_to_vertices():
     assert "time_bounds" in dsc
 
 
+def test_get_bounds_dim_name():
+    ds = airds.copy(deep=True).cf.add_bounds("lat")
+    assert ds.cf.get_bounds_dim_name("latitude") == "bounds"
+    assert ds.cf.get_bounds_dim_name("lat") == "bounds"
+
+    assert mollwds.cf.get_bounds_dim_name("longitude") == "bounds"
+    assert mollwds.cf.get_bounds_dim_name("lon") == "bounds"
+
+
 def test_docstring():
     assert "One of ('X'" in airds.cf.groupby.__doc__
+    assert "Time variable accessor e.g. 'T.month'" in airds.cf.groupby.__doc__
     assert "One or more of ('X'" in airds.cf.mean.__doc__
+    assert "present in .dims" in airds.cf.drop_dims.__doc__
+    assert "present in .coords" in airds.cf.integrate.__doc__
+    assert "present in .indexes" in airds.cf.resample.__doc__
+
+    # Make sure docs are up to date
+    get_all_doc = cf_xarray.accessor._get_all.__doc__
+    all_keys = (
+        cf_xarray.accessor._AXIS_NAMES
+        + cf_xarray.accessor._COORD_NAMES
+        + cf_xarray.accessor._CELL_MEASURES
+    )
+    expected = f"One or more of {all_keys!r}, or arbitrary measures, or standard names"
+    assert get_all_doc.split() == expected.split()
+    for name in ["dims", "indexes", "coords"]:
+        actual = getattr(cf_xarray.accessor, f"_get_{name}").__doc__
+        expected = get_all_doc + f" present in .{name}"
+        assert actual.split() == expected.split()
 
 
-def test_guess_coord_axis():
+def _make_names(prefixes):
+    suffixes = ["", "a", "_a", "0", "_0", "a_0a"]
+    return [
+        f"{prefix}{suffix}" for prefix, suffix in itertools.product(prefixes, suffixes)
+    ]
+
+
+_TIME_NAMES = ["t"] + _make_names(
+    [
+        "time",
+        "min",
+        "hour",
+        "day",
+        "week",
+        "month",
+        "year",
+    ]
+)
+_VERTICAL_NAMES = _make_names(
+    [
+        "z",
+        "lv_1",
+        "bottom_top",
+        "sigma",
+        "sigma_w",
+        "hght",
+        "height",
+        "altitude",
+        "depth",
+        "isobaric",
+        "pressure",
+        "isotherm",
+        "gdep",
+        "nav_lev",
+    ]
+)
+_X_NAMES = _make_names(["x", "nlon", "i", "ni"])
+_Y_NAMES = _make_names(["y", "nlat", "j", "nj"])
+_Z_NAMES = _VERTICAL_NAMES + ["olevel", "level", "zlevel"]
+_LATITUDE_NAMES = _make_names(["lat", "latitude", "gphi", "nav_lat"])
+_LONGITUDE_NAMES = _make_names(["lon", "longitude", "glam", "nav_lon"])
+
+
+@pytest.mark.parametrize(
+    "kind, names",
+    [
+        ["X", _X_NAMES],
+        ["Y", _Y_NAMES],
+        ["Z", _Z_NAMES],
+        ["T", _TIME_NAMES],
+        ["latitude", _LATITUDE_NAMES],
+        ["longitude", _LONGITUDE_NAMES],
+    ],
+)
+def test_guess_coord_axis(kind, names):
+    from cf_xarray.accessor import ATTRS
+
+    for varname in names:
+        ds = xr.Dataset()
+        ds[varname] = (varname, [1, 2, 3, 4, 5])
+        dsnew = ds.cf.guess_coord_axis()
+        assert dsnew[varname].attrs == ATTRS[kind]
+
+        varname = varname.upper()
+        ds[varname] = (varname, [1, 2, 3, 4, 5])
+        dsnew = ds.cf.guess_coord_axis()
+        assert dsnew[varname].attrs == ATTRS[kind]
+
+
+def test_guess_coord_axis_datetime():
     ds = xr.Dataset()
     ds["time"] = ("time", pd.date_range("2001-01-01", "2001-04-01"))
-    ds["lon_rho"] = ("lon_rho", [1, 2, 3, 4, 5])
-    ds["lat_rho"] = ("lat_rho", [1, 2, 3, 4, 5])
-    ds["x1"] = ("x1", [1, 2, 3, 4, 5])
-    ds["y1"] = ("y1", [1, 2, 3, 4, 5])
-
     dsnew = ds.cf.guess_coord_axis()
     assert dsnew.time.attrs == {"standard_name": "time", "axis": "T"}
-    assert dsnew.lon_rho.attrs == {
-        "standard_name": "longitude",
-        "units": "degrees_east",
-    }
-    assert dsnew.lat_rho.attrs == {
-        "standard_name": "latitude",
-        "units": "degrees_north",
-    }
-    assert dsnew.x1.attrs == {"axis": "X"}
-    assert dsnew.y1.attrs == {"axis": "Y"}
 
 
-def test_dicts():
+def test_attributes():
     actual = airds.cf.sizes
     expected = {"X": 50, "Y": 25, "T": 4, "longitude": 50, "latitude": 25, "time": 4}
     assert actual == expected
@@ -539,6 +866,37 @@ def test_dicts():
     expected = {"lon": 50, "Y": 25, "T": 4, "latitude": 25, "time": 4}
     assert actual == expected
 
+    actual = popds.cf.data_vars
+    expected = {
+        "sea_water_x_velocity": popds.cf["UVEL"],
+        "sea_water_potential_temperature": popds.cf["TEMP"],
+    }
+    assert_dicts_identical(actual, expected)
+
+    actual = multiple.cf.data_vars
+    expected = dict(multiple.data_vars)
+    assert_dicts_identical(actual, expected)
+
+    # check that data_vars contains ancillary variables
+    assert_identical(anc.cf.data_vars["specific_humidity"], anc.cf["specific_humidity"])
+
+    # clash between var name and "special" CF name
+    # Regression test for #126
+    data = np.random.rand(4, 3)
+    times = pd.date_range("2000-01-01", periods=4)
+    locs = [30, 60, 90]
+    coords = [("time", times, {"axis": "T"}), ("space", locs)]
+    foo = xr.DataArray(data, coords, dims=["time", "space"])
+    ds1 = xr.Dataset({"T": foo})
+    assert_identical(ds1.cf.data_vars["T"], ds1["T"])
+
+    # multiple latitudes but only one latitude data_var
+    ds = popds.copy(deep=True)
+    for var in ["ULAT", "TLAT"]:
+        ds[var].attrs["standard_name"] = "latitude"
+    ds = ds.reset_coords("ULAT")
+    assert_identical(ds.cf.data_vars["latitude"], ds.cf["ULAT"])
+
 
 def test_missing_variable_in_coordinates():
     airds.air.attrs["coordinates"] = "lat lon time"
@@ -548,7 +906,7 @@ def test_missing_variable_in_coordinates():
 
 
 def test_Z_vs_vertical_ROMS():
-    from .datasets import romsds
+    from ..datasets import romsds
 
     assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
     assert_identical(
@@ -574,8 +932,6 @@ def test_Z_vs_vertical_ROMS():
 
 
 def test_param_vcoord_ocean_s_coord():
-    from .datasets import romsds
-
     romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g2"
     Zo_rho = (romsds.hc * romsds.s_rho + romsds.Cs_r * romsds.h) / (
         romsds.hc + romsds.h
@@ -606,3 +962,270 @@ def test_param_vcoord_ocean_s_coord():
     copy.s_rho.attrs["formula_terms"] = "s: s_rho C: Cs_r depth: h depth_c: hc"
     with pytest.raises(KeyError):
         copy.cf.decode_vertical_coords()
+
+
+def test_formula_terms():
+    srhoterms = {
+        "s": "s_rho",
+        "C": "Cs_r",
+        "eta": "zeta",
+        "depth": "h",
+        "depth_c": "hc",
+    }
+    assert romsds.cf.formula_terms == {"s_rho": srhoterms}
+    assert romsds["temp"].cf.formula_terms == srhoterms
+    assert romsds["s_rho"].cf.formula_terms == srhoterms
+
+    s_rho = romsds["s_rho"].copy(deep=True)
+    del s_rho.attrs["standard_name"]
+    del s_rho.s_rho.attrs["standard_name"]  # TODO: xarray bug
+    assert s_rho.cf.formula_terms == srhoterms
+
+    with pytest.raises(KeyError):
+        # x,y,t variable
+        romsds["zeta"].cf.formula_terms
+
+
+def test_standard_name_mapper():
+    da = xr.DataArray(
+        np.arange(6),
+        dims="time",
+        coords={
+            "label": (
+                "time",
+                ["A", "B", "B", "A", "B", "C"],
+                {"standard_name": "standard_label"},
+            )
+        },
+    )
+
+    actual = da.cf.groupby("standard_label").mean()
+    expected = da.cf.groupby("label").mean()
+    assert_identical(actual, expected)
+
+    actual = da.cf.sortby("standard_label")
+    expected = da.sortby("label")
+    assert_identical(actual, expected)
+
+    assert cf_xarray.accessor._get_with_standard_name(da, None) == []
+
+
+@pytest.mark.parametrize("obj", objects)
+@pytest.mark.parametrize("attr", ["drop_vars", "set_coords"])
+def test_drop_vars_and_set_coords(obj, attr):
+
+    # DataArray object has no attribute set_coords
+    if not isinstance(obj, Dataset) and attr == "set_coords":
+        return
+
+    # Get attribute
+    expected = getattr(obj, attr)
+    actual = getattr(obj.cf, attr)
+
+    # Axis
+    assert_identical(expected("lon"), actual("X"))
+    # Coordinate
+    assert_identical(expected("lon"), actual("longitude"))
+    # Cell measure
+    assert_identical(expected("cell_area"), actual("area"))
+    # Variables
+    if isinstance(obj, Dataset):
+        assert_identical(expected("air"), actual("air_temperature"))
+        assert_identical(expected(obj.variables), actual(obj.cf.keys()))
+
+
+@pytest.mark.parametrize("obj", objects)
+def test_drop_sel_and_reset_coords(obj):
+
+    # Axis
+    assert_identical(obj.drop_sel(lat=75), obj.cf.drop_sel(Y=75))
+    # Coordinate
+    assert_identical(obj.drop_sel(lat=75), obj.cf.drop_sel(latitude=75))
+
+    # Cell measure
+    assert_identical(obj.reset_coords("cell_area"), obj.cf.reset_coords("area"))
+    # Variable
+    if isinstance(obj, Dataset):
+        assert_identical(
+            obj.reset_coords("air"), obj.cf.reset_coords("air_temperature")
+        )
+
+
+@pytest.mark.parametrize("ds", datasets)
+def test_drop_dims(ds):
+
+    # Add data_var and coord to test _get_dims
+    ds["lon_var"] = ds["lon"]
+    ds = ds.assign_coords(lon_coord=ds["lon"])
+
+    # Axis and coordinate
+    for cf_name in ["X", "longitude"]:
+        assert_identical(ds.drop_dims("lon"), ds.cf.drop_dims(cf_name))
+
+
+@pytest.mark.parametrize("obj", objects)
+def test_rename(obj):
+
+    cf_dict = {
+        "air_temperature" if isinstance(obj, Dataset) else "longitude": "renamed"
+    }
+    xr_dict = {"air" if isinstance(obj, Dataset) else "lon": "renamed"}
+    assert_identical(obj.rename(xr_dict), obj.cf.rename(cf_dict))
+    assert_identical(obj.rename(**xr_dict), obj.cf.rename(**cf_dict))
+
+
+@pytest.mark.parametrize("ds", datasets)
+def test_differentiate(ds):
+
+    # Add data_var and coord to test _get_coords
+    ds["lon_var"] = ds["lon"]
+    ds = ds.assign_coords(lon_coord=ds["lon"])
+
+    # Coordinate
+    assert_identical(ds.differentiate("lon"), ds.cf.differentiate("lon"))
+
+    # Multiple coords (test error raised by _single)
+    with pytest.raises(KeyError, match=".*I expected only one."):
+        assert_identical(ds.differentiate("lon"), ds.cf.differentiate("X"))
+
+
+def test_new_standard_name_mappers():
+    assert_identical(forecast.cf.mean("realization"), forecast.mean("M"))
+    assert_identical(
+        forecast.cf.mean(["realization", "forecast_period"]), forecast.mean(["M", "L"])
+    )
+    assert_identical(forecast.cf.chunk({"realization": 1}), forecast.chunk({"M": 1}))
+    assert_identical(forecast.cf.isel({"realization": 1}), forecast.isel({"M": 1}))
+    assert_identical(forecast.cf.isel(**{"realization": 1}), forecast.isel(**{"M": 1}))
+    assert_identical(
+        forecast.cf.groupby("forecast_reference_time.month").mean(),
+        forecast.groupby("S.month").mean(),
+    )
+
+
+def test_possible_x_y_plot():
+    from ..accessor import _possible_x_y_plot
+
+    # choose axes
+    assert _possible_x_y_plot(airds.air.isel(time=1), "x") == "lon"
+    assert _possible_x_y_plot(airds.air.isel(time=1), "y") == "lat"
+    assert _possible_x_y_plot(airds.air.isel(lon=1), "y") == "lat"
+    assert _possible_x_y_plot(airds.air.isel(lon=1), "x") == "time"
+
+    # choose coordinates over axes
+    assert _possible_x_y_plot(popds.UVEL, "x") == "ULONG"
+    assert _possible_x_y_plot(popds.UVEL, "y") == "ULAT"
+    assert _possible_x_y_plot(popds.TEMP, "x") == "TLONG"
+    assert _possible_x_y_plot(popds.TEMP, "y") == "TLAT"
+
+    assert _possible_x_y_plot(popds.UVEL.drop_vars("ULONG"), "x") == "nlon"
+
+    # choose X over T, Y over Z
+    def makeds(*dims):
+        coords = {dim: (dim, np.arange(3), {"axis": dim}) for dim in dims}
+        return xr.DataArray(np.zeros((3, 3)), dims=dims, coords=coords)
+
+    yzds = makeds("Y", "Z")
+    assert _possible_x_y_plot(yzds, "y") == "Z"
+    assert _possible_x_y_plot(yzds, "x") is None
+
+    xtds = makeds("X", "T")
+    assert _possible_x_y_plot(xtds, "y") is None
+    assert _possible_x_y_plot(xtds, "x") == "X"
+
+
+def test_groupby_special_ops():
+    cfgrouped = airds.cf.groupby_bins("latitude", np.arange(20, 50, 10))
+    grouped = airds.groupby_bins("lat", np.arange(20, 50, 10))
+
+    # __iter__
+    for (label, group), (cflabel, cfgroup) in zip(grouped, cfgrouped):
+        assert label == cflabel
+        assert_identical(group, cfgroup)
+
+    # arithmetic
+    expected = grouped - grouped.mean()
+    actual = grouped - cfgrouped.mean()
+    assert_identical(expected, actual)
+
+
+@pytest.mark.parametrize("obj", objects)
+def test_stack(obj):
+    expected = obj.stack(latlon=["lat", "lon"])
+    actual = obj.cf.stack(latlon=["latitude", "longitude"])
+    assert_identical(expected, actual)
+
+    actual = obj.cf.stack({"latlon": ["latitude", "longitude"]})
+    assert_identical(expected, actual)
+
+
+da = xr.DataArray(
+    np.arange(10)[::-1],  # like ocean temperature
+    dims="z",
+    coords={"z": ("z", np.arange(10))},
+    name="test",
+)
+
+
+@pytest.mark.parametrize("obj", [da, da.to_dataset()])
+def test_differentiate_positive_upward(obj):
+    obj.z.attrs["positive"] = "down"
+    expected = obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2)
+    assert_identical(expected, actual)
+
+    obj.z.attrs["positive"] = "up"
+    expected = obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    obj.z.attrs["positive"] = "down"
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    obj = obj.isel(z=slice(None, None, -1))
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+    obj = obj.isel(z=slice(None, None, -1))
+
+    with xr.set_options(keep_attrs=True):
+        da["z"] = obj.z * -1
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    obj = obj.isel(z=slice(None, None, -1))
+    expected = -1 * obj.differentiate("z", 2)
+    actual = obj.cf.differentiate("z", 2, positive_upward=True)
+    assert_identical(expected, actual)
+
+    del obj.z.attrs["positive"]
+    with pytest.raises(ValueError):
+        obj.cf.differentiate("z", positive_upward=True)
+
+    obj.z.attrs["positive"] = "zzz"
+    with pytest.raises(ValueError):
+        obj.cf.differentiate("z", positive_upward=True)
+
+
+def test_cmip6_attrs():
+    da = xr.DataArray(
+        np.ones((10, 10)),
+        dims=("nlon", "nlat"),
+        coords={
+            "nlon": (
+                "nlon",
+                np.arange(10),
+                {"long_name": "cell index along first dimension"},
+            ),
+            "nlat": (
+                "nlat",
+                np.arange(10),
+                {"long_name": "cell index along second dimension"},
+            ),
+        },
+    )
+    assert da.cf.axes["X"] == ["nlon"]
+    assert da.cf.axes["Y"] == ["nlat"]

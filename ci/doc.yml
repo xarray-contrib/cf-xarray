@@ -6,6 +6,7 @@ dependencies:
   - python=3.8
   - matplotlib-base
   - netcdf4
+  - pooch
   - xarray
   - sphinx
   - nbsphinx
@@ -14,6 +15,6 @@ dependencies:
   - ipython
   - ipykernel
   - pandas
+  - pydata-sphinx-theme
   - pip:
       - git+https://github.com/xarray-contrib/cf-xarray
-      - sphinx-book-theme

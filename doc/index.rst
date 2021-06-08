@@ -39,6 +39,7 @@ Table of contents
    :maxdepth: 2
 
    examples/introduction
+   criteria
    whats-new
    roadmap
    contributing

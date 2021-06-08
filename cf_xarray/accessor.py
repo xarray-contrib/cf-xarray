@@ -1539,8 +1539,8 @@ class CFAccessor:
         cf_table_uri: Union[str, Path] = None,
     ) -> Union[Dataset, DataArray]:
         """
-        Add CF attributes to variables with standard names. Attributes are oarsed from
-        the official cf standard names table.
+        Add CF attributes to variables with standard names. Attributes are parsed from
+        the official CF standard names table.
 
         Parameters
         ----------
@@ -1551,7 +1551,7 @@ class CFAccessor:
         verbose: bool
             Print added attributes to screen
         cf_table_uri: str, Path, optional
-            Location of the cf standard names table in xml format.
+            Location of the CF standard names table in xml format.
             By default, read the latest table from
             https://github.com/cf-convention/cf-convention.github.io
 
@@ -1584,12 +1584,13 @@ class CFAccessor:
                         attrs_to_print[var_name][key] = value
 
         if verbose:
-            print("\nAttributes added:")
+            info = ["\nAttributes added:"]
             for varname, attrs in attrs_to_print.items():
-                print(f"- {varname}:")
+                info.append(f"- {varname}:")
                 for key, value in attrs.items():
-                    print(f"    * {key}: {value}")
-                print()
+                    info.append(f"    * {key}: {value}")
+                info.append("")
+            print("\n".join(info))
 
         return self._maybe_to_dataarray(ds)
 

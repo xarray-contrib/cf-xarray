@@ -89,11 +89,10 @@ def parse_cf_table(uri: Union[str, Path], verbose=False):
     tree = ElementTree.parse(uri)
     root = tree.getroot()
 
-    table: dict = {}
-    aliases = {}
-
     # Construct table
     info = []
+    table: dict = {}
+    aliases = {}
     for child in root:
         if child.tag == "entry":
             key = child.attrib.get("id")
@@ -102,12 +101,10 @@ def parse_cf_table(uri: Union[str, Path], verbose=False):
                 parsed = child.findall(item)
                 attr = item.replace("canonical_", "")
                 table[key][attr] = (parsed[0].text or "") if parsed else ""
-
         elif child.tag == "alias":
             alias = child.attrib.get("id")
             key = child.findall("entry_id")[0].text
             aliases[alias] = key
-
         else:
             info.append(f"{child.tag}: {child.text}")
 

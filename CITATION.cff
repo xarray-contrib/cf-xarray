@@ -33,6 +33,8 @@ authors:
   given-names: Justus
 - family-names: Thielen
   given-names: Jon
-- family-names: Thyng
+- affiliation: Axiom Data Science
+  family-names: Thyng
   given-names: Kristen
+  orcid: https://orcid.org/0000-0002-8746-614X
 ...

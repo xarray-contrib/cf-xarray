@@ -1,9 +1,5 @@
 from collections import defaultdict
-from pathlib import Path
-from typing import Any, Dict, Iterable, Union
-from urllib.parse import urlsplit
-from urllib.request import urlopen
-from xml.etree import ElementTree
+from typing import Any, Dict, Iterable
 
 from xarray import DataArray
 
@@ -61,54 +57,3 @@ def invert_mappings(*mappings):
 
 def always_iterable(obj: Any) -> Iterable:
     return [obj] if not isinstance(obj, (tuple, list, set, dict)) else obj
-
-
-def parse_cf_table(uri: Union[str, Path]):
-    """
-    Parse cf standard names table in xml format.
-
-    Parameters
-    ----------
-    cf_table_uri: str, Path
-        Location of the cf standard names table in xml format.
-
-    Returns
-    -------
-    tuple
-        Dictionaries mapping:
-            1. table info
-            2. standard_name to attributes
-            3. alias to standard_name
-    """
-
-    # Deal with urls
-    if isinstance(uri, str) and all((urlsplit(uri).scheme, urlsplit(uri).netloc)):
-        uri = urlopen(uri)
-
-    tree = ElementTree.parse(uri)
-    root = tree.getroot()
-
-    # Construct table
-    info = {}
-    table: dict = {}
-    aliases = {}
-    for child in root:
-        if child.tag == "entry":
-            key = child.attrib.get("id")
-            table[key] = {}
-            for item in ["canonical_units", "grib", "amip", "description"]:
-                parsed = child.findall(item)
-                attr = item.replace("canonical_", "")
-                table[key][attr] = (parsed[0].text or "") if parsed else ""
-        elif child.tag == "alias":
-            alias = child.attrib.get("id")
-            key = child.findall("entry_id")[0].text
-            aliases[alias] = key
-        else:
-            info[child.tag] = child.text
-
-    return (
-        info,
-        table,
-        aliases,
-    )

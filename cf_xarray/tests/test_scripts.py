@@ -3,7 +3,7 @@ import os
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 from cf_xarray import cf_table
-from cf_xarray.scripts import cf_table_to_dicts, make_doc
+from cf_xarray.scripts import cf_table_to_str, make_doc
 
 
 def test_make_doc():
@@ -27,16 +27,14 @@ def test_make_doc():
             os.chdir(owd)
 
 
-def test_cf_table_to_dicts():
+def test_cf_table_to_str():
 
     actual = cf_table
 
     with NamedTemporaryFile("w", suffix=".py") as tmpfile:
-        tmpfile.write(cf_table_to_dicts.main())
+        tmpfile.write(cf_table_to_str.main())
         spec = importlib.util.spec_from_file_location("tmpmodule", tmpfile.name)
         expected = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(expected)
 
-        assert actual.CF_TABLE_INFO == expected.CF_TABLE_INFO
-        assert actual.CF_TABLE_STD_NAMES == expected.CF_TABLE_STD_NAMES
-        assert actual.CF_TABLE_ALIASES == expected.CF_TABLE_ALIASES
+        assert actual.CF_STANDARD_NAME_TABLE == expected.CF_STANDARD_NAME_TABLE

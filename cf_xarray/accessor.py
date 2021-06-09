@@ -4,7 +4,6 @@ import itertools
 import re
 import warnings
 from collections import ChainMap
-from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -20,12 +19,13 @@ from typing import (
     Union,
     cast,
 )
+from xml.etree import ElementTree
 
 import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
 
-from .cf_table import CF_TABLE_ALIASES, CF_TABLE_INFO, CF_TABLE_STD_NAMES
+from .cf_table import CF_STANDARD_NAME_TABLE
 from .criteria import coordinate_criteria, regex
 from .helpers import bounds_to_vertices
 from .utils import (
@@ -33,7 +33,6 @@ from .utils import (
     always_iterable,
     invert_mappings,
     parse_cell_methods_attr,
-    parse_cf_table,
 )
 
 #: Classes wrapped by cf_xarray.
@@ -1528,9 +1527,9 @@ class CFAccessor:
     def add_canonical_cf_attributes(
         self,
         override: bool = False,
-        skip: Union[str, Iterable[str]] = None,
+        skip: List[str] = None,
         verbose: bool = False,
-        cf_table_uri: Union[str, Path] = None,
+        source=None,
     ) -> Union[Dataset, DataArray]:
         """
         Add canonical CF attributes to variables with standard names.
@@ -1544,8 +1543,9 @@ class CFAccessor:
             Attribute keys to skip: {"units", "grib", "amip", "description"}
         verbose: bool
             Print added attributes to screen
-        cf_table_uri: str, Path, optional
-            Location of the CF standard names table (xml format).
+        source: optional
+            Path of cf-standard-name-table.xml or file object containing XML data.
+            If None, use the default CF standard name table.
 
         Returns
         -------
@@ -1553,31 +1553,64 @@ class CFAccessor:
         """
 
         # Defaults
-        skip = always_iterable(skip)
+        skip = skip or []
+        root = (
+            ElementTree.parse(source).getroot()
+            if source
+            else ElementTree.fromstring(CF_STANDARD_NAME_TABLE)
+        )
 
-        # Parse table
-        if cf_table_uri:
-            info, table, aliases = parse_cf_table(cf_table_uri)
-        else:
-            info = CF_TABLE_INFO
-            table = CF_TABLE_STD_NAMES
-            aliases = CF_TABLE_ALIASES
+        # Construct table
+        info = {}
+        table: dict = {}
+        aliases = {}
+        for child in root:
+            if child.tag == "entry":
+                key = child.attrib.get("id")
+                table[key] = {}
+                for item in ["canonical_units", "grib", "amip", "description"]:
+                    parsed = child.findall(item)
+                    attr = item.replace("canonical_", "")
+                    table[key][attr] = (parsed[0].text or "") if parsed else ""
+            elif child.tag == "alias":
+                alias = child.attrib.get("id")
+                key = child.findall("entry_id")[0].text
+                aliases[alias] = key
+            else:
+                info[child.tag] = child.text
 
-        # Loop aver standard names
-        ds = self._maybe_to_dataset()
+        # Loop over standard names
+        ds = self._maybe_to_dataset().copy()
         attrs_to_print: dict = {}
         for std_name, var_names in ds.cf.standard_names.items():
 
+            # Loop over variable names
             for var_name in var_names:
                 old_attrs = ds[var_name].attrs
                 std_name = aliases.get(std_name, std_name)
                 new_attrs = table.get(std_name, {})
 
+                # Loop over attributes
                 for key, value in new_attrs.items():
                     if value and key not in skip and (override or key not in old_attrs):
+
+                        # Don't add units to time variables (e.g., datetime64, ...)
+                        if key == "units" and _is_datetime_like(ds[var_name]):
+                            continue
+
+                        # Add attribute
                         ds[var_name].attrs[key] = value
+
+                        # Build verbose dictionary
                         attrs_to_print.setdefault(var_name, {})
                         attrs_to_print[var_name][key] = value
+
+                        # Update history
+                        history = ds[var_name].attrs.get("cf_history", "")
+                        if history:
+                            history += "; "
+                        history += f"add canonical CF attribute {key!r} (v{info['version_number']!s})"
+                        ds[var_name].attrs["cf_history"] = history
 
         if verbose:
             # Info

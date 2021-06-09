@@ -1,3 +1,7 @@
+"""
+CF_TABLE_INFO, CF_TABLE_STD_NAMES, and CF_TABLE_ALIASES.
+Created by cf_table_to_dicts.py.
+"""
 CF_TABLE_INFO = {
     "contact": "support@ceda.ac.uk",
     "institution": "Centre for Environmental Data Analysis",

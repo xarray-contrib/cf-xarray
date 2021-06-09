@@ -46,4 +46,11 @@ if __name__ == "__main__":
         ),
     )
     parser.parse_args()
+    comment = [
+        '"""',
+        "CF_TABLE_INFO, CF_TABLE_STD_NAMES, and CF_TABLE_ALIASES.",
+        f"Created by {parser.prog}.",
+        '"""',
+    ]
+    print("\n".join(comment))
     print(main())

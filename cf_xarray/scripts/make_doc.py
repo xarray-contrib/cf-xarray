@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import os
 
 from pandas import DataFrame
@@ -10,7 +11,7 @@ from cf_xarray.criteria import coordinate_criteria, regex
 
 def main():
     """
-    Make all additional files needed to build the documentations.
+    Generate _build/csv/ with all additional files needed to build cf-xarray documentation.
     """
 
     make_criteria_csv()
@@ -57,4 +58,11 @@ def make_regex_csv():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description=(
+            "Generate _build/csv/ with all additional files"
+            " needed to build cf-xarray documentation."
+        ),
+    )
+    parser.parse_args()
     main()

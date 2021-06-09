@@ -25,6 +25,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
 
+from .cf_table import CF_TABLE_ALIASES, CF_TABLE_INFO, CF_TABLE_STD_NAMES
 from .criteria import coordinate_criteria, regex
 from .helpers import bounds_to_vertices
 from .utils import (
@@ -63,13 +64,6 @@ ATTRS = {
 }
 ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
-
-#:  Link to CF standard name table
-CF_TABLE_URL = (
-    "https://raw.githubusercontent.com/cf-convention/"
-    "cf-convention.github.io/master/Data/cf-standard-names/current/src/"
-    "cf-standard-name-table.xml"
-)
 
 # Type for Mapper functions
 Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]
@@ -1531,7 +1525,7 @@ class CFAccessor:
                 result *= -1
         return result
 
-    def add_cf_attributes(
+    def add_canonical_cf_attributes(
         self,
         override: bool = False,
         skip: Union[str, Iterable[str]] = None,
@@ -1539,8 +1533,8 @@ class CFAccessor:
         cf_table_uri: Union[str, Path] = None,
     ) -> Union[Dataset, DataArray]:
         """
-        Add CF attributes to variables with standard names. Attributes are parsed from
-        the official CF standard names table.
+        Add canonical CF attributes to variables with standard names.
+        Attributes are parsed from the official CF standard names table.
 
         Parameters
         ----------
@@ -1551,9 +1545,7 @@ class CFAccessor:
         verbose: bool
             Print added attributes to screen
         cf_table_uri: str, Path, optional
-            Location of the CF standard names table in xml format.
-            By default, read the latest table from
-            https://github.com/cf-convention/cf-convention.github.io
+            Location of the CF standard names table (xml format).
 
         Returns
         -------
@@ -1561,11 +1553,15 @@ class CFAccessor:
         """
 
         # Defaults
-        cf_table_uri = cf_table_uri or CF_TABLE_URL
         skip = always_iterable(skip)
 
         # Parse table
-        table_dict, aliases = parse_cf_table(cf_table_uri, verbose)
+        if cf_table_uri:
+            info, table, aliases = parse_cf_table(cf_table_uri)
+        else:
+            info = CF_TABLE_INFO
+            table = CF_TABLE_STD_NAMES
+            aliases = CF_TABLE_ALIASES
 
         # Loop aver standard names
         ds = self._maybe_to_dataset()
@@ -1575,7 +1571,7 @@ class CFAccessor:
             for var_name in var_names:
                 old_attrs = ds[var_name].attrs
                 std_name = aliases.get(std_name, std_name)
-                new_attrs = table_dict.get(std_name, {})
+                new_attrs = table.get(std_name, {})
 
                 for key, value in new_attrs.items():
                     if value and key not in skip and (override or key not in old_attrs):
@@ -1584,13 +1580,20 @@ class CFAccessor:
                         attrs_to_print[var_name][key] = value
 
         if verbose:
-            info = ["\nAttributes added:"]
+            # Info
+            strings = ["CF Standard Name Table info:"]
+            for key, value in info.items():
+                strings.append(f"- {key}: {value}")
+
+            # Attributes added
+            strings.append("\nAttributes added:")
             for varname, attrs in attrs_to_print.items():
-                info.append(f"- {varname}:")
+                strings.append(f"- {varname}:")
                 for key, value in attrs.items():
-                    info.append(f"    * {key}: {value}")
-                info.append("")
-            print("\n".join(info))
+                    strings.append(f"    * {key}: {value}")
+                strings.append("")
+
+            print("\n".join(strings))
 
         return self._maybe_to_dataarray(ds)
 

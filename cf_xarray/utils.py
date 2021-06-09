@@ -63,7 +63,7 @@ def always_iterable(obj: Any) -> Iterable:
     return [obj] if not isinstance(obj, (tuple, list, set, dict)) else obj
 
 
-def parse_cf_table(uri: Union[str, Path], verbose=False):
+def parse_cf_table(uri: Union[str, Path]):
     """
     Parse cf standard names table in xml format.
 
@@ -71,15 +71,14 @@ def parse_cf_table(uri: Union[str, Path], verbose=False):
     ----------
     cf_table_uri: str, Path
         Location of the cf standard names table in xml format.
-    verbose: bool
-        Print table info to screen
 
     Returns
     -------
     tuple
         Dictionaries mapping:
-            1. standard_name to attributes
-            2. alias to standard_name
+            1. table info
+            2. standard_name to attributes
+            3. alias to standard_name
     """
 
     # Deal with urls
@@ -90,7 +89,7 @@ def parse_cf_table(uri: Union[str, Path], verbose=False):
     root = tree.getroot()
 
     # Construct table
-    info = []
+    info = {}
     table: dict = {}
     aliases = {}
     for child in root:
@@ -106,12 +105,10 @@ def parse_cf_table(uri: Union[str, Path], verbose=False):
             key = child.findall("entry_id")[0].text
             aliases[alias] = key
         else:
-            info.append(f"{child.tag}: {child.text}")
-
-    if verbose:
-        print("\n  * ".join(["CF standard name table info:"] + info))
+            info[child.tag] = child.text
 
     return (
+        info,
         table,
         aliases,
     )

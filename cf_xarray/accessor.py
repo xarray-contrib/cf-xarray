@@ -1550,6 +1550,10 @@ class CFAccessor:
         Returns
         -------
         DataArray or Dataset with attributes added
+
+        Notes
+        -----
+        The "units" attribute is never added to datetime_like variables.
         """
 
         # Defaults

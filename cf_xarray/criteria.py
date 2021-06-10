@@ -8,6 +8,34 @@ Copyright (c) 2017 MetPy Developers.
 import re
 from typing import MutableMapping, Tuple
 
+# KMT: Not finished, but as draft
+cf_criteria = {
+    "sea_surface_elevation": {
+        "standard_name": ("sea_surface_height*",),
+        "units": ("m",),
+    },
+    "sea_water_temperature": {
+        "standard_name": ("sea_water_temperature*",),
+        "units": ("m",),
+    },
+    "sea_water_salinity": {"standard_name": ("sea_water_salinity*",), "units": ("m",)},
+    "eastward_sea_water_velocity": {
+        "standard_name": ("eastward_sea_water_velocity*",),
+        "units": ("m",),
+    },
+    "northward_sea_water_velocity": {
+        "standard_name": ("northward_sea_water_velocity*",),
+        "units": ("m",),
+    },
+    "sea_water_speed": {"standard_name": ("sea_water_speed*",), "units": ("m",)},
+    "sea_water_to_direction": {
+        "standard_name": ("sea_water_to_direction*",),
+        "units": ("m",),
+    },
+    "wind_speed": {"standard_name": ("wind_speed",), "units": ("m",)},
+    "wind_speed_of_gust": {"standard_name": ("wind_speed_of_gust",), "units": ("m",)},
+}
+
 coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
     "latitude": {
         "standard_name": ("latitude",),

@@ -24,7 +24,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
 
-from .criteria import coordinate_criteria, regex
+from .criteria import cf_criteria, coordinate_criteria, regex
 from .helpers import bounds_to_vertices
 from .utils import (
     _is_datetime_like,
@@ -61,6 +61,12 @@ ATTRS = {
 }
 ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
+
+
+# KMT: not finished
+def set_options(my_custom_criteria=None):
+    criteria = (my_custom_criteria, cf_criteria)
+    return criteria
 
 
 # Type for Mapper functions
@@ -168,7 +174,9 @@ def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List
         return []
 
 
-def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
+def _get_custom_criteria(
+    var: Union[DataArray, Dataset], key: str, criteria=None
+) -> List[str]:
     """
     Translate from axis or coord name to variable name
 
@@ -178,6 +186,10 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
         DataArray belonging to the coordinate to be checked
     key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
         key to check for.
+    criteria : dict
+        Criteria to use to map from variable to attributes describing the
+        variable. An example is coordinate_criteria which maps coordinates to
+        their attributes and attribute values.
     error : bool
         raise errors when key is not found or interpretable. Use False and provide default
         to replicate dict.get(k, None).
@@ -200,6 +212,10 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
     ----------
     MetPy's parse_cf
     """
+
+    # KMT: not sure how to set this yet
+    # if criteria is None:
+    #     criteria = OPTIONS["criteria"]  # set by set_options
 
     valid_keys = _COORD_NAMES + _AXIS_NAMES
     if key not in valid_keys:
@@ -312,7 +328,7 @@ def _get_all(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names
     """
-    all_mappers = (_get_axis_coord, _get_measure, _get_with_standard_name)
+    all_mappers = (_get_custom_criteria, _get_measure, _get_with_standard_name)
     results = apply_mapper(all_mappers, obj, key, error=False, default=None)
     return results
 

@@ -190,7 +190,7 @@ def _get_custom_criteria(
         criteria = OPTIONS["custom_criteria"]
 
     if criteria is not None:
-        criteria = always_iterable(criteria, allowed=(tuple, dict, set))
+        criteria = always_iterable(criteria, allowed=(tuple, list, set))
 
     results: Set = set()
     for crit in criteria:

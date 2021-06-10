@@ -55,5 +55,5 @@ def invert_mappings(*mappings):
     return merged
 
 
-def always_iterable(obj: Any) -> Iterable:
-    return [obj] if not isinstance(obj, (tuple, list, set, dict)) else obj
+def always_iterable(obj: Any, allowed=(tuple, list, set, dict)) -> Iterable:
+    return [obj] if not isinstance(obj, allowed) else obj

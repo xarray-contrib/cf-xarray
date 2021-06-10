@@ -24,7 +24,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
 
-from .criteria import cf_criteria, coordinate_criteria, regex
+from .criteria import coordinate_criteria, regex
 from .helpers import bounds_to_vertices
 from .utils import (
     _is_datetime_like,
@@ -62,11 +62,14 @@ ATTRS = {
 ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
 
+OPTIONS: MutableMapping[str, Any] = {"custom_criteria": []}
 
-# KMT: not finished
-def set_options(my_custom_criteria=None):
-    criteria = (my_custom_criteria, cf_criteria)
-    return criteria
+
+def set_options(custom_criteria):
+    OPTIONS["custom_criteria"] = (
+        always_iterable(custom_criteria, allowed=(tuple, list, set))
+        + OPTIONS["custom_criteria"]
+    )
 
 
 # Type for Mapper functions
@@ -175,8 +178,31 @@ def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List
 
 
 def _get_custom_criteria(
-    var: Union[DataArray, Dataset], key: str, criteria=None
+    obj: Union[DataArray, Dataset], key: str, criteria=None
 ) -> List[str]:
+
+    if isinstance(obj, DataArray):
+        obj = obj._to_temp_dataset()
+
+    if criteria is None:
+        if not OPTIONS["custom_criteria"]:
+            return []
+        criteria = OPTIONS["custom_criteria"]
+
+    if criteria is not None:
+        criteria = always_iterable(criteria, allowed=(tuple, dict, set))
+
+    results: Set = set()
+    for crit in criteria:
+        if key in crit:
+            for criterion, expected in crit[key].items():
+                for var in obj.variables:
+                    if obj[var].attrs.get(criterion, None) in expected:
+                        results.update((var,))
+    return list(results)
+
+
+def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Translate from axis or coord name to variable name
 
@@ -328,7 +354,12 @@ def _get_all(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names
     """
-    all_mappers = (_get_custom_criteria, _get_measure, _get_with_standard_name)
+    all_mappers = (
+        _get_custom_criteria,
+        _get_axis_coord,
+        _get_measure,
+        _get_with_standard_name,
+    )
     results = apply_mapper(all_mappers, obj, key, error=False, default=None)
     return results
 

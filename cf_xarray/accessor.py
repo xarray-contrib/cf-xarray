@@ -1608,7 +1608,7 @@ class CFAccessor:
 
             print("\n".join(strings))
 
-        # Append history
+        # Prepend history
         now = datetime.now().ctime()
         method_name = inspect.stack()[0][3]
         version = _get_version()

@@ -239,10 +239,6 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
     MetPy's parse_cf
     """
 
-    # KMT: not sure how to set this yet
-    # if criteria is None:
-    #     criteria = OPTIONS["criteria"]  # set by set_options
-
     valid_keys = _COORD_NAMES + _AXIS_NAMES
     if key not in valid_keys:
         raise KeyError(

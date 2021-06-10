@@ -1,23 +1,22 @@
-import importlib
 import os
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import TemporaryDirectory
 
-from cf_xarray import cf_table
-from cf_xarray.scripts import cf_table_to_str, make_doc
+from cf_xarray.scripts import make_doc
 
 
 def test_make_doc():
 
+    names = [
+        "axes_criteria",
+        "coords_criteria",
+        "all_criteria",
+        "all_regex",
+    ]
+    tables_to_check = [f"_build/csv/{name}.csv" for name in names]
+
     # Create _buil/csv in a temporary directory
     owd = os.getcwd()
     with TemporaryDirectory() as tmpdirname:
-        names = [
-            "axes_criteria",
-            "coords_criteria",
-            "all_criteria",
-            "all_regex",
-        ]
-        tables_to_check = [f"_build/csv/{name}.csv" for name in names]
         try:
             os.chdir(os.path.dirname(tmpdirname))
             make_doc.main()
@@ -25,16 +24,3 @@ def test_make_doc():
         finally:
             # Always return to original working directory
             os.chdir(owd)
-
-
-def test_cf_table_to_str():
-
-    actual = cf_table
-
-    with NamedTemporaryFile("w", suffix=".py") as tmpfile:
-        tmpfile.write(cf_table_to_str.main())
-        spec = importlib.util.spec_from_file_location("tmpmodule", tmpfile.name)
-        expected = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(expected)
-
-        assert actual.CF_STANDARD_NAME_TABLE == expected.CF_STANDARD_NAME_TABLE

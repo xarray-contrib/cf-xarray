@@ -4,6 +4,7 @@ import itertools
 import re
 import warnings
 from collections import ChainMap
+from datetime import datetime
 from typing import (
     Any,
     Callable,
@@ -19,20 +20,20 @@ from typing import (
     Union,
     cast,
 )
-from xml.etree import ElementTree
 
 import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
 
-from .cf_table import CF_STANDARD_NAME_TABLE
 from .criteria import coordinate_criteria, regex
 from .helpers import bounds_to_vertices
 from .utils import (
+    _get_version,
     _is_datetime_like,
     always_iterable,
     invert_mappings,
     parse_cell_methods_attr,
+    parse_cf_standard_name_table,
 )
 
 #: Classes wrapped by cf_xarray.
@@ -1556,32 +1557,14 @@ class CFAccessor:
         The "units" attribute is never added to datetime_like variables.
         """
 
+        # Arguments to add to history
+        args = ", ".join([f"{k!s}={v!r}" for k, v in locals().items() if k != "self"])
+
         # Defaults
         skip = skip or []
-        root = (
-            ElementTree.parse(source).getroot()
-            if source
-            else ElementTree.fromstring(CF_STANDARD_NAME_TABLE)
-        )
 
-        # Construct table
-        info = {}
-        table: dict = {}
-        aliases = {}
-        for child in root:
-            if child.tag == "entry":
-                key = child.attrib.get("id")
-                table[key] = {}
-                for item in ["canonical_units", "grib", "amip", "description"]:
-                    parsed = child.findall(item)
-                    attr = item.replace("canonical_", "")
-                    table[key][attr] = (parsed[0].text or "") if parsed else ""
-            elif child.tag == "alias":
-                alias = child.attrib.get("id")
-                key = child.findall("entry_id")[0].text
-                aliases[alias] = key
-            else:
-                info[child.tag] = child.text
+        # Parse table
+        info, table, aliases = parse_cf_standard_name_table(source)
 
         # Loop over standard names
         ds = self._maybe_to_dataset().copy()
@@ -1609,13 +1592,6 @@ class CFAccessor:
                         attrs_to_print.setdefault(var_name, {})
                         attrs_to_print[var_name][key] = value
 
-                        # Update history
-                        history = ds[var_name].attrs.get("cf_history", "")
-                        if history:
-                            history += "; "
-                        history += f"add canonical CF attribute {key!r} (v{info['version_number']!s})"
-                        ds[var_name].attrs["cf_history"] = history
-
         if verbose:
             # Info
             strings = ["CF Standard Name Table info:"]
@@ -1632,7 +1608,20 @@ class CFAccessor:
 
             print("\n".join(strings))
 
-        return self._maybe_to_dataarray(ds)
+        # Append history
+        now = datetime.now().ctime()
+        method_name = inspect.stack()[0][3]
+        version = _get_version()
+        table_version = info["version_number"]
+        history = (
+            f"{now}:"
+            f" cf.{method_name}({args})"
+            f" [cf-xarray {version}, cf-standard-name-table {table_version}]\n"
+        )
+        obj = self._maybe_to_dataarray(ds)
+        obj.attrs["history"] = history + obj.attrs.get("history", "")
+
+        return obj
 
 
 @xr.register_dataset_accessor("cf")

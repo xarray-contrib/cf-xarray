@@ -1,5 +1,6 @@
 import itertools
 from textwrap import dedent
+from urllib.request import urlopen
 
 import matplotlib as mpl
 import numpy as np
@@ -11,6 +12,7 @@ from xarray import Dataset
 from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
+from cf_xarray.utils import parse_cf_standard_name_table
 
 from ..datasets import (
     airds,
@@ -1233,3 +1235,14 @@ def test_cmip6_attrs():
     )
     assert da.cf.axes["X"] == ["nlon"]
     assert da.cf.axes["Y"] == ["nlat"]
+
+
+def test_cf_standard_name_table_version():
+
+    url = (
+        "https://raw.githubusercontent.com/cf-convention/cf-convention.github.io/"
+        "master/Data/cf-standard-names/current/src/cf-standard-name-table.xml"
+    )
+    expected_info, _, _ = parse_cf_standard_name_table(urlopen(url))
+    actual_info, _, _ = parse_cf_standard_name_table()
+    assert expected_info == actual_info

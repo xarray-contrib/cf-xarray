@@ -5,28 +5,36 @@ Copyright (c) 2017 MetPy Developers.
 """
 
 
-import copy
 import re
 from typing import MutableMapping, Tuple
 
 coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
-    "standard_name": {
-        "X": ("projection_x_coordinate",),
-        "Y": ("projection_y_coordinate",),
-        "T": ("time",),
-        "time": ("time",),
-        "vertical": (
-            "air_pressure",
-            "height",
-            "depth",
-            "geopotential_height",
-            # computed dimensional coordinate name
-            "altitude",
-            "height_above_geopotential_datum",
-            "height_above_reference_ellipsoid",
-            "height_above_mean_sea_level",
+    "latitude": {
+        "standard_name": ("latitude",),
+        "units": (
+            "degree_north",
+            "degree_N",
+            "degreeN",
+            "degrees_north",
+            "degrees_N",
+            "degreesN",
         ),
-        "Z": (
+        "_CoordinateAxisType": ("Lat",),
+    },
+    "longitude": {
+        "standard_name": ("longitude",),
+        "units": (
+            "degree_east",
+            "degree_E",
+            "degreeE",
+            "degrees_east",
+            "degrees_E",
+            "degreesE",
+        ),
+        "_CoordinateAxisType": ("Lon",),
+    },
+    "Z": {
+        "standard_name": (
             "model_level_number",
             "atmosphere_ln_pressure_coordinate",
             "atmosphere_sigma_coordinate",
@@ -40,44 +48,51 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
             "ocean_sigma_z_coordinate",
             "ocean_double_sigma_coordinate",
         ),
-        "latitude": ("latitude",),
-        "longitude": ("longitude",),
-    },
-    "_CoordinateAxisType": {
-        "T": ("Time",),
-        "Z": ("GeoZ", "Height", "Pressure"),
-        "Y": ("GeoY",),
-        "latitude": ("Lat",),
-        "X": ("GeoX",),
-        "longitude": ("Lon",),
-    },
-    "axis": {"T": ("T",), "Z": ("Z",), "Y": ("Y",), "X": ("X",)},
-    "cartesian_axis": {"T": ("T",), "Z": ("Z",), "Y": ("Y",), "X": ("X",)},
-    "positive": {"vertical": ("up", "down")},
-    "units": {
-        "latitude": (
-            "degree_north",
-            "degree_N",
-            "degreeN",
-            "degrees_north",
-            "degrees_N",
-            "degreesN",
+        "_CoordinateAxisType": (
+            "GeoZ",
+            "Height",
+            "Pressure",
         ),
-        "longitude": (
-            "degree_east",
-            "degree_E",
-            "degreeE",
-            "degrees_east",
-            "degrees_E",
-            "degreesE",
+        "axis": ("Z",),
+    },
+    "vertical": {
+        "standard_name": (
+            "air_pressure",
+            "height",
+            "depth",
+            "geopotential_height",
+            # computed dimensional coordinate name
+            "altitude",
+            "height_above_geopotential_datum",
+            "height_above_reference_ellipsoid",
+            "height_above_mean_sea_level",
         ),
+        "positive": ("up", "down"),
+    },
+    "X": {
+        "standard_name": ("projection_x_coordinate",),
+        "_CoordinateAxisType": ("GeoX",),
+        "axis": ("X",),
+    },
+    "Y": {
+        "standard_name": ("projection_y_coordinate",),
+        "_CoordinateAxisType": ("GeoY",),
+        "axis": ("Y",),
+    },
+    "T": {"standard_name": ("time",), "_CoordinateAxisType": ("Time",), "axis": ("T",)},
+    "time": {
+        "standard_name": ("time",),
     },
 }
 
 # "long_name" and "standard_name" criteria are the same. For convenience.
-coordinate_criteria["long_name"] = copy.deepcopy(coordinate_criteria["standard_name"])
-coordinate_criteria["long_name"]["X"] += ("cell index along first dimension",)
-coordinate_criteria["long_name"]["Y"] += ("cell index along second dimension",)
+for coord, attrs in coordinate_criteria.items():
+    coordinate_criteria[coord]["long_name"] = coordinate_criteria[coord][
+        "standard_name"
+    ]
+coordinate_criteria["X"]["long_name"] += ("cell index along first dimension",)
+coordinate_criteria["Y"]["long_name"] += ("cell index along second dimension",)
+
 
 #: regular expressions for guess_coord_axis
 regex = {

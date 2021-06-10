@@ -221,8 +221,7 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
     results: Set = set()
     for coord in search_in:
         if key in coordinate_criteria:
-            for criterion in coordinate_criteria[key]:
-                expected = coordinate_criteria[key][criterion]
+            for criterion, expected in coordinate_criteria[key].items():
                 if (
                     coord in var.coords
                     and var.coords[coord].attrs.get(criterion, None) in expected

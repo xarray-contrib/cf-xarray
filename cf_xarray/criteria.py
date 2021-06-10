@@ -5,14 +5,13 @@ Copyright (c) 2017 MetPy Developers.
 """
 
 
-import copy
 import re
 from typing import MutableMapping, Tuple
 
 coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
     "latitude": {
         "standard_name": ("latitude",),
-		"units": (
+        "units": (
             "degree_north",
             "degree_N",
             "degreeN",
@@ -20,11 +19,11 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
             "degrees_N",
             "degreesN",
         ),
-        "_CoordinateAxisType": ("Lat",)
-	},
+        "_CoordinateAxisType": ("Lat",),
+    },
     "longitude": {
         "standard_name": ("longitude",),
-		"units": (
+        "units": (
             "degree_east",
             "degree_E",
             "degreeE",
@@ -32,8 +31,8 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
             "degrees_E",
             "degreesE",
         ),
-        "_CoordinateAxisType": ("Lon",)
-	},
+        "_CoordinateAxisType": ("Lon",),
+    },
     "Z": {
         "standard_name": (
             "model_level_number",
@@ -49,11 +48,15 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
             "ocean_sigma_z_coordinate",
             "ocean_double_sigma_coordinate",
         ),
-        "_CoordinateAxisType": ("GeoZ", "Height", "Pressure",),
-        "axis": ("Z",)
+        "_CoordinateAxisType": (
+            "GeoZ",
+            "Height",
+            "Pressure",
+        ),
+        "axis": ("Z",),
     },
     "vertical": {
-        "standard_name":    (
+        "standard_name": (
             "air_pressure",
             "height",
             "depth",
@@ -67,28 +70,26 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
         "positive": ("up", "down"),
     },
     "X": {
-        "standard_name": ( "projection_x_coordinate",),
+        "standard_name": ("projection_x_coordinate",),
         "_CoordinateAxisType": ("GeoX",),
-        "axis": ("X",)
-        },
+        "axis": ("X",),
+    },
     "Y": {
-        "standard_name": ( "projection_y_coordinate",),
+        "standard_name": ("projection_y_coordinate",),
         "_CoordinateAxisType": ("GeoY",),
-        "axis": ("Y",)
-        },
-    "T": {
-        "standard_name": ("time",),
-        "_CoordinateAxisType": ("Time",),
-        "axis": ("T",)
-        },
+        "axis": ("Y",),
+    },
+    "T": {"standard_name": ("time",), "_CoordinateAxisType": ("Time",), "axis": ("T",)},
     "time": {
         "standard_name": ("time",),
-        }
+    },
 }
 
 # "long_name" and "standard_name" criteria are the same. For convenience.
 for coord, attrs in coordinate_criteria.items():
-    coordinate_criteria[coord]["long_name"] = coordinate_criteria[coord]["standard_name"]
+    coordinate_criteria[coord]["long_name"] = coordinate_criteria[coord][
+        "standard_name"
+    ]
 coordinate_criteria["X"]["long_name"] += ("cell index along first dimension",)
 coordinate_criteria["Y"]["long_name"] += ("cell index along second dimension",)
 

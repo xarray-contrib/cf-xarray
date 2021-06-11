@@ -4,6 +4,7 @@ import itertools
 import re
 import warnings
 from collections import ChainMap
+from datetime import datetime
 from typing import (
     Any,
     Callable,
@@ -27,10 +28,12 @@ from xarray.core.arithmetic import SupportsArithmetic
 from .criteria import coordinate_criteria, regex
 from .helpers import bounds_to_vertices
 from .utils import (
+    _get_version,
     _is_datetime_like,
     always_iterable,
     invert_mappings,
     parse_cell_methods_attr,
+    parse_cf_standard_name_table,
 )
 
 #: Classes wrapped by cf_xarray.
@@ -61,7 +64,6 @@ ATTRS = {
 }
 ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
-
 
 # Type for Mapper functions
 Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]
@@ -1520,6 +1522,106 @@ class CFAccessor:
             if attrs["positive"] == "down":
                 result *= -1
         return result
+
+    def add_canonical_attributes(
+        self,
+        override: bool = False,
+        skip: Union[str, List[str]] = None,
+        verbose: bool = False,
+        source=None,
+    ) -> Union[Dataset, DataArray]:
+        """
+        Add canonical CF attributes to variables with standard names.
+        Attributes are parsed from the official CF standard name table.
+        This function adds an entry to the "history" attribute.
+
+        Parameters
+        ----------
+        override: bool
+            Override existing attributes.
+        skip: str, iterable, optional
+            Attribute(s) to skip: ``{"units", "grib", "amip", "description"}``.
+        verbose: bool
+            Print added attributes to screen.
+        source: optional
+            Path of `cf-standard-name-table.xml` or file object containing XML data.
+            If ``None``, use the default version associated with ``cf-xarray``.
+
+        Returns
+        -------
+        DataArray or Dataset with attributes added.
+
+        Notes
+        -----
+        The ``"units"`` attribute is never added to datetime-like variables.
+        """
+
+        # Arguments to add to history
+        args = ", ".join([f"{k!s}={v!r}" for k, v in locals().items() if k != "self"])
+
+        # Defaults
+        skip = [skip] if isinstance(skip, str) else (skip or [])
+
+        # Parse table
+        info, table, aliases = parse_cf_standard_name_table(source)
+
+        # Loop over standard names
+        ds = self._maybe_to_dataset().copy()
+        attrs_to_print: dict = {}
+        for std_name, var_names in ds.cf.standard_names.items():
+
+            # Loop over variable names
+            for var_name in var_names:
+                old_attrs = ds[var_name].attrs
+                std_name = aliases.get(std_name, std_name)
+                new_attrs = table.get(std_name, {})
+
+                # Loop over attributes
+                for key, value in new_attrs.items():
+                    if value and key not in skip and (override or key not in old_attrs):
+
+                        # Don't add units to time variables (e.g., datetime64, ...)
+                        if key == "units" and _is_datetime_like(ds[var_name]):
+                            continue
+
+                        # Add attribute
+                        ds[var_name].attrs[key] = value
+
+                        # Build verbose dictionary
+                        if verbose:
+                            attrs_to_print.setdefault(var_name, {})
+                            attrs_to_print[var_name][key] = value
+
+        if verbose:
+            # Info
+            strings = ["CF Standard Name Table info:"]
+            for key, value in info.items():
+                strings.append(f"- {key}: {value}")
+
+            # Attributes added
+            strings.append("\nAttributes added:")
+            for varname, attrs in attrs_to_print.items():
+                strings.append(f"- {varname}:")
+                for key, value in attrs.items():
+                    strings.append(f"    * {key}: {value}")
+                strings.append("")
+
+            print("\n".join(strings))
+
+        # Prepend history
+        now = datetime.now().ctime()
+        method_name = inspect.stack()[0][3]
+        version = _get_version()
+        table_version = info["version_number"]
+        history = (
+            f"{now}:"
+            f" cf.{method_name}({args})"
+            f" [cf-xarray {version}, cf-standard-name-table {table_version}]\n"
+        )
+        obj = self._maybe_to_dataarray(ds)
+        obj.attrs["history"] = history + obj.attrs.get("history", "")
+
+        return obj
 
 
 @xr.register_dataset_accessor("cf")

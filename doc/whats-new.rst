@@ -5,6 +5,8 @@ What's New
 
 v0.5.3 (unreleased)
 ===================
+- Implemented :py:meth:`Dataset.cf.add_canonical_attributes` and :py:meth:`DataArray.cf.add_canonical_attributes`
+  to add CF canonical attributes. By `Mattia Almansi`_.
 - Begin adding support for units with a unit registry for pint arrays. :pr:`197`.
   By `Jon Thielen`_ and `Justus Magin`_.
 - :py:meth:`Dataset.cf.rename_like` also updates the ``bounds`` and ``cell_measures`` attributes. By `Mattia Almansi`_.

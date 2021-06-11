@@ -1535,6 +1535,7 @@ class CFAccessor:
         """
         Add canonical CF attributes to variables with standard names.
         Attributes are parsed from the official CF standard name table.
+        This function adds an entry to the "history" attribute.
 
         Parameters
         ----------

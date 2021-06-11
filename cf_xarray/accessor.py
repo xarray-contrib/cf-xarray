@@ -1525,10 +1525,10 @@ class CFAccessor:
                 result *= -1
         return result
 
-    def add_canonical_cf_attributes(
+    def add_canonical_attributes(
         self,
         override: bool = False,
-        skip: List[str] = None,
+        skip: Union[str, List[str]] = None,
         verbose: bool = False,
         source=None,
     ) -> Union[Dataset, DataArray]:
@@ -1541,11 +1541,11 @@ class CFAccessor:
         override: bool
             Override existing attributes
         skip: str, iterable, optional
-            Attribute keys to skip: {"units", "grib", "amip", "description"}
+            Attribute keys to skip: ``{"units", "grib", "amip", "description"}``
         verbose: bool
             Print added attributes to screen
         source: optional
-            Path of cf-standard-name-table.xml or file object containing XML data.
+            Path of `cf-standard-name-table.xml` or file object containing XML data.
             If None, use the default CF standard name table.
 
         Returns
@@ -1561,7 +1561,7 @@ class CFAccessor:
         args = ", ".join([f"{k!s}={v!r}" for k, v in locals().items() if k != "self"])
 
         # Defaults
-        skip = skip or []
+        skip = [skip] if isinstance(skip, str) else (skip or [])
 
         # Parse table
         info, table, aliases = parse_cf_standard_name_table(source)

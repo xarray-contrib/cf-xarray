@@ -1249,12 +1249,12 @@ def test_cf_standard_name_table_version():
 
 
 @pytest.mark.parametrize("override", [True, False])
-@pytest.mark.parametrize("skip", [["units"], None])
+@pytest.mark.parametrize("skip", ["units", None])
 @pytest.mark.parametrize("verbose", [True, False])
-def test_add_canonical_cf_attributes(override, skip, verbose, capsys):
+def test_add_canonical_attributes(override, skip, verbose, capsys):
 
     ds = airds
-    cf_ds = ds.cf.add_canonical_cf_attributes(
+    cf_ds = ds.cf.add_canonical_attributes(
         override=override, skip=skip, verbose=verbose
     )
 
@@ -1280,13 +1280,13 @@ def test_add_canonical_cf_attributes(override, skip, verbose, capsys):
             assert "* units: degree_north" in captured.out
 
     assert (
-        f"cf.add_canonical_cf_attributes(override={override!r}, skip={skip!r}, verbose={verbose!r}, source=None)"
+        f"cf.add_canonical_attributes(override={override!r}, skip={skip!r}, verbose={verbose!r}, source=None)"
         in cf_ds.attrs["history"]
     )
 
     # DataArray (test only once)
     if override and skip and verbose:
-        cf_da = ds["air"].cf.add_canonical_cf_attributes(
+        cf_da = ds["air"].cf.add_canonical_attributes(
             override=override, skip=skip, verbose=verbose
         )
 

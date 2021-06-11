@@ -1534,27 +1534,27 @@ class CFAccessor:
     ) -> Union[Dataset, DataArray]:
         """
         Add canonical CF attributes to variables with standard names.
-        Attributes are parsed from the official CF standard names table.
+        Attributes are parsed from the official CF standard name table.
 
         Parameters
         ----------
         override: bool
-            Override existing attributes
+            Override existing attributes.
         skip: str, iterable, optional
-            Attribute keys to skip: ``{"units", "grib", "amip", "description"}``
+            Attribute(s) to skip: ``{"units", "grib", "amip", "description"}``.
         verbose: bool
-            Print added attributes to screen
+            Print added attributes to screen.
         source: optional
             Path of `cf-standard-name-table.xml` or file object containing XML data.
-            If None, use the default CF standard name table.
+            If ``None``, use the default version associated with ``cf-xarray``.
 
         Returns
         -------
-        DataArray or Dataset with attributes added
+        DataArray or Dataset with attributes added.
 
         Notes
         -----
-        The "units" attribute is never added to datetime_like variables.
+        The ``"units"`` attribute is never added to datetime-like variables.
         """
 
         # Arguments to add to history

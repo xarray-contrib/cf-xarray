@@ -1279,6 +1279,7 @@ def test_add_canonical_attributes(override, skip, verbose, capsys):
         if verbose:
             assert "* units: degree_north" in captured.out
 
+    # History
     assert (
         f"cf.add_canonical_attributes(override={override!r}, skip={skip!r}, verbose={verbose!r}, source=None)"
         in cf_ds.attrs["history"]

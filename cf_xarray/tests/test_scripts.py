@@ -14,7 +14,7 @@ def test_make_doc():
     ]
     tables_to_check = [f"_build/csv/{name}.csv" for name in names]
 
-    # Create _buil/csv in a temporary directory
+    # Create _build/csv in a temporary directory
     owd = os.getcwd()
     with TemporaryDirectory() as tmpdirname:
         try:

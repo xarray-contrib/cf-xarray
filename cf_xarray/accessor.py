@@ -1589,8 +1589,9 @@ class CFAccessor:
                         ds[var_name].attrs[key] = value
 
                         # Build verbose dictionary
-                        attrs_to_print.setdefault(var_name, {})
-                        attrs_to_print[var_name][key] = value
+                        if verbose:
+                            attrs_to_print.setdefault(var_name, {})
+                            attrs_to_print[var_name][key] = value
 
         if verbose:
             # Info

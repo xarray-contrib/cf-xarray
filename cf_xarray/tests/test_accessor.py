@@ -1243,43 +1243,24 @@ def test_custom_criteria():
                 "sea_surface_height_above_sea_level_geoid_mllw",
             ),
             "name": ("sea_surface_elevation",),  # variable name
-            "units": ("m",),
         },
         "temp": {
             "standard_name": ("sea_water_temperature",),
-            "units": ("degrees_Celsius",),
         },
         "salinity": {
             "standard_name": ("sea_water_salinity",),
-            "units": ("1E-3", "psu"),
         },
         "u": {
             "standard_name": ("eastward_sea_water_velocity",),
-            "units": (
-                "m/s",
-                "m s-1",
-            ),
         },
         "v": {
             "standard_name": ("northward_sea_water_velocity",),
-            "units": (
-                "m/s",
-                "m s-1",
-            ),
         },
         "wind_speed": {
             "standard_name": ("wind_speed",),
-            "units": (
-                "m/s",
-                "m s-1",
-            ),
         },
         "wind_speed_of_gust": {
             "standard_name": ("wind_speed_of_gust",),
-            "units": (
-                "m/s",
-                "m s-1",
-            ),
         },
     }
     cf_xarray.accessor.set_options(my_custom_criteria)

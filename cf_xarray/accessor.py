@@ -1532,7 +1532,7 @@ class CFAccessor:
     ) -> Union[Dataset, DataArray]:
         """
         Add canonical CF attributes to variables with standard names.
-        Attributes are parsed from the official CF standard name table.
+        Attributes are parsed from the official CF standard name table [1]_.
         This function adds an entry to the "history" attribute.
 
         Parameters
@@ -1554,6 +1554,10 @@ class CFAccessor:
         Notes
         -----
         The ``"units"`` attribute is never added to datetime-like variables.
+
+        References
+        ----------
+        .. [1] https://cfconventions.org/standard-names.html
         """
 
         # Arguments to add to history

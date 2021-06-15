@@ -181,18 +181,19 @@ def _get_custom_criteria(
     obj: Union[DataArray, Dataset], key: str, criteria=None
 ) -> List[str]:
     """
-    Translate from axis or coord name to variable name
+    Translate from axis, coord, or custom name to variable name
 
     Parameters
     ----------
     obj : DataArray, Dataset
         DataArray belonging to the coordinate to be checked
-    key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
+    key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"], or a key from user-defined custom_criteria
         key to check for.
     criteria : dict
         Criteria to use to map from variable to attributes describing the
         variable. An example is coordinate_criteria which maps coordinates to
-        their attributes and attribute values.
+        their attributes and attribute values. If user has defined
+        custom_criteria, this will be used by default.
     error : bool
         raise errors when key is not found or interpretable. Use False and provide default
         to replicate dict.get(k, None).
@@ -201,11 +202,12 @@ def _get_custom_criteria(
 
     Returns
     -------
-    List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
+    List[str], Variable name(s) in parent xarray object that matches axis, coordinate, or custom `key`
 
     Notes
     -----
-    This functions checks for the following attributes in order
+    This functions checks for the following attributes in order for axis
+    or coordinate:
        - `standard_name` (CF option)
        - `_CoordinateAxisType` (from THREDDS)
        - `axis` (CF option)
@@ -227,18 +229,18 @@ def _get_custom_criteria(
     if criteria is not None:
         criteria = always_iterable(criteria, allowed=(tuple, list, set))
 
+    criteria = ChainMap(*criteria)
+
     results: Set = set()
-    for crit in criteria:
-        if key in crit:
-            for criterion, expected in crit[key].items():
-                # import pdb; pdb.set_trace()
-                for var in obj.variables:
-                    # Treat expected as regex
-                    if re.match(expected, obj[var].attrs.get(criterion, "")):
-                        results.update((var,))
-                    # also check name specifically since not in attributes
-                    if criterion == "name" and re.match(var, expected):
-                        results.update((var,))
+    if key in criteria:
+        for criterion, expected in criteria[key].items():
+            for var in obj.variables:
+                # Treat expected as regex
+                if re.match(expected, obj[var].attrs.get(criterion, "")):
+                    results.update((var,))
+                # also check name specifically since not in attributes
+                if criterion == "name" and re.match(var, expected):
+                    results.update((var,))
     return list(results)
 
 
@@ -663,10 +665,7 @@ def _getitem(
         measures = []
         warnings.warn("Ignoring bad cell_measures attribute.", UserWarning)
 
-    try:
-        custom_criteria = OPTIONS["custom_criteria"][0]
-    except IndexError:
-        custom_criteria = OPTIONS["custom_criteria"]
+    custom_criteria = ChainMap(*OPTIONS["custom_criteria"])
 
     varnames: List[Hashable] = []
     coords: List[Hashable] = []

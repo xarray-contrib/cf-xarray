@@ -180,6 +180,41 @@ def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List
 def _get_custom_criteria(
     obj: Union[DataArray, Dataset], key: str, criteria=None
 ) -> List[str]:
+    """
+    Translate from axis or coord name to variable name
+
+    Parameters
+    ----------
+    obj : DataArray, Dataset
+        DataArray belonging to the coordinate to be checked
+    key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
+        key to check for.
+    criteria : dict
+        Criteria to use to map from variable to attributes describing the
+        variable. An example is coordinate_criteria which maps coordinates to
+        their attributes and attribute values.
+    error : bool
+        raise errors when key is not found or interpretable. Use False and provide default
+        to replicate dict.get(k, None).
+    default : Any
+        default value to return when error is False.
+
+    Returns
+    -------
+    List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
+
+    Notes
+    -----
+    This functions checks for the following attributes in order
+       - `standard_name` (CF option)
+       - `_CoordinateAxisType` (from THREDDS)
+       - `axis` (CF option)
+       - `positive` (CF standard for non-pressure vertical coordinate)
+
+    References
+    ----------
+    MetPy's parse_cf
+    """
 
     if isinstance(obj, DataArray):
         obj = obj._to_temp_dataset()
@@ -196,9 +231,14 @@ def _get_custom_criteria(
     for crit in criteria:
         if key in crit:
             for criterion, expected in crit[key].items():
+                # import pdb; pdb.set_trace()
                 for var in obj.variables:
-                    if obj[var].attrs.get(criterion, None) in expected:
+                    # Treat expected as regex
+                    if re.match(expected, obj[var].attrs.get(criterion, '')):
                         results.update((var,))
+                    # also check name specifically since not in attributes
+                    if criterion == 'name' and re.match(var, expected):
+                    	results.update((var,))
     return list(results)
 
 
@@ -212,10 +252,6 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
         DataArray belonging to the coordinate to be checked
     key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
         key to check for.
-    criteria : dict
-        Criteria to use to map from variable to attributes describing the
-        variable. An example is coordinate_criteria which maps coordinates to
-        their attributes and attribute values.
     error : bool
         raise errors when key is not found or interpretable. Use False and provide default
         to replicate dict.get(k, None).

@@ -1239,28 +1239,83 @@ def test_custom_criteria():
     my_custom_criteria = {
         "ssh": {
             "standard_name": (
-                "sea_surface_height_amplitude_due_to_geocentric_ocean_tide_geoid_mllw",
-                "sea_surface_height_above_sea_level_geoid_mllw",
+                "sea_surface_height*",
+                "sea_surface_elev*",
             ),
             "name": ("sea_surface_elevation",),  # variable name
         },
+        # "water", "temp"
         "temp": {
             "standard_name": ("sea_water_temperature",),
         },
-        "salinity": {
-            "standard_name": ("sea_water_salinity",),
+        # "water" AND "salinity" or "practical" AND "salinity"
+        "salt": {
+            "standard_name": (
+                "sea_water_salinity",
+                "sea_water_practical_salinity",
+            ),
         },
+        # "east", "water", "vel"
         "u": {
-            "standard_name": ("eastward_sea_water_velocity",),
+            "standard_name": (
+                "eastward_sea_water_velocity",
+                "sea_water_x_velocity",
+            ),
+            "name": "uo",
         },
         "v": {
-            "standard_name": ("northward_sea_water_velocity",),
+            "standard_name": (
+                "northward_sea_water_velocity",
+                "sea_water_y_velocity",
+            ),
+            "name": "vo",
         },
-        "wind_speed": {
-            "standard_name": ("wind_speed",),
-        },
-        "wind_speed_of_gust": {
-            "standard_name": ("wind_speed_of_gust",),
-        },
+        "air_temp": {"standard_name": ("air_temperature",), "name": "air_temp"},
     }
     cf_xarray.accessor.set_options(my_custom_criteria)
+
+    # Use examples I have seen IRL to test and make sure they all work!
+    # Also check variable names specifically
+    # refactor xcmocean to use this!
+    # look at dataset df and see if I can differentiate all the names
+    # ocean_data_gateway for QC part
+    ds = xr.Dataset()
+    ds["elev"] = ("dim", np.arange(10), {"standard_name": "sea_surface_elevation"})
+    xr.testing.assert_identical(ds.cf["ssh"], ds["elev"])
+
+    ds = xr.Dataset()
+    ds["uo"] = ("dim", np.arange(10), {"standard_name": "eastward_sea_water_velocity"})
+    xr.testing.assert_identical(ds.cf["u"], ds["uo"])
+
+    ds = xr.Dataset()
+    ds["uo"] = ("dim", np.arange(10), {"standard_name": "sea_water_x_velocity"})
+    xr.testing.assert_identical(ds.cf["u"], ds["uo"])
+
+    # Match by variable name not standard_name
+    ds = xr.Dataset()
+    ds["vo"] = (
+        "dim",
+        np.arange(10),
+    )
+    xr.testing.assert_identical(ds.cf["v"], ds["vo"])
+
+    ds = xr.Dataset()
+    ds["vo"] = ("dim", np.arange(10), {"standard_name": "sea_water_y_velocity"})
+    xr.testing.assert_identical(ds.cf["v"], ds["vo"])
+
+    ds = xr.Dataset()
+    ds["salt_surface"] = ("dim", np.arange(10), {"standard_name": "sea_water_salinity"})
+    xr.testing.assert_identical(ds.cf["salt"], ds["salt_surface"])
+
+    ds = xr.Dataset()
+    ds["temp_surface"] = (
+        "dim",
+        np.arange(10),
+        {"standard_name": "sea_water_temperature"},
+    )
+    xr.testing.assert_identical(ds.cf["temp"], ds["temp_surface"])
+
+    # differentiate air and water temp
+    ds = xr.Dataset()
+    ds["air_temp2"] = ("dim", np.arange(10), {"standard_name": "air_temperature"})
+    xr.testing.assert_identical(ds.cf["air_temp"], ds["air_temp2"])

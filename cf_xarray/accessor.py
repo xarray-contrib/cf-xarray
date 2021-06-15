@@ -236,10 +236,10 @@ def _get_custom_criteria(
         for criterion, expected in criteria[key].items():
             for var in obj.variables:
                 # Treat expected as regex
-                if re.match(expected, obj[var].attrs.get(criterion, "")):
+                if re.match("|".join(expected), obj[var].attrs.get(criterion, "")):
                     results.update((var,))
                 # also check name specifically since not in attributes
-                if criterion == "name" and re.match(var, expected):
+                elif criterion == "name" and re.match("|".join(expected), var):
                     results.update((var,))
     return list(results)
 

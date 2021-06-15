@@ -234,11 +234,11 @@ def _get_custom_criteria(
                 # import pdb; pdb.set_trace()
                 for var in obj.variables:
                     # Treat expected as regex
-                    if re.match(expected, obj[var].attrs.get(criterion, '')):
+                    if re.match(expected, obj[var].attrs.get(criterion, "")):
                         results.update((var,))
                     # also check name specifically since not in attributes
-                    if criterion == 'name' and re.match(var, expected):
-                    	results.update((var,))
+                    if criterion == "name" and re.match(var, expected):
+                        results.update((var,))
     return list(results)
 
 
@@ -663,6 +663,11 @@ def _getitem(
         measures = []
         warnings.warn("Ignoring bad cell_measures attribute.", UserWarning)
 
+    try:
+        custom_criteria = OPTIONS["custom_criteria"][0]
+    except IndexError:
+        custom_criteria = OPTIONS["custom_criteria"]
+
     varnames: List[Hashable] = []
     coords: List[Hashable] = []
     successful = dict.fromkeys(key, False)
@@ -679,6 +684,11 @@ def _getitem(
             successful[k] = bool(measure)
             if measure:
                 varnames.extend(measure)
+        elif k in custom_criteria:
+            names = _get_all(obj, k)
+            check_results(names, k)
+            successful[k] = bool(names)
+            varnames.extend(names)
         else:
             stdnames = set(_get_with_standard_name(obj, k))
             objcoords = set(obj.coords)

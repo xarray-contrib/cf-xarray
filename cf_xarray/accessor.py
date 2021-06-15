@@ -194,11 +194,6 @@ def _get_custom_criteria(
         variable. An example is coordinate_criteria which maps coordinates to
         their attributes and attribute values. If user has defined
         custom_criteria, this will be used by default.
-    error : bool
-        raise errors when key is not found or interpretable. Use False and provide default
-        to replicate dict.get(k, None).
-    default : Any
-        default value to return when error is False.
 
     Returns
     -------

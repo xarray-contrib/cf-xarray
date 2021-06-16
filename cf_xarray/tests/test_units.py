@@ -44,6 +44,12 @@ def test_psu_unit():
     assert str(x.units) == "practical_salinity_unit"
 
 
+def test_1en3_unit():
+    """Test that the 1e-3 salinity unit is changed to psu."""
+    x = units("1e-3")
+    assert str(x.units) == "practical_salinity_unit"
+
+
 def test_percent_units():
     """Test that percent sign units are properly parsed and interpreted."""
     assert str(units("%").units) == "percent"

@@ -239,7 +239,7 @@ def _get_custom_criteria(
                 if re.match("|".join(expected), obj[var].attrs.get(criterion, "")):
                     results.update((var,))
                 # also check name specifically since not in attributes
-                elif criterion == "name" and re.match("|".join(expected), var):
+                elif criterion == "name" and var in expected:
                     results.update((var,))
     return list(results)
 

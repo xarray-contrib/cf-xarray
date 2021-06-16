@@ -199,18 +199,6 @@ def _get_custom_criteria(
     -------
     List[str], Variable name(s) in parent xarray object that matches axis, coordinate, or custom `key`
 
-    Notes
-    -----
-    This functions checks for the following attributes in order for axis
-    or coordinate:
-       - `standard_name` (CF option)
-       - `_CoordinateAxisType` (from THREDDS)
-       - `axis` (CF option)
-       - `positive` (CF standard for non-pressure vertical coordinate)
-
-    References
-    ----------
-    MetPy's parse_cf
     """
 
     if isinstance(obj, DataArray):

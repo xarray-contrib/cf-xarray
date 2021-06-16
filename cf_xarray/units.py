@@ -15,9 +15,11 @@ from pint import (  # noqa: F401
 )
 
 # Create registry, with preprocessors for UDUNITS-style powers (m2 s-2) and percent signs
+# also change salinity unit 1e-3 to psu
 units = pint.UnitRegistry(
     autoconvert_offset_to_baseunit=True,
     preprocessors=[
+        lambda string: string.replace("1e-3", "psu"),
         functools.partial(
             re.compile(
                 r"(?<=[A-Za-z])(?![A-Za-z])(?<![0-9\-][eE])(?<![0-9\-])(?=[0-9\-])"
@@ -41,7 +43,7 @@ units.define(
     "degrees_east = degree = degrees_E = degreesE = degree_east = degree_E = degreeE"
 )
 units.define("@alias meter = gpm")
-units.define("practical_salinity_unit = [] = psu  = 1 PSS-78 = 1 Practical Salinity Scale 78 = 1.e-3 = 1E-3")
+units.define("practical_salinity_unit = [] = psu")
 
 # Enable pint's built-in matplotlib support
 try:

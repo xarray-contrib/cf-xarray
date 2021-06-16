@@ -181,7 +181,8 @@ def _get_custom_criteria(
     obj: Union[DataArray, Dataset], key: str, criteria=None
 ) -> List[str]:
     """
-    Translate from axis, coord, or custom name to variable name
+    Translate from axis, coord, or custom name to variable name optionally
+    using ``custom_criteria``
 
     Parameters
     ----------

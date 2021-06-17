@@ -1275,6 +1275,7 @@ def test_custom_criteria():
         ds.cf[["ssh"]], ds[["sea_surface_elevation", "sea_surface_height"]]
     )
 
+
 def test_cf_standard_name_table_version():
 
     url = (

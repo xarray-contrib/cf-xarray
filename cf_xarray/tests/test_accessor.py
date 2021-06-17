@@ -1,5 +1,6 @@
 import itertools
 from textwrap import dedent
+from urllib.request import urlopen
 
 import matplotlib as mpl
 import numpy as np
@@ -11,6 +12,7 @@ from xarray import Dataset
 from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
+from cf_xarray.utils import parse_cf_standard_name_table
 
 from ..datasets import (
     airds,
@@ -417,7 +419,7 @@ def test_args_methods(obj):
 
 def test_dataarray_getitem():
 
-    air = airds.air
+    air = airds.air.copy()
     air.name = None
 
     assert_identical(air.cf["longitude"], air["lon"])
@@ -1272,3 +1274,66 @@ def test_custom_criteria():
     xr.testing.assert_identical(
         ds.cf[["ssh"]], ds[["sea_surface_elevation", "sea_surface_height"]]
     )
+
+def test_cf_standard_name_table_version():
+
+    url = (
+        "https://raw.githubusercontent.com/cf-convention/cf-convention.github.io/"
+        "master/Data/cf-standard-names/current/src/cf-standard-name-table.xml"
+    )
+    expected_info, _, _ = parse_cf_standard_name_table(urlopen(url))
+    actual_info, _, _ = parse_cf_standard_name_table()
+    assert expected_info == actual_info
+
+
+@pytest.mark.parametrize("override", [True, False])
+@pytest.mark.parametrize("skip", ["units", None])
+@pytest.mark.parametrize("verbose", [True, False])
+def test_add_canonical_attributes(override, skip, verbose, capsys):
+
+    ds = airds
+    cf_ds = ds.cf.add_canonical_attributes(
+        override=override, skip=skip, verbose=verbose
+    )
+
+    # Catch print
+    captured = capsys.readouterr()
+    if not verbose:
+        captured.out == ""
+
+    # Attributes have been added
+    for var in sum(ds.cf.standard_names.values(), []):
+        assert set(ds[var].attrs) < set(cf_ds[var].attrs)
+
+    # Time units did not change
+    assert ds["time"].attrs.get("units") is cf_ds["time"].attrs.get("units") is None
+
+    # Check override, skip, and verbose
+    if not override or skip:
+        assert cf_ds["lat"].attrs["units"] == "degrees_north"
+        assert "* units" not in captured.out
+    else:
+        assert cf_ds["lat"].attrs["units"] == "degree_north"
+        if verbose:
+            assert "* units: degree_north" in captured.out
+
+    # History
+    assert (
+        f"cf.add_canonical_attributes(override={override!r}, skip={skip!r}, verbose={verbose!r}, source=None)"
+        in cf_ds.attrs["history"]
+    )
+
+    # DataArray (test only once)
+    if override and skip and verbose:
+        cf_da = ds["air"].cf.add_canonical_attributes(
+            override=override, skip=skip, verbose=verbose
+        )
+
+        time_stamp_size = 24
+        assert (
+            cf_da.attrs["history"][time_stamp_size:]
+            == cf_ds.attrs["history"][time_stamp_size:]
+        )
+
+        cf_da.attrs.pop("history")
+        assert_identical(cf_da, cf_ds["air"])

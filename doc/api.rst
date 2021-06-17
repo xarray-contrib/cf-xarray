@@ -46,6 +46,7 @@ Methods
 
     DataArray.cf.__getitem__
     DataArray.cf.__repr__
+    DataArray.cf.add_canonical_attributes
     DataArray.cf.differentiate
     DataArray.cf.guess_coord_axis
     DataArray.cf.keys
@@ -82,6 +83,7 @@ Methods
     Dataset.cf.__getitem__
     Dataset.cf.__repr__
     Dataset.cf.add_bounds
+    Dataset.cf.add_canonical_attributes
     Dataset.cf.bounds_to_vertices
     Dataset.cf.decode_vertical_coords
     Dataset.cf.differentiate

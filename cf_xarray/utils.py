@@ -1,6 +1,9 @@
+import os
 from collections import defaultdict
 from typing import Any, Dict, Iterable
+from xml.etree import ElementTree
 
+from pkg_resources import DistributionNotFound, get_distribution
 from xarray import DataArray
 
 
@@ -57,3 +60,41 @@ def invert_mappings(*mappings):
 
 def always_iterable(obj: Any, allowed=(tuple, list, set, dict)) -> Iterable:
     return [obj] if not isinstance(obj, allowed) else obj
+
+
+def parse_cf_standard_name_table(source=None):
+    """"""
+
+    if not source:
+        source = os.path.join(
+            os.path.dirname(__file__), "data", "cf-standard-name-table.xml"
+        )
+    root = ElementTree.parse(source).getroot()
+
+    # Build dictionaries
+    info = {}
+    table: dict = {}
+    aliases = {}
+    for child in root:
+        if child.tag == "entry":
+            key = child.attrib.get("id")
+            table[key] = {}
+            for item in ["canonical_units", "grib", "amip", "description"]:
+                parsed = child.findall(item)
+                attr = item.replace("canonical_", "")
+                table[key][attr] = (parsed[0].text or "") if parsed else ""
+        elif child.tag == "alias":
+            alias = child.attrib.get("id")
+            key = child.findall("entry_id")[0].text
+            aliases[alias] = key
+        else:
+            info[child.tag] = child.text
+
+    return info, table, aliases
+
+
+def _get_version():
+    try:
+        return get_distribution("cf_xarray").version
+    except DistributionNotFound:
+        return "unknown"

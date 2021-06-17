@@ -220,11 +220,23 @@ def _get_custom_criteria(
         for criterion, expected in criteria[key].items():
             for var in obj.variables:
                 # Treat expected as regex
-                if re.match("|".join(expected), obj[var].attrs.get(criterion, "")):
-                    results.update((var,))
-                # also check name specifically since not in attributes
-                elif criterion == "name" and var in expected:
-                    results.update((var,))
+                expected_vals = ChainMap(*expected.values())
+                # use regex to match
+                if "regex" in expected:
+                    if re.match(
+                        "|".join(expected_vals), obj[var].attrs.get(criterion, "")
+                    ):
+                        results.update((var,))
+                    # also check name specifically since not in attributes
+                    elif criterion == "name" and re.match("|".join(expected_vals), var):
+                        results.update((var,))
+                else:  # exact matches only
+                    if obj[var].attrs.get(criterion, "") in expected_vals:
+                        # if re.match("|".join(expected), obj[var].attrs.get(criterion, "")):
+                        results.update((var,))
+                    # also check name specifically since not in attributes
+                    elif criterion == "name" and var in expected_vals:
+                        results.update((var,))
     return list(results)
 
 

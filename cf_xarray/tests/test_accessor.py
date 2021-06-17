@@ -1238,8 +1238,8 @@ def test_cmip6_attrs():
 def test_custom_criteria():
     my_custom_criteria = {
         "ssh": {
-            "standard_name": ("sea_surface_elev*",),
-            "name": ("sea_surface_elevation",),  # variable name
+            "standard_name": {"regex": ("sea_surface_elev*",)},
+            "name": {"exact": ("sea_surface_elevation",)},  # variable name
         },
     }
     cf_xarray.accessor.set_options(my_custom_criteria)
@@ -1248,6 +1248,13 @@ def test_custom_criteria():
     ds = xr.Dataset()
     ds["elev"] = ("dim", np.arange(10), {"standard_name": "sea_surface_elevBLAH"})
     xr.testing.assert_identical(ds.cf["ssh"], ds["elev"])
+
+    # If not exact name, won't match
+    ds = xr.Dataset()
+    ds["sea_surface_elevation123"] = ("dim", np.arange(10))
+    # Since this will not match, this should error
+    with pytest.raises(KeyError):
+        ds.cf["ssh"]
 
     # Match by exact name
     ds = xr.Dataset()

@@ -19,7 +19,7 @@ from pint import (  # noqa: F401
 units = pint.UnitRegistry(
     autoconvert_offset_to_baseunit=True,
     preprocessors=[
-        lambda string: string.replace("1e-3", "psu"),
+        lambda string: string.replace("1e-3", "1"),
         functools.partial(
             re.compile(
                 r"(?<=[A-Za-z])(?![A-Za-z])(?<![0-9\-][eE])(?<![0-9\-])(?=[0-9\-])"

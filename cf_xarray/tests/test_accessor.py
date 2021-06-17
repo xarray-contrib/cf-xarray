@@ -1252,4 +1252,16 @@ def test_custom_criteria():
     # Match by exact name
     ds = xr.Dataset()
     ds["sea_surface_elevation"] = ("dim", np.arange(10))
-    xr.testing.assert_identical(ds.cf["ssh"], ds["sea_surface_elevation"])
+    ds["sea_surface_height"] = (
+        "dim",
+        np.arange(10),
+        {"standard_name": "sea_surface_elevBLAH"},
+    )
+    # Since there are two variables, this should error
+    with pytest.raises(KeyError):
+        ds.cf["ssh"]
+    # But the following should work instead given the two ssh variables
+    assert isinstance(ds.cf[["ssh"]], Dataset)
+    xr.testing.assert_identical(
+        ds.cf[["ssh"]], ds[["sea_surface_elevation", "sea_surface_height"]]
+    )

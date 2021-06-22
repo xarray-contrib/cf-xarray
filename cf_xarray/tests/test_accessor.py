@@ -1240,7 +1240,7 @@ def test_cmip6_attrs():
 def test_custom_criteria():
     my_custom_criteria = {
         "ssh": {
-            "standard_name": "sea_surface_elev*",
+            "standard_name": "sea_surface_elev*|sea_surface_height",
             "name": "sea_surface_elevation$",  # variable name
         },
         "salt": {

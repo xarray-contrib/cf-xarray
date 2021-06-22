@@ -225,7 +225,7 @@ def _get_custom_criteria(
                 # Treat expected as regex
                 expected_vals = [*expected.values()][0]
                 # use regex to match
-                if "regex" in expected:
+                if kind == "regex":
                     if re.match(
                         "|".join(expected_vals), obj[var].attrs.get(criterion, "")
                     ):

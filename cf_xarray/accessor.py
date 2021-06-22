@@ -226,9 +226,7 @@ def _get_custom_criteria(
                 kind_vals = [*kind.values()][0]
                 # use regex to match
                 if "regex" in kind:
-                    if re.match(
-                        "|".join(kind_vals), obj[var].attrs.get(criterion, "")
-                    ):
+                    if re.match("|".join(kind_vals), obj[var].attrs.get(criterion, "")):
                         results.update((var,))
                     # also check name specifically since not in attributes
                     elif criterion == "name" and re.match("|".join(kind_vals), var):
@@ -243,7 +241,7 @@ def _get_custom_criteria(
                 else:
                     raise KeyError(
                         "User-defined custom_criteria must be defined and must be of the form "
-                         "`{'custom variable name': "
+                        "`{'custom variable name': "
                         "{'attribute to check': {'regex': ('regex-style pattern*',)}, "
                         "{'another attribute to check': {'exact': ('exact attribute name',)}}`, "
                         "where the entries for 'regex' and 'exact' have no other options. "

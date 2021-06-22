@@ -1247,9 +1247,7 @@ def test_custom_criteria():
             "standard_name": {"exact": ("salinity",)},
             "name": {"regex": ("sal*",)},  # variable name
         },
-        "temp": {
-            "units": {"wrong name": ("blah",)}
-        },
+        "temp": {"units": {"wrong name": ("blah",)}},
     }
     cf_xarray.accessor.set_options(my_custom_criteria)
 

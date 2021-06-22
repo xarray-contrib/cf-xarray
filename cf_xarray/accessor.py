@@ -220,7 +220,7 @@ def _get_custom_criteria(
 
     results: Set = set()
     if key in criteria:
-        for criterion, expected in criteria[key].items():
+        for criterion, kind in criteria[key].items():
             for var in obj.variables:
                 # Treat expected as regex
                 expected_vals = [*expected.values()][0]

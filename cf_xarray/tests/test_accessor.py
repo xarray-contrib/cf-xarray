@@ -1247,8 +1247,17 @@ def test_custom_criteria():
             "standard_name": {"exact": ("salinity",)},
             "name": {"regex": ("sal*",)},  # variable name
         },
+        "temp": {
+            "units": {"wrong name": ("blah",)}
+        },
     }
     cf_xarray.accessor.set_options(my_custom_criteria)
+
+    # Nothing besides "regex" and "exact" should work
+    ds = xr.Dataset()
+    ds["temperature"] = ("dim", np.arange(10))
+    with pytest.raises(KeyError):
+        ds.cf["temp"]
 
     # Match by name regex match
     ds = xr.Dataset()

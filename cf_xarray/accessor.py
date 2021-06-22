@@ -220,33 +220,14 @@ def _get_custom_criteria(
 
     results: Set = set()
     if key in criteria:
-        for criterion, kind in criteria[key].items():
+        for criterion, patterns in criteria[key].items():
             for var in obj.variables:
                 # Treat expected as regex
-                kind_vals = [*kind.values()][0]
-                # use regex to match
-                if "regex" in kind:
-                    if re.match("|".join(kind_vals), obj[var].attrs.get(criterion, "")):
-                        results.update((var,))
-                    # also check name specifically since not in attributes
-                    elif criterion == "name" and re.match("|".join(kind_vals), var):
-                        results.update((var,))
-                elif "exact" in kind:  # exact matches only
-                    if obj[var].attrs.get(criterion, "") in kind_vals:
-                        # if re.match("|".join(expected), obj[var].attrs.get(criterion, "")):
-                        results.update((var,))
-                    # also check name specifically since not in attributes
-                    elif criterion == "name" and var in kind_vals:
-                        results.update((var,))
-                else:
-                    raise KeyError(
-                        "User-defined custom_criteria must be defined and must be of the form "
-                        "`{'custom variable name': "
-                        "{'attribute to check': {'regex': ('regex-style pattern*',)}, "
-                        "{'another attribute to check': {'exact': ('exact attribute name',)}}`, "
-                        "where the entries for 'regex' and 'exact' have no other options. "
-                        f"Instead, value is {kind.keys()}"
-                    )
+                if re.match(patterns, obj[var].attrs.get(criterion, "")):
+                    results.update((var,))
+                # also check name specifically since not in attributes
+                elif criterion == "name" and re.match(patterns, var):
+                    results.update((var,))
     return list(results)
 
 

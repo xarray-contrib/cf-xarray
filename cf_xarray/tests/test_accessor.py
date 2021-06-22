@@ -1240,22 +1240,18 @@ def test_cmip6_attrs():
 def test_custom_criteria():
     my_custom_criteria = {
         "ssh": {
-            "standard_name": {"regex": ("sea_surface_elev*",)},
-            "name": {"exact": ("sea_surface_elevation",)},  # variable name
+            "standard_name": "sea_surface_elev*",
+            "name": "sea_surface_elevation$",  # variable name
         },
         "salt": {
-            "standard_name": {"exact": ("salinity",)},
-            "name": {"regex": ("sal*",)},  # variable name
+            "standard_name": "salinity",
+            "name": "sal*",
         },
-        "temp": {"units": {"wrong name": ("blah",)}},
+        "wind_speed": {
+            "standard_name": "wind_speed$",
+        },
     }
     cf_xarray.accessor.set_options(my_custom_criteria)
-
-    # Nothing besides "regex" and "exact" should work
-    ds = xr.Dataset()
-    ds["temperature"] = ("dim", np.arange(10))
-    with pytest.raises(KeyError):
-        ds.cf["temp"]
 
     # Match by name regex match
     ds = xr.Dataset()
@@ -1278,6 +1274,12 @@ def test_custom_criteria():
     # Since this will not match, this should error
     with pytest.raises(KeyError):
         ds.cf["ssh"]
+
+    # will select only one variable here since exact match
+    ds = xr.Dataset()
+    ds["winds"] = ("dim", np.arange(10), {"standard_name": "wind_speed"})
+    ds["gusts"] = ("dim", np.arange(10), {"standard_name": "wind_speed_of_gust"})
+    ds.cf["wind_speed"]
 
     # Match by exact name
     ds = xr.Dataset()

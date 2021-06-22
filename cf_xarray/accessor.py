@@ -223,7 +223,7 @@ def _get_custom_criteria(
         for criterion, expected in criteria[key].items():
             for var in obj.variables:
                 # Treat expected as regex
-                expected_vals = ChainMap(*expected.values())
+                expected_vals = [*expected.values()][0]
                 # use regex to match
                 if "regex" in expected:
                     if re.match(

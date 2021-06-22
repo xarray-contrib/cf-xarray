@@ -233,7 +233,7 @@ def _get_custom_criteria(
                     # also check name specifically since not in attributes
                     elif criterion == "name" and re.match("|".join(expected_vals), var):
                         results.update((var,))
-                else:  # exact matches only
+                elif kind == "exact":  # exact matches only
                     if obj[var].attrs.get(criterion, "") in expected_vals:
                         # if re.match("|".join(expected), obj[var].attrs.get(criterion, "")):
                         results.update((var,))

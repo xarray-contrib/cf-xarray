@@ -222,7 +222,6 @@ def _get_custom_criteria(
     if key in criteria:
         for criterion, patterns in criteria[key].items():
             for var in obj.variables:
-                # Treat expected as regex
                 if re.match(patterns, obj[var].attrs.get(criterion, "")):
                     results.update((var,))
                 # also check name specifically since not in attributes

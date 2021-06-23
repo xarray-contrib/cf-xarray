@@ -1266,7 +1266,7 @@ def test_custom_criteria():
     # Match by standard_name exact match
     ds = xr.Dataset()
     ds["salinity"] = ("dim", np.arange(10), {"standard_name": "salinity"})
-    xr.testing.assert_identical(ds.cf["salt"], ds["salinity"])
+    assert_identical(ds.cf["salt"], ds["salinity"])
 
     # If not exact name, won't match
     ds = xr.Dataset()
@@ -1279,7 +1279,7 @@ def test_custom_criteria():
     ds = xr.Dataset()
     ds["winds"] = ("dim", np.arange(10), {"standard_name": "wind_speed"})
     ds["gusts"] = ("dim", np.arange(10), {"standard_name": "wind_speed_of_gust"})
-    ds.cf["wind_speed"]
+    assert_identical(ds.cf["wind_speed"], ds["winds"])
 
     # Match by exact name
     ds = xr.Dataset()
@@ -1293,8 +1293,7 @@ def test_custom_criteria():
     with pytest.raises(KeyError):
         ds.cf["ssh"]
     # But the following should work instead given the two ssh variables
-    assert isinstance(ds.cf[["ssh"]], Dataset)
-    xr.testing.assert_identical(
+    assert_identical(
         ds.cf[["ssh"]], ds[["sea_surface_elevation", "sea_surface_height"]]
     )
 

@@ -1256,12 +1256,12 @@ def test_custom_criteria():
     # Match by name regex match
     ds = xr.Dataset()
     ds["salinity"] = ("dim", np.arange(10))
-    xr.testing.assert_identical(ds.cf["salt"], ds["salinity"])
+    assert_identical(ds.cf["salt"], ds["salinity"])
 
     # Match by standard_name regex match
     ds = xr.Dataset()
     ds["elev"] = ("dim", np.arange(10), {"standard_name": "sea_surface_elevBLAH"})
-    xr.testing.assert_identical(ds.cf["ssh"], ds["elev"])
+    assert_identical(ds.cf["ssh"], ds["elev"])
 
     # Match by standard_name exact match
     ds = xr.Dataset()

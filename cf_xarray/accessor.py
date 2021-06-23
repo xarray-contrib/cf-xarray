@@ -69,10 +69,7 @@ OPTIONS: MutableMapping[str, Any] = {"custom_criteria": []}
 
 
 def set_options(custom_criteria):
-    OPTIONS["custom_criteria"] = (
-        always_iterable(custom_criteria, allowed=(tuple, list, set))
-        + OPTIONS["custom_criteria"]
-    )
+    OPTIONS["custom_criteria"] = always_iterable(custom_criteria, allowed=(tuple, list))
 
 
 # Type for Mapper functions

@@ -190,8 +190,7 @@ def _get_custom_criteria(
     Parameters
     ----------
     obj : DataArray, Dataset
-        DataArray belonging to the coordinate to be checked
-    key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"], or a key from user-defined custom_criteria
+    key : str
         key to check for.
     criteria : dict, optional
         Criteria to use to map from variable to attributes describing the

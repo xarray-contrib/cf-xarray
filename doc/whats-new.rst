@@ -10,6 +10,7 @@ v0.5.3 (unreleased)
 - Begin adding support for units with a unit registry for pint arrays. :pr:`197`.
   By `Jon Thielen`_ and `Justus Magin`_.
 - :py:meth:`Dataset.cf.rename_like` also updates the ``bounds`` and ``cell_measures`` attributes. By `Mattia Almansi`_.
+- Support of custom vocabularies/criteria: user can input criteria for identifying variables by their name and attributes to be able to refer to them by custom names like `ds.cf["ssh"]`. :pr:`234`. By `Kristen Thyng`_ and `Deepak Cherian`_.
 
 v0.5.2 (May 11, 2021)
 =====================

@@ -1237,6 +1237,82 @@ def test_cmip6_attrs():
     assert da.cf.axes["Y"] == ["nlat"]
 
 
+def test_custom_criteria():
+    my_custom_criteria = {
+        "ssh": {
+            "standard_name": "sea_surface_elev*|sea_surface_height",
+            "name": "sea_surface_elevation$",  # variable name
+        },
+        "salt": {
+            "standard_name": "salinity",
+            "name": "sal*",
+        },
+        "wind_speed": {
+            "standard_name": "wind_speed$",
+        },
+    }
+    my_custom_criteria2 = {"temp": {"name": "temperature"}}
+    cf_xarray.accessor.set_options(my_custom_criteria)
+    my_custom_criteria_list = [my_custom_criteria, my_custom_criteria2]
+    my_custom_criteria_tuple = (my_custom_criteria, my_custom_criteria2)
+
+    # Match by name regex match
+    ds = xr.Dataset()
+    ds["salinity"] = ("dim", np.arange(10))
+    assert_identical(ds.cf["salt"], ds["salinity"])
+
+    # Match by standard_name regex match
+    ds = xr.Dataset()
+    ds["elev"] = ("dim", np.arange(10), {"standard_name": "sea_surface_elevBLAH"})
+    assert_identical(ds.cf["ssh"], ds["elev"])
+
+    # Match by standard_name exact match
+    ds = xr.Dataset()
+    ds["salinity"] = ("dim", np.arange(10), {"standard_name": "salinity"})
+    assert_identical(ds.cf["salt"], ds["salinity"])
+
+    # If not exact name, won't match
+    ds = xr.Dataset()
+    ds["sea_surface_elevation123"] = ("dim", np.arange(10))
+    # Since this will not match, this should error
+    with pytest.raises(KeyError):
+        ds.cf["ssh"]
+
+    # will select only one variable here since exact match
+    ds = xr.Dataset()
+    ds["winds"] = ("dim", np.arange(10), {"standard_name": "wind_speed"})
+    ds["gusts"] = ("dim", np.arange(10), {"standard_name": "wind_speed_of_gust"})
+    assert_identical(ds.cf["wind_speed"], ds["winds"])
+
+    # Match by exact name
+    ds = xr.Dataset()
+    ds["sea_surface_elevation"] = ("dim", np.arange(10))
+    ds["sea_surface_height"] = (
+        "dim",
+        np.arange(10),
+        {"standard_name": "sea_surface_elevBLAH"},
+    )
+    # Since there are two variables, this should error
+    with pytest.raises(KeyError):
+        ds.cf["ssh"]
+    # But the following should work instead given the two ssh variables
+    assert_identical(
+        ds.cf[["ssh"]], ds[["sea_surface_elevation", "sea_surface_height"]]
+    )
+
+    # test criteria list of dicts
+    cf_xarray.accessor.set_options(my_custom_criteria_list)
+    ds = xr.Dataset()
+    ds["temperature"] = ("dim", np.arange(10))
+    assert_identical(ds.cf["temp"], ds["temperature"])
+
+    # test criteria tuple of dicts
+    cf_xarray.accessor.set_options(my_custom_criteria_tuple)
+    ds = xr.Dataset()
+    ds["temperature"] = ("dim", np.arange(10))
+    assert_identical(ds.cf["temp"], ds["temperature"])
+
+
 def test_cf_standard_name_table_version():
 
     url = (

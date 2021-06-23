@@ -65,6 +65,13 @@ ATTRS = {
 ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
 
+OPTIONS: MutableMapping[str, Any] = {"custom_criteria": []}
+
+
+def set_options(custom_criteria):
+    OPTIONS["custom_criteria"] = always_iterable(custom_criteria, allowed=(tuple, list))
+
+
 # Type for Mapper functions
 Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]
 
@@ -168,6 +175,55 @@ def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List
 
     else:
         return []
+
+
+def _get_custom_criteria(
+    obj: Union[DataArray, Dataset], key: str, criteria=None
+) -> List[str]:
+    """
+    Translate from axis, coord, or custom name to variable name optionally
+    using ``custom_criteria``
+
+    Parameters
+    ----------
+    obj : DataArray, Dataset
+    key : str
+        key to check for.
+    criteria : dict, optional
+        Criteria to use to map from variable to attributes describing the
+        variable. An example is coordinate_criteria which maps coordinates to
+        their attributes and attribute values. If user has defined
+        custom_criteria, this will be used by default.
+
+    Returns
+    -------
+    List[str], Variable name(s) in parent xarray object that matches axis, coordinate, or custom `key`
+
+    """
+
+    if isinstance(obj, DataArray):
+        obj = obj._to_temp_dataset()
+
+    if criteria is None:
+        if not OPTIONS["custom_criteria"]:
+            return []
+        criteria = OPTIONS["custom_criteria"]
+
+    if criteria is not None:
+        criteria = always_iterable(criteria, allowed=(tuple, list, set))
+
+    criteria = ChainMap(*criteria)
+
+    results: Set = set()
+    if key in criteria:
+        for criterion, patterns in criteria[key].items():
+            for var in obj.variables:
+                if re.match(patterns, obj[var].attrs.get(criterion, "")):
+                    results.update((var,))
+                # also check name specifically since not in attributes
+                elif criterion == "name" and re.match(patterns, var):
+                    results.update((var,))
+    return list(results)
 
 
 def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
@@ -314,7 +370,12 @@ def _get_all(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names
     """
-    all_mappers = (_get_axis_coord, _get_measure, _get_with_standard_name)
+    all_mappers = (
+        _get_custom_criteria,
+        _get_axis_coord,
+        _get_measure,
+        _get_with_standard_name,
+    )
     results = apply_mapper(all_mappers, obj, key, error=False, default=None)
     return results
 
@@ -586,6 +647,8 @@ def _getitem(
         measures = []
         warnings.warn("Ignoring bad cell_measures attribute.", UserWarning)
 
+    custom_criteria = ChainMap(*OPTIONS["custom_criteria"])
+
     varnames: List[Hashable] = []
     coords: List[Hashable] = []
     successful = dict.fromkeys(key, False)
@@ -602,6 +665,11 @@ def _getitem(
             successful[k] = bool(measure)
             if measure:
                 varnames.extend(measure)
+        elif k in custom_criteria:
+            names = _get_all(obj, k)
+            check_results(names, k)
+            successful[k] = bool(names)
+            varnames.extend(names)
         else:
             stdnames = set(_get_with_standard_name(obj, k))
             objcoords = set(obj.coords)

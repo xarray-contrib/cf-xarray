@@ -41,7 +41,7 @@ units.define(
     "degrees_east = degree = degrees_E = degreesE = degree_east = degree_E = degreeE"
 )
 units.define("@alias meter = gpm")
-units.define("practical_salinity_unit = [] = psu")
+units.define("practical_salinity_unit = [] = psu = PSU")
 
 # Enable pint's built-in matplotlib support
 try:

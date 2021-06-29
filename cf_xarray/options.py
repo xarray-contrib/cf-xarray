@@ -4,6 +4,8 @@ Started from xarray options.py
 
 from typing import Any, MutableMapping
 
+from .utils import always_iterable
+
 OPTIONS: MutableMapping[str, Any] = {
     "custom_criteria": [],
 }
@@ -16,19 +18,14 @@ class set_options:
       variable name optionally  using ``custom_criteria``. Default: [].
 
     You can use ``set_options`` either as a context manager:
-    >>> ds = xr.Dataset({"x": np.arange(1000)})
-    >>> with xr.set_options(display_width=40):
-    ...     print(ds)
-    ...
-    <xarray.Dataset>
-    Dimensions:  (x: 1000)
-    Coordinates:
-      * x        (x) int64 0 1 2 ... 998 999
-    Data variables:
-        *empty*
+    >>> my_custom_criteria = { 'ssh': {'name': 'elev$'} }
+    >>> ds = xr.Dataset({"elev": np.arange(1000)})
+    >>> with cf_xarray.set_options(custom_criteria=my_custom_criteria):
+    ...     assert (ds['elev'] == ds.cf['ssh']).all()
+
     Or to set global options:
-    >>> xr.set_options(display_width=80)  # doctest: +ELLIPSIS
-    <xarray.core.options.set_options object at 0x...>
+    >>> cf_xarray.set_options(custom_criteria=my_custom_criteria)
+    >>> assert (ds['elev'] == ds.cf['ssh']).all()
     """
 
     def __init__(self, **kwargs):
@@ -42,6 +39,11 @@ class set_options:
         self._apply_update(kwargs)
 
     def _apply_update(self, options_dict):
+        for k, v in options_dict.items():
+            if k == "custom_criteria":
+                OPTIONS["custom_criteria"] = always_iterable(
+                    OPTIONS["custom_criteria"], allowed=(tuple, list)
+                )
         OPTIONS.update(options_dict)
 
     def __enter__(self):

@@ -1,9 +1,10 @@
 """
-Tests OPTIONS logic brought in from xarray. 
+Tests OPTIONS logic brought in from xarray.
 """
 
-import cf_xarray as cfxr
 import pytest
+
+import cf_xarray as cfxr
 
 
 def test_options():

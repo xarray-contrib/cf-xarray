@@ -5,6 +5,7 @@ What's New
 
 v0.5.3 (unreleased)
 ===================
+- Support indexing by ``cf_role`` attribute. By `Deepak Cherian`_.
 - Implemented :py:meth:`Dataset.cf.add_canonical_attributes` and :py:meth:`DataArray.cf.add_canonical_attributes`
   to add CF canonical attributes. By `Mattia Almansi`_.
 - Begin adding support for units with a unit registry for pint arrays. :pr:`197`.

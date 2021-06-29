@@ -2,6 +2,7 @@
 Started from xarray options.py
 """
 
+import copy
 from typing import Any, MutableMapping
 
 from .utils import always_iterable
@@ -39,6 +40,7 @@ class set_options:
         self._apply_update(kwargs)
 
     def _apply_update(self, options_dict):
+        options_dict = copy.deepcopy(options_dict)
         for k, v in options_dict.items():
             if k == "custom_criteria":
                 options_dict["custom_criteria"] = always_iterable(

@@ -41,8 +41,8 @@ class set_options:
     def _apply_update(self, options_dict):
         for k, v in options_dict.items():
             if k == "custom_criteria":
-                OPTIONS["custom_criteria"] = always_iterable(
-                    OPTIONS["custom_criteria"], allowed=(tuple, list)
+                options_dict["custom_criteria"] = always_iterable(
+                    options_dict["custom_criteria"], allowed=(tuple, list)
                 )
         OPTIONS.update(options_dict)
 

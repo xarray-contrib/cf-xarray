@@ -35,6 +35,8 @@ from .utils import (
     parse_cell_methods_attr,
     parse_cf_standard_name_table,
 )
+from .options import OPTIONS
+
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (
@@ -64,13 +66,6 @@ ATTRS = {
 }
 ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
-
-OPTIONS: MutableMapping[str, Any] = {"custom_criteria": []}
-
-
-def set_options(custom_criteria):
-    OPTIONS["custom_criteria"] = always_iterable(custom_criteria, allowed=(tuple, list))
-
 
 # Type for Mapper functions
 Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]

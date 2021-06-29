@@ -27,6 +27,7 @@ from xarray.core.arithmetic import SupportsArithmetic
 
 from .criteria import cf_role_criteria, coordinate_criteria, regex
 from .helpers import bounds_to_vertices
+from .options import OPTIONS
 from .utils import (
     _get_version,
     _is_datetime_like,
@@ -64,13 +65,6 @@ ATTRS = {
 }
 ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
-
-OPTIONS: MutableMapping[str, Any] = {"custom_criteria": []}
-
-
-def set_options(custom_criteria):
-    OPTIONS["custom_criteria"] = always_iterable(custom_criteria, allowed=(tuple, list))
-
 
 # Type for Mapper functions
 Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]

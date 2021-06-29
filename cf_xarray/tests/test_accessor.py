@@ -1252,9 +1252,10 @@ def test_custom_criteria():
         },
     }
     my_custom_criteria2 = {"temp": {"name": "temperature"}}
-    cf_xarray.accessor.set_options(my_custom_criteria)
     my_custom_criteria_list = [my_custom_criteria, my_custom_criteria2]
     my_custom_criteria_tuple = (my_custom_criteria, my_custom_criteria2)
+
+    cf_xarray.set_options(custom_criteria=my_custom_criteria)
 
     # Match by name regex match
     ds = xr.Dataset()
@@ -1301,16 +1302,16 @@ def test_custom_criteria():
     )
 
     # test criteria list of dicts
-    cf_xarray.accessor.set_options(my_custom_criteria_list)
-    ds = xr.Dataset()
-    ds["temperature"] = ("dim", np.arange(10))
-    assert_identical(ds.cf["temp"], ds["temperature"])
+    with cf_xarray.set_options(custom_criteria=my_custom_criteria_list):
+        ds = xr.Dataset()
+        ds["temperature"] = ("dim", np.arange(10))
+        assert_identical(ds.cf["temp"], ds["temperature"])
 
     # test criteria tuple of dicts
-    cf_xarray.accessor.set_options(my_custom_criteria_tuple)
-    ds = xr.Dataset()
-    ds["temperature"] = ("dim", np.arange(10))
-    assert_identical(ds.cf["temp"], ds["temperature"])
+    with cf_xarray.set_options(custom_criteria=my_custom_criteria_tuple):
+        ds = xr.Dataset()
+        ds["temperature"] = ("dim", np.arange(10))
+        assert_identical(ds.cf["temp"], ds["temperature"])
 
 
 def test_cf_standard_name_table_version():

@@ -25,7 +25,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
 
-from .criteria import coordinate_criteria, regex
+from .criteria import cf_role_criteria, coordinate_criteria, regex
 from .helpers import bounds_to_vertices
 from .utils import (
     _get_version,
@@ -372,6 +372,7 @@ def _get_all(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     all_mappers = (
         _get_custom_criteria,
+        functools.partial(_get_custom_criteria, criteria=cf_role_criteria),
         _get_axis_coord,
         _get_measure,
         _get_with_standard_name,
@@ -665,7 +666,7 @@ def _getitem(
             successful[k] = bool(measure)
             if measure:
                 varnames.extend(measure)
-        elif k in custom_criteria:
+        elif k in custom_criteria or k in cf_role_criteria:
             names = _get_all(obj, k)
             check_results(names, k)
             successful[k] = bool(names)

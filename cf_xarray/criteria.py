@@ -6,7 +6,11 @@ Copyright (c) 2017 MetPy Developers.
 
 
 import re
-from typing import MutableMapping, Tuple
+from typing import Mapping, MutableMapping, Tuple
+
+cf_role_criteria: Mapping[str, Mapping[str, str]] = {
+    k: {"cf_role": k} for k in ("timeseries_id", "profile_id", "trajectory_id")
+}
 
 coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
     "latitude": {

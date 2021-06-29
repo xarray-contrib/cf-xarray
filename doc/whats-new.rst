@@ -3,6 +3,9 @@
 What's New
 ----------
 
+v0.6.0 (unreleased)
+===================
+
 v0.6.0 (June 29, 2021)
 ======================
 - Support indexing by ``cf_role`` attribute. By `Deepak Cherian`_.

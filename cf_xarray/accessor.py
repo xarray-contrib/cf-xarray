@@ -27,6 +27,7 @@ from xarray.core.arithmetic import SupportsArithmetic
 
 from .criteria import coordinate_criteria, regex
 from .helpers import bounds_to_vertices
+from .options import OPTIONS
 from .utils import (
     _get_version,
     _is_datetime_like,
@@ -35,8 +36,6 @@ from .utils import (
     parse_cell_methods_attr,
     parse_cf_standard_name_table,
 )
-from .options import OPTIONS
-
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (

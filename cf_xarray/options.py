@@ -2,9 +2,9 @@
 Started from xarray options.py
 """
 
-import warnings
+from typing import Any, MutableMapping
 
-OPTIONS = {
+OPTIONS: MutableMapping[str, Any] = {
     "custom_criteria": [],
 }
 
@@ -12,7 +12,7 @@ OPTIONS = {
 class set_options:
     """Set options for cf-xarray in a controlled context.
     Currently supported options:
-    - ``custom_critera``: Translate from axis, coord, or custom name to 
+    - ``custom_critera``: Translate from axis, coord, or custom name to
       variable name optionally  using ``custom_criteria``. Default: [].
 
     You can use ``set_options`` either as a context manager:

@@ -24,7 +24,7 @@ from ..datasets import (
     popds,
     romsds,
 )
-from . import raise_if_dask_computes
+from . import raise_if_dask_computes, requires_pint
 
 mpl.use("Agg")
 
@@ -149,6 +149,7 @@ def test_coordinates():
     assert actual == expected
 
 
+@requires_pint
 def test_coordinates_quantified():
     # note: import order is important
     from .. import units  # noqa

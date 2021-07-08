@@ -58,6 +58,7 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
             "Pressure",
         ),
         "axis": ("Z",),
+        "cartesian_axis": ("Z",),
         "grads_dim": ("z",),
     },
     "vertical": {
@@ -78,18 +79,21 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
         "standard_name": ("projection_x_coordinate",),
         "_CoordinateAxisType": ("GeoX",),
         "axis": ("X",),
+        "cartesian_axis": ("X",),
         "grads_dim": ("x",),
     },
     "Y": {
         "standard_name": ("projection_y_coordinate",),
         "_CoordinateAxisType": ("GeoY",),
         "axis": ("Y",),
+        "cartesian_axis": ("Y",),
         "grads_dim": ("y",),
     },
     "T": {
         "standard_name": ("time",),
         "_CoordinateAxisType": ("Time",),
         "axis": ("T",),
+        "cartesian_axis": ("T",),
         "grads_dim": ("t",),
     },
     "time": {

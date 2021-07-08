@@ -149,6 +149,18 @@ def test_coordinates():
     assert actual == expected
 
 
+def test_coordinates_quantified():
+    # note: import order is important
+    from .. import units  # noqa
+
+    pytest.importorskip("pint_xarray")
+
+    quantified = popds.pint.quantify()
+    assert_identical(
+        quantified.cf[["latitude"]].pint.dequantify(), popds.cf[["latitude"]]
+    )
+
+
 def test_cell_measures():
     ds = airds.copy(deep=True)
     ds["foo"] = xr.DataArray(ds["cell_area"], attrs=dict(standard_name="foo_std_name"))

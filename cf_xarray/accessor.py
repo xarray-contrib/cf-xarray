@@ -220,13 +220,13 @@ def _get_custom_criteria(
     return list(results)
 
 
-def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
+def _get_axis_coord(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     """
     Translate from axis or coord name to variable name
 
     Parameters
     ----------
-    var : DataArray, Dataset
+    obj : DataArray, Dataset
         DataArray belonging to the coordinate to be checked
     key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
         key to check for.
@@ -260,25 +260,29 @@ def _get_axis_coord(var: Union[DataArray, Dataset], key: str) -> List[str]:
         )
 
     search_in = set()
-    if "coordinates" in var.encoding:
-        search_in.update(var.encoding["coordinates"].split(" "))
-    if "coordinates" in var.attrs:
-        search_in.update(var.attrs["coordinates"].split(" "))
+    if "coordinates" in obj.encoding:
+        search_in.update(obj.encoding["coordinates"].split(" "))
+    if "coordinates" in obj.attrs:
+        search_in.update(obj.attrs["coordinates"].split(" "))
     if not search_in:
-        search_in = set(var.coords)
+        search_in = set(obj.coords)
 
     # maybe only do this for key in _AXIS_NAMES?
-    search_in.update(var.indexes)
+    search_in.update(obj.indexes)
 
+    search_in = search_in & set(obj.coords)
     results: Set = set()
     for coord in search_in:
+        var = obj.coords[coord]
         if key in coordinate_criteria:
             for criterion, expected in coordinate_criteria[key].items():
-                if (
-                    coord in var.coords
-                    and var.coords[coord].attrs.get(criterion, None) in expected
-                ):
+                if var.attrs.get(criterion, None) in expected:
                     results.update((coord,))
+                if criterion == "units":
+                    # deal with pint-backed objects
+                    units = getattr(var.data, "units", None)
+                    if units in expected:
+                        results.update((coord,))
     return list(results)
 
 

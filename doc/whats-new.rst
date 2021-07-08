@@ -3,8 +3,9 @@
 What's New
 ----------
 
-v0.6.0 (unreleased)
+v0.6.1 (unreleased)
 ===================
+- Support detecting pint-backed Variables with units-based criteria. By `Deepak Cherian`_.
 
 v0.6.0 (June 29, 2021)
 ======================

@@ -154,7 +154,7 @@ html_theme = "pydata_sphinx_theme"
 html_theme_options = {
     "github_url": "https://github.com/xarray-contrib/cf-xarray",
     "use_edit_page_button": True,
-    "search_bar_position": "navbar",
+    "navbar_end": "search-field.html",
 }
 
 html_context = {
@@ -322,3 +322,5 @@ autodoc_default_options = {
 }
 napoleon_use_param = True
 napoleon_use_rtype = True
+
+numpydoc_show_class_members = False

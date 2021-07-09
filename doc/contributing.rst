@@ -59,8 +59,15 @@ Primarily for developer reference. Some of these could become public API if nece
    :toctree: generated/
 
     ~accessor._getattr
+    ~accessor._getitem
+    ~accessor._get_all
     ~accessor._get_axis_coord
-    ~accessor._get_axis_coord_single
+    ~accessor._get_bounds
+    ~accessor._get_coords
+    ~accessor._get_custom_criteria
+    ~accessor._get_dims
+    ~accessor._get_groupby_time_accessor
+    ~accessor._get_indexes
     ~accessor._get_measure
-    ~accessor._get_measure_variable
-    accessor._CFWrappedPlotMethods._plot_decorator
+    ~accessor._get_with_standard_name
+

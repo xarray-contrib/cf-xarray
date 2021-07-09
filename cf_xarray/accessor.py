@@ -915,9 +915,9 @@ class CFAccessor:
     ):
         """
         Processes a function's signature, args, kwargs:
-        1. Binds *args so that everthing is a Mapping from kwarg name to values
-        2. Calls _rewrite_values to rewrite any special CF names to normal xarray names.
-           This uses key_mappers
+        1. Binds ``*args`` so that everthing is a Mapping from kwarg name to values
+        2. Calls ``_rewrite_values`` to rewrite any special CF names to normal xarray names.
+           This uses ``key_mappers``
         3. Unpacks arguments if necessary before returning them.
         """
         sig = inspect.signature(func, follow_wrapped=False)

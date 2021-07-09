@@ -28,17 +28,17 @@ def make_criteria_csv():
 
     # Criteria tables
     df = DataFrame.from_dict(coordinate_criteria)
-    df = df.dropna(1, how="all")
+    df = df.dropna(axis=1, how="all")
     df = df.applymap(lambda x: ", ".join(sorted(x)) if isinstance(x, tuple) else x)
-    df = df.sort_index(0).sort_index(1)
+    df = df.sort_index(axis=0).sort_index(axis=1)
 
     # All criteria
     df.to_csv(os.path.join(csv_dir, "all_criteria.csv"))
 
     # Axes and coordinates
     for keys, name in zip([_AXIS_NAMES, _COORD_NAMES], ["axes", "coords"]):
-        subdf = df[sorted(keys)].dropna(1, how="all")
-        subdf = subdf.dropna(1, how="all").transpose()
+        subdf = df[sorted(keys)].dropna(axis=1, how="all")
+        subdf = subdf.dropna(axis=1, how="all").transpose()
         subdf.to_csv(os.path.join(csv_dir, f"{name}_criteria.csv"))
 
 
@@ -52,7 +52,7 @@ def make_regex_csv():
     os.makedirs(csv_dir, exist_ok=True)
     df = DataFrame(regex, index=[0])
     df = df.applymap(lambda x: f"``{x}``")
-    df = df.sort_index(1).transpose()
+    df = df.sort_index(axis=1).transpose()
     df.to_csv(os.path.join(csv_dir, "all_regex.csv"), header=False)
 
 

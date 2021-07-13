@@ -96,11 +96,9 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
         "cartesian_axis": ("T",),
         "grads_dim": ("t",),
     },
-    "time": {
-        "standard_name": ("time",),
-        "grads_dim": ("t",),
-    },
 }
+
+coordinate_criteria["time"] = coordinate_criteria["T"]
 
 # "long_name" and "standard_name" criteria are the same. For convenience.
 for coord, attrs in coordinate_criteria.items():

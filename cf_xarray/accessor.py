@@ -736,7 +736,7 @@ def _getitem(
         )
 
 
-def _possible_x_y_plot(obj, key):
+def _possible_x_y_plot(obj, key, skip=None):
     """Guesses a name for an x/y variable if possible."""
     # in priority order
     x_criteria = [
@@ -758,12 +758,21 @@ def _possible_x_y_plot(obj, key):
         # maintaining that variable!
         from xarray.core.utils import is_scalar
 
+        coordinates = accessor._obj.attrs.get("coordinates")
         for attr, key in criteria:
-            value = getattr(accessor, attr).get(key)
-            if not value or len(value) > 1:
+            values = getattr(accessor, attr).get(key)
+            if not values:
                 continue
-            if not is_scalar(accessor._obj[value[0]]):
-                return value[0]
+            elif coordinates:
+                values = [v for v in values if v in coordinates]
+
+            values = [v for v in values if v != skip]
+            if len(values) == 1 and not is_scalar(accessor._obj[values[0]]):
+                return values[0]
+            else:
+                for v in values:
+                    if not is_scalar(accessor._obj[v]):
+                        return v
         return None
 
     if key == "x":
@@ -825,9 +834,9 @@ class _CFWrappedPlotMethods:
 
         @functools.wraps(func)
         def _plot_wrapper(*args, **kwargs):
-            def _process_x_or_y(kwargs, key):
+            def _process_x_or_y(kwargs, key, skip=None):
                 if key not in kwargs:
-                    kwargs[key] = _possible_x_y_plot(self._obj, key)
+                    kwargs[key] = _possible_x_y_plot(self._obj, key, skip)
 
                 value = kwargs.get(key)
                 if value:
@@ -847,13 +856,17 @@ class _CFWrappedPlotMethods:
                 and (kwargs.get("hue") or self._obj.ndim == 1)
             )
             if is_line_plot:
-                if not kwargs.get("hue"):
-                    kwargs = _process_x_or_y(kwargs, "x")
-                    if not kwargs.get("x"):
-                        kwargs = _process_x_or_y(kwargs, "y")
+                hue = kwargs.get("hue")
+                if "x" not in kwargs and "y" not in kwargs:
+                    kwargs = _process_x_or_y(kwargs, "x", skip=hue)
+                    if "x" not in kwargs:
+                        kwargs = _process_x_or_y(kwargs, "y", skip=hue)
+
             else:
-                kwargs = _process_x_or_y(kwargs, "x")
-                kwargs = _process_x_or_y(kwargs, "y")
+                if "x" not in kwargs:
+                    kwargs = _process_x_or_y(kwargs, "x", skip=kwargs.get("y"))
+                if "y" not in kwargs:
+                    kwargs = _process_x_or_y(kwargs, "y", skip=kwargs.get("x"))
 
             return func(*args, **kwargs)
 

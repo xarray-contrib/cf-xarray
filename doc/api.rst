@@ -52,6 +52,24 @@ Methods
     DataArray.cf.keys
     DataArray.cf.rename_like
 
+Flag Variables
+++++++++++++++
+
+cf_xarray supports rich comparisons for `CF flag variables`_. Flag masks are not yet supported.
+
+.. autosummary::
+   :toctree: generated/
+   :template: autosummary/accessor_method.rst
+
+    DataArray.cf.__lt__
+    DataArray.cf.__le__
+    DataArray.cf.__eq__
+    DataArray.cf.__ne__
+    DataArray.cf.__ge__
+    DataArray.cf.__gt__
+    DataArray.cf.isin
+
+
 Dataset
 -------
 
@@ -92,3 +110,6 @@ Methods
     Dataset.cf.guess_coord_axis
     Dataset.cf.keys
     Dataset.cf.rename_like
+
+
+.. _`CF flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

@@ -886,14 +886,133 @@ class _CFWrappedPlotMethods:
         )
 
 
+def create_flag_dict(da):
+    if not da.cf.is_flag_variable:
+        raise ValueError(
+            "Comparisons are only supported for DataArrays that represent CF flag variables."
+            ".attrs must contain 'flag_values' and 'flag_meanings'"
+        )
+
+    flag_meanings = da.attrs["flag_meanings"].split(" ")
+    flag_values = da.attrs["flag_values"]
+    # TODO: assert flag_values is iterable
+    assert len(flag_values) == len(flag_meanings)
+    return dict(zip(flag_meanings, flag_values))
+
+
 class CFAccessor:
     """
     Common Dataset and DataArray accessor functionality.
     """
 
-    def __init__(self, da):
-        self._obj = da
+    def __init__(self, obj):
+        self._obj = obj
         self._all_cell_measures = None
+
+    def _assert_valid_other_comparison(self, other):
+        flag_dict = create_flag_dict(self._obj)
+        if other not in flag_dict:
+            raise ValueError(
+                f"Did not find flag value meaning [{other}] in known flag meanings: [{flag_dict.keys()!r}]"
+            )
+        return flag_dict
+
+    def __eq__(self, other):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        compared.
+        """
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj == flag_dict[other]
+
+    def __ne__(self, other):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        compared.
+        """
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj != flag_dict[other]
+
+    def __lt__(self, other):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        compared.
+        """
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj < flag_dict[other]
+
+    def __le__(self, other):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        compared.
+        """
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj <= flag_dict[other]
+
+    def __gt__(self, other):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        compared.
+        """
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj > flag_dict[other]
+
+    def __ge__(self, other):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        compared.
+        """
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj >= flag_dict[other]
+
+    def isin(self, test_elements):
+        """Test each value in the array for whether it is in test_elements.
+
+        Parameters
+        ----------
+        test_elements : array_like, 1D
+            The values against which to test each value of `element`.
+            These must be in "flag_meanings" attribute, and are mapped
+            to the corresponding value in "flag_values" before passing
+            that on to DataArray.isin.
+
+
+        Returns
+        -------
+        isin : DataArray
+            Has the same type and shape as this object, but with a bool dtype.
+        """
+        if not isinstance(self._obj, DataArray):
+            raise ValueError(
+                ".cf.isin is only supported on DataArrays that contain CF flag attributes."
+            )
+        flag_dict = create_flag_dict(self._obj)
+        mapped_test_elements = []
+        for elem in test_elements:
+            if elem not in flag_dict:
+                raise ValueError(
+                    f"Did not find flag value meaning [{elem}] in known flag meanings: [{flag_dict.keys()!r}]"
+                )
+            mapped_test_elements.append(flag_dict[elem])
+        return self._obj.isin(mapped_test_elements)
 
     def _get_all_cell_measures(self):
         """
@@ -1130,7 +1249,12 @@ class CFAccessor:
 
             return "\n".join(rows) + "\n"
 
-        text = "Coordinates:"
+        if isinstance(self._obj, DataArray) and self._obj.cf.is_flag_variable:
+            flag_dict = create_flag_dict(self._obj)
+            text = f"CF Flag variable with mapping:\n\t{flag_dict!r}\n\n"
+        else:
+            text = ""
+        text += "Coordinates:"
         text += make_text_section("CF Axes", "axes", coords, _AXIS_NAMES)
         text += make_text_section("CF Coordinates", "coordinates", coords, _COORD_NAMES)
         text += make_text_section(
@@ -2057,4 +2181,18 @@ class CFDataArrayAccessor(CFAccessor):
 
         return _getitem(self, key)
 
-    pass
+    @property
+    def is_flag_variable(self):
+        """
+        Returns True if the DataArray satisfies CF conventions for flag variables.
+
+        Flag masks are not supported yet.
+        """
+        if (
+            isinstance(self._obj, DataArray)
+            and "flag_meanings" in self._obj.attrs
+            and "flag_values" in self._obj.attrs
+        ):
+            return True
+        else:
+            return False

@@ -16,6 +16,7 @@ dependencies:
   - ipykernel
   - ipywidgets
   - pandas
+  - pooch
   - pydata-sphinx-theme
   - pip:
       - git+https://github.com/xarray-contrib/cf-xarray

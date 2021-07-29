@@ -17,6 +17,7 @@ from cf_xarray.utils import parse_cf_standard_name_table
 from ..datasets import (
     airds,
     anc,
+    basin,
     ds_no_attrs,
     forecast,
     mollwds,
@@ -127,6 +128,9 @@ def test_repr():
     - Bounds:   n/a
     """
     assert actual == dedent(expected)
+
+    # Flag DataArray
+    assert "CF Flag variable" in repr(basin.cf)
 
 
 def test_axes():
@@ -1389,3 +1393,35 @@ def test_add_canonical_attributes(override, skip, verbose, capsys):
 
         cf_da.attrs.pop("history")
         assert_identical(cf_da, cf_ds["air"])
+
+
+@pytest.mark.parametrize("op", ["ge", "gt", "eq", "ne", "le", "lt"])
+def test_flag_features(op):
+    actual = getattr(basin.cf, f"__{op}__")("atlantic_ocean")
+    expected = getattr(basin, f"__{op}__")(1)
+    assert_identical(actual, expected)
+
+
+def test_flag_isin():
+    actual = basin.cf.isin(["atlantic_ocean", "pacific_ocean"])
+    expected = basin.isin([1, 2])
+    assert_identical(actual, expected)
+
+
+def test_flag_errors():
+    with pytest.raises(ValueError):
+        basin.cf.isin(["arctic_ocean"])
+
+    with pytest.raises(ValueError):
+        basin.cf == "arctic_ocean"
+
+    ds = xr.Dataset({"basin": basin})
+    with pytest.raises(ValueError):
+        ds.cf.isin(["atlantic_ocean"])
+
+    basin.attrs.pop("flag_values")
+    with pytest.raises(ValueError):
+        basin.cf.isin(["pacific_ocean"])
+
+    with pytest.raises(ValueError):
+        basin.cf == "pacific_ocean"

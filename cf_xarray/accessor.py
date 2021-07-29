@@ -886,14 +886,69 @@ class _CFWrappedPlotMethods:
         )
 
 
+class CFFlagVariable:
+    def __init__(self, da):
+        self._da = da
+
+        if "flag_meanings" not in da.attrs:
+            raise ValueError(
+                "The flag_meanings attribute is absent. This is not a flag variable."
+            )
+        if "flag_values" not in da.attrs:
+            raise ValueError(
+                "The flag_values attribute is absent. This is not a flag variable."
+            )
+        flag_meanings = da.attrs["flag_meanings"].split(" ")
+        flag_values = da.attrs["flag_values"]
+        # TODO: assert flag_values is iterable
+        assert len(flag_values) == len(flag_meanings)
+        self.flag_dict = dict(zip(flag_meanings, flag_values))
+
+    def _assert_valid_other_comparison(self, other):
+        if other not in self.flag_dict:
+            raise ValueError(
+                f"Did not find flag value meaning [{other}] in known flag meanings: [{self.flag_dict.keys()!r}]"
+            )
+
+    def __eq__(self, other):
+        self._assert_valid_other_comparison(other)
+        return self._da == self.flag_dict[other]
+
+    def __lt__(self, other):
+        self._assert_valid_other_comparison(other)
+        return self._da < self.flag_dict[other]
+
+    def __le__(self, other):
+        self._assert_valid_other_comparison(other)
+        return self._da <= self.flag_dict[other]
+
+    def __gt__(self, other):
+        self._assert_valid_other_comparison(other)
+        return self._da > self.flag_dict[other]
+
+    def __ge__(self, other):
+        self._assert_valid_other_comparison(other)
+        return self._da >= self.flag_dict[other]
+
+    def isin(self, test_elements):
+        mapped_test_elements = [self.flag_dict[elem] for elem in test_elements]
+        return self._da.isin(mapped_test_elements)
+
+    def __repr__(self):
+        return f"CF Flag variable with mapping:\n\t{self.flag_dict!r}"
+
+
 class CFAccessor:
     """
     Common Dataset and DataArray accessor functionality.
     """
 
-    def __init__(self, da):
-        self._obj = da
+    def __init__(self, obj):
+        self._obj = obj
         self._all_cell_measures = None
+
+        if isinstance(self._obj, xr.DataArray):
+            self.flag = CFFlagVariable(self._obj)
 
     def _get_all_cell_measures(self):
         """
@@ -1051,6 +1106,10 @@ class CFAccessor:
         return kwargs
 
     def __getattr__(self, attr):
+        if attr == "flag":
+            raise AttributeError(
+                "Flag variable features only apply to DataArrays, not Datasets."
+            )
         return _getattr(
             obj=self._obj,
             attr=attr,

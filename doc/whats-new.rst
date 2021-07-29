@@ -7,6 +7,8 @@ v0.6.1 (unreleased)
 ===================
 - Support detecting pint-backed Variables with units-based criteria. By `Deepak Cherian`_.
 - Support reshaping nD bounds arrays to (n-1)D vertex arrays. By `Deepak Cherian`_.
+- Support rich comparisons and ``.isin`` for flag variables using ``DataArray.cf.flag``.
+  By `Deepak Cherian`_ and `Julius Busecke`_
 
 v0.6.0 (June 29, 2021)
 ======================
@@ -125,3 +127,4 @@ v0.1.3
 .. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Julia Kent`: https://github.com/jukent
 .. _`Kristen Thyng`: https://github.com/kthyng
+.. _`Julius Busecke`: https://github.com/jbusecke

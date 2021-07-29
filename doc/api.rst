@@ -31,6 +31,7 @@ Attributes
     DataArray.cf.cell_measures
     DataArray.cf.coordinates
     DataArray.cf.formula_terms
+    DataArray.cf.is_flag_variable
     DataArray.cf.standard_names
     DataArray.cf.plot
 

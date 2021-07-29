@@ -886,19 +886,8 @@ class _CFWrappedPlotMethods:
         )
 
 
-def _is_cf_flag_variable(da):
-    if (
-        isinstance(da, xr.DataArray)
-        and "flag_meanings" in da.attrs
-        and "flag_values" in da.attrs
-    ):
-        return True
-    else:
-        return False
-
-
 def create_flag_dict(da):
-    if not _is_cf_flag_variable(da):
+    if not da.cf.is_flag_variable:
         raise ValueError(
             "Comparisons are only supported for DataArrays that represent CF flag variables."
             ".attrs must contain 'flag_values' and 'flag_meanings'"
@@ -1011,6 +1000,10 @@ class CFAccessor:
         isin : DataArray
             Has the same type and shape as this object, but with a bool dtype.
         """
+        if not isinstance(self._obj, DataArray):
+            raise ValueError(
+                ".cf.isin is only supported on DataArrays that contain CF flag attributes."
+            )
         flag_dict = create_flag_dict(self._obj)
         mapped_test_elements = []
         for elem in test_elements:
@@ -1256,7 +1249,7 @@ class CFAccessor:
 
             return "\n".join(rows) + "\n"
 
-        if _is_cf_flag_variable(self._obj):
+        if isinstance(self._obj, DataArray) and self._obj.cf.is_flag_variable:
             flag_dict = create_flag_dict(self._obj)
             text = f"CF Flag variable with mapping:\n\t{flag_dict!r}\n\n"
         else:
@@ -2188,4 +2181,18 @@ class CFDataArrayAccessor(CFAccessor):
 
         return _getitem(self, key)
 
-    pass
+    @property
+    def is_flag_variable(self):
+        """
+        Returns True if the DataArray satisfies CF conventions for flag variables.
+
+        Flag masks are not supported yet.
+        """
+        if (
+            isinstance(self._obj, DataArray)
+            and "flag_meanings" in self._obj.attrs
+            and "flag_values" in self._obj.attrs
+        ):
+            return True
+        else:
+            return False

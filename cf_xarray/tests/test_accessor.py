@@ -129,6 +129,9 @@ def test_repr():
     """
     assert actual == dedent(expected)
 
+    # Flag DataArray
+    assert "CF Flag variable" in repr(basin.cf)
+
 
 def test_axes():
     expected = dict(T=["time"], X=["lon"], Y=["lat"])

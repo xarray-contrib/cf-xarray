@@ -886,7 +886,24 @@ class _CFWrappedPlotMethods:
         )
 
 
-def parse_flag_attrs(da):
+def _is_cf_flag_variable(da):
+    if (
+        isinstance(da, xr.DataArray)
+        and "flag_meanings" in da.attrs
+        and "flag_values" in da.attrs
+    ):
+        return True
+    else:
+        return False
+
+
+def create_flag_dict(da):
+    if not _is_cf_flag_variable(da):
+        raise ValueError(
+            "Comparisons are only supported for DataArrays that represent CF flag variables."
+            ".attrs must contain 'flag_values' and 'flag_meanings'"
+        )
+
     flag_meanings = da.attrs["flag_meanings"].split(" ")
     flag_values = da.attrs["flag_values"]
     # TODO: assert flag_values is iterable
@@ -903,25 +920,13 @@ class CFAccessor:
         self._obj = obj
         self._all_cell_measures = None
 
-        if (
-            isinstance(self._obj, xr.DataArray)
-            and "flag_meanings" in self._obj.attrs
-            and "flag_values" in self._obj.attrs
-        ):
-            self._flag_dict = parse_flag_attrs(self._obj)
-        else:
-            self._flag_dict = None
-
     def _assert_valid_other_comparison(self, other):
-        if not self._flag_dict:
+        flag_dict = create_flag_dict(self._obj)
+        if other not in flag_dict:
             raise ValueError(
-                "Comparisons are only supported for DataArrays that represent CF flag variables."
-                ".attrs must contain 'flag_values' and 'flag_meanings'"
+                f"Did not find flag value meaning [{other}] in known flag meanings: [{flag_dict.keys()!r}]"
             )
-        if other not in self._flag_dict:
-            raise ValueError(
-                f"Did not find flag value meaning [{other}] in known flag meanings: [{self._flag_dict.keys()!r}]"
-            )
+        return flag_dict
 
     def __eq__(self, other):
         """
@@ -931,8 +936,8 @@ class CFAccessor:
         `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
         """
-        self._assert_valid_other_comparison(other)
-        return self._obj == self._flag_dict[other]
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj == flag_dict[other]
 
     def __ne__(self, other):
         """
@@ -942,8 +947,8 @@ class CFAccessor:
         `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
         """
-        self._assert_valid_other_comparison(other)
-        return self._obj != self._flag_dict[other]
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj != flag_dict[other]
 
     def __lt__(self, other):
         """
@@ -953,8 +958,8 @@ class CFAccessor:
         `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
         """
-        self._assert_valid_other_comparison(other)
-        return self._obj < self._flag_dict[other]
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj < flag_dict[other]
 
     def __le__(self, other):
         """
@@ -964,8 +969,8 @@ class CFAccessor:
         `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
         """
-        self._assert_valid_other_comparison(other)
-        return self._obj <= self._flag_dict[other]
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj <= flag_dict[other]
 
     def __gt__(self, other):
         """
@@ -975,8 +980,8 @@ class CFAccessor:
         `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
         """
-        self._assert_valid_other_comparison(other)
-        return self._obj > self._flag_dict[other]
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj > flag_dict[other]
 
     def __ge__(self, other):
         """
@@ -986,8 +991,8 @@ class CFAccessor:
         `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
         """
-        self._assert_valid_other_comparison(other)
-        return self._obj >= self._flag_dict[other]
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj >= flag_dict[other]
 
     def isin(self, test_elements):
         """Test each value in the array for whether it is in test_elements.
@@ -1006,13 +1011,15 @@ class CFAccessor:
         isin : DataArray
             Has the same type and shape as this object, but with a bool dtype.
         """
-        if self._flag_dict:
-            mapped_test_elements = [self._flag_dict[elem] for elem in test_elements]
-            return self._obj.isin(mapped_test_elements)
-        else:
-            raise ValueError(
-                ".cf.isin only supported DataArrays that represent CF flag variables. Please use Dataset.isin instead"
-            )
+        flag_dict = create_flag_dict(self._obj)
+        mapped_test_elements = []
+        for elem in test_elements:
+            if elem not in flag_dict:
+                raise ValueError(
+                    f"Did not find flag value meaning [{elem}] in known flag meanings: [{flag_dict.keys()!r}]"
+                )
+            mapped_test_elements.append(flag_dict[elem])
+        return self._obj.isin(mapped_test_elements)
 
     def _get_all_cell_measures(self):
         """
@@ -1249,8 +1256,9 @@ class CFAccessor:
 
             return "\n".join(rows) + "\n"
 
-        if self._flag_dict:
-            text = f"CF Flag variable with mapping:\n\t{self._flag_dict!r}\n\n"
+        if _is_cf_flag_variable(self._obj):
+            flag_dict = create_flag_dict(self._obj)
+            text = f"CF Flag variable with mapping:\n\t{flag_dict!r}\n\n"
         else:
             text = ""
         text += "Coordinates:"

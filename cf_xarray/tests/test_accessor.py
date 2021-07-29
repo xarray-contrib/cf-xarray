@@ -1403,3 +1403,22 @@ def test_flag_isin():
     actual = basin.cf.isin(["atlantic_ocean", "pacific_ocean"])
     expected = basin.isin([1, 2])
     assert_identical(actual, expected)
+
+
+def test_flag_errors():
+    with pytest.raises(ValueError):
+        basin.cf.isin(["arctic_ocean"])
+
+    with pytest.raises(ValueError):
+        basin.cf == "arctic_ocean"
+
+    ds = xr.Dataset({"basin": basin})
+    with pytest.raises(ValueError):
+        ds.cf.isin(["atlantic_ocean"])
+
+    basin.attrs.pop("flag_values")
+    with pytest.raises(ValueError):
+        basin.cf.isin(["pacific_ocean"])
+
+    with pytest.raises(ValueError):
+        basin.cf == "pacific_ocean"

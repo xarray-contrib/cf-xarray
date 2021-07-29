@@ -927,6 +927,10 @@ class CFAccessor:
         self._assert_valid_other_comparison(other)
         return self._obj == self._flag_dict[other]
 
+    def __ne__(self, other):
+        self._assert_valid_other_comparison(other)
+        return self._obj != self._flag_dict[other]
+
     def __lt__(self, other):
         self._assert_valid_other_comparison(other)
         return self._obj < self._flag_dict[other]

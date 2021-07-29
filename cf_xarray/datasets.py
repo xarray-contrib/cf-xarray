@@ -279,3 +279,15 @@ forecast = xr.decode_cf(
         }
     )
 )
+
+
+basin = xr.DataArray(
+    [1, 2, 1, 1, 2, 2, 3, 3, 3, 3],
+    dims=("time",),
+    attrs={
+        "flag_values": [1, 2, 3],
+        "flag_meanings": "atlantic_ocean pacific_ocean indian_ocean",
+        "standard_name": "region",
+    },
+    name="basin",
+)

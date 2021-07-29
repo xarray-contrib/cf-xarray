@@ -7,7 +7,7 @@ v0.6.1 (unreleased)
 ===================
 - Support detecting pint-backed Variables with units-based criteria. By `Deepak Cherian`_.
 - Support reshaping nD bounds arrays to (n-1)D vertex arrays. By `Deepak Cherian`_.
-- Support rich comparisons and ``.isin`` for flag variables with ``DataArray.cf``.
+- Support rich comparisons  with ``DataArray.cf`` and :py:meth:`DataArray.cf.isin` for `flag variables`_.
   By `Deepak Cherian`_ and `Julius Busecke`_
 
 v0.6.0 (June 29, 2021)
@@ -128,3 +128,4 @@ v0.1.3
 .. _`Julia Kent`: https://github.com/jukent
 .. _`Kristen Thyng`: https://github.com/kthyng
 .. _`Julius Busecke`: https://github.com/jbusecke
+.. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

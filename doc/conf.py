@@ -47,10 +47,9 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.extlinks",
     "numpydoc",
-    "IPython.sphinxext.ipython_console_highlighting",
-    "IPython.sphinxext.ipython_directive",
-    "nbsphinx",
     "sphinx_autosummary_accessors",
+    "IPython.sphinxext.ipython_directive",
+    "myst_nb",
 ]
 
 extlinks = {
@@ -145,22 +144,32 @@ pygments_style = "sphinx"
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-# html_theme = "sphinx_book_theme"
-html_theme = "pydata_sphinx_theme"
+html_theme = "sphinx_book_theme"
+# html_theme = "pydata_sphinx_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {
-    "github_url": "https://github.com/xarray-contrib/cf-xarray",
-    "use_edit_page_button": True,
-    "navbar_end": "search-field.html",
-}
+html_theme_options = dict(
+    # analytics_id=''  this is configured in rtfd.io
+    # canonical_url="",
+    repository_url="https://github.com/xarray-contrib/cf-xarray",
+    repository_branch="main",
+    path_to_docs="doc",
+    use_edit_page_button=True,
+    use_repository_button=True,
+    use_issues_button=True,
+    home_page_in_toc=False,
+    extra_navbar="",
+    navbar_footer_text="",
+    navbar_end="search-field.html",
+)
+
 
 html_context = {
     "github_user": "xarray-contrib",
     "github_repo": "cf-xarray",
-    "github_version": "master",
+    "github_version": "main",
     "doc_path": "doc",
 }
 
@@ -232,48 +241,6 @@ html_static_path = ["_static"]
 # Output file base name for HTML help builder.
 htmlhelp_basename = "cf_xarraydoc"
 
-
-# -- Options for LaTeX output --------------------------------------------------
-
-# latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-# 'papersize': 'letterpaper',
-
-# The font size ('10pt', '11pt' or '12pt').
-# 'pointsize': '10pt',
-
-# Additional stuff for the LaTeX preamble.
-# 'preamble': '',
-# }
-
-# Grouping the document tree into LaTeX files. List of tuples
-# (source start file, target name, title, author, documentclass [howto/manual]).
-# latex_documents = [
-#   ('index', 'cf_xarray.tex', u'cf_xarray Documentation',
-#    u'Deepak Cherian', 'manual'),
-# ]
-
-# The name of an image file (relative to this directory) to place at the top of
-# the title page.
-# latex_logo = None
-
-# For "manual" documents, if this is true, then toplevel headings are parts,
-# not chapters.
-# latex_use_parts = False
-
-# If true, show page references after internal links.
-# latex_show_pagerefs = False
-
-# If true, show URL addresses after external links.
-# latex_show_urls = False
-
-# Documents to append as an appendix to all manuals.
-# latex_appendices = []
-
-# If false, no module index is generated.
-# latex_domain_indices = True
-
-
 # -- Options for manual page output --------------------------------------------
 
 # One entry per manual page. List of tuples
@@ -282,30 +249,6 @@ man_pages = [("index", "cf_xarray", "cf_xarray Documentation", [author], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
-
-
-# -- Options for Texinfo output ------------------------------------------------
-
-# Grouping the document tree into Texinfo files. List of tuples
-# (source start file, target name, title, author,
-#  dir menu entry, description, category)
-# texinfo_documents = [
-#  ('index', 'cf_xarray', u'cf_xarray Documentation',
-#   author, 'cf_xarray', 'One line description of project.',
-#   'Miscellaneous'),
-# ]
-
-# Documents to append as an appendix to all manuals.
-# texinfo_appendices = []
-
-# If false, no module index is generated.
-# texinfo_domain_indices = True
-
-# How to display URL addresses: 'footnote', 'no', or 'inline'.
-# texinfo_show_urls = 'footnote'
-
-# If true, do not generate a @detailmenu in the "Top" node's menu.
-# texinfo_no_detailmenu = False
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),

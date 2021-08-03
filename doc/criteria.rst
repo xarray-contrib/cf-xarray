@@ -2,8 +2,8 @@
 
 .. _criteria:
 
-CF Criteria
------------
+Coordinate Criteria
+-------------------
 
 Attributes
 ~~~~~~~~~~

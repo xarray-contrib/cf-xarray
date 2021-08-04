@@ -348,7 +348,7 @@ def _get_bounds(obj: Union[DataArray, Dataset], key: str) -> List[str]:
 def _get_with_standard_name(
     obj: Union[DataArray, Dataset], name: Union[str, List[str]]
 ) -> List[str]:
-    """ returns a list of variable names with standard name == name. """
+    """returns a list of variable names with standard name == name."""
     if name is None:
         return []
 

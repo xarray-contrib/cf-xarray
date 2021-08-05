@@ -859,7 +859,7 @@ class _CFWrappedPlotMethods:
                 hue = kwargs.get("hue")
                 if "x" not in kwargs and "y" not in kwargs:
                     kwargs = _process_x_or_y(kwargs, "x", skip=hue)
-                    if "x" not in kwargs:
+                    if not kwargs.get("x"):
                         kwargs = _process_x_or_y(kwargs, "y", skip=hue)
 
             else:

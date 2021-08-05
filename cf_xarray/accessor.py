@@ -758,13 +758,13 @@ def _possible_x_y_plot(obj, key, skip=None):
         # maintaining that variable!
         from xarray.core.utils import is_scalar
 
-        coordinates = accessor._obj.attrs.get("coordinates")
         for attr, key in criteria:
             values = getattr(accessor, attr).get(key)
+            ax_coord_name = getattr(accessor, attr).get(key)
             if not values:
                 continue
-            elif coordinates:
-                values = [v for v in values if v in coordinates]
+            elif ax_coord_name:
+                values = [v for v in values if v in ax_coord_name]
 
             values = [v for v in values if v != skip]
             if len(values) == 1 and not is_scalar(accessor._obj[values[0]]):
@@ -863,10 +863,8 @@ class _CFWrappedPlotMethods:
                         kwargs = _process_x_or_y(kwargs, "y", skip=hue)
 
             else:
-                if "x" not in kwargs:
-                    kwargs = _process_x_or_y(kwargs, "x", skip=kwargs.get("y"))
-                if "y" not in kwargs:
-                    kwargs = _process_x_or_y(kwargs, "y", skip=kwargs.get("x"))
+                kwargs = _process_x_or_y(kwargs, "x", skip=kwargs.get("y"))
+                kwargs = _process_x_or_y(kwargs, "y", skip=kwargs.get("x"))
 
             return func(*args, **kwargs)
 

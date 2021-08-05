@@ -496,9 +496,9 @@ def test_dataarray_plot():
     np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
     plt.close()
 
-    # rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot(hue="Y")
-    # np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
-    # plt.close()
+    rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot(hue="Y")
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
+    plt.close()
 
     rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot.line()
     np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)

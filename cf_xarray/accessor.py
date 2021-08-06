@@ -628,7 +628,7 @@ def _getitem(
         # with a scalar key. Hopefully these will soon get decoded to IntervalIndex
         # and we can move on...
         if scalar_key:
-            bounds = set([obj[k].attrs.get("bounds", None) for k in names])
+            bounds = {obj[k].attrs.get("bounds", None) for k in names}
             names = set(names) - bounds
         return names
 
@@ -1133,12 +1133,12 @@ class CFAccessor:
                 # e.g. .isel(X=5) → .isel(xi_rho=5, xi_u=5, xi_v=5, xi_psi=5)
                 # where xi_* have attrs["axis"] = "X"
                 updates[key] = ChainMap(
-                    *[
+                    *(
                         dict.fromkeys(
                             apply_mapper(mappers, self._obj, k, False, [k]), v
                         )
                         for k, v in value.items()
-                    ]
+                    )
                 )
 
             elif value is Ellipsis:

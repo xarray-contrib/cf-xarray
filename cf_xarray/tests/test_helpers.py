@@ -18,8 +18,14 @@ def test_bounds_to_vertices():
     assert_array_equal(ds.lat.values + 1.25, lat_c.values[:-1])
 
     # 2D case, CF- order
-    lat_c = cfxr.bounds_to_vertices(mollwds.lat_bounds, bounds_dim="bounds")
-    assert_equal(mollwds.lat_vertices, lat_c)
+    lat_ccw = cfxr.bounds_to_vertices(
+        mollwds.lat_bounds, bounds_dim="bounds", order="counterclockwise"
+    )
+    lat_no = cfxr.bounds_to_vertices(
+        mollwds.lat_bounds, bounds_dim="bounds", order=None
+    )
+    assert_equal(mollwds.lat_vertices, lat_ccw)
+    assert_equal(lat_no, lat_ccw)
 
     # Transposing the array changes the bounds direction
     ds = mollwds.transpose("bounds", "y", "x", "y_vertices", "x_vertices")

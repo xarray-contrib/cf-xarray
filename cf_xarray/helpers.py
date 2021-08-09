@@ -90,7 +90,7 @@ def _bounds_helper(values, n_core_dims, nbounds, order):
             top_left = values[..., -1:, :, 3]
             vertex_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
         if order is None:  # We verify if the ccw version works.
-            calc_bnds = vertices_to_bounds(vertex_vals).values
+            calc_bnds = np.moveaxis(vertices_to_bounds(vertex_vals).values, 0, -1)
             order = "counterclockwise" if np.all(calc_bnds == values) else "clockwise"
         if order == "clockwise":
             bot_left = values[..., :, :, 0]

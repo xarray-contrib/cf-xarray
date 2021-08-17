@@ -3,8 +3,8 @@
 What's New
 ----------
 
-v0.6.1 (unreleased)
-===================
+v0.6.1 (August 16, 2021)
+========================
 - Support detecting pint-backed Variables with units-based criteria. By `Deepak Cherian`_.
 - Support reshaping nD bounds arrays to (n-1)D vertex arrays. By `Deepak Cherian`_.
 - Support rich comparisons  with ``DataArray.cf`` and :py:meth:`DataArray.cf.isin` for `flag variables`_.

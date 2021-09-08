@@ -10,7 +10,7 @@ def reshape_unique_geometries(
     geom_var: str = "geometry",
     new_dim: str = "features",
 ) -> xr.Dataset:
-    """Reshape a dataset containing a geometry variable by having all unique geometries along a new dimension.
+    """Reshape a dataset containing a geometry variable by having all unique features along a new dimension.
 
     This function makes sense only if the dimension of the geometry variable has no coordinate,
     or if that coordinate has repeated values for each geometry.
@@ -20,9 +20,10 @@ def reshape_unique_geometries(
     ds : xr.Dataset
       A Dataset.
     geom_var : string
-      Name of the variable in `ds` that contains the geometry objects (shapely.geometry). The variable must be 1D.
+      Name of the variable in `ds` that contains the geometry objects of type shapely.geometry. 
+      The variable must be 1D.
     new_dim : string
-      Name of the new dimension.
+      Name of the new dimension in the returned object.
 
     Returns
     -------
@@ -53,7 +54,7 @@ def reshape_unique_geometries(
     multi_index = pd.MultiIndex.from_arrays(
         (inv_indexes, old_values), names=(new_dim, old_name)
     )
-    temp_name = xr.core.utils.get_temp_dimname(ds, "multi_index")
+    temp_name = "__temp_multi_index__"
     out = ds.rename({old_name: temp_name})
     out[temp_name] = multi_index
     out = out.unstack(temp_name)
@@ -70,11 +71,12 @@ def reshape_unique_geometries(
 def geometry_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str = None):
     """Convert a DataArray with shapely geometry objects into a CF-compliant dataset.
 
-    WARNING: Only point geometries are currently implemented.
+    .. warning:: 
+    	Only point geometries are currently implemented.
 
     Parameters
     ----------
-    geometries : sequence of shapely geometries or xarray.Dataset
+    geometries : sequence of shapely geometries or xarray.DataArray
       A sequence of geometry objects or a Dataset with a "geometry" variable storing such geometries.
       All geometries must be of the same base type : Point, Line or Polygon, but multipart geometries are accepted.
     grid_mapping : str, optional

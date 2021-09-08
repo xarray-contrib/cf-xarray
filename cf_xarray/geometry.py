@@ -149,7 +149,7 @@ def cf_to_geometry(ds: xr.Dataset):
             f"Valid CF geometry types are 'point', 'line' and 'polygon'. Got {geom_type}"
         )
 
-    return geometries
+    return geometries.rename("geometry")
 
 
 def points_to_cf(pts: Union[xr.DataArray, Sequence]):

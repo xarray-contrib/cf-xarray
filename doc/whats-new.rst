@@ -5,7 +5,7 @@ What's New
 
 v0.6.2 (unreleased)
 ===================
-- New ``geometry`` submodule with functions ``geometry_to_cf`` and ``cf_to_geometry`` to convert between CF-compliant geometry datasets and DataArrays storing shapely geometries (new optional dependency). By `Pascal Bourgault`_.
+- New ``geometry`` submodule with functions ``shapely_to_cf`` and ``cf_to_shapely`` to convert between CF-compliant geometry datasets and DataArrays storing shapely geometries (new optional dependency). By `Pascal Bourgault`_.
 
 v0.6.1 (August 16, 2021)
 ========================

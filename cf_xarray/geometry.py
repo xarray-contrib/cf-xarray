@@ -20,7 +20,7 @@ def reshape_unique_geometries(
     ds : xr.Dataset
       A Dataset.
     geom_var : string
-      Name of the variable in `ds` that contains the geometry objects of type shapely.geometry. 
+      Name of the variable in `ds` that contains the geometry objects of type shapely.geometry.
       The variable must be 1D.
     new_dim : string
       Name of the new dimension in the returned object.
@@ -68,11 +68,11 @@ def reshape_unique_geometries(
     return out
 
 
-def geometry_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str = None):
+def shapely_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str = None):
     """Convert a DataArray with shapely geometry objects into a CF-compliant dataset.
 
-    .. warning:: 
-    	Only point geometries are currently implemented.
+    .. warning::
+        Only point geometries are currently implemented.
 
     Parameters
     ----------
@@ -82,7 +82,9 @@ def geometry_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str 
     grid_mapping : str, optional
       A CF grid mapping name. When given, coordinates and attributes are named and set accordingly.
       Defaults to None, in which case the coordinates are simply names "crd_x" and "crd_y".
-      WARNING: only the `longitude_latitude` grid mapping is currently implemented.
+
+      .. warning::
+          Only the `longitude_latitude` grid mapping is currently implemented.
 
     Returns
     -------
@@ -124,7 +126,7 @@ def geometry_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str 
     return ds
 
 
-def cf_to_geometry(ds: xr.Dataset):
+def cf_to_shapely(ds: xr.Dataset):
     """Convert geometries stored in a CF-compliant way to shapely objects stored in a single variable.
 
     WARNING: Only point geometries are currently implemented.

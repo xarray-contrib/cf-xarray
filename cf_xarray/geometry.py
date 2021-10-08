@@ -98,11 +98,14 @@ def shapely_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str =
        - Other variables are not implemented as only Points are currently understood.
     """
     # Get all types to call the appropriate translation function.
-    types = {geom.geom_type for geom in np.asarray(geometries)}
+    types = {
+        geom.item().geom_type if isinstance(geom, xr.DataArray) else geom.geom_type
+        for geom in geometries
+    }
     if types.issubset({"Point", "MultiPoint"}):
         ds = points_to_cf(geometries)
     elif types.issubset({"Polygon", "MultiPolygon"}) or types.issubset(
-        {"Line", "MultiLine"}
+        {"LineString", "MultiLineString"}
     ):
         raise NotImplementedError("Only point geometries conversion is implemented.")
     else:

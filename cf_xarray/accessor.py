@@ -309,8 +309,8 @@ def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     results = set()
     for var in obj.variables:
         da = obj[var]
-        if "cell_measures" in da.attrs:
-            attr = da.attrs["cell_measures"]
+        if "cell_measures" in da.attrs or "cell_measures" in da.encoding:
+            attr = da.attrs.get("cell_measures", da.encoding.get("cell_measures"))
             measures = parse_cell_methods_attr(attr)
             if key in measures:
                 results.update([measures[key]])
@@ -341,6 +341,8 @@ def _get_bounds(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     for var in apply_mapper(_get_all, obj, key, error=False, default=[key]):
         if "bounds" in obj[var].attrs:
             results |= {obj[var].attrs["bounds"]}
+        elif "bounds" in obj[var].encoding:
+            results |= {obj[var].encoding["bounds"]}
 
     return list(results)
 
@@ -628,7 +630,10 @@ def _getitem(
         # with a scalar key. Hopefully these will soon get decoded to IntervalIndex
         # and we can move on...
         if scalar_key:
-            bounds = {obj[k].attrs.get("bounds", None) for k in names}
+            bounds = {
+                obj[k].attrs.get("bounds", obj[k].encoding.get("bounds", None))
+                for k in names
+            }
             names = set(names) - bounds
         return names
 
@@ -1364,12 +1369,18 @@ class CFAccessor:
         """
 
         obj = self._obj
-        all_attrs = [da.attrs.get("cell_measures", "") for da in obj.coords.values()]
+        all_attrs = [
+            da.attrs.get("cell_measures", da.encoding.get("cell_measures", ""))
+            for da in obj.coords.values()
+        ]
         if isinstance(obj, DataArray):
-            all_attrs += [obj.attrs.get("cell_measures", "")]
+            all_attrs += [
+                obj.attrs.get("cell_measures", obj.encoding.get("cell_measures", ""))
+            ]
         elif isinstance(obj, Dataset):
             all_attrs += [
-                da.attrs.get("cell_measures", "") for da in obj.data_vars.values()
+                da.attrs.get("cell_measures", da.encoding.get("cell_measures", ""))
+                for da in obj.data_vars.values()
             ]
 
         keys = {}
@@ -2144,12 +2155,14 @@ class CFDataArrayAccessor(CFAccessor):
             {parametric_coord_name: {standard_term_name: variable_name}}
         """
         da = self._obj
-        if "formula_terms" not in da.attrs:
+        if "formula_terms" not in da.attrs and "formula_terms" not in da.encoding:
             var = da[_single(_get_dims)(da, "Z")[0]]
         else:
             var = da
         terms = {}
-        formula_terms = var.attrs.get("formula_terms", "")
+        formula_terms = var.attrs.get(
+            "formula_terms", var.encoding.get("formula_terms", "")
+        )
         for mapping in re.sub(r"\s*:\s*", ":", formula_terms).split():
             key, value = mapping.split(":")
             terms[key] = value

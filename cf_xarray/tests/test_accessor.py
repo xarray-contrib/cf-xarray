@@ -1,4 +1,5 @@
 import itertools
+from os.path import dirname, isfile, realpath
 from textwrap import dedent
 from urllib.request import urlopen
 
@@ -209,6 +210,36 @@ def test_standard_names():
     dsnew["a"] = ("a", np.arange(10), {"standard_name": "a"})
     dsnew["b"] = ("a", np.arange(10), {"standard_name": "a"})
     assert dsnew.cf.standard_names == dict(a=["a", "b"])
+
+
+def test_accessor_getattr_and_describe():
+    data_dir = dirname(realpath(cf_xarray.__file__)) + "/data/"
+    test_ds = data_dir + "test_dataset_vert.nc"
+    assert isfile(test_ds)
+
+    ds_verta = xr.open_dataset(test_ds)
+    ds_verta = ds_verta.set_coords(
+        (
+            "time_bnds",
+            "ap",
+            "ap_bnds",
+            "b",
+            "b_bnds",
+            "ps",
+            "lev_bnds",
+            "lat_bnds",
+            "lon_bnds",
+            "areacella",
+        )
+    )
+    ds_vertb = xr.open_dataset(test_ds, decode_coords="all")
+
+    assert ds_verta.cf.cell_measures == ds_vertb.cf.cell_measures
+    assert ds_verta.o3.cf.cell_measures == ds_vertb.o3.cf.cell_measures
+    assert ds_verta.cf.formula_terms == ds_vertb.cf.formula_terms
+    assert ds_verta.o3.cf.formula_terms == ds_vertb.o3.cf.formula_terms
+    assert ds_verta.cf.bounds == ds_vertb.cf.bounds
+    assert str(ds_verta.cf) == str(ds_vertb.cf)
 
 
 def test_getitem_standard_name():

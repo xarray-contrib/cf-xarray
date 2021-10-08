@@ -10,9 +10,10 @@ def reshape_unique_geometries(
     geom_var: str = "geometry",
     new_dim: str = "features",
 ) -> xr.Dataset:
-    """Reshape a dataset containing a geometry variable by having all unique features along a new dimension.
+    """Reshape a dataset containing a geometry variable so that all unique features are
+    identified along a new dimension.
 
-    This function makes sense only if the dimension of the geometry variable has no coordinate,
+    This function only makes sense if the dimension of the geometry variable has no coordinate,
     or if that coordinate has repeated values for each geometry.
 
     Parameters
@@ -28,8 +29,8 @@ def reshape_unique_geometries(
     Returns
     -------
     Dataset
-      All variables sharing the dimension of `ds[geom_var]` are reshaped so that `new_dim` as a length equal to the
-      number of unique geometries.
+      All variables sharing the dimension of `ds[geom_var]` are reshaped so that `new_dim`
+      as a length equal to the number of unique geometries.
     """
     if ds[geom_var].ndim > 1:
         raise ValueError(
@@ -129,7 +130,8 @@ def shapely_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str =
 def cf_to_shapely(ds: xr.Dataset):
     """Convert geometries stored in a CF-compliant way to shapely objects stored in a single variable.
 
-    WARNING: Only point geometries are currently implemented.
+    .. warning::
+        Only point geometries are currently implemented.
 
     Parameters
     ----------
@@ -141,7 +143,8 @@ def cf_to_shapely(ds: xr.Dataset):
     -------
     xr.DataArray
       A 1D DataArray of shapely objects.
-      It has the same dimension as the `node_count` or the coordinates variables, or 'features' if those were not present in `ds `.
+      It has the same dimension as the `node_count` or the coordinates variables, or
+      'features' if those were not present in `ds `.
     """
     geom_type = ds.geometry_container.attrs["geometry_type"]
     if geom_type == "point":
@@ -218,7 +221,7 @@ def points_to_cf(pts: Union[xr.DataArray, Sequence]):
 
 
 def cf_to_points(ds: xr.Dataset):
-    """Convert point geometries stored in a CF-compliant way to a variable of shapely geometries.
+    """Convert point geometries stored in a CF-compliant way to shapely points stored in a single variable.
 
     Parameters
     ----------
@@ -231,7 +234,8 @@ def cf_to_points(ds: xr.Dataset):
     -------
     geometry : xr.DataArray
       A 1D array of shapely.geometry.[Multi]Point objects.
-      It has the same dimension as the `node_count` or the coordinates variables, or 'features' if those were not present in `ds `.
+      It has the same dimension as the `node_count` or the coordinates variables, or
+      'features' if those were not present in `ds `.
     """
     from shapely.geometry import MultiPoint, Point
 

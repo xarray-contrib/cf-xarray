@@ -11,7 +11,8 @@ Top-level API
 
     bounds_to_vertices
     vertices_to_bounds
-
+    shapely_to_cf
+    cf_to_shapely
 
 .. currentmodule:: xarray
 

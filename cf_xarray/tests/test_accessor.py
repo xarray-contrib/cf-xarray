@@ -1,5 +1,4 @@
 import itertools
-from os.path import dirname, isfile, realpath
 from textwrap import dedent
 from urllib.request import urlopen
 
@@ -25,6 +24,7 @@ from ..datasets import (
     multiple,
     popds,
     romsds,
+    vert,
 )
 from . import raise_if_dask_computes, requires_pint
 
@@ -213,26 +213,13 @@ def test_standard_names():
 
 
 def test_accessor_getattr_and_describe():
-    data_dir = dirname(realpath(cf_xarray.__file__)) + "/data/"
-    test_ds = data_dir + "test_dataset_vert.nc"
-    assert isfile(test_ds)
-
-    ds_verta = xr.open_dataset(test_ds)
-    ds_verta = ds_verta.set_coords(
+    ds_verta = vert.set_coords(
         (
-            "time_bnds",
-            "ap",
-            "ap_bnds",
-            "b",
-            "b_bnds",
             "ps",
-            "lev_bnds",
-            "lat_bnds",
-            "lon_bnds",
             "areacella",
         )
     )
-    ds_vertb = xr.open_dataset(test_ds, decode_coords="all")
+    ds_vertb = xr.decode_cf(vert, decode_coords="all")
 
     assert ds_verta.cf.cell_measures == ds_vertb.cf.cell_measures
     assert ds_verta.o3.cf.cell_measures == ds_vertb.o3.cf.cell_measures

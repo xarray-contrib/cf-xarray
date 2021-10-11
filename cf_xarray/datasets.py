@@ -291,3 +291,178 @@ basin = xr.DataArray(
     },
     name="basin",
 )
+
+vert = xr.Dataset.from_dict(
+    {
+        "coords": {
+            "lat": {
+                "dims": ("lat",),
+                "attrs": {
+                    "long_name": "latitude",
+                    "standard_name": "latitude",
+                    "axis": "Y",
+                    "bounds": "lat_bnds",
+                    "units": "degrees_north",
+                },
+                "data": [0.0, 1.0],
+            },
+            "lon": {
+                "dims": ("lon",),
+                "attrs": {
+                    "long_name": "longitude",
+                    "standard_name": "longitude",
+                    "axis": "X",
+                    "bounds": "lon_bnds",
+                    "units": "degrees_east",
+                },
+                "data": [0.0, 1.0],
+            },
+            "lev": {
+                "dims": ("lev",),
+                "attrs": {
+                    "long_name": "hybrid sigma pressure coordinate",
+                    "standard_name": "atmosphere_hybrid_sigma_pressure_coordinate",
+                    "formula": "p = ap + b*ps",
+                    "formula_terms": "ap: ap b: b ps: ps",
+                    "postitive": "down",
+                    "axis": "Z",
+                    "bounds": "lev_bnds",
+                    "units": "1",
+                },
+                "data": [0.0, 1.0],
+            },
+            "time": {
+                "dims": ("time",),
+                "attrs": {
+                    "long_name": "time",
+                    "standard_name": "time",
+                    "axis:": "T",
+                    "bounds": "time_bnds",
+                    "units": "days since 1850-01-01",
+                    "calendar": "proleptic_gregorian",
+                },
+                "data": [0.5],
+            },
+            "lat_bnds": {
+                "dims": (
+                    "lat",
+                    "bnds",
+                ),
+                "attrs": {
+                    "units": "degrees_north",
+                },
+                "data": [[0.0, 0.5], [0.5, 1.0]],
+            },
+            "lon_bnds": {
+                "dims": (
+                    "lon",
+                    "bnds",
+                ),
+                "attrs": {
+                    "units": "degrees_east",
+                },
+                "data": [[0.0, 0.5], [0.5, 1.0]],
+            },
+            "lev_bnds": {
+                "dims": (
+                    "lev",
+                    "bnds",
+                ),
+                "attrs": {
+                    "standard_name": "atmosphere_hybrid_sigma_pressure_coordinate",
+                    "formula": "p = ap + b*ps",
+                    "formula_terms": "ap: ap b: b ps: ps",
+                    "units": "1",
+                },
+                "data": [[0.0, 0.5], [0.5, 1.0]],
+            },
+            "time_bnds": {
+                "dims": ("time", "bnds"),
+                "attrs": {
+                    "units": "days since 1850-01-01",
+                    "calendar": "proleptic_gregorian",
+                },
+                "data": [[0.0, 1.0]],
+            },
+            "ap": {
+                "dims": ("lev",),
+                "attrs": {
+                    "units": "Pa",
+                    "long_name": "vertical coordinate formula term: ap(k)",
+                },
+                "data": [0.0, 0.0],
+            },
+            "b": {
+                "dims": ("lev",),
+                "attrs": {
+                    "long_name": "vertical coordinate formula term: b(k)",
+                },
+                "data": [1.0, 0.9],
+            },
+            "ap_bnds": {
+                "dims": (
+                    "lev",
+                    "bnds",
+                ),
+                "attrs": {
+                    "units": "Pa",
+                    "long_name": "vertical coordinate formula term: ap(k+1/2)",
+                },
+                "data": [[0.0, 0.0], [0.0, 0.0]],
+            },
+            "b_bnds": {
+                "dims": (
+                    "lev",
+                    "bnds",
+                ),
+                "attrs": {
+                    "long_name": "vertical coordinate formula term b(k+1/2)",
+                },
+                "data": [[1.0, 0.95], [0.95, 0.9]],
+            },
+        },
+        "attrs": {"Conventions": "CF-1.7", "variable_id": "o3"},
+        "dims": {"time": 1, "lev": 2, "lat": 2, "lon": 2, "bnds": 2},
+        "data_vars": {
+            "o3": {
+                "dims": ("time", "lev", "lat", "lon"),
+                "attrs": {
+                    "standard_name": "mole_fraction_of_ozone_in_air",
+                    "long_name": "Mole Fraction of O3",
+                    "comment": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y.",
+                    "units": "mol mol-1",
+                    "original_name": "o3",
+                    "cell_methods": "area: time: mean",
+                    "cell_measures": "area: areacella",
+                    "history": "",
+                    "missing_value": 1e20,
+                    "_FillValue": 1e20,
+                },
+                "data": np.ones(8, dtype=np.float32).reshape((1, 2, 2, 2)),
+            },
+            "areacella": {
+                "dims": ("lat", "lon"),
+                "attrs": {
+                    "standard_name": "cell_area",
+                    "long_name": "Grid-Cell Area for Atmospheric Grid Variables",
+                    "comment": "For atmospheres with more than 1 mesh (e.g., staggered grids), report areas that apply to surface vertical fluxes of energy.",
+                    "units": "m2",
+                    "original_name": "areacella",
+                    "cell_methods": "area: sum",
+                    "history": "",
+                    "missing_value": 1e20,
+                    "_FillValue": 1e20,
+                },
+                "data": np.ones(4, dtype=np.float32).reshape((2, 2)),
+            },
+            "ps": {
+                "dims": ("time", "lat", "lon"),
+                "attrs": {
+                    "long_name": "Surface Air Pressure",
+                    "units": "Pa",
+                },
+                "data": np.ones(4, dtype=np.float32).reshape((1, 2, 2)),
+            },
+        },
+    }
+)

@@ -16,6 +16,7 @@ from cf_xarray.utils import parse_cf_standard_name_table
 
 from ..datasets import (
     airds,
+    ambig,
     anc,
     basin,
     ds_no_attrs,
@@ -210,6 +211,13 @@ def test_standard_names():
     dsnew["a"] = ("a", np.arange(10), {"standard_name": "a"})
     dsnew["b"] = ("a", np.arange(10), {"standard_name": "a"})
     assert dsnew.cf.standard_names == dict(a=["a", "b"])
+
+
+def test_drop_bounds():
+    assert ambig.cf["latitude"].name == "lat"
+    assert ambig.cf["longitude"].name == "lon"
+    assert ambig.cf.bounds["latitude"] == ["vertices_latitude"]
+    assert ambig.cf.bounds["longitude"] == ["vertices_longitude"]
 
 
 def test_accessor_getattr_and_describe():

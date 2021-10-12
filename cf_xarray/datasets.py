@@ -292,6 +292,40 @@ basin = xr.DataArray(
     name="basin",
 )
 
+
+ambig = xr.Dataset(
+    data_vars={},
+    coords={
+        "lat": ("lat", np.zeros(5)),
+        "lon": ("lon", np.zeros(5)),
+        "vertices_latitude": (["lat", "bnds"], np.zeros((5, 2))),
+        "vertices_longitude": (["lon", "bnds"], np.zeros((5, 2))),
+    },
+)
+ambig["lat"].attrs = {
+    "bounds": "vertices_latitude",
+    "units": "degrees_north",
+    "long_name": "latitude",
+    "standard_name": "latitude",
+    "axis": "Y",
+}
+ambig["lon"].attrs = {
+    "bounds": "vertices_longitude",
+    "units": "degrees_east",
+    "long_name": "longitude",
+    "standard_name": "longitude",
+    "axis": "X",
+}
+ambig["vertices_latitude"].attrs = {
+    "long_name": "latitude_bounds",
+    "units": "degrees_north",
+}
+ambig["vertices_longitude"].attrs = {
+    "long_name": "longitude_bounds",
+    "units": "degrees_east",
+}
+
+
 vert = xr.Dataset.from_dict(
     {
         "coords": {

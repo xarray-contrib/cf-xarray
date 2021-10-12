@@ -629,11 +629,10 @@ def _getitem(
         # actual variable. It seems practical to ignore them when indexing
         # with a scalar key. Hopefully these will soon get decoded to IntervalIndex
         # and we can move on...
-        if scalar_key:
-            bounds = {
-                obj[k].attrs.get("bounds", obj[k].encoding.get("bounds", None))
-                for k in names
-            }
+        if not isinstance(obj, DataArray) and scalar_key:
+            bounds = set()
+            for name in names:
+                bounds.update(obj.cf.bounds.get(name, []))
             names = set(names) - bounds
         return names
 

@@ -305,23 +305,19 @@ ambig = xr.Dataset(
 ambig["lat"].attrs = {
     "bounds": "vertices_latitude",
     "units": "degrees_north",
-    "long_name": "latitude",
     "standard_name": "latitude",
     "axis": "Y",
 }
 ambig["lon"].attrs = {
     "bounds": "vertices_longitude",
     "units": "degrees_east",
-    "long_name": "longitude",
     "standard_name": "longitude",
     "axis": "X",
 }
 ambig["vertices_latitude"].attrs = {
-    "long_name": "latitude_bounds",
     "units": "degrees_north",
 }
 ambig["vertices_longitude"].attrs = {
-    "long_name": "longitude_bounds",
     "units": "degrees_east",
 }
 
@@ -332,7 +328,6 @@ vert = xr.Dataset.from_dict(
             "lat": {
                 "dims": ("lat",),
                 "attrs": {
-                    "long_name": "latitude",
                     "standard_name": "latitude",
                     "axis": "Y",
                     "bounds": "lat_bnds",
@@ -343,7 +338,6 @@ vert = xr.Dataset.from_dict(
             "lon": {
                 "dims": ("lon",),
                 "attrs": {
-                    "long_name": "longitude",
                     "standard_name": "longitude",
                     "axis": "X",
                     "bounds": "lon_bnds",
@@ -354,21 +348,18 @@ vert = xr.Dataset.from_dict(
             "lev": {
                 "dims": ("lev",),
                 "attrs": {
-                    "long_name": "hybrid sigma pressure coordinate",
                     "standard_name": "atmosphere_hybrid_sigma_pressure_coordinate",
                     "formula": "p = ap + b*ps",
                     "formula_terms": "ap: ap b: b ps: ps",
                     "postitive": "down",
                     "axis": "Z",
                     "bounds": "lev_bnds",
-                    "units": "1",
                 },
                 "data": [0.0, 1.0],
             },
             "time": {
                 "dims": ("time",),
                 "attrs": {
-                    "long_name": "time",
                     "standard_name": "time",
                     "axis:": "T",
                     "bounds": "time_bnds",
@@ -406,7 +397,6 @@ vert = xr.Dataset.from_dict(
                     "standard_name": "atmosphere_hybrid_sigma_pressure_coordinate",
                     "formula": "p = ap + b*ps",
                     "formula_terms": "ap: ap b: b ps: ps",
-                    "units": "1",
                 },
                 "data": [[0.0, 0.5], [0.5, 1.0]],
             },
@@ -420,17 +410,10 @@ vert = xr.Dataset.from_dict(
             },
             "ap": {
                 "dims": ("lev",),
-                "attrs": {
-                    "units": "Pa",
-                    "long_name": "vertical coordinate formula term: ap(k)",
-                },
                 "data": [0.0, 0.0],
             },
             "b": {
                 "dims": ("lev",),
-                "attrs": {
-                    "long_name": "vertical coordinate formula term: b(k)",
-                },
                 "data": [1.0, 0.9],
             },
             "ap_bnds": {
@@ -438,10 +421,6 @@ vert = xr.Dataset.from_dict(
                     "lev",
                     "bnds",
                 ),
-                "attrs": {
-                    "units": "Pa",
-                    "long_name": "vertical coordinate formula term: ap(k+1/2)",
-                },
                 "data": [[0.0, 0.0], [0.0, 0.0]],
             },
             "b_bnds": {
@@ -449,26 +428,16 @@ vert = xr.Dataset.from_dict(
                     "lev",
                     "bnds",
                 ),
-                "attrs": {
-                    "long_name": "vertical coordinate formula term b(k+1/2)",
-                },
                 "data": [[1.0, 0.95], [0.95, 0.9]],
             },
         },
-        "attrs": {"Conventions": "CF-1.7", "variable_id": "o3"},
         "dims": {"time": 1, "lev": 2, "lat": 2, "lon": 2, "bnds": 2},
         "data_vars": {
             "o3": {
                 "dims": ("time", "lev", "lat", "lon"),
                 "attrs": {
-                    "standard_name": "mole_fraction_of_ozone_in_air",
-                    "long_name": "Mole Fraction of O3",
-                    "comment": "Mole fraction is used in the construction mole_fraction_of_X_in_Y, where X is a material constituent of Y.",
-                    "units": "mol mol-1",
-                    "original_name": "o3",
                     "cell_methods": "area: time: mean",
                     "cell_measures": "area: areacella",
-                    "history": "",
                     "missing_value": 1e20,
                     "_FillValue": 1e20,
                 },
@@ -478,12 +447,7 @@ vert = xr.Dataset.from_dict(
                 "dims": ("lat", "lon"),
                 "attrs": {
                     "standard_name": "cell_area",
-                    "long_name": "Grid-Cell Area for Atmospheric Grid Variables",
-                    "comment": "For atmospheres with more than 1 mesh (e.g., staggered grids), report areas that apply to surface vertical fluxes of energy.",
-                    "units": "m2",
-                    "original_name": "areacella",
                     "cell_methods": "area: sum",
-                    "history": "",
                     "missing_value": 1e20,
                     "_FillValue": 1e20,
                 },
@@ -491,10 +455,6 @@ vert = xr.Dataset.from_dict(
             },
             "ps": {
                 "dims": ("time", "lat", "lon"),
-                "attrs": {
-                    "long_name": "Surface Air Pressure",
-                    "units": "Pa",
-                },
                 "data": np.ones(4, dtype=np.float32).reshape((1, 2, 2)),
             },
         },

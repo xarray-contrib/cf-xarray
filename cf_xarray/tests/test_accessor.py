@@ -16,6 +16,7 @@ from cf_xarray.utils import parse_cf_standard_name_table
 
 from ..datasets import (
     airds,
+    ambig,
     anc,
     basin,
     ds_no_attrs,
@@ -24,6 +25,7 @@ from ..datasets import (
     multiple,
     popds,
     romsds,
+    vert,
 )
 from . import raise_if_dask_computes, requires_pint
 
@@ -209,6 +211,30 @@ def test_standard_names():
     dsnew["a"] = ("a", np.arange(10), {"standard_name": "a"})
     dsnew["b"] = ("a", np.arange(10), {"standard_name": "a"})
     assert dsnew.cf.standard_names == dict(a=["a", "b"])
+
+
+def test_drop_bounds():
+    assert ambig.cf["latitude"].name == "lat"
+    assert ambig.cf["longitude"].name == "lon"
+    assert ambig.cf.bounds["latitude"] == ["vertices_latitude"]
+    assert ambig.cf.bounds["longitude"] == ["vertices_longitude"]
+
+
+def test_accessor_getattr_and_describe():
+    ds_verta = vert.set_coords(
+        (
+            "ps",
+            "areacella",
+        )
+    )
+    ds_vertb = xr.decode_cf(vert, decode_coords="all")
+
+    assert ds_verta.cf.cell_measures == ds_vertb.cf.cell_measures
+    assert ds_verta.o3.cf.cell_measures == ds_vertb.o3.cf.cell_measures
+    assert ds_verta.cf.formula_terms == ds_vertb.cf.formula_terms
+    assert ds_verta.o3.cf.formula_terms == ds_vertb.o3.cf.formula_terms
+    assert ds_verta.cf.bounds == ds_vertb.cf.bounds
+    assert str(ds_verta.cf) == str(ds_vertb.cf)
 
 
 def test_getitem_standard_name():

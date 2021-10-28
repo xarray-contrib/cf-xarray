@@ -291,3 +291,172 @@ basin = xr.DataArray(
     },
     name="basin",
 )
+
+
+ambig = xr.Dataset(
+    data_vars={},
+    coords={
+        "lat": ("lat", np.zeros(5)),
+        "lon": ("lon", np.zeros(5)),
+        "vertices_latitude": (["lat", "bnds"], np.zeros((5, 2))),
+        "vertices_longitude": (["lon", "bnds"], np.zeros((5, 2))),
+    },
+)
+ambig["lat"].attrs = {
+    "bounds": "vertices_latitude",
+    "units": "degrees_north",
+    "standard_name": "latitude",
+    "axis": "Y",
+}
+ambig["lon"].attrs = {
+    "bounds": "vertices_longitude",
+    "units": "degrees_east",
+    "standard_name": "longitude",
+    "axis": "X",
+}
+ambig["vertices_latitude"].attrs = {
+    "units": "degrees_north",
+}
+ambig["vertices_longitude"].attrs = {
+    "units": "degrees_east",
+}
+
+
+vert = xr.Dataset.from_dict(
+    {
+        "coords": {
+            "lat": {
+                "dims": ("lat",),
+                "attrs": {
+                    "standard_name": "latitude",
+                    "axis": "Y",
+                    "bounds": "lat_bnds",
+                    "units": "degrees_north",
+                },
+                "data": [0.0, 1.0],
+            },
+            "lon": {
+                "dims": ("lon",),
+                "attrs": {
+                    "standard_name": "longitude",
+                    "axis": "X",
+                    "bounds": "lon_bnds",
+                    "units": "degrees_east",
+                },
+                "data": [0.0, 1.0],
+            },
+            "lev": {
+                "dims": ("lev",),
+                "attrs": {
+                    "standard_name": "atmosphere_hybrid_sigma_pressure_coordinate",
+                    "formula": "p = ap + b*ps",
+                    "formula_terms": "ap: ap b: b ps: ps",
+                    "postitive": "down",
+                    "axis": "Z",
+                    "bounds": "lev_bnds",
+                },
+                "data": [0.0, 1.0],
+            },
+            "time": {
+                "dims": ("time",),
+                "attrs": {
+                    "standard_name": "time",
+                    "axis:": "T",
+                    "bounds": "time_bnds",
+                    "units": "days since 1850-01-01",
+                    "calendar": "proleptic_gregorian",
+                },
+                "data": [0.5],
+            },
+            "lat_bnds": {
+                "dims": (
+                    "lat",
+                    "bnds",
+                ),
+                "attrs": {
+                    "units": "degrees_north",
+                },
+                "data": [[0.0, 0.5], [0.5, 1.0]],
+            },
+            "lon_bnds": {
+                "dims": (
+                    "lon",
+                    "bnds",
+                ),
+                "attrs": {
+                    "units": "degrees_east",
+                },
+                "data": [[0.0, 0.5], [0.5, 1.0]],
+            },
+            "lev_bnds": {
+                "dims": (
+                    "lev",
+                    "bnds",
+                ),
+                "attrs": {
+                    "standard_name": "atmosphere_hybrid_sigma_pressure_coordinate",
+                    "formula": "p = ap + b*ps",
+                    "formula_terms": "ap: ap b: b ps: ps",
+                },
+                "data": [[0.0, 0.5], [0.5, 1.0]],
+            },
+            "time_bnds": {
+                "dims": ("time", "bnds"),
+                "attrs": {
+                    "units": "days since 1850-01-01",
+                    "calendar": "proleptic_gregorian",
+                },
+                "data": [[0.0, 1.0]],
+            },
+            "ap": {
+                "dims": ("lev",),
+                "data": [0.0, 0.0],
+            },
+            "b": {
+                "dims": ("lev",),
+                "data": [1.0, 0.9],
+            },
+            "ap_bnds": {
+                "dims": (
+                    "lev",
+                    "bnds",
+                ),
+                "data": [[0.0, 0.0], [0.0, 0.0]],
+            },
+            "b_bnds": {
+                "dims": (
+                    "lev",
+                    "bnds",
+                ),
+                "data": [[1.0, 0.95], [0.95, 0.9]],
+            },
+        },
+        "dims": {"time": 1, "lev": 2, "lat": 2, "lon": 2, "bnds": 2},
+        "data_vars": {
+            "o3": {
+                "dims": ("time", "lev", "lat", "lon"),
+                "attrs": {
+                    "cell_methods": "area: time: mean",
+                    "cell_measures": "area: areacella",
+                    "missing_value": 1e20,
+                    "_FillValue": 1e20,
+                },
+                "data": np.ones(8, dtype=np.float32).reshape((1, 2, 2, 2)),
+            },
+            "areacella": {
+                "dims": ("lat", "lon"),
+                "attrs": {
+                    "standard_name": "cell_area",
+                    "cell_methods": "area: sum",
+                    "missing_value": 1e20,
+                    "_FillValue": 1e20,
+                },
+                "data": np.ones(4, dtype=np.float32).reshape((2, 2)),
+            },
+            "ps": {
+                "dims": ("time", "lat", "lon"),
+                "data": np.ones(4, dtype=np.float32).reshape((1, 2, 2)),
+            },
+        },
+    }
+)

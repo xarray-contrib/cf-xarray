@@ -309,8 +309,9 @@ def _get_measure(obj: Union[DataArray, Dataset], key: str) -> List[str]:
     results = set()
     for var in obj.variables:
         da = obj[var]
-        if "cell_measures" in da.attrs:
-            attr = da.attrs["cell_measures"]
+        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
+        if "cell_measures" in attrs_or_encoding:
+            attr = attrs_or_encoding["cell_measures"]
             measures = parse_cell_methods_attr(attr)
             if key in measures:
                 results.update([measures[key]])
@@ -339,8 +340,9 @@ def _get_bounds(obj: Union[DataArray, Dataset], key: str) -> List[str]:
 
     results = set()
     for var in apply_mapper(_get_all, obj, key, error=False, default=[key]):
-        if "bounds" in obj[var].attrs:
-            results |= {obj[var].attrs["bounds"]}
+        attrs_or_encoding = ChainMap(obj[var].attrs, obj[var].encoding)
+        if "bounds" in attrs_or_encoding:
+            results |= {attrs_or_encoding["bounds"]}
 
     return list(results)
 
@@ -627,8 +629,10 @@ def _getitem(
         # actual variable. It seems practical to ignore them when indexing
         # with a scalar key. Hopefully these will soon get decoded to IntervalIndex
         # and we can move on...
-        if scalar_key:
-            bounds = {obj[k].attrs.get("bounds", None) for k in names}
+        if not isinstance(obj, DataArray) and scalar_key:
+            bounds = set()
+            for name in names:
+                bounds.update(obj.cf.bounds.get(name, []))
             names = set(names) - bounds
         return names
 
@@ -1364,12 +1368,16 @@ class CFAccessor:
         """
 
         obj = self._obj
-        all_attrs = [da.attrs.get("cell_measures", "") for da in obj.coords.values()]
+        all_attrs = [
+            ChainMap(da.attrs, da.encoding).get("cell_measures", "")
+            for da in obj.coords.values()
+        ]
         if isinstance(obj, DataArray):
-            all_attrs += [obj.attrs.get("cell_measures", "")]
+            all_attrs += [ChainMap(obj.attrs, obj.encoding).get("cell_measures", "")]
         elif isinstance(obj, Dataset):
             all_attrs += [
-                da.attrs.get("cell_measures", "") for da in obj.data_vars.values()
+                ChainMap(da.attrs, da.encoding).get("cell_measures", "")
+                for da in obj.data_vars.values()
             ]
 
         keys = {}
@@ -2144,12 +2152,13 @@ class CFDataArrayAccessor(CFAccessor):
             {parametric_coord_name: {standard_term_name: variable_name}}
         """
         da = self._obj
-        if "formula_terms" not in da.attrs:
+        if "formula_terms" not in ChainMap(da.attrs, da.encoding):
             var = da[_single(_get_dims)(da, "Z")[0]]
         else:
             var = da
+
         terms = {}
-        formula_terms = var.attrs.get("formula_terms", "")
+        formula_terms = ChainMap(var.attrs, var.encoding).get("formula_terms", "")
         for mapping in re.sub(r"\s*:\s*", ":", formula_terms).split():
             key, value = mapping.split(":")
             terms[key] = value

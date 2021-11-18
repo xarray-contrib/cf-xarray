@@ -17,7 +17,7 @@ dependencies:
   - ipywidgets
   - pandas
   - pooch
-  - pydata-sphinx-theme
   - pip:
       - git+https://github.com/xarray-contrib/cf-xarray
       - myst_nb
+      - sphinx-book-theme

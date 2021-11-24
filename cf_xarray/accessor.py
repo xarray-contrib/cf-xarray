@@ -1883,9 +1883,15 @@ class CFDatasetAccessor(CFAccessor):
         Property that returns a dictionary
             {parametric_coord_name: {standard_term_name: variable_name}}
         """
-        return {
-            dim: self._obj[dim].cf.formula_terms for dim in _get_dims(self._obj, "Z")
-        }
+        results = {}
+        for dim in _get_dims(self._obj, "Z"):
+            terms = self._obj[dim].cf.formula_terms
+            variables = self._drop_missing_variables(list(terms.values()))
+            terms = {key: val for key, val in terms.items() if val in variables}
+            if terms:
+                results[dim] = terms
+
+        return results
 
     @property
     def bounds(self) -> Dict[str, List[str]]:

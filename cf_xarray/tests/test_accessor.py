@@ -1458,7 +1458,7 @@ def test_missing_variables():
     # Bounds
     ds = mollwds.copy(deep=True)
     ds = ds.drop("lon_bounds")
-    assert "lon_bounds" not in sum(ds.cf.bounds.values(), [])
+    assert ds.cf.bounds == {"lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
 
     with pytest.raises(KeyError, match=r"No results found for 'longitude'."):
         ds.cf.get_bounds("longitude")
@@ -1466,4 +1466,9 @@ def test_missing_variables():
     # Cell measures
     ds = airds.copy(deep=True)
     ds = ds.drop("cell_area")
-    assert "area" not in ds.cf.cell_measures
+    assert ds.cf.cell_measures == {}
+
+    # Formula terms
+    ds = vert.copy(deep=True)
+    ds = ds.drop("ap")
+    assert ds.cf.formula_terms == {"lev": {"b": "b", "ps": "ps"}}

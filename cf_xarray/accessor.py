@@ -1035,7 +1035,7 @@ class CFAccessor:
 
     def _drop_missing_variables(self, variables: List[str]) -> List[str]:
 
-        return [var for var in variables if var in self._obj]
+        return [var for var in variables if var in self._obj or var in self._obj.coords]
 
     def _get_all_cell_measures(self):
         """
@@ -1391,7 +1391,9 @@ class CFAccessor:
         keys = {}
         for attr in all_attrs:
             keys.update(parse_cell_methods_attr(attr))
-        measures = {key: _get_all(self._obj, key) for key in keys}
+        measures = {
+            key: self._drop_missing_variables(_get_all(self._obj, key)) for key in keys
+        }
 
         return {k: sorted(set(v)) for k, v in measures.items() if v}
 

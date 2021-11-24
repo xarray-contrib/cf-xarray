@@ -413,6 +413,14 @@ def _variables(func: F) -> F:
     return cast(F, wrapper)
 
 
+def _must_exist(func: F) -> F:
+    @functools.wraps(func)
+    def wrapper(obj: Union[DataArray, Dataset], key: str) -> List[DataArray]:
+        return [k for k in func(obj, key) if k in obj]
+
+    return cast(F, wrapper)
+
+
 def _single(func: F) -> F:
     @functools.wraps(func)
     def wrapper(obj: Union[DataArray, Dataset], key: str):
@@ -1896,7 +1904,8 @@ class CFDatasetAccessor(CFAccessor):
         keys = self.keys() | set(obj.variables)
 
         vardict = {
-            key: apply_mapper(_get_bounds, obj, key, error=False) for key in keys
+            key: apply_mapper(_must_exist(_get_bounds), obj, key, error=False)
+            for key in keys
         }
 
         return {k: sorted(v) for k, v in vardict.items() if v}
@@ -1915,7 +1924,9 @@ class CFDatasetAccessor(CFAccessor):
         DataArray
         """
 
-        return apply_mapper(_variables(_single(_get_bounds)), self._obj, key)[0]
+        return apply_mapper(
+            _variables(_single(_must_exist(_get_bounds))), self._obj, key
+        )[0]
 
     def get_bounds_dim_name(self, key: str) -> str:
         """

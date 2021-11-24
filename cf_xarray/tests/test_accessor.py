@@ -1451,3 +1451,13 @@ def test_flag_errors():
 
     with pytest.raises(ValueError):
         basin.cf == "pacific_ocean"
+
+
+def test_missing_bounds():
+
+    ds = mollwds.copy(deep=True)
+    ds = ds.drop("lon_bounds")
+    assert "lon_bounds" not in sum(ds.cf.bounds.values(), [])
+
+    with pytest.raises(KeyError, match=r"No results found for 'longitude'."):
+        ds = ds.cf.get_bounds("longitude")

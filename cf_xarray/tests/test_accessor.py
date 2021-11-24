@@ -1460,4 +1460,4 @@ def test_missing_bounds():
     assert "lon_bounds" not in sum(ds.cf.bounds.values(), [])
 
     with pytest.raises(KeyError, match=r"No results found for 'longitude'."):
-        ds = ds.cf.get_bounds("longitude")
+        ds.cf.get_bounds("longitude")

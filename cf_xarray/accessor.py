@@ -413,20 +413,16 @@ def _variables(func: F) -> F:
     return cast(F, wrapper)
 
 
-def _raise_if_not_single(key, results):
-    if len(results) > 1:
-        raise KeyError(
-            f"Multiple results for {key!r} found: {results!r}. I expected only one."
-        )
-    elif len(results) == 0:
-        raise KeyError(f"No results found for {key!r}.")
-
-
 def _single(func: F) -> F:
     @functools.wraps(func)
     def wrapper(obj: Union[DataArray, Dataset], key: str):
         results = func(obj, key)
-        _raise_if_not_single(key, results)
+        if len(results) > 1:
+            raise KeyError(
+                f"Multiple results for {key!r} found: {results!r}. I expected only one."
+            )
+        elif len(results) == 0:
+            raise KeyError(f"No results found for {key!r}.")
         return results
 
     wrapper.__doc__ = (
@@ -1914,7 +1910,7 @@ class CFDatasetAccessor(CFAccessor):
 
         return {k: sorted(v) for k, v in vardict.items() if v}
 
-    def get_bounds(self, key: str) -> DataArray:
+    def get_bounds(self, key: str) -> Union[DataArray, Dataset]:
         """
         Get bounds variable corresponding to key.
 
@@ -1929,9 +1925,10 @@ class CFDatasetAccessor(CFAccessor):
         """
 
         results = self.bounds.get(key, [])
-        _raise_if_not_single(key, results)
+        if not results:
+            raise KeyError(f"No results found for {key!r}.")
 
-        return self._obj[results[0]]
+        return self._obj[results[0] if len(results) == 1 else results]
 
     def get_bounds_dim_name(self, key: str) -> str:
         """

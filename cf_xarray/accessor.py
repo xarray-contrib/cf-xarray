@@ -1875,10 +1875,9 @@ class CFDatasetAccessor(CFAccessor):
         """
         return _getitem(self, key)
 
-    def _drop_missing_variables(self, variables):
+    def _drop_missing_variables(self, variables: List[str]) -> List[str]:
 
-        names = [var.name if isinstance(var, DataArray) else var for var in variables]
-        return [var for name, var in zip(names, variables) if name in self._obj]
+        return [var for var in variables if var in self._obj]
 
     @property
     def formula_terms(self) -> Dict[str, Dict[str, str]]:

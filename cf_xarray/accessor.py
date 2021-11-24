@@ -413,24 +413,20 @@ def _variables(func: F) -> F:
     return cast(F, wrapper)
 
 
-def _must_exist(func: F) -> F:
-    @functools.wraps(func)
-    def wrapper(obj: Union[DataArray, Dataset], key: str) -> List[DataArray]:
-        return [k for k in func(obj, key) if k in obj]
-
-    return cast(F, wrapper)
+def _raise_if_not_single(key, results):
+    if len(results) > 1:
+        raise KeyError(
+            f"Multiple results for {key!r} found: {results!r}. I expected only one."
+        )
+    elif len(results) == 0:
+        raise KeyError(f"No results found for {key!r}.")
 
 
 def _single(func: F) -> F:
     @functools.wraps(func)
     def wrapper(obj: Union[DataArray, Dataset], key: str):
         results = func(obj, key)
-        if len(results) > 1:
-            raise KeyError(
-                f"Multiple results for {key!r} found: {results!r}. I expected only one."
-            )
-        elif len(results) == 0:
-            raise KeyError(f"No results found for {key!r}.")
+        _raise_if_not_single(key, results)
         return results
 
     wrapper.__doc__ = (
@@ -1879,6 +1875,11 @@ class CFDatasetAccessor(CFAccessor):
         """
         return _getitem(self, key)
 
+    def _drop_missing_variables(self, variables):
+
+        names = [var.name if isinstance(var, DataArray) else var for var in variables]
+        return [var for name, var in zip(names, variables) if name in self._obj]
+
     @property
     def formula_terms(self) -> Dict[str, Dict[str, str]]:
         """
@@ -1904,7 +1905,9 @@ class CFDatasetAccessor(CFAccessor):
         keys = self.keys() | set(obj.variables)
 
         vardict = {
-            key: apply_mapper(_must_exist(_get_bounds), obj, key, error=False)
+            key: self._drop_missing_variables(
+                apply_mapper(_get_bounds, obj, key, error=False)
+            )
             for key in keys
         }
 
@@ -1924,9 +1927,10 @@ class CFDatasetAccessor(CFAccessor):
         DataArray
         """
 
-        return apply_mapper(
-            _variables(_single(_must_exist(_get_bounds))), self._obj, key
-        )[0]
+        results = self.bounds.get(key, [])
+        _raise_if_not_single(key, results)
+
+        return self._obj[results[0]]
 
     def get_bounds_dim_name(self, key: str) -> str:
         """

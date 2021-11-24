@@ -1033,6 +1033,10 @@ class CFAccessor:
             mapped_test_elements.append(flag_dict[elem])
         return self._obj.isin(mapped_test_elements)
 
+    def _drop_missing_variables(self, variables: List[str]) -> List[str]:
+
+        return [var for var in variables if var in self._obj]
+
     def _get_all_cell_measures(self):
         """
         Get all cell measures defined in the object, adding CF pre-defined measures.
@@ -1874,10 +1878,6 @@ class CFDatasetAccessor(CFAccessor):
         is a limitation of the xarray data model.
         """
         return _getitem(self, key)
-
-    def _drop_missing_variables(self, variables: List[str]) -> List[str]:
-
-        return [var for var in variables if var in self._obj]
 
     @property
     def formula_terms(self) -> Dict[str, Dict[str, str]]:

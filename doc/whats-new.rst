@@ -3,8 +3,9 @@
 What's New
 ----------
 
-v0.6.2 (unreleased)
-===================
+v0.6.2 (December 7, 2021)
+=========================
+- Various bug fixes.
 - New ``cf_xarray.geometry`` submodule with functions :py:func:`shapely_to_cf`` and :py:func:`cf_to_shapely` to convert between CF-compliant geometry datasets and DataArrays storing shapely geometries (new optional dependency). By `Pascal Bourgault`_.
 
 v0.6.1 (August 16, 2021)

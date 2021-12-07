@@ -1029,6 +1029,10 @@ class CFAccessor:
             mapped_test_elements.append(flag_dict[elem])
         return self._obj.isin(mapped_test_elements)
 
+    def _drop_missing_variables(self, variables: List[str]) -> List[str]:
+
+        return [var for var in variables if var in self._obj or var in self._obj.coords]
+
     def _get_all_cell_measures(self):
         """
         Get all cell measures defined in the object, adding CF pre-defined measures.
@@ -1383,7 +1387,9 @@ class CFAccessor:
         keys = {}
         for attr in all_attrs:
             keys.update(parse_cell_methods_attr(attr))
-        measures = {key: _get_all(self._obj, key) for key in keys}
+        measures = {
+            key: self._drop_missing_variables(_get_all(self._obj, key)) for key in keys
+        }
 
         return {k: sorted(set(v)) for k, v in measures.items() if v}
 
@@ -1877,9 +1883,15 @@ class CFDatasetAccessor(CFAccessor):
         Property that returns a dictionary
             {parametric_coord_name: {standard_term_name: variable_name}}
         """
-        return {
-            dim: self._obj[dim].cf.formula_terms for dim in _get_dims(self._obj, "Z")
-        }
+        results = {}
+        for dim in _get_dims(self._obj, "Z"):
+            terms = self._obj[dim].cf.formula_terms
+            variables = self._drop_missing_variables(list(terms.values()))
+            terms = {key: val for key, val in terms.items() if val in variables}
+            if terms:
+                results[dim] = terms
+
+        return results
 
     @property
     def bounds(self) -> Dict[str, List[str]]:
@@ -1896,12 +1908,15 @@ class CFDatasetAccessor(CFAccessor):
         keys = self.keys() | set(obj.variables)
 
         vardict = {
-            key: apply_mapper(_get_bounds, obj, key, error=False) for key in keys
+            key: self._drop_missing_variables(
+                apply_mapper(_get_bounds, obj, key, error=False)
+            )
+            for key in keys
         }
 
         return {k: sorted(v) for k, v in vardict.items() if v}
 
-    def get_bounds(self, key: str) -> DataArray:
+    def get_bounds(self, key: str) -> Union[DataArray, Dataset]:
         """
         Get bounds variable corresponding to key.
 
@@ -1915,7 +1930,11 @@ class CFDatasetAccessor(CFAccessor):
         DataArray
         """
 
-        return apply_mapper(_variables(_single(_get_bounds)), self._obj, key)[0]
+        results = self.bounds.get(key, [])
+        if not results:
+            raise KeyError(f"No results found for {key!r}.")
+
+        return self._obj[results[0] if len(results) == 1 else results]
 
     def get_bounds_dim_name(self, key: str) -> str:
         """

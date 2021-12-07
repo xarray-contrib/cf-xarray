@@ -177,7 +177,7 @@ def test_cell_measures():
     ds["air"].attrs["cell_measures"] += " volume: foo"
     ds["foo"].attrs["cell_measures"] = ds["air"].attrs["cell_measures"]
     expected = dict(area=["cell_area"], foo_measure=["foo"], volume=["foo"])
-    actual_air = ds["air"].cf.cell_measures
+    actual_air = ds.cf["air"].cf.cell_measures
     actual_foo = ds.cf["foo_measure"].cf.cell_measures
     assert actual_air == actual_foo == expected
 
@@ -1451,3 +1451,24 @@ def test_flag_errors():
 
     with pytest.raises(ValueError):
         basin.cf == "pacific_ocean"
+
+
+def test_missing_variables():
+
+    # Bounds
+    ds = mollwds.copy(deep=True)
+    ds = ds.drop("lon_bounds")
+    assert ds.cf.bounds == {"lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
+
+    with pytest.raises(KeyError, match=r"No results found for 'longitude'."):
+        ds.cf.get_bounds("longitude")
+
+    # Cell measures
+    ds = airds.copy(deep=True)
+    ds = ds.drop("cell_area")
+    assert ds.cf.cell_measures == {}
+
+    # Formula terms
+    ds = vert.copy(deep=True)
+    ds = ds.drop("ap")
+    assert ds.cf.formula_terms == {"lev": {"b": "b", "ps": "ps"}}

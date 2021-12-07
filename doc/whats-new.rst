@@ -3,6 +3,9 @@
 What's New
 ----------
 
+v0.6.3 (unreleased)
+===================
+
 v0.6.2 (December 7, 2021)
 =========================
 - Various bug fixes.

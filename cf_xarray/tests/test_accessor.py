@@ -134,6 +134,38 @@ def test_repr():
     # Flag DataArray
     assert "CF Flag variable" in repr(basin.cf)
 
+    # "Temp" dataset
+    actual = airds["air"]._to_temp_dataset().cf.__repr__()
+    expected = """\
+    Coordinates:
+    - CF Axes: * X: ['lon']
+               * Y: ['lat']
+               * T: ['time']
+                 Z: n/a
+
+    - CF Coordinates: * longitude: ['lon']
+                      * latitude: ['lat']
+                      * time: ['time']
+                        vertical: n/a
+
+    - Cell Measures:   area: ['cell_area']
+                       volume: n/a
+
+    - Standard Names: * latitude: ['lat']
+                      * longitude: ['lon']
+                      * time: ['time']
+
+    - Bounds:   n/a
+
+    Data Variables:
+    - Cell Measures:   area, volume: n/a
+
+    - Standard Names:   air_temperature: [<this-array>]
+
+    - Bounds:   n/a
+    """
+    assert actual == dedent(expected)
+
 
 def test_axes():
     expected = dict(T=["time"], X=["lon"], Y=["lat"])

@@ -1,11 +1,15 @@
 ---
 jupytext:
   text_representation:
-    format_name: myst    
+    format_name: myst
 kernelspec:
   display_name: Python 3
   name: python3
 ---
+
+```{eval-rst}
+.. currentmodule:: xarray
+```
 
 # Quickstart
 
@@ -39,7 +43,7 @@ Now instead of the usual xarray names on the right, you can use the "CF names" o
 ds.cf.mean("latitude")  # identical to ds.mean("lat")
 ```
 
-This works because the attributes `standard_name: "latitude"` and `units: "degrees_north"` are present on `ds.latitude` 
+This works because the attributes `standard_name: "latitude"` and `units: "degrees_north"` are present on `ds.latitude`
 ```{code-cell}
 ds.lat.attrs
 ```
@@ -71,13 +75,13 @@ ds.cf["air_temperature"]
 
 ## Finding variable names
 
-Sometimes it is more useful to extract the actual variable names associated with a given "CF name". `cf_xarray` exposes these names under a few properties: 
-- {py:attr}`xarray.Dataset.cf.axes`, 
-- {py:attr}`xarray.Dataset.cf.bounds`, 
-- {py:attr}`xarray.Dataset.cf.cell_measures`,
-- {py:attr}`xarray.Dataset.cf.coordinates`,
-- {py:attr}`xarray.Dataset.cf.formula_terms`, and 
-- {py:attr}`xarray.Dataset.cf.standard_names`.
+Sometimes it is more useful to extract the actual variable names associated with a given "CF name". `cf_xarray` exposes these variable names under a few properties:
+- {py:attr}`Dataset.cf.axes`,
+- {py:attr}`Dataset.cf.bounds`,
+- {py:attr}`Dataset.cf.cell_measures`,
+- {py:attr}`Dataset.cf.coordinates`,
+- {py:attr}`Dataset.cf.formula_terms`, and
+- {py:attr}`Dataset.cf.standard_names`.
 
 These properties all return dictionaries mapping a standard key name to a list of matching variable names in the Dataset or DataArray.
 

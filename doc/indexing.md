@@ -1,2 +1,0 @@
-# Indexing out DataArrays
-

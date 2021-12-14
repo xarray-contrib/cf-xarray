@@ -6,11 +6,14 @@ kernelspec:
   display_name: Python 3
   name: python3
 ---
+```{eval-rst}
+.. currentmodule:: xarray
+```
 
 
 # Parametric Vertical Coordinates
 
-`cf_xarray` supports decoding [parametric vertical coordinates](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate) encoded in the `formula_terms` attribute using {py:meth}`xarray.Dataset.cf.decode_vertical_coords`. Right now, only the two ocean s-coordiantes are supported, but support for the [rest](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord) should be easy to add (Pull Requests are very welcome!).
+`cf_xarray` supports decoding [parametric vertical coordinates](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate) encoded in the `formula_terms` attribute using {py:meth}`Dataset.cf.decode_vertical_coords`. Right now, only the two ocean s-coordinates are supported, but support for the [rest](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord) should be easy to add (Pull Requests are very welcome!).
 
 ```{code-cell}
 from cf_xarray.datasets import romsds
@@ -22,6 +25,11 @@ Now we decode the vertical coordinates **in-place**. Note the new `z_rho` variab
 
 ```{code-cell}
 romsds.cf.decode_vertical_coords()  # adds new z_rho variable
-romsds
+romsds.z_rho
 ```
 
+The prefix `"z"` can be controlled but the suffix `_rho` is copied from `s_rho`.
+```{code-cell}
+romsds.cf.decode_vertical_coords(prefix="foo")
+romsds.foo_rho
+```

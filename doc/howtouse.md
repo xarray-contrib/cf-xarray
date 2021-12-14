@@ -1,3 +1,7 @@
+```{eval-rst}
+.. currentmodule:: xarray
+```
+
 # How to use cf_xarray
 
 There are four ways one can use cf_xarray.
@@ -13,7 +17,7 @@ Use `cf_xarray` to extract the appropriate variable name through the properties:
 
 ## Rename to a custom vocabulary
 
-Use {py:meth}`xarray.Dataset.rename`, or {py:meth}`xarray.Dataset.cf.rename_like` to rename variables to your preferences
+Use {py:meth}`Dataset.rename`, or {py:meth}`Dataset.cf.rename_like` to rename variables to your preferences
 
 ## Define custom criteria for a custom vocabulary
 

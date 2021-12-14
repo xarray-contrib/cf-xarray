@@ -49,12 +49,11 @@ or using ``conda``
    howtouse
    faq
    coord_axes
-   indexing
+   selecting
    flags
    units
    parametricz
    bounds
-   criteria
    plotting
    custom-criteria
    provenance

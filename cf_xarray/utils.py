@@ -3,7 +3,6 @@ from collections import defaultdict
 from typing import Any, Dict, Iterable
 from xml.etree import ElementTree
 
-from pkg_resources import DistributionNotFound, get_distribution
 from xarray import DataArray
 
 
@@ -94,7 +93,9 @@ def parse_cf_standard_name_table(source=None):
 
 
 def _get_version():
+    __version__ = "unknown"
     try:
-        return get_distribution("cf_xarray").version
-    except DistributionNotFound:
-        return "unknown"
+        from ._version import __version__
+    except ImportError:
+        pass
+    return __version__

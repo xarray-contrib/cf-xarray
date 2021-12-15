@@ -38,7 +38,7 @@ def bounds_to_vertices(
     -------
     DataArray
         Either of shape (N+1,) or (N+1, M+1). New vertex dimensions are named
-        from the intial dimension and suffix "_vertices".
+        from the initial dimension and suffix "_vertices".
 
     Notes
     -----
@@ -97,7 +97,7 @@ def _bounds_helper(values, n_core_dims, nbounds, order):
             top_left = values[..., -1:, :, 1]
             top_right = values[..., -1:, -1:, 2]
             bot_right = values[..., :, -1:, 3]
-            # Our asumption was wrong, axis 1 is rightward and axis 2 is upward
+            # Our assumption was wrong, axis 1 is rightward and axis 2 is upward
             vertex_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
     elif n_core_dims == 1 and nbounds == 2:
         # Middle points case (1D lat/lon)

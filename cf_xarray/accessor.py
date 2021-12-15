@@ -1053,7 +1053,7 @@ class CFAccessor:
     ):
         """
         Processes a function's signature, args, kwargs:
-        1. Binds ``*args`` so that everthing is a Mapping from kwarg name to values
+        1. Binds ``*args`` so that everything is a Mapping from kwarg name to values
         2. Calls ``_rewrite_values`` to rewrite any special CF names to normal xarray names.
            This uses ``key_mappers``
         3. Unpacks arguments if necessary before returning them.
@@ -2034,7 +2034,7 @@ class CFDatasetAccessor(CFAccessor):
         Dataset
             Copy of the dataset with added vertices variables.
             Either of shape (N+1,) or (N+1, M+1). New vertex dimensions are named
-            from the intial dimension and suffix "_vertices". Variables with similar
+            from the initial dimension and suffix "_vertices". Variables with similar
             names are overwritten.
 
         Raises

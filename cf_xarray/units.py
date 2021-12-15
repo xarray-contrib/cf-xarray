@@ -33,7 +33,7 @@ units.define(
     pint.unit.UnitDefinition("percent", "%", (), pint.converters.ScaleConverter(0.01))
 )
 
-# Define commonly encoutered units (both CF and non-CF) not defined by pint
+# Define commonly encountered units (both CF and non-CF) not defined by pint
 units.define(
     "degrees_north = degree = degrees_N = degreesN = degree_north = degree_N = degreeN"
 )

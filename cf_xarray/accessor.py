@@ -1,4 +1,3 @@
-import collections.abc
 import functools
 import inspect
 import itertools

@@ -134,6 +134,38 @@ def test_repr():
     # Flag DataArray
     assert "CF Flag variable" in repr(basin.cf)
 
+    # "Temp" dataset
+    actual = airds["air"]._to_temp_dataset().cf.__repr__()
+    expected = """\
+    Coordinates:
+    - CF Axes: * X: ['lon']
+               * Y: ['lat']
+               * T: ['time']
+                 Z: n/a
+
+    - CF Coordinates: * longitude: ['lon']
+                      * latitude: ['lat']
+                      * time: ['time']
+                        vertical: n/a
+
+    - Cell Measures:   area: ['cell_area']
+                       volume: n/a
+
+    - Standard Names: * latitude: ['lat']
+                      * longitude: ['lon']
+                      * time: ['time']
+
+    - Bounds:   n/a
+
+    Data Variables:
+    - Cell Measures:   area, volume: n/a
+
+    - Standard Names:   air_temperature: [<this-array>]
+
+    - Bounds:   n/a
+    """
+    assert actual == dedent(expected)
+
 
 def test_axes():
     expected = dict(T=["time"], X=["lon"], Y=["lat"])
@@ -1078,7 +1110,7 @@ def test_drop_vars_and_set_coords(obj, attr):
     # Cell measure
     assert_identical(expected("cell_area"), actual("area"))
     # Variables
-    if isinstance(obj, Dataset):
+    if isinstance(obj, Dataset) and "air" in obj.data_vars:
         assert_identical(expected("air"), actual("air_temperature"))
         assert_identical(expected(obj.variables), actual(obj.cf.keys()))
 
@@ -1094,7 +1126,7 @@ def test_drop_sel_and_reset_coords(obj):
     # Cell measure
     assert_identical(obj.reset_coords("cell_area"), obj.cf.reset_coords("area"))
     # Variable
-    if isinstance(obj, Dataset):
+    if isinstance(obj, Dataset) and "air" in obj.data_vars:
         assert_identical(
             obj.reset_coords("air"), obj.cf.reset_coords("air_temperature")
         )
@@ -1118,7 +1150,11 @@ def test_rename(obj):
     cf_dict = {
         "air_temperature" if isinstance(obj, Dataset) else "longitude": "renamed"
     }
-    xr_dict = {"air" if isinstance(obj, Dataset) else "lon": "renamed"}
+    xr_dict = {
+        "air"
+        if isinstance(obj, Dataset) and "air" in obj.data_vars
+        else "lon": "renamed"
+    }
     assert_identical(obj.rename(xr_dict), obj.cf.rename(cf_dict))
     assert_identical(obj.rename(**xr_dict), obj.cf.rename(**cf_dict))
 

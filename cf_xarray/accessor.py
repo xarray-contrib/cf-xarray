@@ -76,7 +76,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 def apply_mapper(
     mappers: Union[Mapper, Tuple[Mapper, ...]],
     obj: Union[DataArray, Dataset],
-    key: Any,
+    key: Hashable,
     error: bool = True,
     default: Any = None,
 ) -> List[Any]:
@@ -88,9 +88,11 @@ def apply_mapper(
     results for a good key.
     """
 
-    if not isinstance(key, str):
+    if not isinstance(key, Hashable):
         if default is None:
-            raise ValueError("`default` must be provided when `key` is not a string.")
+            raise ValueError(
+                "`default` must be provided when `key` is not not a valid DataArray name (of hashable type)."
+            )
         return list(always_iterable(default))
 
     default = [] if default is None else list(always_iterable(default))

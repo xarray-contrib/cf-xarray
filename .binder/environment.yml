@@ -2,8 +2,8 @@ name: cf_xarray
 channels:
   - conda-forge
 dependencies:
-  - python=3.8
-  - matplotlib
+  - python=3
+  - matplotlib-base
   - netcdf4
   - pip
   - xarray

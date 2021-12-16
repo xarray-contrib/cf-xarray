@@ -10,6 +10,4 @@ setup(
         "write_to_template": '__version__ = "{version}"',
         "tag_regex": r"^(?P<prefix>v)?(?P<version>[^\+]+)(?P<suffix>.*)?$",
     },
-    description="A lightweight convenience wrapper for using CF attributes on xarray objects. ",
-    url="https://cf-xarray.readthedocs.io",
 )

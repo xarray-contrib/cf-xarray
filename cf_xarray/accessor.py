@@ -89,10 +89,10 @@ def apply_mapper(
     results for a good key.
     """
 
-    if not isinstance(key, collections.abc.Hashable):
+    if not isinstance(key, Hashable):
         if default is None:
             raise ValueError(
-                "`default` must be provided when `key` is not hashable (not a valid DataArray name)."
+                "`default` must be provided when `key` is not not a valid DataArray name (of hashable type)."
             )
         return list(always_iterable(default))
 

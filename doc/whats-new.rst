@@ -3,8 +3,10 @@
 What's New
 ----------
 
-v0.6.3 (unreleased)
-===================
+v0.6.3 (December 16, 2021)
+==========================
+- Packaging improvements. By `Filipe Fernandes`_.
+- cf_xarray now works with Datasets created using ``_to_temp_dataset``. By `Pascal Bourgault`_.
 
 v0.6.2 (December 7, 2021)
 =========================
@@ -136,4 +138,5 @@ v0.1.3
 .. _`Julia Kent`: https://github.com/jukent
 .. _`Kristen Thyng`: https://github.com/kthyng
 .. _`Julius Busecke`: https://github.com/jbusecke
+.. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

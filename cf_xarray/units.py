@@ -14,6 +14,7 @@ from pint import (  # noqa: F401
     UnitStrippedWarning,
 )
 
+
 @pint.register_unit_format("cf")
 def short_formatter(unit, registry, **options):
     """Return a CF-compliant unit string from a `pint` unit.

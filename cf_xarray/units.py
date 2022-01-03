@@ -40,7 +40,7 @@ def short_formatter(unit, registry, **options):
     s = f"{unit:~D}"
 
     # Search and replace patterns
-    pat = r"(?P<inverse>/ )?(?P<unit>\w+)(?: \*\* (?P<pow>\d))?"
+    pat = r"(?P<inverse>(?:1 )?/ )?(?P<unit>\w+)(?: \*\* (?P<pow>\d))?"
 
     def repl(m):
         i, u, p = m.groups()

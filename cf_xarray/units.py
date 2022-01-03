@@ -14,6 +14,50 @@ from pint import (  # noqa: F401
     UnitStrippedWarning,
 )
 
+@pint.register_unit_format("cf")
+def short_formatter(unit, registry, **options):
+    """Return a CF-compliant unit string from a `pint` unit.
+
+    Parameters
+    ----------
+    unit : pint.UnitContainer
+        Input unit.
+    registry : pint.UnitRegistry
+        the associated registry
+    **options
+        Additional options (may be ignored)
+
+    Returns
+    -------
+    out : str
+        Units following CF-Convention, using symbols.
+    """
+    import re
+
+    # convert UnitContainer back to Unit
+    unit = registry.Unit(unit)
+    # Print units using abbreviations (millimeter -> mm)
+    s = f"{unit:~D}"
+
+    # Search and replace patterns
+    pat = r"(?P<inverse>/ )?(?P<unit>\w+)(?: \*\* (?P<pow>\d))?"
+
+    def repl(m):
+        i, u, p = m.groups()
+        p = p or (1 if i else "")
+        neg = "-" if i else ("^" if p else "")
+
+        return f"{u}{neg}{p}"
+
+    out, n = re.subn(pat, repl, s)
+
+    # Remove multiplications
+    out = out.replace(" * ", " ")
+    # Delta degrees:
+    out = out.replace("Δ°", "delta_deg")
+    return out.replace("percent", "%")
+
+
 # Create registry, with preprocessors for UDUNITS-style powers (m2 s-2) and percent signs
 units = pint.UnitRegistry(
     autoconvert_offset_to_baseunit=True,

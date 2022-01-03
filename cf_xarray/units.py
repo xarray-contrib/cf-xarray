@@ -45,7 +45,7 @@ def short_formatter(unit, registry, **options):
     def repl(m):
         i, u, p = m.groups()
         p = p or (1 if i else "")
-        neg = "-" if i else ("^" if p else "")
+        neg = "-" if i else ""
 
         return f"{u}{neg}{p}"
 

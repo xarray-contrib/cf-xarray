@@ -58,3 +58,18 @@ def test_udunits_power_syntax():
 def test_udunits_power_syntax_parse_units():
     """Test that UDUNITS style powers are properly parsed and interpreted."""
     assert ureg.parse_units("m2 s-2") == ureg.m ** 2 / ureg.s ** 2
+
+
+@pytest.mark.parametrize(
+    ["units", "expected"],
+    (
+        ("kg ** 2", "kg2"),
+        ("m ** -1", "m-1"),
+        ("m ** 2 / s ** 2", "m2 s-2"),
+        ("m ** 3 / (kg * s ** 2)", "m3 kg-1 s-2"),
+    ),
+)
+def test_udunits_format(units, expected):
+    u = ureg.parse_units(units)
+
+    assert f"{u:cf}" == expected

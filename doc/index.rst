@@ -32,22 +32,39 @@ or using ``conda``
     >>> conda install -c conda-forge cf_xarray
 
 
-Table of contents
------------------
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: In-depth Examples
+
+   examples/introduction
+
 
 .. toctree::
    :maxdepth: 2
+   :hidden:
+   :caption: User Guide
 
-   examples/introduction
-   criteria
-   whats-new
-   roadmap
-   contributing
-   api
+   quickstart
+   howtouse
+   faq
+   coord_axes
+   selecting
+   flags
+   units
+   parametricz
+   bounds
+   plotting
+   custom-criteria
+   provenance
+   API Reference <api>
 
-Indices and tables
-==================
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: For contributors
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   Contributing Guide <contributing>
+   Development Roadmap <roadmap>
+   Whats New <whats-new>
+   GitHub repository <https://github.com/xarray-contrib/cf-xarray>

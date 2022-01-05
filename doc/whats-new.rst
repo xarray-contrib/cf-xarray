@@ -2,6 +2,9 @@
 
 What's New
 ----------
+v0.6.4 (unreleased)
+===================
+- integrate ``xclim``'s CF-compliant unit formatter. :pr:`278`. By `Justus Magin`_.
 
 v0.6.3 (December 16, 2021)
 ==========================

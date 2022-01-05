@@ -18,6 +18,7 @@ The xarray ecosystem supports unit-aware arrays using  [pint](https://pint.readt
 For now, only the short format using [symbols](https://www.unidata.ucar.edu/software/udunits/udunits-2.2.28/udunits2lib.html#Syntax) is supported:
 ```{code-cell}
 from pint import application_registry as ureg
+import cf_xarray.units
 
 u = ureg.Unit("m ** 3 / s ** 2")
 f"{u:cf}"

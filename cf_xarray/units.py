@@ -99,5 +99,3 @@ except ImportError:
 
 # Set as application registry
 pint.set_application_registry(units)
-
-del pint

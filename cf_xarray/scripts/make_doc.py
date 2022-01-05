@@ -33,13 +33,13 @@ def make_criteria_csv():
     df = df.sort_index(axis=0).sort_index(axis=1)
 
     # All criteria
-    df.to_csv(os.path.join(csv_dir, "all_criteria.csv"))
+    df.transpose().to_csv(os.path.join(csv_dir, "all_criteria.csv"))
 
     # Axes and coordinates
     for keys, name in zip([_AXIS_NAMES, _COORD_NAMES], ["axes", "coords"]):
         subdf = df[sorted(keys)].dropna(axis=1, how="all")
         subdf = subdf.dropna(axis=1, how="all").transpose()
-        subdf.to_csv(os.path.join(csv_dir, f"{name}_criteria.csv"))
+        subdf.transpose().to_csv(os.path.join(csv_dir, f"{name}_criteria.csv"))
 
 
 def make_regex_csv():
@@ -51,7 +51,7 @@ def make_regex_csv():
     csv_dir = "_build/csv"
     os.makedirs(csv_dir, exist_ok=True)
     df = DataFrame(regex, index=[0])
-    df = df.applymap(lambda x: f"``{x}``")
+    df = df.applymap(lambda x: f"``{str(x)[11:-1]}``")
     df = df.sort_index(axis=1).transpose()
     df.to_csv(os.path.join(csv_dir, "all_regex.csv"), header=False)
 

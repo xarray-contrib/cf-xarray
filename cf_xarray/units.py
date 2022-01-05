@@ -10,50 +10,55 @@ from pint import (  # noqa: F401
     UnitStrippedWarning,
 )
 
-
 # from `xclim`'s unit support module with permission of the maintainers
-@pint.register_unit_format("cf")
-def short_formatter(unit, registry, **options):
-    """Return a CF-compliant unit string from a `pint` unit.
+try:
 
-    Parameters
-    ----------
-    unit : pint.UnitContainer
-        Input unit.
-    registry : pint.UnitRegistry
-        the associated registry
-    **options
-        Additional options (may be ignored)
+    @pint.register_unit_format("cf")
+    def short_formatter(unit, registry, **options):
+        """Return a CF-compliant unit string from a `pint` unit.
 
-    Returns
-    -------
-    out : str
-        Units following CF-Convention, using symbols.
-    """
-    import re
+        Parameters
+        ----------
+        unit : pint.UnitContainer
+            Input unit.
+        registry : pint.UnitRegistry
+            the associated registry
+        **options
+            Additional options (may be ignored)
 
-    # convert UnitContainer back to Unit
-    unit = registry.Unit(unit)
-    # Print units using abbreviations (millimeter -> mm)
-    s = f"{unit:~D}"
+        Returns
+        -------
+        out : str
+            Units following CF-Convention, using symbols.
+        """
+        import re
 
-    # Search and replace patterns
-    pat = r"(?P<inverse>(?:1 )?/ )?(?P<unit>\w+)(?: \*\* (?P<pow>\d))?"
+        # convert UnitContainer back to Unit
+        unit = registry.Unit(unit)
+        # Print units using abbreviations (millimeter -> mm)
+        s = f"{unit:~D}"
 
-    def repl(m):
-        i, u, p = m.groups()
-        p = p or (1 if i else "")
-        neg = "-" if i else ""
+        # Search and replace patterns
+        pat = r"(?P<inverse>(?:1 )?/ )?(?P<unit>\w+)(?: \*\* (?P<pow>\d))?"
 
-        return f"{u}{neg}{p}"
+        def repl(m):
+            i, u, p = m.groups()
+            p = p or (1 if i else "")
+            neg = "-" if i else ""
 
-    out, n = re.subn(pat, repl, s)
+            return f"{u}{neg}{p}"
 
-    # Remove multiplications
-    out = out.replace(" * ", " ")
-    # Delta degrees:
-    out = out.replace("Δ°", "delta_deg")
-    return out.replace("percent", "%")
+        out, n = re.subn(pat, repl, s)
+
+        # Remove multiplications
+        out = out.replace(" * ", " ")
+        # Delta degrees:
+        out = out.replace("Δ°", "delta_deg")
+        return out.replace("percent", "%")
+
+
+except ImportError:
+    pass
 
 
 # Reused with modification from MetPy under the terms of the BSD 3-Clause License.

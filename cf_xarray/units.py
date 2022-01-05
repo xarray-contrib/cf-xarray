@@ -1,8 +1,4 @@
-r"""Module to provide unit support via pint approximating UDUNITS/CF.
-
-Reused with modification from MetPy under the terms of the BSD 3-Clause License.
-Copyright (c) 2015,2017,2019 MetPy Developers.
-"""
+"""Module to provide unit support via pint approximating UDUNITS/CF."""
 import functools
 import re
 import warnings
@@ -15,6 +11,7 @@ from pint import (  # noqa: F401
 )
 
 
+# from `xclim`'s unit support module with permission of the maintainers
 @pint.register_unit_format("cf")
 def short_formatter(unit, registry, **options):
     """Return a CF-compliant unit string from a `pint` unit.
@@ -59,6 +56,8 @@ def short_formatter(unit, registry, **options):
     return out.replace("percent", "%")
 
 
+# Reused with modification from MetPy under the terms of the BSD 3-Clause License.
+# Copyright (c) 2015,2017,2019 MetPy Developers.
 # Create registry, with preprocessors for UDUNITS-style powers (m2 s-2) and percent signs
 units = pint.UnitRegistry(
     autoconvert_offset_to_baseunit=True,
@@ -96,6 +95,7 @@ except ImportError:
         "Import(s) unavailable to set up matplotlib support...skipping this portion "
         "of the setup."
     )
+# end of vendored code from MetPy
 
 # Set as application registry
 pint.set_application_registry(units)

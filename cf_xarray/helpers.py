@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Literal, Sequence
 
 import numpy as np
 import xarray as xr
@@ -11,7 +11,7 @@ def bounds_to_vertices(
     bounds: DataArray,
     bounds_dim: str,
     core_dims=None,
-    order: str | None = "counterclockwise",
+    order: Literal["counterclockwise", "clockwise"] | None = "counterclockwise",
 ) -> DataArray:
     """
     Convert bounds variable to vertices. There 2 covered cases:

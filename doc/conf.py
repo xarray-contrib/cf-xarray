@@ -151,20 +151,21 @@ html_theme = "furo"
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-# html_theme_options = dict(
-# analytics_id=''  this is configured in rtfd.io
-# canonical_url="",
-# repository_url="https://github.com/xarray-contrib/cf-xarray",
-# repository_branch="main",
-# path_to_docs="doc",
-# use_edit_page_button=True,
-# use_repository_button=True,
-# use_issues_button=True,
-# home_page_in_toc=False,
-# extra_navbar="",
-# navbar_footer_text="",
-# navbar_end="search-field.html",
-# )
+html_theme_options = dict(
+    sidebar_hide_name=True,
+    # analytics_id=''  this is configured in rtfd.io
+    # canonical_url="",
+    # repository_url="https://github.com/xarray-contrib/cf-xarray",
+    # repository_branch="main",
+    # path_to_docs="doc",
+    # use_edit_page_button=True,
+    # use_repository_button=True,
+    # use_issues_button=True,
+    # home_page_in_toc=False,
+    # extra_navbar="",
+    # navbar_footer_text="",
+    # navbar_end="search-field.html",
+)
 
 
 html_context = {

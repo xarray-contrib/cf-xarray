@@ -13,7 +13,6 @@ from typing import (
     Hashable,
     Iterable,
     List,
-    Literal,
     Mapping,
     MutableMapping,
     TypeVar,
@@ -2010,7 +2009,7 @@ class CFDatasetAccessor(CFAccessor):
     def bounds_to_vertices(
         self,
         keys: str | Iterable[str] | None = None,
-        order: Literal["counterclockwise", "clockwise"] | None = "counterclockwise",
+        order: str | None = "counterclockwise",
     ) -> Dataset:
         """
         Convert bounds variable to vertices.

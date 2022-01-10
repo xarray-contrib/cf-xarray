@@ -151,8 +151,11 @@ html_theme = "furo"
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
+css_vars = {"admonition-font-size": "0.9rem", "font-size--small": "92%"}
 html_theme_options = dict(
     sidebar_hide_name=True,
+    light_css_variables=css_vars,
+    dark_css_variables=css_vars,
     # analytics_id=''  this is configured in rtfd.io
     # canonical_url="",
     # repository_url="https://github.com/xarray-contrib/cf-xarray",

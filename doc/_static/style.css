@@ -1,0 +1,9 @@
+.xr-wrap {
+  font-size: 0.9em;
+  margin-left: 1.25em;
+  padding-left: 1.25em;
+  border-left: thin var(--color-foreground-muted) solid;
+}
+.xr-array-wrap, .xr-var-data, .xr-var-preview {
+  font-size: 0.9em;
+}

@@ -132,7 +132,7 @@ exclude_patterns = ["_build"]
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = "sphinx"
+pygments_style = "igor"
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -145,27 +145,18 @@ pygments_style = "sphinx"
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "sphinx_book_theme"
+html_theme = "furo"
 # html_theme = "pydata_sphinx_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
+css_vars = {"admonition-font-size": "0.9rem", "font-size--small": "92%"}
 html_theme_options = dict(
-    # analytics_id=''  this is configured in rtfd.io
-    # canonical_url="",
-    repository_url="https://github.com/xarray-contrib/cf-xarray",
-    repository_branch="main",
-    path_to_docs="doc",
-    use_edit_page_button=True,
-    use_repository_button=True,
-    use_issues_button=True,
-    home_page_in_toc=False,
-    extra_navbar="",
-    navbar_footer_text="",
-    navbar_end="search-field.html",
+    sidebar_hide_name=True,
+    light_css_variables=css_vars,
+    dark_css_variables=css_vars,
 )
-
 
 html_context = {
     "github_user": "xarray-contrib",
@@ -197,6 +188,8 @@ html_logo = "_static/logo.png"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+html_css_files = ["style.css"]
+
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.

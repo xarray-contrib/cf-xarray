@@ -18,7 +18,7 @@ dependencies:
   - pandas
   - pooch
   - pint
+  - furo
   - pip:
       - git+https://github.com/xarray-contrib/cf-xarray
       - myst_nb
-      - sphinx-book-theme

@@ -79,8 +79,6 @@ To reset your custom criteria use `cfxr.set_options(custom_criteria=())`
 
 You can also match on the variable name, though be careful!
 ```{code-cell}
-import cf_xarray as cfxr
-
 salt_criteria = {
     "salinity": {"name": "salt*"}
 }

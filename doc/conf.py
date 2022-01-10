@@ -50,6 +50,7 @@ extensions = [
     "sphinx_autosummary_accessors",
     "IPython.sphinxext.ipython_directive",
     "myst_nb",
+    "sphinx_copybutton",
 ]
 
 extlinks = {

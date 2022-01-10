@@ -14,19 +14,29 @@ OPTIONS: MutableMapping[str, Any] = {
 
 class set_options:
     """Set options for cf-xarray in a controlled context.
-    Currently supported options:
-    - ``custom_critera``: Translate from axis, coord, or custom name to
-      variable name optionally  using ``custom_criteria``. Default: [].
+
+    Parameters
+    ----------
+    custom_criteria : dict
+        Translate from axis, coord, or custom name to
+        variable name optionally using ``custom_criteria``. Default: [].
+
+    Examples
+    --------
 
     You can use ``set_options`` either as a context manager:
+
+    >>> import numpy as np
+    >>> import xarray as xr
     >>> my_custom_criteria = { 'ssh': {'name': 'elev$'} }
     >>> ds = xr.Dataset({"elev": np.arange(1000)})
     >>> with cf_xarray.set_options(custom_criteria=my_custom_criteria):
-    ...     assert (ds['elev'] == ds.cf['ssh']).all()
+    ...     xr.testing.assert_identical(ds['elev'], ds.cf['ssh'])
 
     Or to set global options:
+
     >>> cf_xarray.set_options(custom_criteria=my_custom_criteria)
-    >>> assert (ds['elev'] == ds.cf['ssh']).all()
+    >>> xr.testing.assert_identical(ds['elev'], ds.cf['ssh'])
     """
 
     def __init__(self, **kwargs):

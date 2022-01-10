@@ -232,11 +232,6 @@ def _get_axis_coord(obj: Union[DataArray, Dataset], key: str) -> List[str]:
         DataArray belonging to the coordinate to be checked
     key : str, ["X", "Y", "Z", "T", "longitude", "latitude", "vertical", "time"]
         key to check for.
-    error : bool
-        raise errors when key is not found or interpretable. Use False and provide default
-        to replicate dict.get(k, None).
-    default : Any
-        default value to return when error is False.
 
     Returns
     -------
@@ -1011,7 +1006,6 @@ class CFAccessor:
             to the corresponding value in "flag_values" before passing
             that on to DataArray.isin.
 
-
         Returns
         -------
         isin : DataArray
@@ -1409,11 +1403,6 @@ class CFAccessor:
         """
         Returns a dictionary mapping standard names to variable names.
 
-        Parameters
-        ----------
-        obj : DataArray, Dataset
-            Xarray object to process
-
         Returns
         -------
         Dictionary mapping standard names to variable names.
@@ -1446,12 +1435,13 @@ class CFAccessor:
         ----------
         name : Hashable
         skip_bounds : bool, optional
-        error: bool, optional
+        error : bool, optional
             Raise or ignore errors.
 
         Returns
-        ------
-        Dict with keys "ancillary_variables", "cell_measures", "coordinates", "bounds"
+        -------
+        names : dict
+            Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds"
         """
         keys = ["ancillary_variables", "cell_measures", "coordinates", "bounds"]
         coords: Dict[str, List[str]] = {k: [] for k in keys}
@@ -1542,7 +1532,7 @@ class CFAccessor:
         ----------
         other : DataArray, Dataset
             Variables will be renamed to match variable names in this xarray object
-        skip: str, Iterable[str], optional
+        skip : str, Iterable[str], optional
             Limit the renaming excluding
             ("axes", "bounds", cell_measures", "coordinates", "standard_names")
             or a subset thereof.
@@ -1706,7 +1696,7 @@ class CFAccessor:
 
         Parameters
         ----------
-        positive_upward: optional, bool
+        positive_upward : optional, bool
             Change sign of the derivative based on the ``"positive"`` attribute of ``coord``
             so that positive values indicate increasing upward.
             If ``positive=="down"``, then multiplied by -1.
@@ -1719,8 +1709,8 @@ class CFAccessor:
         --------
         DataArray.cf.differentiate
         Dataset.cf.differentiate
-        xarray.DataArray.differentiate: underlying xarray function
-        xarray.Dataset.differentiate: underlying xarray function
+        xarray.DataArray.differentiate : underlying xarray function
+        xarray.Dataset.differentiate : underlying xarray function
         """
         coord = apply_mapper(
             (_single(_get_coords),), self._obj, coord, error=False, default=[coord]
@@ -1755,13 +1745,13 @@ class CFAccessor:
 
         Parameters
         ----------
-        override: bool
+        override : bool
             Override existing attributes.
-        skip: str, iterable, optional
+        skip : str, iterable, optional
             Attribute(s) to skip: ``{"units", "grib", "amip", "description"}``.
-        verbose: bool
+        verbose : bool
             Print added attributes to screen.
-        source: optional
+        source : optional
             Path of `cf-standard-name-table.xml` or file object containing XML data.
             If ``None``, use the default version associated with ``cf-xarray``.
 

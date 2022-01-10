@@ -19,18 +19,18 @@ def reshape_unique_geometries(
     Parameters
     ----------
     ds : xr.Dataset
-      A Dataset.
+        A Dataset.
     geom_var : string
-      Name of the variable in `ds` that contains the geometry objects of type shapely.geometry.
-      The variable must be 1D.
+        Name of the variable in `ds` that contains the geometry objects of type shapely.geometry.
+        The variable must be 1D.
     new_dim : string
-      Name of the new dimension in the returned object.
+        Name of the new dimension in the returned object.
 
     Returns
     -------
     Dataset
-      All variables sharing the dimension of `ds[geom_var]` are reshaped so that `new_dim`
-      as a length equal to the number of unique geometries.
+        All variables sharing the dimension of `ds[geom_var]` are reshaped so that `new_dim`
+        as a length equal to the number of unique geometries.
     """
     if ds[geom_var].ndim > 1:
         raise ValueError(
@@ -78,24 +78,25 @@ def shapely_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str =
     Parameters
     ----------
     geometries : sequence of shapely geometries or xarray.DataArray
-      A sequence of geometry objects or a Dataset with a "geometry" variable storing such geometries.
-      All geometries must be of the same base type : Point, Line or Polygon, but multipart geometries are accepted.
-    grid_mapping : str, optional
-      A CF grid mapping name. When given, coordinates and attributes are named and set accordingly.
-      Defaults to None, in which case the coordinates are simply names "crd_x" and "crd_y".
+        A sequence of geometry objects or a Dataset with a "geometry" variable storing such geometries.
+        All geometries must be of the same base type : Point, Line or Polygon, but multipart geometries are accepted.
 
-      .. warning::
-          Only the `longitude_latitude` grid mapping is currently implemented.
+    grid_mapping : str, optional
+        A CF grid mapping name. When given, coordinates and attributes are named and set accordingly.
+        Defaults to None, in which case the coordinates are simply names "crd_x" and "crd_y".
+
+        .. warning::
+            Only the `longitude_latitude` grid mapping is currently implemented.
 
     Returns
     -------
     xr.Dataset
-      A dataset with shapely geometry objects translated into CF-compliant variables :
-       - 'x', 'y' : the node coordinates
-       - 'crd_x', 'crd_y' : the feature coordinates (might have different names if `grid_mapping` is available).
-       - 'node_count' : The number of nodes per feature. Absent if all instances are Points.
-       - 'geometry_container' : Empty variable with attributes describing the geometry type.
-       - Other variables are not implemented as only Points are currently understood.
+        A dataset with shapely geometry objects translated into CF-compliant variables :
+         - 'x', 'y' : the node coordinates
+         - 'crd_x', 'crd_y' : the feature coordinates (might have different names if `grid_mapping` is available).
+         - 'node_count' : The number of nodes per feature. Absent if all instances are Points.
+         - 'geometry_container' : Empty variable with attributes describing the geometry type.
+         - Other variables are not implemented as only Points are currently understood.
     """
     # Get all types to call the appropriate translation function.
     types = {
@@ -139,15 +140,15 @@ def cf_to_shapely(ds: xr.Dataset):
     Parameters
     ----------
     ds : xr.Dataset
-      Must contain a `geometry_container` variable with attributes giving the geometry specifications.
-      Must contain all variables needed to reconstruct the geometries listed in these specifications.
+        Must contain a ``geometry_container`` variable with attributes giving the geometry specifications.
+        Must contain all variables needed to reconstruct the geometries listed in these specifications.
 
     Returns
     -------
-    xr.DataArray
-      A 1D DataArray of shapely objects.
-      It has the same dimension as the `node_count` or the coordinates variables, or
-      'features' if those were not present in `ds `.
+    da: xr.DataArray
+        A 1D DataArray of shapely objects.
+        It has the same dimension as the ``node_count`` or the coordinates variables, or
+        ``features`` if those were not present in ``ds``.
     """
     geom_type = ds.geometry_container.attrs["geometry_type"]
     if geom_type == "point":
@@ -168,13 +169,13 @@ def points_to_cf(pts: Union[xr.DataArray, Sequence]):
     Parameters
     ----------
     pts : sequence of shapely.geometry.Point or MultiPoint
-      The sequence of [multi]points to translate to a CF dataset.
+        The sequence of [multi]points to translate to a CF dataset.
 
     Returns
     -------
     xr.Dataset
-      A Dataset with variables 'x', 'y', 'crd_x', 'crd_y', 'node_count' and 'geometry_container'.
-      The coordinates of MultiPoint instances are their first point.
+        A Dataset with variables 'x', 'y', 'crd_x', 'crd_y', 'node_count' and 'geometry_container'.
+        The coordinates of MultiPoint instances are their first point.
     """
     if isinstance(pts, xr.DataArray):
         dim = pts.dims[0]
@@ -229,16 +230,16 @@ def cf_to_points(ds: xr.Dataset):
     Parameters
     ----------
     ds : xr.Dataset
-      A dataset with CF-compliant point geometries.
-      Must have a "geometry_container" variable with at least a 'node_coordinates' attribute.
-      Must also have the two 1D variables listed by this attribute.
+        A dataset with CF-compliant point geometries.
+        Must have a "geometry_container" variable with at least a 'node_coordinates' attribute.
+        Must also have the two 1D variables listed by this attribute.
 
     Returns
     -------
     geometry : xr.DataArray
-      A 1D array of shapely.geometry.[Multi]Point objects.
-      It has the same dimension as the `node_count` or the coordinates variables, or
-      'features' if those were not present in `ds `.
+        A 1D array of shapely.geometry.[Multi]Point objects.
+        It has the same dimension as the ``node_count`` or the coordinates variables, or
+        ``'features'`` if those were not present in ``ds``.
     """
     from shapely.geometry import MultiPoint, Point
 

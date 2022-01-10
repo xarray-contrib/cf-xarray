@@ -44,7 +44,7 @@ Similarly with membership tests using {py:meth}`DataArray.cf.isin`
 da.cf.isin(["indian_ocean", "pacific_ocean"])
 ```
 
-You can also check whether a DataArray has the appropriate attributes to be recognized as a flag variable.
+You can also check whether a DataArray has the appropriate attributes to be recognized as a flag variable using {py:meth}`DataArray.cf.is_flag_variable`
 ```{code-cell}
 da.cf.is_flag_variable
 ```

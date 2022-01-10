@@ -9,7 +9,7 @@ dependencies:
   - pooch
   - xarray
   - sphinx
-  - nbsphinx
+  - sphinx-copybutton
   - numpydoc
   - sphinx-autosummary-accessors
   - ipython

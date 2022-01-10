@@ -54,7 +54,7 @@ v0.5.0 (Feb 24, 2021)
 
 - Replace ``cf.describe()`` with :py:meth:`Dataset.cf.__repr__`. By `Mattia Almansi`_.
 - Automatically set ``x`` or ``y`` for :py:attr:`DataArray.cf.plot`. By `Deepak Cherian`_.
-- Added scripts to document :ref:`criteria` with tables. By `Mattia Almansi`_.
+- Added scripts to document coordinate and axes criteria with tables. By `Mattia Almansi`_.
 - Support for ``.drop_vars()``, ``.drop_sel()``, ``.drop_dims()``, ``.set_coords()``, ``.reset_coords()``. By `Mattia Almansi`_.
 - Support for using ``standard_name`` in more functions. (:pr:`128`) By `Deepak Cherian`_
 - Allow :py:meth:`DataArray.cf.__getitem__` with standard names. By `Deepak Cherian`_

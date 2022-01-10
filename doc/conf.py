@@ -50,6 +50,7 @@ extensions = [
     "sphinx_autosummary_accessors",
     "IPython.sphinxext.ipython_directive",
     "myst_nb",
+    "sphinx_copybutton",
 ]
 
 extlinks = {
@@ -252,7 +253,7 @@ man_pages = [("index", "cf_xarray", "cf_xarray Documentation", [author], 1)]
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    "xarray": ("http://xarray.pydata.org/en/stable/", None),
+    "xarray": ("https://xarray.pydata.org/en/stable/", None),
 }
 
 autosummary_generate = True

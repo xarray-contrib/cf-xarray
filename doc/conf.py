@@ -156,20 +156,7 @@ html_theme_options = dict(
     sidebar_hide_name=True,
     light_css_variables=css_vars,
     dark_css_variables=css_vars,
-    # analytics_id=''  this is configured in rtfd.io
-    # canonical_url="",
-    # repository_url="https://github.com/xarray-contrib/cf-xarray",
-    # repository_branch="main",
-    # path_to_docs="doc",
-    # use_edit_page_button=True,
-    # use_repository_button=True,
-    # use_issues_button=True,
-    # home_page_in_toc=False,
-    # extra_navbar="",
-    # navbar_footer_text="",
-    # navbar_end="search-field.html",
 )
-
 
 html_context = {
     "github_user": "xarray-contrib",

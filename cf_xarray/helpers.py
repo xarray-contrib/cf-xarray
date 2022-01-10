@@ -12,7 +12,7 @@ def bounds_to_vertices(
     order: Optional[str] = "counterclockwise",
 ) -> DataArray:
     """
-    Convert bounds variable to vertices. There 2 covered cases:
+    Convert bounds variable to vertices. There are 2 covered cases:
      - 1D coordinates, with bounds of shape (N, 2),
        converted to vertices of shape (N+1,)
      - 2D coordinates, with bounds of shape (N, M, 4).
@@ -48,6 +48,8 @@ def bounds_to_vertices(
     tranpose data without raising any warning or error, which make attributes
     unreliable.
 
+    References
+    ----------
     Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-boundaries.
     """
 
@@ -110,7 +112,7 @@ def vertices_to_bounds(
     vertices: DataArray, out_dims: Sequence[str] = ("bounds", "x", "y")
 ) -> DataArray:
     """
-    Convert vertices to CF-compliant bounds. There 2 covered cases:
+    Convert vertices to CF-compliant bounds. There are 2 covered cases:
      - 1D coordinates, with vertices of shape (N+1,),
        converted to bounds of shape (N, 2)
      - 2D coordinates, with vertices of shape (N+1, M+1).
@@ -118,14 +120,19 @@ def vertices_to_bounds(
 
     Parameters
     ----------
-    bounds : DataArray
+    vertices : DataArray
         The bounds to convert. Must be of shape (N, 2) or (N, M, 4).
     out_dims : Sequence[str],
         The name of the dimension in the output. The first is the 'bounds'
         dimension and the following are the coordinate dimensions.
+
     Returns
     -------
     DataArray
+
+    References
+    ----------
+    Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-boundaries.
     """
     if vertices.ndim == 1:
         bnd_vals = np.stack((vertices[:-1], vertices[1:]), axis=0)

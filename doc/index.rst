@@ -54,6 +54,7 @@ or using ``conda``
    units
    parametricz
    bounds
+   geometry
    plotting
    custom-criteria
    provenance

@@ -97,6 +97,10 @@ def shapely_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str =
          - 'node_count' : The number of nodes per feature. Absent if all instances are Points.
          - 'geometry_container' : Empty variable with attributes describing the geometry type.
          - Other variables are not implemented as only Points are currently understood.
+
+    References
+    ----------
+    Please refer to the CF conventions document: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#geometries
     """
     # Get all types to call the appropriate translation function.
     types = {
@@ -149,6 +153,10 @@ def cf_to_shapely(ds: xr.Dataset):
         A 1D DataArray of shapely objects.
         It has the same dimension as the ``node_count`` or the coordinates variables, or
         ``features`` if those were not present in ``ds``.
+
+    References
+    ----------
+    Please refer to the CF conventions document: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#geometries
     """
     geom_type = ds.geometry_container.attrs["geometry_type"]
     if geom_type == "point":

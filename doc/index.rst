@@ -13,13 +13,11 @@
 |
 |
 
-Welcome to cf_xarray's documentation!
-=====================================
+Welcome to ``cf_xarray``
+========================
 
-
-``cf_xarray`` is a lightweight accessor that allows you to interpret CF attributes present
-on xarray objects.
-
+``cf_xarray`` mainly provides an accessor (``DataArray.cf`` or ``Dataset.cf``) that allows
+you to interpret CF attributes present on xarray objects.
 
 Installing
 ----------

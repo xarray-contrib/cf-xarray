@@ -138,6 +138,10 @@ def apply_mapper(
 
 
 def _get_groupby_time_accessor(var: Union[DataArray, Dataset], key: str) -> List[str]:
+    # This first docstring is used by _build_docstring. Do not remove.
+    """
+    Time variable accessor e.g. 'T.month'
+    """
     """
     Helper method for decoding datetime components "T.month".
 

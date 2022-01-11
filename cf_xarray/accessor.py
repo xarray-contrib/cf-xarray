@@ -1652,7 +1652,8 @@ class CFAccessor:
 
         Returns
         -------
-        DataArray or Dataset with appropriate attributes added
+        DataArray or Dataset
+            with appropriate attributes added
         """
         obj = self._obj.copy(deep=True)
         for var in obj.coords.variables:
@@ -1890,17 +1891,44 @@ class CFDatasetAccessor(CFAccessor):
         dict
             Dictionary of the form ``{parametric_coord_name: {standard_term_name: variable_name}}``
 
-        Examples
-        --------
-        >>> import cf_xarray
-        >>> from cf_xarray.datasets import romsds
-        >>> romsds.cf.formula_terms
-
         References
         ----------
         Please refer to the CF conventions document :
           1. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate
           2. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord.
+
+        Examples
+        --------
+        >>> import cf_xarray
+        >>> from cf_xarray.datasets import romsds
+
+        The ``s_rho`` DataArray is an example of a parametric vertical coordinate.
+
+        >>> romsds.s_rho
+        <xarray.DataArray 's_rho' (s_rho: 30)>
+        array([-0.983333, -0.95    , -0.916667, -0.883333, -0.85    , -0.816667,
+               -0.783333, -0.75    , -0.716667, -0.683333, -0.65    , -0.616667,
+               -0.583333, -0.55    , -0.516667, -0.483333, -0.45    , -0.416667,
+               -0.383333, -0.35    , -0.316667, -0.283333, -0.25    , -0.216667,
+               -0.183333, -0.15    , -0.116667, -0.083333, -0.05    , -0.016667])
+        Coordinates:
+          * s_rho       (s_rho) float64 -0.9833 -0.95 -0.9167 ... -0.05 -0.01667
+            hc          float64 20.0
+            h           float64 603.9
+            Vtransform  float64 2.0
+            Cs_r        (s_rho) float64 -0.933 -0.8092 -0.6988 ... -0.0005206 -5.758e-05
+        Attributes:
+            long_name:      S-coordinate at RHO-points
+            valid_min:      -1.0
+            valid_max:      0.0
+            standard_name:  ocean_s_coordinate_g2
+            formula_terms:  s: s_rho C: Cs_r eta: zeta depth: h depth_c: hc
+            field:          s_rho, scalar
+
+        Now access the formula terms
+
+        >>> romsds.cf.formula_terms
+        {'s_rho': {'s': 's_rho', 'C': 'Cs_r', 'eta': 'zeta', 'depth': 'h', 'depth_c': 'hc'}}
         """
         results = {}
         for dim in _get_dims(self._obj, "Z"):
@@ -1923,14 +1951,15 @@ class CFDatasetAccessor(CFAccessor):
         dict
             Dictionary mapping keys to the variable names of their bounds.
 
+        See Also
+        --------
+        Dataset.cf.get_bounds_dim_name
+
         Examples
         --------
         >>> from cf_xarray.datasets import mollwds
         >>> mollwds.cf.bounds
-
-        See Also
-        --------
-        Dataset.cf.get_bounds_dim_name
+        {'lat': ['lat_bounds'], 'latitude': ['lat_bounds'], 'lon': ['lon_bounds'], 'longitude': ['lon_bounds']}
         """
 
         obj = self._obj
@@ -2007,8 +2036,17 @@ class CFDatasetAccessor(CFAccessor):
 
         Notes
         -----
-        The bounds variables are automatically named f"{dim}_bounds" where ``dim``
+        The bounds variables are automatically named ``f"{dim}_bounds"`` where ``dim``
         is a dimension name.
+
+        Examples
+        --------
+        >>> from cf_xarray.datasets import airds
+        >>> airds.cf.bounds
+        {}
+        >>> updated = airds.cf.add_bounds("time")
+        >>> updated.cf.bounds
+        {'T': ['time_bounds'], 'time': ['time_bounds']}
         """
         if isinstance(keys, str):
             keys = [keys]
@@ -2213,17 +2251,44 @@ class CFDataArrayAccessor(CFAccessor):
         dict
             Dictionary of the form ``{parametric_coord_name: {standard_term_name: variable_name}}``
 
-        Examples
-        --------
-        >>> import cf_xarray
-        >>> from cf_xarray.datasets import romsds
-        >>> romsds.cf.formula_terms
-
         References
         ----------
         Please refer to the CF conventions document :
           1. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate
           2. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord.
+
+        Examples
+        --------
+        >>> import cf_xarray
+        >>> from cf_xarray.datasets import romsds
+
+        The ``s_rho`` DataArray is an example of a parametric vertical coordinate.
+
+        >>> romsds.s_rho
+        <xarray.DataArray 's_rho' (s_rho: 30)>
+        array([-0.983333, -0.95    , -0.916667, -0.883333, -0.85    , -0.816667,
+               -0.783333, -0.75    , -0.716667, -0.683333, -0.65    , -0.616667,
+               -0.583333, -0.55    , -0.516667, -0.483333, -0.45    , -0.416667,
+               -0.383333, -0.35    , -0.316667, -0.283333, -0.25    , -0.216667,
+               -0.183333, -0.15    , -0.116667, -0.083333, -0.05    , -0.016667])
+        Coordinates:
+          * s_rho       (s_rho) float64 -0.9833 -0.95 -0.9167 ... -0.05 -0.01667
+            hc          float64 20.0
+            h           float64 603.9
+            Vtransform  float64 2.0
+            Cs_r        (s_rho) float64 -0.933 -0.8092 -0.6988 ... -0.0005206 -5.758e-05
+        Attributes:
+            long_name:      S-coordinate at RHO-points
+            valid_min:      -1.0
+            valid_max:      0.0
+            standard_name:  ocean_s_coordinate_g2
+            formula_terms:  s: s_rho C: Cs_r eta: zeta depth: h depth_c: hc
+            field:          s_rho, scalar
+
+        Now access the formula terms
+
+        >>> romsds.s_rho.cf.formula_terms
+        {'s': 's_rho', 'C': 'Cs_r', 'eta': 'zeta', 'depth': 'h', 'depth_c': 'hc'}
         """
         da = self._obj
         if "formula_terms" not in ChainMap(da.attrs, da.encoding):

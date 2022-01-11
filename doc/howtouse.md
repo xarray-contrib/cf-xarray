@@ -1,3 +1,7 @@
+---
+hide-toc: true
+---
+
 ```{eval-rst}
 .. currentmodule:: xarray
 ```

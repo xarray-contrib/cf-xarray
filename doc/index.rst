@@ -3,21 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+|
+|
 
 .. image:: _static/full-logo.png
     :align: center
-    :width: 80%
+    :width: 70%
    
 |
 |
 
-Welcome to cf_xarray's documentation!
-=====================================
+Welcome to ``cf_xarray``
+========================
 
-
-``cf_xarray`` is a lightweight accessor that allows you to interpret CF attributes present
-on xarray objects.
-
+``cf_xarray`` mainly provides an accessor (``DataArray.cf`` or ``Dataset.cf``) that allows
+you to interpret CF attributes present on xarray objects.
 
 Installing
 ----------
@@ -54,6 +54,7 @@ or using ``conda``
    units
    parametricz
    bounds
+   geometry
    plotting
    custom-criteria
    provenance

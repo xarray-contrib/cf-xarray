@@ -137,12 +137,12 @@ def apply_mapper(
 
 
 def _get_groupby_time_accessor(var: DataArray | Dataset, key: str) -> list[str]:
+    # This first docstring is used by _build_docstring. Do not remove.
     """
     Time variable accessor e.g. 'T.month'
     """
     """
-    Helper method for when our key name is of the nature "T.month" and we want to
-    isolate the "T" for coordinate mapping
+    Helper method for decoding datetime components "T.month".
 
     Parameters
     ----------
@@ -193,7 +193,6 @@ def _get_custom_criteria(
     Returns
     -------
     List[str], Variable name(s) in parent xarray object that matches axis, coordinate, or custom `key`
-
     """
 
     if isinstance(obj, DataArray):
@@ -1305,7 +1304,8 @@ class CFAccessor:
 
         Returns
         -------
-        Set of valid key names that can be used with __getitem__ or .cf[key].
+        set
+            Set of valid key names that can be used with __getitem__ or .cf[key].
         """
 
         varnames = list(self.axes) + list(self.coordinates)
@@ -1322,12 +1322,15 @@ class CFAccessor:
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
-        However, it will only return the Axis names present in ``.coords``, not Coordinate names.
+        However, it will only return the Axis names ``("X", "Y", "Z", "T")``
+        present in ``.coords``, not in ``.data_vars``.
 
         Returns
         -------
-        Dictionary of valid Axis names that can be used with ``__getitem__`` or ``.cf[key]``.
-        Will be ("X", "Y", "Z", "T") or a subset thereof.
+        dict
+            Dictionary with keys that can be used with ``__getitem__`` or as ``.cf[key]``.
+            Keys will be the appropriate subset of ("X", "Y", "Z", "T").
+            Values are lists of variable names that match that particular key.
         """
         vardict = {key: _get_coords(self._obj, key) for key in _AXIS_NAMES}
 
@@ -1341,12 +1344,16 @@ class CFAccessor:
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
-        However, it will only return the Coordinate names present in ``.coords``, not Axis names.
+        However, it will only return the Coordinate names ``("latitude", "longitude", "vertical", "time")``
+        present in ``.coords``, not in ``.data_vars``.
 
         Returns
         -------
-        Dictionary of valid Coordinate names that can be used with ``__getitem__`` or ``.cf[key]``.
-        Will be ("longitude", "latitude", "vertical", "time") or a subset thereof.
+        dict
+            Dictionary of valid Coordinate names that can be used with ``__getitem__`` or ``.cf[key]``.
+            Keys will be the appropriate subset of ``("latitude", "longitude", "vertical", "time")``.
+            Values are lists of variable names that match that particular key.
+
         """
         vardict = {key: _get_coords(self._obj, key) for key in _COORD_NAMES}
 
@@ -1363,7 +1370,8 @@ class CFAccessor:
 
         Returns
         -------
-        Dictionary of valid cell measure names that can be used with __getitem__ or .cf[key].
+        dict
+            Dictionary of valid cell measure names that can be used with ``__getitem__`` or ``.cf[key]``.
         """
 
         obj = self._obj
@@ -1404,7 +1412,8 @@ class CFAccessor:
 
         Returns
         -------
-        Dictionary mapping standard names to variable names.
+        dict
+            Dictionary mapping standard names to variable names.
         """
         if isinstance(self._obj, Dataset):
             variables = self._obj.variables
@@ -1440,7 +1449,7 @@ class CFAccessor:
         Returns
         -------
         names : dict
-            Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds"
+            Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds".
         """
         keys = ["ancillary_variables", "cell_measures", "coordinates", "bounds"]
         coords: dict[str, list[str]] = {k: [] for k in keys}
@@ -1538,7 +1547,8 @@ class CFAccessor:
 
         Returns
         -------
-        DataArray or Dataset with renamed variables
+        DataArray or Dataset
+            with renamed variables
         """
         skip = [skip] if isinstance(skip, str) else skip or []
 
@@ -1642,7 +1652,8 @@ class CFAccessor:
 
         Returns
         -------
-        DataArray or Dataset with appropriate attributes added
+        DataArray or Dataset
+            with appropriate attributes added
         """
         obj = self._obj.copy(deep=True)
         for var in obj.coords.variables:
@@ -1843,7 +1854,6 @@ class CFDatasetAccessor(CFAccessor):
 
         Parameters
         ----------
-
         key: str, Iterable[str], optional
             One of
               - axes names: "X", "Y", "Z", "T"
@@ -1865,14 +1875,60 @@ class CFDatasetAccessor(CFAccessor):
 
         ``bounds`` variables will not be attached when a DataArray is returned. This
         is a limitation of the xarray data model.
+
+        Add additional keys by specifying "custom criteria". See :ref:`custom_criteria` for more.
         """
         return _getitem(self, key)
 
     @property
     def formula_terms(self) -> dict[str, dict[str, str]]:
         """
-        Property that returns a dictionary
-            {parametric_coord_name: {standard_term_name: variable_name}}
+        Property that returns a dictionary mapping the parametric coordinate's name
+        to a dictionary that maps "standard term names" to actual variable names.
+
+        Returns
+        -------
+        dict
+            Dictionary of the form ``{parametric_coord_name: {standard_term_name: variable_name}}``
+
+        References
+        ----------
+        Please refer to the CF conventions document :
+          1. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate
+          2. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord.
+
+        Examples
+        --------
+        >>> import cf_xarray
+        >>> from cf_xarray.datasets import romsds
+
+        The ``s_rho`` DataArray is an example of a parametric vertical coordinate.
+
+        >>> romsds.s_rho
+        <xarray.DataArray 's_rho' (s_rho: 30)>
+        array([-0.983333, -0.95    , -0.916667, -0.883333, -0.85    , -0.816667,
+               -0.783333, -0.75    , -0.716667, -0.683333, -0.65    , -0.616667,
+               -0.583333, -0.55    , -0.516667, -0.483333, -0.45    , -0.416667,
+               -0.383333, -0.35    , -0.316667, -0.283333, -0.25    , -0.216667,
+               -0.183333, -0.15    , -0.116667, -0.083333, -0.05    , -0.016667])
+        Coordinates:
+          * s_rho       (s_rho) float64 -0.9833 -0.95 -0.9167 ... -0.05 -0.01667
+            hc          float64 20.0
+            h           float64 603.9
+            Vtransform  float64 2.0
+            Cs_r        (s_rho) float64 -0.933 -0.8092 -0.6988 ... -0.0005206 -5.758e-05
+        Attributes:
+            long_name:      S-coordinate at RHO-points
+            valid_min:      -1.0
+            valid_max:      0.0
+            standard_name:  ocean_s_coordinate_g2
+            formula_terms:  s: s_rho C: Cs_r eta: zeta depth: h depth_c: hc
+            field:          s_rho, scalar
+
+        Now access the formula terms
+
+        >>> romsds.cf.formula_terms
+        {'s_rho': {'s': 's_rho', 'C': 'Cs_r', 'eta': 'zeta', 'depth': 'h', 'depth_c': 'hc'}}
         """
         results = {}
         for dim in _get_dims(self._obj, "Z"):
@@ -1887,12 +1943,23 @@ class CFDatasetAccessor(CFAccessor):
     @property
     def bounds(self) -> dict[str, list[str]]:
         """
-        Property that returns a dictionary mapping valid keys
+        Property that returns a dictionary mapping keys
         to the variable names of their bounds.
 
         Returns
         -------
-        Dictionary mapping valid keys to the variable names of their bounds.
+        dict
+            Dictionary mapping keys to the variable names of their bounds.
+
+        See Also
+        --------
+        Dataset.cf.get_bounds_dim_name
+
+        Examples
+        --------
+        >>> from cf_xarray.datasets import mollwds
+        >>> mollwds.cf.bounds
+        {'lat': ['lat_bounds'], 'latitude': ['lat_bounds'], 'lon': ['lon_bounds'], 'longitude': ['lon_bounds']}
         """
 
         obj = self._obj
@@ -1960,7 +2027,8 @@ class CFDatasetAccessor(CFAccessor):
 
         Returns
         -------
-        DataArray or Dataset with bounds variables added and appropriate "bounds" attribute set.
+        DataArray or Dataset
+            with bounds variables added and appropriate "bounds" attribute set.
 
         Raises
         ------
@@ -1968,8 +2036,17 @@ class CFDatasetAccessor(CFAccessor):
 
         Notes
         -----
-        The bounds variables are automatically named f"{dim}_bounds" where ``dim``
+        The bounds variables are automatically named ``f"{dim}_bounds"`` where ``dim``
         is a dimension name.
+
+        Examples
+        --------
+        >>> from cf_xarray.datasets import airds
+        >>> airds.cf.bounds
+        {}
+        >>> updated = airds.cf.add_bounds("time")
+        >>> updated.cf.bounds
+        {'T': ['time_bounds'], 'time': ['time_bounds']}
         """
         if isinstance(keys, str):
             keys = [keys]
@@ -2043,6 +2120,8 @@ class CFDatasetAccessor(CFAccessor):
         tranpose data without raising any warning or error, which make attributes
         unreliable.
 
+        References
+        ----------
         Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-boundaries.
         """
         if keys is None:
@@ -2100,6 +2179,10 @@ class CFDatasetAccessor(CFAccessor):
 
         .. warning::
            Very lightly tested. Please double check the results.
+
+        See Also
+        --------
+        Dataset.cf.formula_terms
         """
         ds = self._obj
 
@@ -2160,8 +2243,52 @@ class CFDataArrayAccessor(CFAccessor):
     @property
     def formula_terms(self) -> dict[str, str]:
         """
-        Property that returns a dictionary
-            {parametric_coord_name: {standard_term_name: variable_name}}
+        Property that returns a dictionary mapping the parametric coordinate's name
+        to a dictionary that maps "standard term names" to actual variable names.
+
+        Returns
+        -------
+        dict
+            Dictionary of the form ``{parametric_coord_name: {standard_term_name: variable_name}}``
+
+        References
+        ----------
+        Please refer to the CF conventions document :
+          1. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate
+          2. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord.
+
+        Examples
+        --------
+        >>> import cf_xarray
+        >>> from cf_xarray.datasets import romsds
+
+        The ``s_rho`` DataArray is an example of a parametric vertical coordinate.
+
+        >>> romsds.s_rho
+        <xarray.DataArray 's_rho' (s_rho: 30)>
+        array([-0.983333, -0.95    , -0.916667, -0.883333, -0.85    , -0.816667,
+               -0.783333, -0.75    , -0.716667, -0.683333, -0.65    , -0.616667,
+               -0.583333, -0.55    , -0.516667, -0.483333, -0.45    , -0.416667,
+               -0.383333, -0.35    , -0.316667, -0.283333, -0.25    , -0.216667,
+               -0.183333, -0.15    , -0.116667, -0.083333, -0.05    , -0.016667])
+        Coordinates:
+          * s_rho       (s_rho) float64 -0.9833 -0.95 -0.9167 ... -0.05 -0.01667
+            hc          float64 20.0
+            h           float64 603.9
+            Vtransform  float64 2.0
+            Cs_r        (s_rho) float64 -0.933 -0.8092 -0.6988 ... -0.0005206 -5.758e-05
+        Attributes:
+            long_name:      S-coordinate at RHO-points
+            valid_min:      -1.0
+            valid_max:      0.0
+            standard_name:  ocean_s_coordinate_g2
+            formula_terms:  s: s_rho C: Cs_r eta: zeta depth: h depth_c: hc
+            field:          s_rho, scalar
+
+        Now access the formula terms
+
+        >>> romsds.s_rho.cf.formula_terms
+        {'s': 's_rho', 'C': 'Cs_r', 'eta': 'zeta', 'depth': 'h', 'depth_c': 'hc'}
         """
         da = self._obj
         if "formula_terms" not in ChainMap(da.attrs, da.encoding):
@@ -2204,6 +2331,8 @@ class CFDataArrayAccessor(CFAccessor):
         -----
         Associated CF variables will be attached as coordinate variables
         by parsing attributes such as ``cell_measures``, ``coordinates`` etc.
+
+        Add additional keys by specifying "custom criteria". See :ref:`custom_criteria` for more.
         """
 
         if not isinstance(key, str):
@@ -2214,11 +2343,16 @@ class CFDataArrayAccessor(CFAccessor):
         return _getitem(self, key)
 
     @property
-    def is_flag_variable(self):
+    def is_flag_variable(self) -> bool:
         """
         Returns True if the DataArray satisfies CF conventions for flag variables.
 
-        Flag masks are not supported yet.
+        .. warning::
+          Flag masks are not supported yet.
+
+        Returns
+        -------
+        bool
         """
         if (
             isinstance(self._obj, DataArray)

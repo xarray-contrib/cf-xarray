@@ -7,3 +7,10 @@
 .xr-array-wrap, .xr-var-data, .xr-var-preview {
   font-size: 0.9em;
 }
+.table-wrapper{
+  font-family: var(--font-stack--monospace);
+  font-size: var(--font-size--small--2);
+}
+.gp {
+  color: darkorange;
+}

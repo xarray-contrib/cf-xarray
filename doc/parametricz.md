@@ -1,13 +1,21 @@
 ---
 jupytext:
   text_representation:
-    format_name: myst    
+    format_name: myst
 kernelspec:
   display_name: Python 3
   name: python3
+hide-toc: true
 ---
 ```{eval-rst}
 .. currentmodule:: xarray
+```
+```{code-cell}
+---
+tags: [remove-cell]
+---
+import xarray as xr
+xr.set_options(display_expand_data=False)
 ```
 
 
@@ -15,6 +23,7 @@ kernelspec:
 
 `cf_xarray` supports decoding [parametric vertical coordinates](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate) encoded in the `formula_terms` attribute using {py:meth}`Dataset.cf.decode_vertical_coords`. Right now, only the two ocean s-coordinates are supported, but support for the [rest](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord) should be easy to add (Pull Requests are very welcome!).
 
+## Decoding parametric coordinates
 ```{code-cell}
 from cf_xarray.datasets import romsds
 
@@ -32,4 +41,11 @@ The prefix `"z"` can be controlled but the suffix `_rho` is copied from `s_rho`.
 ```{code-cell}
 romsds.cf.decode_vertical_coords(prefix="foo")
 romsds.foo_rho
+```
+
+## Formula terms
+
+To see whether decoding is possible, use the {py:attr}`Dataset.cf.formula_terms` attribute
+```{code-cell}
+romsds.cf.formula_terms
 ```

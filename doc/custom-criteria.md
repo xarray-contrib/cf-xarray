@@ -9,6 +9,13 @@ kernelspec:
 ```{eval-rst}
 .. currentmodule:: cf_xarray
 ```
+```{code-cell}
+---
+tags: [remove-cell]
+---
+import xarray as xr
+xr.set_options(display_expand_data=False)
+```
 
 (custom_criteria)=
 # Custom Criteria

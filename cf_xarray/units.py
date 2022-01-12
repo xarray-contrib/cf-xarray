@@ -60,7 +60,7 @@ try:
 except ImportError:
     pass
 
-
+# ------
 # Reused with modification from MetPy under the terms of the BSD 3-Clause License.
 # Copyright (c) 2015,2017,2019 MetPy Developers.
 # Create registry, with preprocessors for UDUNITS-style powers (m2 s-2) and percent signs
@@ -83,13 +83,29 @@ units.define(
 )
 
 # Define commonly encountered units (both CF and non-CF) not defined by pint
-units.define(
-    "degrees_north = degree = degrees_N = degreesN = degree_north = degree_N = degreeN"
-)
-units.define(
-    "degrees_east = degree = degrees_E = degreesE = degree_east = degree_E = degreeE"
-)
 units.define("@alias meter = gpm")
+# ----- end block copied from metpy
+
+# -----
+# The following redefinitions were copied from xclim under the terms of their Apache-2 license
+# In pint, the default symbol for year is "a" which is not CF-compliant (stands for "are")
+units.define("year = 365.25 * day = yr")
+
+# Define commonly encountered units not defined by pint
+units.define("@alias degC = C = deg_C")
+units.define("@alias degK = deg_K")
+units.define("@alias day = d")
+units.define("@alias hour = h")  # Not the Planck constant...
+units.define(
+    "degrees_north = 1 * degree = degrees_north = degrees_N = degreesN = degree_north = degree_N = degreeN"
+)
+units.define(
+    "degrees_east = 1 * degree = degrees_east = degrees_E = degreesE = degree_east = degree_E = degreeE"
+)
+units.define("[speed] = [length] / [time]")
+# ----- end block copied from xclim
+
+# Add other specific aliases (by cf_xarray developers)
 units.define("practical_salinity_unit = [] = psu = PSU")
 
 # Enable pint's built-in matplotlib support

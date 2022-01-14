@@ -556,6 +556,7 @@ def test_dataarray_plot():
 
     obj.lon.attrs["positive"] = "down"
     rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot(hue="Y")
+    np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
     xlim = rv[0].axes.get_xlim()
     assert xlim[0] > xlim[1]
     plt.close()

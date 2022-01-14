@@ -509,7 +509,7 @@ def test_dataarray_getitem():
 
 def test_dataarray_plot():
 
-    obj = airds.air
+    obj = airds.air.copy(deep=True)
 
     rv = obj.isel(time=1).transpose("lon", "lat").cf.plot()
     assert isinstance(rv, mpl.collections.QuadMesh)
@@ -554,15 +554,18 @@ def test_dataarray_plot():
     np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
     plt.close()
 
+    obj.lon.attrs["positive"] = "down"
     rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot(hue="Y")
     np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
+    xlim = rv[0].axes.get_xlim()
+    assert xlim[0] > xlim[1]
     plt.close()
+    del obj.lon.attrs["positive"]
 
     rv = obj.cf.isel(T=1, Y=[0, 1, 2]).cf.plot.line()
     np.testing.assert_equal(rv[0].get_xdata(), obj.lon.data)
     plt.close()
 
-    obj = obj.copy(deep=True)
     obj.time.attrs.clear()
     rv = obj.cf.plot(x="X", y="Y", col="time")
     assert isinstance(rv, xr.plot.FacetGrid)

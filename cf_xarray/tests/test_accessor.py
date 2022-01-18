@@ -1417,6 +1417,7 @@ def test_add_canonical_attributes_0_dim():
 def test_datetime_like():
     """test for 0 or >= 2 time dimensions"""
     import cftime
+
     from cf_xarray.utils import _is_datetime_like
 
     assert _is_datetime_like(xr.DataArray([[cftime.datetime(2022, 1, 12)]]))

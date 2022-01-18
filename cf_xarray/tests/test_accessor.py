@@ -1419,8 +1419,8 @@ def test_datetime_like():
     import cftime
     from cf_xarray.utils import _is_datetime_like
 
-    assert _is_datetime_like(xr.DataArray([[cftime.datetime(2022, 1, 12)]])) == True
-    assert _is_datetime_like(xr.DataArray(cftime.datetime(2022, 1, 12))) == True
+    assert _is_datetime_like(xr.DataArray([[cftime.datetime(2022, 1, 12)]]))
+    assert _is_datetime_like(xr.DataArray(cftime.datetime(2022, 1, 12)))
 
 
 @pytest.mark.parametrize("override", [True, False])

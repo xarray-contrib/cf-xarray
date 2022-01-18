@@ -17,7 +17,7 @@ def _is_datetime_like(da: DataArray) -> bool:
     try:
         import cftime
 
-        if isinstance(da.data[0], cftime.datetime):
+        if isinstance(da.data.__getitem__((0,) * len(da.data.shape)), cftime.datetime):
             return True
     except ImportError:
         pass

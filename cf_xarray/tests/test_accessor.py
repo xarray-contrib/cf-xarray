@@ -1406,16 +1406,22 @@ def test_cf_standard_name_table_version():
     actual_info, _, _ = parse_cf_standard_name_table()
     assert expected_info == actual_info
 
+
 def test_add_canonical_attributes_0_dim():
     """test if works for variables with 0 dimension"""
-    xr.DataArray(0, attrs={'standard_name':'sea_water_potential_temperature'}).cf.add_canonical_attributes()
+    xr.DataArray(
+        0, attrs={"standard_name": "sea_water_potential_temperature"}
+    ).cf.add_canonical_attributes()
+
 
 def test_datetime_like():
     """test for 0 or >= 2 time dimensions"""
     import cftime
     from cf_xarray.utils import _is_datetime_like
+
     assert _is_datetime_like(xr.DataArray([[cftime.datetime(2022, 1, 12)]])) == True
     assert _is_datetime_like(xr.DataArray(cftime.datetime(2022, 1, 12))) == True
+
 
 @pytest.mark.parametrize("override", [True, False])
 @pytest.mark.parametrize("skip", ["units", None])

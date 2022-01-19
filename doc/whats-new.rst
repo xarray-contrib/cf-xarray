@@ -5,6 +5,7 @@ What's New
 v0.6.4 (unreleased)
 ===================
 - integrate ``xclim``'s CF-compliant unit formatter. :pr:`278`. By `Justus Magin`_.
+- Fix dropping of bad variable names. :pr:`291`. By `Tom Vo`_.
 
 v0.6.3 (December 16, 2021)
 ==========================
@@ -142,4 +143,5 @@ v0.1.3
 .. _`Kristen Thyng`: https://github.com/kthyng
 .. _`Julius Busecke`: https://github.com/jbusecke
 .. _`Filipe Fernandes`: https://github.com/ocefpaf
+.. _`Tom Vo`: https://github.com/tomvothecoder
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

@@ -1030,8 +1030,12 @@ class CFAccessor:
         return self._obj.isin(mapped_test_elements)
 
     def _drop_missing_variables(self, variables: list[str]) -> list[str]:
+        if isinstance(self._obj, xr.Dataset):
+            good_names = set(self.variables)
+        elif isinstance(self._obj, xr.DataArray):
+            good_names = set(self.coords)
 
-        return [var for var in variables if var in self._obj or var in self._obj.coords]
+        return [var for var in variables if var in good_names]
 
     def _get_all_cell_measures(self):
         """

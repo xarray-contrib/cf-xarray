@@ -1030,10 +1030,10 @@ class CFAccessor:
         return self._obj.isin(mapped_test_elements)
 
     def _drop_missing_variables(self, variables: list[str]) -> list[str]:
-        if isinstance(self._obj, xr.Dataset):
-            good_names = set(self.variables)
-        elif isinstance(self._obj, xr.DataArray):
-            good_names = set(self.coords)
+        if isinstance(self._obj, Dataset):
+            good_names = set(self._obj.variables)
+        elif isinstance(self._obj, DataArray):
+            good_names = set(self._obj.coords)
 
         return [var for var in variables if var in good_names]
 

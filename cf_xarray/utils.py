@@ -3,24 +3,42 @@ from collections import defaultdict
 from typing import Any, Dict, Iterable
 from xml.etree import ElementTree
 
+import numpy as np
 from xarray import DataArray
+
+try:
+    import cftime
+except ImportError:
+    cftime = None
+
+
+def _contains_cftime_datetimes(array) -> bool:
+    """Check if an array contains cftime.datetime objects"""
+    # Copied / adapted from xarray.core.common
+    from xarray.core.pycompat import is_duck_dask_array
+
+    if cftime is None:
+        return False
+    else:
+        if array.dtype == np.dtype("O") and array.size > 0:
+            sample = array.ravel()[0]
+            if is_duck_dask_array(sample):
+                sample = sample.compute()
+                if isinstance(sample, np.ndarray):
+                    sample = sample.item()
+            return isinstance(sample, cftime.datetime)
+        else:
+            return False
 
 
 def _is_datetime_like(da: DataArray) -> bool:
-    import numpy as np
-
     if np.issubdtype(da.dtype, np.datetime64) or np.issubdtype(
         da.dtype, np.timedelta64
     ):
         return True
-
-    try:
-        import cftime
-
-        if isinstance(da.data.__getitem__((0,) * len(da.data.shape)), cftime.datetime):
-            return True
-    except ImportError:
-        pass
+    # if cftime was not imported, _contains_cftime_datetimes will return False
+    if _contains_cftime_datetimes(da.data):
+        return True
 
     return False
 

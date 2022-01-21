@@ -97,10 +97,10 @@ units.define("@alias degK = deg_K")
 units.define("@alias day = d")
 units.define("@alias hour = h")  # Not the Planck constant...
 units.define(
-    "degrees_north = 1 * degree = degrees_north = degrees_N = degreesN = degree_north = degree_N = degreeN"
+    "degrees_north = degree = degrees_north = degrees_N = degreesN = degree_north = degree_N = degreeN"
 )
 units.define(
-    "degrees_east = 1 * degree = degrees_east = degrees_E = degreesE = degree_east = degree_E = degreeE"
+    "degrees_east = degree = degrees_east = degrees_E = degreesE = degree_east = degree_E = degreeE"
 )
 units.define("[speed] = [length] / [time]")
 # ----- end block copied from xclim

@@ -1511,3 +1511,13 @@ def test_missing_variables():
     ds = vert.copy(deep=True)
     ds = ds.drop("ap")
     assert ds.cf.formula_terms == {"lev": {"b": "b", "ps": "ps"}}
+
+
+def test_bad_cell_measures_attribute():
+    ds = airds.copy()
+    ds.air.attrs["cell_measures"] = "--OPT"
+
+    repr(ds.cf)
+
+    with pytest.warns(UserWarning):
+        assert ds.cf.cell_measures == {}

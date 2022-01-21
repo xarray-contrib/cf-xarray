@@ -1,8 +1,3 @@
-.. cf_xarray documentation master file, created by
-   sphinx-quickstart on Mon Jun  1 06:30:20 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 |
 |
 
@@ -17,7 +12,7 @@ Welcome to ``cf_xarray``
 ========================
 
 ``cf_xarray`` mainly provides an accessor (``DataArray.cf`` or ``Dataset.cf``) that allows
-you to interpret CF attributes present on xarray objects.
+you to interpret `Climate and Forecast metadata convention <http://cfconventions.org/>`_ attributes present on `xarray <https://xarray.pydata.org>`_ objects.
 
 Installing
 ----------
@@ -55,6 +50,7 @@ or using ``conda``
    units
    parametricz
    bounds
+   dsg
    geometry
    plotting
    custom-criteria

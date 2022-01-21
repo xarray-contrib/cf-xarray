@@ -34,7 +34,7 @@ or using ``conda``
 
    examples/introduction
    EarthCube 2021 demo <https://earthcube2021.github.io/ec21_book/notebooks/ec21_cherian_etal/DC_01_cf-xarray.html>
-
+   Ocean model demo <https://pop-tools.readthedocs.io/en/latest/examples/cesm-cmip-cf-xarray.html>
 
 .. toctree::
    :maxdepth: 2

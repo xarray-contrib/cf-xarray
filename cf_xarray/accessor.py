@@ -1230,7 +1230,12 @@ class CFAccessor:
 
         def make_text_section(subtitle, attr, valid_values, default_keys=None):
 
-            vardict = getattr(self, attr, {})
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                try:
+                    vardict = getattr(self, attr, {})
+                except ValueError:
+                    vardict = {}
 
             star = " * "
             tab = len(star) * " "
@@ -1398,8 +1403,15 @@ class CFAccessor:
             ]
 
         keys = {}
-        for attr in all_attrs:
-            keys.update(parse_cell_methods_attr(attr))
+        for attr in set(all_attrs):
+            try:
+                keys.update(parse_cell_methods_attr(attr))
+            except ValueError:
+                warnings.warn(
+                    f"Ignoring bad cell_measures attribute: {attr}.",
+                    UserWarning,
+                    stacklevel=2,
+                )
         measures = {
             key: self._drop_missing_variables(_get_all(self._obj, key)) for key in keys
         }

@@ -608,20 +608,22 @@ def test_getitem_errors(obj):
         obj2.cf["X"]
 
 
-def test_getitem_ignores_bad_measure_attribute():
+def test_bad_cell_measures_attribute():
     air2 = airds.copy(deep=True)
-    air2.air.attrs["cell_measures"] = "asd"
+    air2.air.attrs["cell_measures"] = "--OPT"
     with pytest.warns(UserWarning):
         assert_identical(air2.air.drop_vars("cell_area"), air2.cf["air"])
-
-    with pytest.raises(ValueError):
-        air2.cf.cell_measures
-    with pytest.raises(ValueError):
-        air2.air.cf.cell_measures
+    with pytest.warns(UserWarning):
+        assert air2.cf.cell_measures == {}
+    with pytest.warns(UserWarning):
+        assert air2.air.cf.cell_measures == {}
     with pytest.raises(ValueError):
         air2.cf.get_associated_variable_names("air", error=True)
     with pytest.warns(UserWarning):
         air2.cf.get_associated_variable_names("air", error=False)
+
+    #  GH216
+    repr(air2.cf)
 
 
 def test_getitem_clash_standard_name():
@@ -1496,7 +1498,7 @@ def test_missing_variables():
 
     # Bounds
     ds = mollwds.copy(deep=True)
-    ds = ds.drop("lon_bounds")
+    ds = ds.drop_vars("lon_bounds")
     assert ds.cf.bounds == {"lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
 
     with pytest.raises(KeyError, match=r"No results found for 'longitude'."):
@@ -1504,10 +1506,10 @@ def test_missing_variables():
 
     # Cell measures
     ds = airds.copy(deep=True)
-    ds = ds.drop("cell_area")
+    ds = ds.drop_vars("cell_area")
     assert ds.cf.cell_measures == {}
 
     # Formula terms
     ds = vert.copy(deep=True)
-    ds = ds.drop("ap")
+    ds = ds.drop_vars("ap")
     assert ds.cf.formula_terms == {"lev": {"b": "b", "ps": "ps"}}

@@ -22,5 +22,5 @@ from pint import application_registry as ureg
 import cf_xarray.units
 
 u = ureg.Unit("m ** 3 / s ** 2")
-f"{u:cf}"
+f"{u:~cf}"
 ```

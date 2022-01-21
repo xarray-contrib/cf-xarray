@@ -822,6 +822,26 @@ class _CFWrappedPlotMethods:
         self.accessor = accessor
         self._keys = ("x", "y", "hue", "col", "row")
 
+    def _process_x_or_y(self, kwargs, key, skip=None):
+        """Choose a default 'x' or 'y' variable name."""
+        if key not in kwargs:
+            kwargs[key] = _possible_x_y_plot(self._obj, key, skip)
+        return kwargs
+
+    def _set_axis_props(self, kwargs, key):
+        value = kwargs.get(key)
+        if value:
+            if value in self.accessor.keys():
+                var = self.accessor[value]
+            else:
+                var = self._obj[value]
+            if "positive" in var.attrs:
+                if var.attrs["positive"] == "down":
+                    kwargs.setdefault(f"{key}increase", False)
+                else:
+                    kwargs.setdefault(f"{key}increase", True)
+        return kwargs
+
     def _plot_decorator(self, func):
         """
         This decorator is used to set default kwargs on plotting functions.
@@ -829,27 +849,10 @@ class _CFWrappedPlotMethods:
         1. set ``xincrease`` and ``yincrease``.
         2. automatically set ``x`` or ``y``.
         """
-        valid_keys = self.accessor.keys()
 
         @functools.wraps(func)
         def _plot_wrapper(*args, **kwargs):
-            def _process_x_or_y(kwargs, key, skip=None):
-                if key not in kwargs:
-                    kwargs[key] = _possible_x_y_plot(self._obj, key, skip)
-
-                value = kwargs.get(key)
-                if value:
-                    if value in valid_keys:
-                        var = self.accessor[value]
-                    else:
-                        var = self._obj[value]
-                    if "positive" in var.attrs:
-                        if var.attrs["positive"] == "down":
-                            kwargs.setdefault(f"{key}increase", False)
-                        else:
-                            kwargs.setdefault(f"{key}increase", True)
-                return kwargs
-
+            # First choose 'x' or 'y' if possible
             is_line_plot = (func.__name__ == "line") or (
                 func.__name__ == "wrapper"
                 and (kwargs.get("hue") or self._obj.ndim == 1)
@@ -857,13 +860,16 @@ class _CFWrappedPlotMethods:
             if is_line_plot:
                 hue = kwargs.get("hue")
                 if "x" not in kwargs and "y" not in kwargs:
-                    kwargs = _process_x_or_y(kwargs, "x", skip=hue)
+                    kwargs = self._process_x_or_y(kwargs, "x", skip=hue)
                     if not kwargs.get("x"):
-                        kwargs = _process_x_or_y(kwargs, "y", skip=hue)
-
+                        kwargs = self._process_x_or_y(kwargs, "y", skip=hue)
             else:
-                kwargs = _process_x_or_y(kwargs, "x", skip=kwargs.get("y"))
-                kwargs = _process_x_or_y(kwargs, "y", skip=kwargs.get("x"))
+                kwargs = self._process_x_or_y(kwargs, "x", skip=kwargs.get("y"))
+                kwargs = self._process_x_or_y(kwargs, "y", skip=kwargs.get("x"))
+
+            # Now set some nice properties
+            kwargs = self._set_axis_props(kwargs, "x")
+            kwargs = self._set_axis_props(kwargs, "y")
 
             return func(*args, **kwargs)
 
@@ -1024,8 +1030,12 @@ class CFAccessor:
         return self._obj.isin(mapped_test_elements)
 
     def _drop_missing_variables(self, variables: list[str]) -> list[str]:
+        if isinstance(self._obj, Dataset):
+            good_names = set(self._obj.variables)
+        elif isinstance(self._obj, DataArray):
+            good_names = set(self._obj.coords)
 
-        return [var for var in variables if var in self._obj or var in self._obj.coords]
+        return [var for var in variables if var in good_names]
 
     def _get_all_cell_measures(self):
         """

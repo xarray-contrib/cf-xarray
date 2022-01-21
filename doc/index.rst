@@ -38,6 +38,7 @@ or using ``conda``
    :caption: In-depth Examples
 
    examples/introduction
+   EarthCube 2021 <https://earthcube2021.github.io/ec21_book/notebooks/ec21_cherian_etal/DC_01_cf-xarray.html>
 
 
 .. toctree::

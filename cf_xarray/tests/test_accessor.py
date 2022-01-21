@@ -1409,6 +1409,23 @@ def test_cf_standard_name_table_version():
     assert expected_info == actual_info
 
 
+def test_add_canonical_attributes_0_dim():
+    """test if works for variables with 0 dimension"""
+    xr.DataArray(
+        0, attrs={"standard_name": "sea_water_potential_temperature"}
+    ).cf.add_canonical_attributes()
+
+
+def test_datetime_like():
+    """test for 0 or >= 2 time dimensions"""
+    da = xr.DataArray(
+        np.timedelta64(1, "D"),
+        attrs={"standard_name": "sea_water_age_since_surface_contact"},
+    )
+    new_attrs = da.cf.add_canonical_attributes().attrs
+    assert "units" not in new_attrs and "description" in new_attrs
+
+
 @pytest.mark.parametrize("override", [True, False])
 @pytest.mark.parametrize("skip", ["units", None])
 @pytest.mark.parametrize("verbose", [True, False])

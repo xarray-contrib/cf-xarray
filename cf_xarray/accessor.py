@@ -1226,10 +1226,12 @@ class CFAccessor:
 
         def make_text_section(subtitle, attr, valid_values, default_keys=None):
 
-            try:
-                vardict = getattr(self, attr, {})
-            except ValueError:
-                vardict = {}
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                try:
+                    vardict = getattr(self, attr, {})
+                except ValueError:
+                    vardict = {}
 
             star = " * "
             tab = len(star) * " "
@@ -1397,7 +1399,7 @@ class CFAccessor:
             ]
 
         keys = {}
-        for attr in all_attrs:
+        for attr in set(all_attrs):
             try:
                 keys.update(parse_cell_methods_attr(attr))
             except ValueError:
@@ -1406,7 +1408,6 @@ class CFAccessor:
                     UserWarning,
                     stacklevel=2,
                 )
-                pass
         measures = {
             key: self._drop_missing_variables(_get_all(self._obj, key)) for key in keys
         }

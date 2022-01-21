@@ -1404,7 +1404,7 @@ class CFAccessor:
                 warnings.warn(
                     f"Ignoring bad cell_measures attribute: {attr}.",
                     UserWarning,
-                    stacklevel=4,
+                    stacklevel=2,
                 )
                 pass
         measures = {

@@ -13,6 +13,7 @@ kernelspec:
 ---
 tags: [remove-cell]
 ---
+import numpy as np
 import xarray as xr
 xr.set_options(display_expand_data=False)
 ```
@@ -43,6 +44,18 @@ airds.cf
 The variable `airds.air` has `standard_name: "air_temperature"`, so we can use that to pull it out:
 ```{code-cell}
 airds.cf["air_temperature"]
+```
+
+## By `cf_role`
+
+`cf_xarray` supports identifying variables by the [`cf_role` attribute](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.9/cf-conventions.html#discrete-sampling-geometries).
+
+```{code-cell}
+ds = xr.Dataset(
+    {"temp": ("x", np.arange(10))},
+    coords={"cast": ("x", np.arange(10), {"cf_role": "profile_id"})}
+)
+ds.cf["profile_id"]
 ```
 
 ## Associated variables

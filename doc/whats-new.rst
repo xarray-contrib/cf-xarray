@@ -4,6 +4,7 @@ What's New
 ----------
 v0.6.4 (unreleased)
 ===================
+- Significantly expanded and improved documention. By `Deepak Cherian`_.
 - integrate ``xclim``'s CF-compliant unit formatter. :pr:`278`. By `Justus Magin`_.
 - Fix dropping of bad variable names. :pr:`291`. By `Tom Vo`_.
 

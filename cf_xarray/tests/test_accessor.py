@@ -1223,6 +1223,14 @@ def test_possible_x_y_plot():
     assert _possible_x_y_plot(xtds, "y") is None
     assert _possible_x_y_plot(xtds, "x") == "X"
 
+    xtds.coords["lon"] = ("X", [1, 2, 3], {"standard_name": "longitude"})
+    # skip lon (which is 1D on X) if user passes hue="X"
+    # choose T instead which is a different dimension
+    # (and so a more meaningful plot)
+    assert _possible_x_y_plot(xtds, "x", skip="X") == "T"
+    # now with hue="lon", skip "X"
+    assert _possible_x_y_plot(xtds, "x", skip="lon") == "T"
+
 
 def test_groupby_special_ops():
     cfgrouped = airds.cf.groupby_bins("latitude", np.arange(20, 50, 10))

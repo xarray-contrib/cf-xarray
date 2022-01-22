@@ -4,6 +4,9 @@ What's New
 ----------
 v0.6.4 (unreleased)
 ===================
+- Many improvements to autoguessing for plotting. By `Deepak Cherian`_
+- Fix detection of datetime-like variables. By `Romain Caneill`_
+- Integrate more unit aliases from ``xclim`` (Thanks!). By `Deepak Cherian`_
 - Significantly expanded and improved documention. By `Deepak Cherian`_.
 - integrate ``xclim``'s CF-compliant unit formatter. :pr:`278`. By `Justus Magin`_.
 - Fix dropping of bad variable names. :pr:`291`. By `Tom Vo`_.
@@ -145,4 +148,5 @@ v0.1.3
 .. _`Julius Busecke`: https://github.com/jbusecke
 .. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Tom Vo`: https://github.com/tomvothecoder
+.. _`Romain Caneill`: https://github.com/rcaneill
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

@@ -765,7 +765,11 @@ def _possible_x_y_plot(obj, key, skip=None):
             elif ax_coord_name:
                 values = [v for v in values if v in ax_coord_name]
 
-            values = [v for v in values if v != skip and obj[v].dims != (skip,)]
+            if skip is not None:
+                bad_dims = ((skip,), obj[skip].dims)
+                values = [
+                    v for v in values if v != skip and obj[v].dims not in bad_dims
+                ]
             if len(values) == 1 and not is_scalar(accessor._obj[values[0]]):
                 return values[0]
             else:

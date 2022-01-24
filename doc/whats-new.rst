@@ -2,8 +2,8 @@
 
 What's New
 ----------
-v0.6.4 (unreleased)
-===================
+v0.7.0 (January 24, 2022)
+=========================
 - Many improvements to autoguessing for plotting. By `Deepak Cherian`_
 - Fix detection of datetime-like variables. By `Romain Caneill`_
 - Integrate more unit aliases from ``xclim`` (Thanks!). By `Deepak Cherian`_

@@ -1423,10 +1423,12 @@ def test_add_canonical_attributes_0_dim():
         0, attrs={"standard_name": "sea_water_potential_temperature"}
     ).cf.add_canonical_attributes()
 
-@pytest.mark.parametrize('reshape', [False, True])
+
+@pytest.mark.parametrize("reshape", [False, True])
 def test_datetime_like(reshape):
     """test for 0 or >= 2 time dimensions"""
     import cftime
+
     data = cftime.datetime(2022, 1, 12)
     if reshape:
         data = [[data]]

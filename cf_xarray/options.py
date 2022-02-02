@@ -9,6 +9,7 @@ from .utils import always_iterable
 
 OPTIONS: MutableMapping[str, Any] = {
     "custom_criteria": [],
+    "warn_on_missing_variables": True,
 }
 
 
@@ -20,6 +21,9 @@ class set_options:
     custom_criteria : dict
         Translate from axis, coord, or custom name to
         variable name optionally using ``custom_criteria``. Default: [].
+    warn_on_missing_variables : bool
+        Whether to raise a warning when variables referred to in attributes
+        are not present in the object.
 
     Examples
     --------

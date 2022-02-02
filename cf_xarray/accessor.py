@@ -1523,10 +1523,11 @@ class CFAccessor:
         allvars = itertools.chain(*coords.values())
         missing = set(allvars) - set(self._maybe_to_dataset().variables)
         if missing:
-            warnings.warn(
-                f"Variables {missing!r} not found in object but are referred to in the CF attributes.",
-                UserWarning,
-            )
+            if OPTIONS["warn_on_missing_variables"]:
+                warnings.warn(
+                    f"Variables {missing!r} not found in object but are referred to in the CF attributes.",
+                    UserWarning,
+                )
             for k, v in coords.items():
                 for m in missing:
                     if m in v:

@@ -65,3 +65,4 @@ def LooseVersion(vstring):
 
 has_pint, requires_pint = _importorskip("pint")
 has_shapely, requires_shapely = _importorskip("shapely")
+has_cftime, requires_cftime = _importorskip("cftime")

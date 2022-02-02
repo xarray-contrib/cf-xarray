@@ -933,6 +933,9 @@ class CFAccessor:
         self._obj = obj
         self._all_cell_measures = None
 
+    def __setstate__(self, d):
+        self.__dict__ = d
+
     def _assert_valid_other_comparison(self, other):
         flag_dict = create_flag_dict(self._obj)
         if other not in flag_dict:

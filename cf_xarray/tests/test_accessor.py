@@ -1,4 +1,5 @@
 import itertools
+import pickle
 from textwrap import dedent
 from urllib.request import urlopen
 
@@ -1538,3 +1539,10 @@ def test_missing_variables():
     ds = vert.copy(deep=True)
     ds = ds.drop_vars("ap")
     assert ds.cf.formula_terms == {"lev": {"b": "b", "ps": "ps"}}
+
+
+def test_pickle():
+    da = xr.DataArray([1.0], name="a")
+    ds = da.to_dataset()
+    pickle.loads(pickle.dumps(da.cf))
+    pickle.loads(pickle.dumps(ds.cf))

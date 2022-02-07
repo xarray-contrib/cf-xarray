@@ -10,9 +10,9 @@
     :target: https://github.com/xarray-contrib/cf-xarray/actions
     :alt: GitHub Workflow CI Status
 
-.. image:: https://img.shields.io/github/workflow/status/xarray-contrib/cf-xarray/code-style?label=Code%20Style&style=for-the-badge
-    :target: https://github.com/xarray-contrib/cf-xarray/actions
-    :alt: GitHub Workflow Code Style Status
+.. image:: https://results.pre-commit.ci/badge/github/xarray-contrib/cf-xarray/main.svg
+   :target: https://results.pre-commit.ci/latest/github/xarray-contrib/cf-xarray/main
+   :alt: pre-commit.ci status
 
 .. image:: https://img.shields.io/codecov/c/github/xarray-contrib/cf-xarray.svg?style=for-the-badge
     :target: https://codecov.io/gh/xarray-contrib/cf-xarray

@@ -27,7 +27,7 @@ from ..datasets import (
     romsds,
     vert,
 )
-from . import raise_if_dask_computes, requires_pint
+from . import raise_if_dask_computes, requires_cftime, requires_pint
 
 mpl.use("Agg")
 
@@ -1424,10 +1424,17 @@ def test_add_canonical_attributes_0_dim():
     ).cf.add_canonical_attributes()
 
 
-def test_datetime_like():
+@requires_cftime
+@pytest.mark.parametrize("reshape", [False, True])
+def test_datetime_like(reshape):
     """test for 0 or >= 2 time dimensions"""
+    import cftime
+
+    data = cftime.datetime(2022, 1, 12)
+    if reshape:
+        data = [[data]]
     da = xr.DataArray(
-        np.timedelta64(1, "D"),
+        data,
         attrs={"standard_name": "sea_water_age_since_surface_contact"},
     )
     new_attrs = da.cf.add_canonical_attributes().attrs

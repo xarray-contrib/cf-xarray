@@ -1,4 +1,6 @@
-# https://pre-commit.com/
+ci:
+    autoupdate_schedule: quarterly
+
 repos:
   # isort should run before black as black sometimes tweaks the isort output
   - repo: https://github.com/timothycrosley/isort

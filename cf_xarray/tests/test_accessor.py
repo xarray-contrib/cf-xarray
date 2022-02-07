@@ -299,6 +299,11 @@ def test_getitem_ancillary_variables():
     with pytest.warns(UserWarning):
         anc[["q"]].cf["q"]
 
+    with pytest.warns(None) as record:
+        with cf_xarray.set_options(warn_on_missing_variables=False):
+            anc[["q"]].cf["q"]
+            assert len(record) == 0
+
     for k in ["ULONG", "ULAT"]:
         assert k not in popds.cf["TEMP"].coords
 

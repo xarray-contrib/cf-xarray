@@ -2,6 +2,12 @@
 
 What's New
 ----------
+
+Development since release
+=========================
+- added another type of vertical coordinate to decode: ``ocean_sigma_coordinate``. By `Kristen Thyng`_.
+
+
 v0.7.0 (January 24, 2022)
 =========================
 - Many improvements to autoguessing for plotting. By `Deepak Cherian`_

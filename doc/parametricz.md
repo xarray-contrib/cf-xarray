@@ -21,7 +21,7 @@ xr.set_options(display_expand_data=False)
 
 # Parametric Vertical Coordinates
 
-`cf_xarray` supports decoding [parametric vertical coordinates](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate) encoded in the `formula_terms` attribute using {py:meth}`Dataset.cf.decode_vertical_coords`. Right now, only the two ocean s-coordinates are supported, but support for the [rest](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord) should be easy to add (Pull Requests are very welcome!).
+`cf_xarray` supports decoding [parametric vertical coordinates](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate) encoded in the `formula_terms` attribute using {py:meth}`Dataset.cf.decode_vertical_coords`. Right now, only the two ocean s-coordinates and `ocean_sigma_coordinate` are supported, but support for the [rest](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord) should be easy to add (Pull Requests are very welcome!).
 
 ## Decoding parametric coordinates
 ```{code-cell}

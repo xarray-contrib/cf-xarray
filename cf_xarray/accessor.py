@@ -2190,7 +2190,7 @@ class CFDatasetAccessor(CFAccessor):
                 )
         return obj
 
-    def decode_vertical_coords(self, prefix="z"):
+    def decode_vertical_coords(self, prefix="z", zname_in=None):
         """
         Decode parameterized vertical coordinates in place.
 
@@ -2199,6 +2199,10 @@ class CFDatasetAccessor(CFAccessor):
         prefix : str, optional
             Prefix for newly created z variables.
             E.g. ``s_rho`` becomes ``z_rho``
+        zname_in : str, optional
+            Name for new z variable, only makes sense to use if there is a single
+            variable being calculated. This is used in place of `prefix` if
+            provided.
 
         Returns
         -------
@@ -2209,7 +2213,8 @@ class CFDatasetAccessor(CFAccessor):
         Will only decode when the ``formula_terms`` and ``standard_name`` attributes
         are set on the parameter (e.g ``s_rho`` )
 
-        Currently only supports ``ocean_s_coordinate_g1`` and ``ocean_s_coordinate_g2``.
+        Currently only supports ``ocean_s_coordinate_g1``, ``ocean_s_coordinate_g2``,
+        and ``ocean_sigma_coordinate``.
 
         .. warning::
            Very lightly tested. Please double check the results.
@@ -2223,12 +2228,16 @@ class CFDatasetAccessor(CFAccessor):
         requirements = {
             "ocean_s_coordinate_g1": {"depth_c", "depth", "s", "C", "eta"},
             "ocean_s_coordinate_g2": {"depth_c", "depth", "s", "C", "eta"},
+            "ocean_sigma_coordinate": {"sigma", "eta", "depth"},
         }
 
         allterms = self.formula_terms
         for dim in allterms:
             suffix = dim.split("_")
-            zname = f"{prefix}_" + "_".join(suffix[1:])
+            if zname_in is None:
+                zname = f"{prefix}_" + "_".join(suffix[1:])
+            else:
+                zname = zname_in
 
             if "standard_name" not in ds[dim].attrs:
                 continue
@@ -2254,8 +2263,10 @@ class CFDatasetAccessor(CFAccessor):
                     terms["depth_c"] * terms["s"]
                     + (terms["depth"] - terms["depth_c"]) * terms["C"]
                 )
+                # expand dims so ordering is preserved
+                terms["eta"] = terms["eta"].expand_dims(dim={terms["s"].name: terms["s"]}, axis=1)
                 # z(n,k,j,i) = S(k,j,i) + eta(n,j,i) * (1 + S(k,j,i) / depth(j,i))
-                ds.coords[zname] = S + terms["eta"] * (1 + S / terms["depth"])
+                ds.coords[zname] = terms["eta"] * (1 + S / terms["depth"]) + S
 
             elif stdname == "ocean_s_coordinate_g2":
                 # make sure all necessary terms are present in terms
@@ -2263,8 +2274,17 @@ class CFDatasetAccessor(CFAccessor):
                 S = (terms["depth_c"] * terms["s"] + terms["depth"] * terms["C"]) / (
                     terms["depth_c"] + terms["depth"]
                 )
+                # expand dims so ordering is preserved
+                terms["eta"] = terms["eta"].expand_dims(dim={terms["s"].name: terms["s"]}, axis=1)
                 # z(n,k,j,i) = eta(n,j,i) + (eta(n,j,i) + depth(j,i)) * S(k,j,i)
                 ds.coords[zname] = terms["eta"] + (terms["eta"] + terms["depth"]) * S
+
+            elif stdname == "ocean_sigma_coordinate":
+                # expand dims so ordering is preserved
+                terms["eta"] = terms["eta"].expand_dims(dim={terms["sigma"].name: terms["sigma"]}, axis=1)
+                # z(n,k,j,i) = eta(n,j,i) + sigma(k)*(depth(j,i)+eta(n,j,i))
+                ds.coords[zname] = terms["eta"] + terms["sigma"] * (terms["depth"]
+                                                                    + terms["eta"])
 
             else:
                 raise NotImplementedError(

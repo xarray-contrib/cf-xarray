@@ -24,8 +24,8 @@ from ..datasets import (
     forecast,
     mollwds,
     multiple,
-    popds,
     pomds,
+    popds,
     romsds,
     vert,
 )
@@ -1038,7 +1038,7 @@ def test_param_vcoord_ocean_s_coord():
     romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g1"
     Zo_rho = romsds.hc * (romsds.s_rho - romsds.Cs_r) + romsds.Cs_r * romsds.h
     # import pdb; pdb.set_trace()
-    romsds['zeta'] = romsds.zeta.expand_dims(dim={"s_rho": romsds.s_rho}, axis=1)
+    romsds["zeta"] = romsds.zeta.expand_dims(dim={"s_rho": romsds.s_rho}, axis=1)
     expected = romsds.zeta * (1 + Zo_rho / romsds.h) + Zo_rho
     romsds.cf.decode_vertical_coords()
     assert_allclose(
@@ -1062,9 +1062,7 @@ def test_param_vcoord_ocean_s_coord():
 def test_param_vcoord_ocean_sigma_coordinate():
     expected = pomds.zeta + pomds.sigma * (pomds.depth + pomds.zeta)
     pomds.cf.decode_vertical_coords(zname_in="z")
-    assert_allclose(
-        pomds.z.reset_coords(drop=True), expected.reset_coords(drop=True)
-    )
+    assert_allclose(pomds.z.reset_coords(drop=True), expected.reset_coords(drop=True))
 
     copy = pomds.copy(deep=True)
     del copy["zeta"]

@@ -28,16 +28,17 @@ pomds["sigma"] = (
      -0.183333, -0.15    , -0.116667, -0.083333, -0.05    , -0.016667],
     # fmt: on
     {
-        'units': 'sigma_level',
-        'long_name': 'Sigma Stretched Vertical Coordinate at Nodes',
-        'positive': 'down',
-        'standard_name': 'ocean_sigma_coordinate',
-        'formula_terms': 'sigma: sigma eta: zeta depth: depth',
-        '_CoordinateTransformType': 'Vertical',
-        '_CoordinateAxisType': 'GeoZ',
-        '_CoordinateZisPositive': 'down',
-        '_CoordinateAxes': 'sigma'
-     })
+        "units": "sigma_level",
+        "long_name": "Sigma Stretched Vertical Coordinate at Nodes",
+        "positive": "down",
+        "standard_name": "ocean_sigma_coordinate",
+        "formula_terms": "sigma: sigma eta: zeta depth: depth",
+        "_CoordinateTransformType": "Vertical",
+        "_CoordinateAxisType": "GeoZ",
+        "_CoordinateZisPositive": "down",
+        "_CoordinateAxes": "sigma",
+    }
+)
 pomds["depth"] = 175.0
 pomds["zeta"] = ("ocean_time", [-0.155356, -0.127435])
 

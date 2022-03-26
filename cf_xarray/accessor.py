@@ -2264,7 +2264,9 @@ class CFDatasetAccessor(CFAccessor):
                     + (terms["depth"] - terms["depth_c"]) * terms["C"]
                 )
                 # expand dims so ordering is preserved
-                terms["eta"] = terms["eta"].expand_dims(dim={terms["s"].name: terms["s"]}, axis=1)
+                terms["eta"] = terms["eta"].expand_dims(
+                    dim={terms["s"].name: terms["s"]}, axis=1
+                )
                 # z(n,k,j,i) = S(k,j,i) + eta(n,j,i) * (1 + S(k,j,i) / depth(j,i))
                 ds.coords[zname] = terms["eta"] * (1 + S / terms["depth"]) + S
 
@@ -2275,16 +2277,21 @@ class CFDatasetAccessor(CFAccessor):
                     terms["depth_c"] + terms["depth"]
                 )
                 # expand dims so ordering is preserved
-                terms["eta"] = terms["eta"].expand_dims(dim={terms["s"].name: terms["s"]}, axis=1)
+                terms["eta"] = terms["eta"].expand_dims(
+                    dim={terms["s"].name: terms["s"]}, axis=1
+                )
                 # z(n,k,j,i) = eta(n,j,i) + (eta(n,j,i) + depth(j,i)) * S(k,j,i)
                 ds.coords[zname] = terms["eta"] + (terms["eta"] + terms["depth"]) * S
 
             elif stdname == "ocean_sigma_coordinate":
                 # expand dims so ordering is preserved
-                terms["eta"] = terms["eta"].expand_dims(dim={terms["sigma"].name: terms["sigma"]}, axis=1)
+                terms["eta"] = terms["eta"].expand_dims(
+                    dim={terms["sigma"].name: terms["sigma"]}, axis=1
+                )
                 # z(n,k,j,i) = eta(n,j,i) + sigma(k)*(depth(j,i)+eta(n,j,i))
-                ds.coords[zname] = terms["eta"] + terms["sigma"] * (terms["depth"]
-                                                                    + terms["eta"])
+                ds.coords[zname] = terms["eta"] + terms["sigma"] * (
+                    terms["depth"] + terms["eta"]
+                )
 
             else:
                 raise NotImplementedError(

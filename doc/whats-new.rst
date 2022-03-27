@@ -3,8 +3,8 @@
 What's New
 ----------
 
-Development since release
-=========================
+v 0.7.1 (unreleased)
+====================
 - added another type of vertical coordinate to decode: ``ocean_sigma_coordinate``. By `Kristen Thyng`_.
 
 

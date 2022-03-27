@@ -33,7 +33,7 @@ romsds
 Now we decode the vertical coordinates **in-place**. Note the new `z_rho` variable. `cf_xarray` sees that `s_rho` has a `formula_terms` attribute, looks up the right formula using `s_rho.attrs["standard_name"]` and computes a new vertical coordinate variable.
 
 ```{code-cell}
-romsds.cf.decode_vertical_coords()  # adds new z_rho variable
+romsds.cf.decode_vertical_coords(outnames={'s_rho': 'z_rho'})  # adds new z_rho variable
 romsds.z_rho
 ```
 

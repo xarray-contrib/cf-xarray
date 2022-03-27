@@ -2196,13 +2196,12 @@ class CFDatasetAccessor(CFAccessor):
 
         Parameters
         ----------
+        outnames : dict, optional
+            Keys of outnames are the input sigma/s coordinate variable name and
+            the values are the name to use for the associated vertical coordinate.
         prefix : str, optional
             Prefix for newly created z variables.
             E.g. ``s_rho`` becomes ``z_rho``
-        zname_in : str, optional
-            Name for new z variable, only makes sense to use if there is a single
-            variable being calculated. This is used in place of `prefix` if
-            provided.
 
         Returns
         -------
@@ -2233,11 +2232,14 @@ class CFDatasetAccessor(CFAccessor):
 
         allterms = self.formula_terms
         for dim in allterms:
-            suffix = dim.split("_")
-            if zname_in is None:
-                zname = f"{prefix}_" + "_".join(suffix[1:])
+            if prefix is None:
+                warnings.warn('`prefix` is being deprecated; use `outnames` instead.', DeprecationWarning)
+                # set outnames here
+                zname = outnames[dim]
+
             else:
-                zname = zname_in
+                suffix = dim.split("_")
+                zname = f"{prefix}_" + "_".join(suffix[1:])
 
             if "standard_name" not in ds[dim].attrs:
                 continue

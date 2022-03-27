@@ -2190,7 +2190,7 @@ class CFDatasetAccessor(CFAccessor):
                 )
         return obj
 
-    def decode_vertical_coords(self, prefix="z", zname_in=None):
+    def decode_vertical_coords(self, *, outnames=None, prefix=None):
         """
         Decode parameterized vertical coordinates in place.
 

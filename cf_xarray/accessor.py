@@ -2233,7 +2233,10 @@ class CFDatasetAccessor(CFAccessor):
         allterms = self.formula_terms
         for dim in allterms:
             if prefix is None:
-                warnings.warn('`prefix` is being deprecated; use `outnames` instead.', DeprecationWarning)
+                warnings.warn(
+                    "`prefix` is being deprecated; use `outnames` instead.",
+                    DeprecationWarning,
+                )
                 # set outnames here
                 zname = outnames[dim]
 

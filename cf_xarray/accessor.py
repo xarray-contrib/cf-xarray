@@ -2294,9 +2294,7 @@ class CFDatasetAccessor(CFAccessor):
                 #     dim={terms["sigma"].name: terms["sigma"]}, axis=1
                 # )
                 # z(n,k,j,i) = eta(n,j,i) + sigma(k)*(depth(j,i)+eta(n,j,i))
-                ztemp = terms["eta"] + terms["sigma"] * (
-                    terms["depth"] + terms["eta"]
-                )
+                ztemp = terms["eta"] + terms["sigma"] * (terms["depth"] + terms["eta"])
 
             else:
                 raise NotImplementedError(
@@ -2304,10 +2302,16 @@ class CFDatasetAccessor(CFAccessor):
                 )
 
             # add Axis attribute
-            ztemp.attrs['axis'] = 'Z'
+            ztemp.attrs["axis"] = "Z"
             ds.coords[zname] = ztemp
             # reorder to time x depth x lat/Y x lon/X
-            ds.coords[zname].cf.transpose(*[dim for dim in ["T", "Z", "Y", "X"] if dim in ds.coords[zname].reset_coords(drop=True).cf.axes])
+            ds.coords[zname].cf.transpose(
+                *[
+                    dim
+                    for dim in ["T", "Z", "Y", "X"]
+                    if dim in ds.coords[zname].reset_coords(drop=True).cf.axes
+                ]
+            )
 
 
 @xr.register_dataarray_accessor("cf")

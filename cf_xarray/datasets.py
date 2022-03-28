@@ -33,10 +33,6 @@ pomds["sigma"] = (
         "positive": "down",
         "standard_name": "ocean_sigma_coordinate",
         "formula_terms": "sigma: sigma eta: zeta depth: depth",
-        "_CoordinateTransformType": "Vertical",
-        "_CoordinateAxisType": "GeoZ",
-        "_CoordinateZisPositive": "down",
-        "_CoordinateAxes": "sigma",
     }
 )
 pomds["depth"] = 175.0

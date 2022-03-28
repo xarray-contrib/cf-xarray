@@ -1030,7 +1030,7 @@ def test_param_vcoord_ocean_s_coord():
         romsds.hc + romsds.h
     )
     expected = romsds.zeta + (romsds.zeta + romsds.h) * Zo_rho
-    romsds.cf.decode_vertical_coords(prefix="z")
+    romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
     assert_allclose(
         romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
     )
@@ -1039,7 +1039,7 @@ def test_param_vcoord_ocean_s_coord():
     Zo_rho = romsds.hc * (romsds.s_rho - romsds.Cs_r) + romsds.Cs_r * romsds.h
 
     expected = Zo_rho + romsds.zeta * (1 + Zo_rho / romsds.h)
-    romsds.cf.decode_vertical_coords(prefix="z")
+    romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
     assert_allclose(
         romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
     )

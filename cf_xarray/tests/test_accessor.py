@@ -1030,17 +1030,16 @@ def test_param_vcoord_ocean_s_coord():
         romsds.hc + romsds.h
     )
     expected = romsds.zeta + (romsds.zeta + romsds.h) * Zo_rho
-    romsds.cf.decode_vertical_coords()
+    romsds.cf.decode_vertical_coords(prefix="z")
     assert_allclose(
         romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
     )
 
     romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g1"
     Zo_rho = romsds.hc * (romsds.s_rho - romsds.Cs_r) + romsds.Cs_r * romsds.h
-    # import pdb; pdb.set_trace()
-    romsds["zeta"] = romsds.zeta.expand_dims(dim={"s_rho": romsds.s_rho}, axis=1)
-    expected = romsds.zeta * (1 + Zo_rho / romsds.h) + Zo_rho
-    romsds.cf.decode_vertical_coords()
+
+    expected = Zo_rho + romsds.zeta * (1 + Zo_rho / romsds.h)
+    romsds.cf.decode_vertical_coords(prefix="z")
     assert_allclose(
         romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
     )
@@ -1061,7 +1060,7 @@ def test_param_vcoord_ocean_s_coord():
 
 def test_param_vcoord_ocean_sigma_coordinate():
     expected = pomds.zeta + pomds.sigma * (pomds.depth + pomds.zeta)
-    pomds.cf.decode_vertical_coords(zname_in="z")
+    pomds.cf.decode_vertical_coords(outnames={"sigma": "z"})
     assert_allclose(pomds.z.reset_coords(drop=True), expected.reset_coords(drop=True))
 
     copy = pomds.copy(deep=True)

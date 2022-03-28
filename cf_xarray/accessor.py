@@ -2268,10 +2268,7 @@ class CFDatasetAccessor(CFAccessor):
                     terms["depth_c"] * terms["s"]
                     + (terms["depth"] - terms["depth_c"]) * terms["C"]
                 )
-                # # expand dims so ordering is preserved
-                # terms["eta"] = terms["eta"].expand_dims(
-                #     dim={terms["s"].name: terms["s"]}, axis=1
-                # )
+
                 # z(n,k,j,i) = S(k,j,i) + eta(n,j,i) * (1 + S(k,j,i) / depth(j,i))
                 ztemp = terms["eta"] * (1 + S / terms["depth"]) + S
 
@@ -2281,18 +2278,11 @@ class CFDatasetAccessor(CFAccessor):
                 S = (terms["depth_c"] * terms["s"] + terms["depth"] * terms["C"]) / (
                     terms["depth_c"] + terms["depth"]
                 )
-                # # expand dims so ordering is preserved
-                # terms["eta"] = terms["eta"].expand_dims(
-                #     dim={terms["s"].name: terms["s"]}, axis=1
-                # )
+
                 # z(n,k,j,i) = eta(n,j,i) + (eta(n,j,i) + depth(j,i)) * S(k,j,i)
                 ztemp = terms["eta"] + (terms["eta"] + terms["depth"]) * S
 
             elif stdname == "ocean_sigma_coordinate":
-                # # expand dims so ordering is preserved
-                # terms["eta"] = terms["eta"].expand_dims(
-                #     dim={terms["sigma"].name: terms["sigma"]}, axis=1
-                # )
                 # z(n,k,j,i) = eta(n,j,i) + sigma(k)*(depth(j,i)+eta(n,j,i))
                 ztemp = terms["eta"] + terms["sigma"] * (
                     terms["depth"] + terms["eta"]
@@ -2306,8 +2296,6 @@ class CFDatasetAccessor(CFAccessor):
             # add Axis attribute
             ztemp.attrs['axis'] = 'Z'
             ds.coords[zname] = ztemp
-            # reorder to time x depth x lat/Y x lon/X
-            ds.coords[zname].cf.transpose(*[dim for dim in ["T", "Z", "Y", "X"] if dim in ds.coords[zname].reset_coords(drop=True).cf.axes])
 
 
 @xr.register_dataarray_accessor("cf")

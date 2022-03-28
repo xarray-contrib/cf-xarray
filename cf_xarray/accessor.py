@@ -2284,9 +2284,7 @@ class CFDatasetAccessor(CFAccessor):
 
             elif stdname == "ocean_sigma_coordinate":
                 # z(n,k,j,i) = eta(n,j,i) + sigma(k)*(depth(j,i)+eta(n,j,i))
-                ztemp = terms["eta"] + terms["sigma"] * (
-                    terms["depth"] + terms["eta"]
-                )
+                ztemp = terms["eta"] + terms["sigma"] * (terms["depth"] + terms["eta"])
 
             else:
                 raise NotImplementedError(
@@ -2294,7 +2292,7 @@ class CFDatasetAccessor(CFAccessor):
                 )
 
             # add Axis attribute
-            ztemp.attrs['axis'] = 'Z'
+            ztemp.attrs["axis"] = "Z"
             ds.coords[zname] = ztemp
 
 

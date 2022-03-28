@@ -2238,7 +2238,11 @@ class CFDatasetAccessor(CFAccessor):
                     DeprecationWarning,
                 )
                 # set outnames here
-                zname = outnames[dim]
+                # need a default name option
+                if outnames is None:
+                    zname = f"z_{dim}"
+                else:
+                    zname = outnames[dim]
 
             else:
                 suffix = dim.split("_")
@@ -2270,7 +2274,7 @@ class CFDatasetAccessor(CFAccessor):
                 )
 
                 # z(n,k,j,i) = S(k,j,i) + eta(n,j,i) * (1 + S(k,j,i) / depth(j,i))
-                ztemp = terms["eta"] * (1 + S / terms["depth"]) + S
+                ztemp = S + terms["eta"] * (1 + S / terms["depth"])
 
             elif stdname == "ocean_s_coordinate_g2":
                 # make sure all necessary terms are present in terms

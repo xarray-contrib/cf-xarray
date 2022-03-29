@@ -2233,15 +2233,12 @@ class CFDatasetAccessor(CFAccessor):
         allterms = self.formula_terms
         for dim in allterms:
             if prefix is None:
+                assert outnames is not None, 'if prefix is None, outnames must be provided'
                 # set outnames here
-                # need a default name option
-                if outnames is None:
-                    zname = f"z_{dim}"
-                else:
-                    try:
-                        zname = outnames[dim]
-                    except KeyError:
-                        print("Your `outnames` need to include a key of `dim`.")
+                try:
+                    zname = outnames[dim]
+                except KeyError:
+                    print("Your `outnames` need to include a key of `dim`.")
 
             else:
                 warnings.warn(

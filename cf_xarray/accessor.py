@@ -2190,12 +2190,15 @@ class CFDatasetAccessor(CFAccessor):
                 )
         return obj
 
-    def decode_vertical_coords(self, prefix="z"):
+    def decode_vertical_coords(self, *, outnames=None, prefix=None):
         """
         Decode parameterized vertical coordinates in place.
 
         Parameters
         ----------
+        outnames : dict, optional
+            Keys of outnames are the input sigma/s coordinate variable name and
+            the values are the name to use for the associated vertical coordinate.
         prefix : str, optional
             Prefix for newly created z variables.
             E.g. ``s_rho`` becomes ``z_rho``
@@ -2209,7 +2212,8 @@ class CFDatasetAccessor(CFAccessor):
         Will only decode when the ``formula_terms`` and ``standard_name`` attributes
         are set on the parameter (e.g ``s_rho`` )
 
-        Currently only supports ``ocean_s_coordinate_g1`` and ``ocean_s_coordinate_g2``.
+        Currently only supports ``ocean_s_coordinate_g1``, ``ocean_s_coordinate_g2``,
+        and ``ocean_sigma_coordinate``.
 
         .. warning::
            Very lightly tested. Please double check the results.
@@ -2223,12 +2227,28 @@ class CFDatasetAccessor(CFAccessor):
         requirements = {
             "ocean_s_coordinate_g1": {"depth_c", "depth", "s", "C", "eta"},
             "ocean_s_coordinate_g2": {"depth_c", "depth", "s", "C", "eta"},
+            "ocean_sigma_coordinate": {"sigma", "eta", "depth"},
         }
 
         allterms = self.formula_terms
         for dim in allterms:
-            suffix = dim.split("_")
-            zname = f"{prefix}_" + "_".join(suffix[1:])
+            if prefix is None:
+                assert (
+                    outnames is not None
+                ), "if prefix is None, outnames must be provided"
+                # set outnames here
+                try:
+                    zname = outnames[dim]
+                except KeyError:
+                    raise KeyError("Your `outnames` need to include a key of `dim`.")
+
+            else:
+                warnings.warn(
+                    "`prefix` is being deprecated; use `outnames` instead.",
+                    DeprecationWarning,
+                )
+                suffix = dim.split("_")
+                zname = f"{prefix}_" + "_".join(suffix[1:])
 
             if "standard_name" not in ds[dim].attrs:
                 continue
@@ -2254,8 +2274,9 @@ class CFDatasetAccessor(CFAccessor):
                     terms["depth_c"] * terms["s"]
                     + (terms["depth"] - terms["depth_c"]) * terms["C"]
                 )
+
                 # z(n,k,j,i) = S(k,j,i) + eta(n,j,i) * (1 + S(k,j,i) / depth(j,i))
-                ds.coords[zname] = S + terms["eta"] * (1 + S / terms["depth"])
+                ztemp = S + terms["eta"] * (1 + S / terms["depth"])
 
             elif stdname == "ocean_s_coordinate_g2":
                 # make sure all necessary terms are present in terms
@@ -2263,13 +2284,20 @@ class CFDatasetAccessor(CFAccessor):
                 S = (terms["depth_c"] * terms["s"] + terms["depth"] * terms["C"]) / (
                     terms["depth_c"] + terms["depth"]
                 )
+
                 # z(n,k,j,i) = eta(n,j,i) + (eta(n,j,i) + depth(j,i)) * S(k,j,i)
-                ds.coords[zname] = terms["eta"] + (terms["eta"] + terms["depth"]) * S
+                ztemp = terms["eta"] + (terms["eta"] + terms["depth"]) * S
+
+            elif stdname == "ocean_sigma_coordinate":
+                # z(n,k,j,i) = eta(n,j,i) + sigma(k)*(depth(j,i)+eta(n,j,i))
+                ztemp = terms["eta"] + terms["sigma"] * (terms["depth"] + terms["eta"])
 
             else:
                 raise NotImplementedError(
                     f"Coordinate function for {stdname!r} not implemented yet. Contributions welcome!"
                 )
+
+            ds.coords[zname] = ztemp
 
 
 @xr.register_dataarray_accessor("cf")

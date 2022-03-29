@@ -24,6 +24,7 @@ from ..datasets import (
     forecast,
     mollwds,
     multiple,
+    pomds,
     popds,
     romsds,
     vert,
@@ -1029,31 +1030,46 @@ def test_param_vcoord_ocean_s_coord():
         romsds.hc + romsds.h
     )
     expected = romsds.zeta + (romsds.zeta + romsds.h) * Zo_rho
-    romsds.cf.decode_vertical_coords()
+    romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
     assert_allclose(
         romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
     )
 
     romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g1"
     Zo_rho = romsds.hc * (romsds.s_rho - romsds.Cs_r) + romsds.Cs_r * romsds.h
+
     expected = Zo_rho + romsds.zeta * (1 + Zo_rho / romsds.h)
-    romsds.cf.decode_vertical_coords()
+    romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
     assert_allclose(
         romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
     )
 
-    romsds.cf.decode_vertical_coords(prefix="ZZZ")
+    romsds.cf.decode_vertical_coords(outnames={"s_rho": "ZZZ_rho"})
     assert "ZZZ_rho" in romsds.coords
 
     copy = romsds.copy(deep=True)
     del copy["zeta"]
     with pytest.raises(KeyError):
-        copy.cf.decode_vertical_coords()
+        copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
     copy = romsds.copy(deep=True)
     copy.s_rho.attrs["formula_terms"] = "s: s_rho C: Cs_r depth: h depth_c: hc"
     with pytest.raises(KeyError):
+        copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
+
+
+def test_param_vcoord_ocean_sigma_coordinate():
+    expected = pomds.zeta + pomds.sigma * (pomds.depth + pomds.zeta)
+    pomds.cf.decode_vertical_coords(outnames={"sigma": "z"})
+    assert_allclose(pomds.z.reset_coords(drop=True), expected.reset_coords(drop=True))
+
+    copy = pomds.copy(deep=True)
+    del copy["zeta"]
+    with pytest.raises(AssertionError):
         copy.cf.decode_vertical_coords()
+
+    with pytest.raises(KeyError):
+        copy.cf.decode_vertical_coords(outnames={})
 
 
 def test_formula_terms():

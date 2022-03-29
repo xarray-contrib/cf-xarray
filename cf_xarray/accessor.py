@@ -2240,7 +2240,7 @@ class CFDatasetAccessor(CFAccessor):
                 try:
                     zname = outnames[dim]
                 except KeyError:
-                    print("Your `outnames` need to include a key of `dim`.")
+                    raise KeyError("Your `outnames` need to include a key of `dim`.")
 
             else:
                 warnings.warn(

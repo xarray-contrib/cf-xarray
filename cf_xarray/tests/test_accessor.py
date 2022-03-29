@@ -1067,6 +1067,9 @@ def test_param_vcoord_ocean_sigma_coordinate():
     del copy["zeta"]
     with pytest.raises(KeyError):
         copy.cf.decode_vertical_coords()
+        
+    with pytest.raises(KeyError):
+        copy.cf.decode_vertical_coords(outnames={})
 
 
 def test_formula_terms():

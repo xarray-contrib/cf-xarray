@@ -1044,18 +1044,18 @@ def test_param_vcoord_ocean_s_coord():
         romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
     )
 
-    romsds.cf.decode_vertical_coords(prefix="ZZZ")
+    romsds.cf.decode_vertical_coords(outnames={"s_rho": "ZZZ_rho"})
     assert "ZZZ_rho" in romsds.coords
 
     copy = romsds.copy(deep=True)
     del copy["zeta"]
     with pytest.raises(KeyError):
-        copy.cf.decode_vertical_coords()
+        copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
     copy = romsds.copy(deep=True)
     copy.s_rho.attrs["formula_terms"] = "s: s_rho C: Cs_r depth: h depth_c: hc"
     with pytest.raises(KeyError):
-        copy.cf.decode_vertical_coords()
+        copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
 
 def test_param_vcoord_ocean_sigma_coordinate():

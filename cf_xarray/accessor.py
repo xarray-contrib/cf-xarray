@@ -2233,7 +2233,9 @@ class CFDatasetAccessor(CFAccessor):
         allterms = self.formula_terms
         for dim in allterms:
             if prefix is None:
-                assert outnames is not None, 'if prefix is None, outnames must be provided'
+                assert (
+                    outnames is not None
+                ), "if prefix is None, outnames must be provided"
                 # set outnames here
                 try:
                     zname = outnames[dim]

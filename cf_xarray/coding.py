@@ -30,7 +30,11 @@ def encode_compress(ds, idxnames=None):
         idxnames = tuple(
             name
             for name, idx in ds.indexes.items()
-            if isinstance(idx, pd.MultiIndex) and idx.name == name
+            if isinstance(idx, pd.MultiIndex)
+            # After the flexible indexes refactor, all MultiIndex Levels
+            # have a MultiIndex but the name won't match.
+            # Prior to that refactor, there is only a single MultiIndex with name=None
+            and (idx.name == name if idx.name is not None else True)
         )
     elif isinstance(idxnames, str):
         idxnames = (idxnames,)

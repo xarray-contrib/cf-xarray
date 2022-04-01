@@ -14,6 +14,8 @@ Top-level API
     shapely_to_cf
     cf_to_shapely
     set_options
+    encode_compress
+    decode_compress
 
 .. currentmodule:: xarray
 

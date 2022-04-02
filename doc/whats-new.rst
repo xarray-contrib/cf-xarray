@@ -5,8 +5,9 @@ What's New
 
 v 0.7.1 (unreleased)
 ====================
+- added encoder and decoder for writing pandas MultiIndex-es to file using "compression by gathering".
+  See :doc:`coding` for more. By `Deepak Cherian`_.
 - added another type of vertical coordinate to decode: ``ocean_sigma_coordinate``. By `Kristen Thyng`_.
-
 
 v0.7.0 (January 24, 2022)
 =========================

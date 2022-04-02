@@ -50,6 +50,7 @@ or using ``conda``
    units
    parametricz
    bounds
+   coding
    dsg
    geometry
    plotting

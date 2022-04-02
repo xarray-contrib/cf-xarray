@@ -15,6 +15,7 @@ tags: [remove-cell]
 ---
 import cf_xarray as cfxr
 import numpy as np
+import pandas as pd
 import xarray as xr
 xr.set_options(display_expand_data=False)
 ```
@@ -23,10 +24,10 @@ xr.set_options(display_expand_data=False)
 # Encoding and decoding
 
 `cf_xarray` aims to support encoding and decoding variables using CF conventions not yet implemented by Xarray. For now, ``cf_xarray`` provides
-:py:func:`encode_multi_index_as_compress` and :py:func:`decode_compress_to_multi_index` to encode MultiIndex-ed dimensions using the
+{py:func}`encode_multi_index_as_compress` and {py:func}`decode_compress_to_multi_index` to encode MultiIndex-ed dimensions using the
 ["compression by gathering"](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering) convention.
 
-First encode
+Here's a test dataset
 ```{code-cell}
 ds = xr.Dataset(
     {"landsoilt": ("landpoint", np.random.randn(4), {"foo": "bar"})},
@@ -36,6 +37,10 @@ ds = xr.Dataset(
         )
     },
 )
+ds
+```
+First encode
+```{code-cell}
 encoded = cfxr.encode_multi_index_as_compress(ds, "landpoint")
 encoded
 ```

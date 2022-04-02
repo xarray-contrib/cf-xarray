@@ -86,7 +86,7 @@ def decode_compress_to_multi_index(encoded, idxnames=None):
     ----------
     CF conventions on `compression by gathering <http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering>`_
     """
-    decoded = xr.Dataset(data_vars=encoded.data_vars)
+    decoded = xr.Dataset(data_vars=encoded.data_vars, attrs=encoded.attrs.copy())
     if idxnames is None:
         idxnames = tuple(
             name for name in encoded.indexes if "compress" in encoded[name].attrs

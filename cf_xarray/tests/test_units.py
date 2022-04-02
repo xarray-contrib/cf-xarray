@@ -52,12 +52,12 @@ def test_percent_units():
 @pytest.mark.xfail(reason="not supported by pint, yet: hgrecco/pint#1295")
 def test_udunits_power_syntax():
     """Test that UDUNITS style powers are properly parsed and interpreted."""
-    assert ureg("m2 s-2").units == ureg.m ** 2 / ureg.s ** 2
+    assert ureg("m2 s-2").units == ureg.m**2 / ureg.s**2
 
 
 def test_udunits_power_syntax_parse_units():
     """Test that UDUNITS style powers are properly parsed and interpreted."""
-    assert ureg.parse_units("m2 s-2") == ureg.m ** 2 / ureg.s ** 2
+    assert ureg.parse_units("m2 s-2") == ureg.m**2 / ureg.s**2
 
 
 @pytest.mark.parametrize(

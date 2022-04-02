@@ -1113,7 +1113,7 @@ class CFAccessor:
     def _rewrite_values(
         self,
         kwargs,
-        key_mappers: Mapping[str, tuple[Mapper, ...]],
+        key_mappers: MutableMapping[str, tuple[Mapper, ...]],
         var_kws: tuple[str, ...],
     ):
         """
@@ -1138,7 +1138,7 @@ class CFAccessor:
 
         # allow multiple return values here.
         # these are valid for .sel, .isel, .coarsen
-        all_mappers = ChainMap(
+        all_mappers = ChainMap(  # type: ignore
             key_mappers,
             dict.fromkeys(var_kws, (_get_all,)),
         )

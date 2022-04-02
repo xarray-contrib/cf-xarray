@@ -56,7 +56,6 @@ try:
         out = out.replace("Δ°", "delta_deg")
         return out.replace("percent", "%")
 
-
 except ImportError:
     pass
 

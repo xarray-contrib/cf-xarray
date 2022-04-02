@@ -24,7 +24,7 @@ def encode_multi_index_as_compress(ds, idxnames=None):
 
     References
     ----------
-    CF conventions on `"compression by gathering" <http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering>_`
+    CF conventions on `compression by gathering <http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering>`_
     """
     if idxnames is None:
         idxnames = tuple(
@@ -73,7 +73,7 @@ def decode_compress_to_multi_index(encoded, idxnames=None):
 
     References
     ----------
-    CF conventions on `"compression by gathering" <http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering>_`
+    CF conventions on `compression by gathering <http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering>`_
     """
     decoded = xr.Dataset()
     if idxnames is None:

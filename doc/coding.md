@@ -7,7 +7,7 @@ kernelspec:
   name: python3
 ---
 ```{eval-rst}
-.. currentmodule:: xarray
+.. currentmodule:: cf_xarray
 ```
 ```{code-cell}
 ---
@@ -23,9 +23,17 @@ xr.set_options(display_expand_data=False)
 
 # Encoding and decoding
 
-`cf_xarray` aims to support encoding and decoding variables using CF conventions not yet implemented by Xarray. For now, ``cf_xarray`` provides
-{py:func}`encode_multi_index_as_compress` and {py:func}`decode_compress_to_multi_index` to encode MultiIndex-ed dimensions using the
-["compression by gathering"](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering) convention.
+`cf_xarray` aims to support encoding and decoding variables using CF conventions not yet implemented by Xarray. 
+
+## Compression by gathering
+
+The ["compression by gathering"](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering) 
+convention could be used for either {py:class}`pandas.MultiIndex` objects or `pydata/sparse` arrays.
+
+### MultiIndex
+
+``cf_xarray`` provides {py:func}`encode_multi_index_as_compress` and {py:func}`decode_compress_to_multi_index` to encode MultiIndex-ed
+dimensions using "compression by gethering". 
 
 Here's a test dataset
 ```{code-cell}
@@ -39,19 +47,24 @@ ds = xr.Dataset(
 )
 ds
 ```
-First encode
+First encode (note the `"compress"` attribute on the `landpoint` variable)
 ```{code-cell}
 encoded = cfxr.encode_multi_index_as_compress(ds, "landpoint")
 encoded
 ```
 
-At this point, we can write `encoded` to a CF-compliant dataset using {py:func}`xarray.to_netcdf` for example.
+At this point, we can write `encoded` to a CF-compliant dataset using {py:func}`xarray.Dataset.to_netcdf` for example.
 After reading that file, decode using
 ```{code-cell}
 decoded = cfxr.decode_compress_to_multi_index(encoded, "landpoint")
+decoded
 ```
 
 We roundtrip perfectly
 ```{code-cell}
 ds.identical(decoded)
 ```
+
+### Sparse arrays
+
+This is unsupported currently but a pull request is welcome!

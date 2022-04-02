@@ -47,8 +47,11 @@ def encode_multi_index_as_compress(ds, idxnames=None):
         mindex = ds.indexes[idxname]
         coords = dict(zip(mindex.names, mindex.levels))
         encoded.update(coords)
+        for c in coords:
+            encoded[c].attrs = ds[c].attrs
+            encoded[c].encoding = ds[c].encoding
         encoded[idxname] = np.ravel_multi_index(mindex.codes, mindex.levshape)
-        encoded[idxname].attrs = ds[idxname].attrs
+        encoded[idxname].attrs = ds[idxname].attrs.copy()
         if (
             "compress" in encoded[idxname].encoding
             or "compress" in encoded[idxname].attrs
@@ -83,7 +86,7 @@ def decode_compress_to_multi_index(encoded, idxnames=None):
     ----------
     CF conventions on `compression by gathering <http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering>`_
     """
-    decoded = xr.Dataset()
+    decoded = xr.Dataset(data_vars=encoded.data_vars)
     if idxnames is None:
         idxnames = tuple(
             name for name in encoded.indexes if "compress" in encoded[name].attrs
@@ -108,13 +111,9 @@ def decode_compress_to_multi_index(encoded, idxnames=None):
 
         decoded.coords[idxname] = mindex
         decoded.coords[idxname].attrs = encoded[idxname].attrs.copy()
+        for coord in mindex.names:
+            decoded[coord].attrs = encoded[coord].attrs.copy()
+            decoded[coord].encoding = encoded[coord].encoding.copy()
         del decoded[idxname].attrs["compress"]
 
-        for varname in encoded.data_vars:
-            if idxname in encoded[varname].dims:
-                decoded[varname] = (
-                    idxname,
-                    encoded[varname].data,
-                    encoded[varname].attrs,
-                )
     return decoded

@@ -24,6 +24,9 @@ def test_compression_by_gathering_multi_index_roundtrip(mindex, idxnames):
         {"landsoilt": ("landpoint", np.random.randn(4), {"foo": "bar"})},
         {"landpoint": ("landpoint", mindex, {"long_name": "land point number"})},
     )
+    dataset.lat.attrs["standard_name"] = "latitude"
+    dataset.lon.attrs["standard_name"] = "longitude"
+
     encoded = cfxr.encode_multi_index_as_compress(dataset, idxnames)
     roundtrip = cfxr.decode_compress_to_multi_index(encoded, idxnames)
     assert "compress" not in roundtrip["landpoint"].encoding

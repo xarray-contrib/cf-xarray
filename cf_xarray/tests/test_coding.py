@@ -22,9 +22,13 @@ import cf_xarray as cfxr
 def test_compression_by_gathering_multi_index_roundtrip(mindex, idxnames):
     dataset = xr.Dataset(
         {"landsoilt": ("landpoint", np.random.randn(4), {"foo": "bar"})},
-        {"landpoint": mindex},
+        {"landpoint": ("landpoint", mindex, {"long_name": "land point number"})},
     )
     encoded = cfxr.encode_multi_index_as_compress(dataset, idxnames)
     roundtrip = cfxr.decode_compress_to_multi_index(encoded, idxnames)
-    assert "compress" in roundtrip["landpoint"].encoding
+    assert "compress" not in roundtrip["landpoint"].encoding
     xr.testing.assert_identical(roundtrip, dataset)
+
+    dataset["landpoint"].attrs["compress"] = "lat lon"
+    with pytest.raises(ValueError):
+        cfxr.encode_multi_index_as_compress(dataset, idxnames)

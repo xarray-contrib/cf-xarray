@@ -49,6 +49,14 @@ def encode_multi_index_as_compress(ds, idxnames=None):
         encoded.update(coords)
         encoded[idxname] = np.ravel_multi_index(mindex.codes, mindex.levshape)
         encoded[idxname].attrs = ds[idxname].attrs
+        if (
+            "compress" in encoded[idxname].encoding
+            or "compress" in encoded[idxname].attrs
+        ):
+            raise ValueError(
+                f"Does not support the 'compress' attribute in {idxname}.encoding or {idxname}.attrs. "
+                "This is generated automatically."
+            )
         encoded[idxname].attrs["compress"] = " ".join(mindex.names)
     return encoded
 
@@ -101,7 +109,6 @@ def decode_compress_to_multi_index(encoded, idxnames=None):
         decoded.coords[idxname] = mindex
         decoded.coords[idxname].attrs = encoded[idxname].attrs.copy()
         del decoded[idxname].attrs["compress"]
-        decoded[idxname].encoding["compress"] = encoded[idxname].attrs["compress"]
 
         for varname in encoded.data_vars:
             if idxname in encoded[varname].dims:

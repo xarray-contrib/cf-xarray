@@ -6,7 +6,7 @@ import pandas as pd
 import xarray as xr
 
 
-def encode_compress(ds, idxnames=None):
+def encode_multi_index_as_compress(ds, idxnames=None):
     """
     Encode a MultiIndexed dimension using the "compression by gathering" CF convention.
 
@@ -53,7 +53,7 @@ def encode_compress(ds, idxnames=None):
     return encoded
 
 
-def decode_compress(encoded, idxnames=None):
+def decode_compress_to_multi_index(encoded, idxnames=None):
     """
     Decode a compressed variable to a pandas MultiIndex.
 

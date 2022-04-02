@@ -24,7 +24,7 @@ def test_compression_by_gathering_multi_index_roundtrip(mindex, idxnames):
         {"landsoilt": ("landpoint", np.random.randn(4), {"foo": "bar"})},
         {"landpoint": mindex},
     )
-    encoded = cfxr.encode_compress(dataset, idxnames)
-    roundtrip = cfxr.decode_compress(encoded, idxnames)
+    encoded = cfxr.encode_multi_index_as_compress(dataset, idxnames)
+    roundtrip = cfxr.decode_compress_to_multi_index(encoded, idxnames)
     assert "compress" in roundtrip["landpoint"].encoding
     xr.testing.assert_identical(roundtrip, dataset)

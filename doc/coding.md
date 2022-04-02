@@ -23,25 +23,30 @@ xr.set_options(display_expand_data=False)
 # Encoding and decoding
 
 `cf_xarray` aims to support encoding and decoding variables using CF conventions not yet implemented by Xarray. For now, ``cf_xarray`` provides
-:py:func:`encode_compress` and :py:func:`decode_compress` to encode MultiIndex-ed dimensions using the
+:py:func:`encode_multi_index_as_compress` and :py:func:`decode_compress_to_multi_index` to encode MultiIndex-ed dimensions using the
 ["compression by gathering"](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering) convention.
 
 First encode
 ```{code-cell}
 ds = xr.Dataset(
-    {"landsoilt": ("landpoint", np.random.randn(4))},
+    {"landsoilt": ("landpoint", np.random.randn(4), {"foo": "bar"})},
     {
         "landpoint": pd.MultiIndex.from_product(
             [["a", "b"], [1, 2]], names=("lat", "lon")
         )
     },
 )
-encoded = cfxr.encode_compress(ds, "landpoint")
+encoded = cfxr.encode_multi_index_as_compress(ds, "landpoint")
 encoded
 ```
 
 At this point, we can write `encoded` to a CF-compliant dataset using :py:func:`xarray.to_netcdf` for example.
 After reading that file, decode using
 ```{code-cell}
-cfxr.decode_compress(encoded, "landpoint")
+decoded = cfxr.decode_compress_to_multi_index(encoded, "landpoint")
+```
+
+We roundtrip perfectly
+```{code-cell}
+ds.identical(decoded)
 ```

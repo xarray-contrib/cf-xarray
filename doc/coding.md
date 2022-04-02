@@ -45,7 +45,7 @@ encoded = cfxr.encode_multi_index_as_compress(ds, "landpoint")
 encoded
 ```
 
-At this point, we can write `encoded` to a CF-compliant dataset using :py:func:`xarray.to_netcdf` for example.
+At this point, we can write `encoded` to a CF-compliant dataset using {py:func}`xarray.to_netcdf` for example.
 After reading that file, decode using
 ```{code-cell}
 decoded = cfxr.decode_compress_to_multi_index(encoded, "landpoint")

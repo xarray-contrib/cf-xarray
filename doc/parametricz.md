@@ -37,12 +37,6 @@ romsds.cf.decode_vertical_coords(outnames={'s_rho': 'z_rho'})  # adds new z_rho 
 romsds.z_rho
 ```
 
-The prefix `"z"` can be controlled but the suffix `_rho` is copied from `s_rho`.
-```{code-cell}
-romsds.cf.decode_vertical_coords(prefix="foo")
-romsds.foo_rho
-```
-
 ## Formula terms
 
 To see whether decoding is possible, use the {py:attr}`Dataset.cf.formula_terms` attribute

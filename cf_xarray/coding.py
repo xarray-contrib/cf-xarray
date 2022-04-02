@@ -22,9 +22,9 @@ def encode_compress(ds, idxnames=None):
     xarray.Dataset
         Encoded Dataset with ``name`` as a integer coordinate with a ``"compress"`` attribute.
 
-    See Also
-    --------
-    http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering
+    References
+    ----------
+    CF conventions on `"compression by gathering" <http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering>_`
     """
     if idxnames is None:
         idxnames = tuple(
@@ -46,10 +46,9 @@ def encode_compress(ds, idxnames=None):
     for idxname in idxnames:
         mindex = ds.indexes[idxname]
         coords = dict(zip(mindex.names, mindex.levels))
-        for coord in coords:
-            encoded[coord] = coords[coord].values
-        shape = [encoded.sizes[coord] for coord in coords]
-        encoded[idxname] = np.ravel_multi_index(mindex.codes, shape)
+        encoded.update(coords)
+        encoded[idxname] = np.ravel_multi_index(mindex.codes, mindex.levshape)
+        encoded[idxname].attrs = ds[idxname].attrs
         encoded[idxname].attrs["compress"] = " ".join(mindex.names)
     return encoded
 
@@ -72,9 +71,9 @@ def decode_compress(encoded, idxnames=None):
     xarray.Dataset
         Decoded Dataset with ``name`` as a MultiIndexed dimension.
 
-    See Also
-    --------
-    http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering
+    References
+    ----------
+    CF conventions on `"compression by gathering" <http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering>_`
     """
     decoded = xr.Dataset()
     if idxnames is None:
@@ -95,12 +94,20 @@ def decode_compress(encoded, idxnames=None):
 
         names = encoded[idxname].attrs["compress"].split(" ")
         shape = [encoded.sizes[dim] for dim in names]
-        indices = np.unravel_index(encoded.landpoint.values, shape)
-        arrays = [encoded[dim].values[index] for dim, index in zip(names, indices)]
+        indices = np.unravel_index(encoded.landpoint.data, shape)
+        arrays = [encoded[dim].data[index] for dim, index in zip(names, indices)]
         mindex = pd.MultiIndex.from_arrays(arrays, names=names)
 
         decoded.coords[idxname] = mindex
+        decoded.coords[idxname].attrs = encoded[idxname].attrs.copy()
+        del decoded[idxname].attrs["compress"]
+        decoded[idxname].encoding["compress"] = encoded[idxname].attrs["compress"]
+
         for varname in encoded.data_vars:
             if idxname in encoded[varname].dims:
-                decoded[varname] = (idxname, encoded[varname].values)
+                decoded[varname] = (
+                    idxname,
+                    encoded[varname].data,
+                    encoded[varname].attrs,
+                )
     return decoded

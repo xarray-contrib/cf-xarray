@@ -105,7 +105,7 @@ def decode_compress_to_multi_index(encoded, idxnames=None):
 
         names = encoded[idxname].attrs["compress"].split(" ")
         shape = [encoded.sizes[dim] for dim in names]
-        indices = np.unravel_index(encoded.landpoint.data, shape)
+        indices = np.unravel_index(encoded[idxname].data, shape)
         arrays = [encoded[dim].data[index] for dim, index in zip(names, indices)]
         mindex = pd.MultiIndex.from_arrays(arrays, names=names)
 

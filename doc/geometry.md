@@ -4,4 +4,4 @@
 
 # Geometries
 
-See {py:func}`cf_xarray.shapely_to_cf`,  {py:func}`cf_xarray.cf_to_shapely` 
+See {py:func}`cf_xarray.shapely_to_cf`,  {py:func}`cf_xarray.cf_to_shapely`

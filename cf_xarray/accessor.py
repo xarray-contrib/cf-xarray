@@ -2057,7 +2057,7 @@ class CFDatasetAccessor(CFAccessor):
         Parameters
         ----------
         keys : str or Iterable[str]
-            Either a single key or a list of keys corresponding to dimensions.
+            Either a single variable name or a list of variable names.
 
         Returns
         -------
@@ -2070,8 +2070,8 @@ class CFDatasetAccessor(CFAccessor):
 
         Notes
         -----
-        The bounds variables are automatically named ``f"{dim}_bounds"`` where ``dim``
-        is a dimension name.
+        The bounds variables are automatically named ``f"{var}_bounds"`` where ``var``
+        is a variable name.
 
         Examples
         --------

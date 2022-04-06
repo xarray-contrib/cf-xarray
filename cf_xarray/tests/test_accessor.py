@@ -699,9 +699,10 @@ def test_plot_xincrease_yincrease():
         assert lim[0] > lim[1]
 
 
-@pytest.mark.parametrize("dims", ["lat", "time", ["lat", "lon"]])
-@pytest.mark.parametrize("obj", [airds])
-def test_add_bounds(obj, dims):
+@pytest.mark.parametrize("dims", ["time2", "lat", "time", ["lat", "lon"]])
+def test_add_bounds(dims):
+    obj = airds.copy(deep=True)
+
     expected = {}
     expected["lat"] = xr.concat(
         [
@@ -728,10 +729,12 @@ def test_add_bounds(obj, dims):
         ],
         dim="bounds",
     )
+    expected["time2"] = expected["time"]
     expected["lat"].attrs.clear()
     expected["lon"].attrs.clear()
     expected["time"].attrs.clear()
 
+    obj.coords["time2"] = obj.time
     added = obj.cf.add_bounds(dims)
     if isinstance(dims, str):
         dims = (dims,)
@@ -742,6 +745,8 @@ def test_add_bounds(obj, dims):
         assert added[dim].attrs["bounds"] == name
         assert_allclose(added[name].reset_coords(drop=True), expected[dim])
 
+
+def test_add_bounds_multiple():
     # Test multiple dimensions
     assert not {"x1_bounds", "x2_bounds"} <= set(multiple.variables)
     assert {"x1_bounds", "x2_bounds"} <= set(multiple.cf.add_bounds("X").variables)

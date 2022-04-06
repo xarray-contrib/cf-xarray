@@ -3,6 +3,9 @@
 What's New
 ----------
 
+v0.7.3 (unreleased)
+===================
+
 v0.7.2 (April 5, 2022)
 ======================
 - added encoder and decoder for writing pandas MultiIndex-es to file using "compression by gathering".

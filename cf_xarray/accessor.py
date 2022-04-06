@@ -2085,21 +2085,21 @@ class CFDatasetAccessor(CFAccessor):
         if isinstance(keys, str):
             keys = [keys]
 
-        vars = set()
+        variables = set()
         for key in keys:
-            vars.update(
+            variables.update(
                 apply_mapper(_get_all, self._obj, key, error=False, default=[key])
             )
 
         obj = self._maybe_to_dataset(self._obj.copy(deep=True))
 
-        bad_vars: set[str] = vars - set(obj.variables)
+        bad_vars: set[str] = variables - set(obj.variables)
         if bad_vars:
             raise ValueError(
                 f"{bad_vars!r} are not variables in the underlying object."
             )
 
-        for var in vars:
+        for var in variables:
             bname = f"{var}_bounds"
             if bname in obj.variables:
                 raise ValueError(f"Bounds variable name {bname!r} will conflict!")

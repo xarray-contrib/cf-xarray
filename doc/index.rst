@@ -4,7 +4,7 @@
 .. image:: _static/full-logo.png
     :align: center
     :width: 70%
-   
+
 |
 |
 

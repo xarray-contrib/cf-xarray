@@ -6,9 +6,11 @@ kernelspec:
   display_name: Python 3
   name: python3
 ---
+
 ```{eval-rst}
 .. currentmodule:: xarray
 ```
+
 ```{code-cell}
 ---
 tags: [remove-cell]
@@ -18,7 +20,6 @@ import numpy as np
 import xarray as xr
 xr.set_options(display_expand_data=False)
 ```
-
 
 # Discrete Sampling Geometries
 
@@ -31,4 +32,3 @@ ds = xr.Dataset(
 )
 ds.cf["profile_id"]
 ```
-

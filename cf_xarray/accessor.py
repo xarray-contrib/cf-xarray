@@ -15,6 +15,7 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
+    Sequence,
     TypeVar,
     Union,
     cast,
@@ -1058,6 +1059,44 @@ class CFAccessor:
             self._all_cell_measures = set(_CELL_MEASURES + tuple(self.cell_measures))
 
         return self._all_cell_measures
+
+    def curvefit(
+        self,
+        coords: str | DataArray | Iterable[str | DataArray],
+        func: Callable[..., Any],
+        reduce_dims: Hashable | Iterable[Hashable] = None,
+        skipna: bool = True,
+        p0: dict[str, Any] = None,
+        bounds: dict[str, Any] = None,
+        param_names: Sequence[str] = None,
+        kwargs: dict[str, Any] = None,
+    ):
+
+        if coords is not None:
+            coords = [
+                apply_mapper(
+                    [_single(_get_coords)], self._obj, v, error=False, default=[v]
+                )[0]
+                for v in coords
+            ]
+        if reduce_dims is not None:
+            reduce_dims = [
+                apply_mapper(
+                    [_single(_get_dims)], self._obj, v, error=False, default=[v]
+                )[0]
+                for v in reduce_dims
+            ]
+
+        return self._obj.curvefit(
+            coords=coords,
+            func=func,
+            reduce_dims=reduce_dims,
+            skipna=skipna,
+            p0=p0,
+            bounds=bounds,
+            param_names=param_names,
+            kwargs=kwargs,
+        )
 
     def _process_signature(
         self,

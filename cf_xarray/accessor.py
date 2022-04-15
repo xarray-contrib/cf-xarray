@@ -1239,7 +1239,7 @@ class CFAccessor:
         coords = self._obj.coords
         dims = self._obj.dims
 
-        def make_text_section(subtitle, attr, valid_values, default_keys=None):
+        def make_text_section(subtitle, attr, valid_values=None, default_keys=None):
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -1260,11 +1260,12 @@ class CFAccessor:
             vardict = {key: vardict[key] for key in ordered_keys if key in vardict}
 
             # Keep only valid values (e.g., coords or data_vars)
-            vardict = {
-                key: set(value).intersection(valid_values)
-                for key, value in vardict.items()
-                if set(value).intersection(valid_values)
-            }
+            if valid_values is not None:
+                vardict = {
+                    key: set(value).intersection(valid_values)
+                    for key, value in vardict.items()
+                    if set(value).intersection(valid_values)
+                }
 
             # Star for keys with dims only, tab otherwise
             rows = [
@@ -1293,6 +1294,11 @@ class CFAccessor:
             text = f"CF Flag variable with mapping:\n\t{flag_dict!r}\n\n"
         else:
             text = ""
+
+        if self.cf_roles:
+            text += make_text_section("CF Roles", "cf_roles")
+            text += "\n"
+
         text += "Coordinates:"
         text += make_text_section("CF Axes", "axes", coords, _AXIS_NAMES)
         text += make_text_section("CF Coordinates", "coordinates", coords, _COORD_NAMES)
@@ -1337,6 +1343,7 @@ class CFAccessor:
         varnames = list(self.axes) + list(self.coordinates)
         varnames.extend(list(self.cell_measures))
         varnames.extend(list(self.standard_names))
+        varnames.extend(list(self.cf_roles))
 
         return set(varnames)
 
@@ -1458,6 +1465,33 @@ class CFAccessor:
             if "standard_name" in v.attrs:
                 std_name = v.attrs["standard_name"]
                 vardict[std_name] = vardict.setdefault(std_name, []) + [k]
+
+        return {k: sorted(v) for k, v in vardict.items()}
+
+    @property
+    def cf_roles(self) -> dict[str, list[str]]:
+        """
+        Returns a dictionary mapping cf_role names to variable names.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping cf_role names to variable names.
+
+        References
+        ----------
+        Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#coordinates-metadata
+        """
+        if isinstance(self._obj, Dataset):
+            variables = self._obj.variables
+        elif isinstance(self._obj, DataArray):
+            variables = self._obj.coords
+
+        vardict: dict[str, list[str]] = {}
+        for k, v in variables.items():
+            if "cf_role" in v.attrs:
+                role = v.attrs["cf_role"]
+                vardict[role] = vardict.setdefault(role, []) + [k]
 
         return {k: sorted(v) for k, v in vardict.items()}
 

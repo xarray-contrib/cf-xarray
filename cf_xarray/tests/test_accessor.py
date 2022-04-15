@@ -21,6 +21,7 @@ from ..datasets import (
     anc,
     basin,
     ds_no_attrs,
+    dsg,
     forecast,
     mollwds,
     multiple,
@@ -163,6 +164,32 @@ def test_repr():
     - Cell Measures:   area, volume: n/a
 
     - Standard Names:   air_temperature: [<this-array>]
+
+    - Bounds:   n/a
+    """
+    assert actual == dedent(expected)
+
+    # CF roles
+    actual = dsg.cf.__repr__()
+    expected = """
+    - CF Roles: * profile_id: ['profile']
+                * trajectory_id: ['trajectory']
+
+    Coordinates:
+    - CF Axes:   X, Y, Z, T: n/a
+
+    - CF Coordinates:   longitude, latitude, vertical, time: n/a
+
+    - Cell Measures:   area, volume: n/a
+
+    - Standard Names:   n/a
+
+    - Bounds:   n/a
+
+    Data Variables:
+    - Cell Measures:   area, volume: n/a
+
+    - Standard Names:   n/a
 
     - Bounds:   n/a
     """
@@ -1579,3 +1606,16 @@ def test_pickle():
     ds = da.to_dataset()
     pickle.loads(pickle.dumps(da.cf))
     pickle.loads(pickle.dumps(ds.cf))
+
+
+def test_cf_role():
+    for name in ["profile_id", "trajectory_id"]:
+        assert name in dsg.cf.keys()
+
+    assert dsg.cf.cf_roles == {
+        "profile_id": ["profile"],
+        "trajectory_id": ["trajectory"],
+    }
+
+    dsg.foo.cf.plot(x="profile_id")
+    dsg.foo.cf.plot(x="trajectory_id")

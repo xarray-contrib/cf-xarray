@@ -483,3 +483,12 @@ vert = xr.Dataset.from_dict(
         },
     }
 )
+
+
+dsg = xr.Dataset(
+    {"foo": (("trajectory", "profile"), [[1, 2, 3], [1, 2, 3]])},
+    coords={
+        "profile": ("profile", [0, 1, 2], {"cf_role": "profile_id"}),
+        "trajectory": ("trajectory", [0, 1], {"cf_role": "trajectory_id"}),
+    },
+)

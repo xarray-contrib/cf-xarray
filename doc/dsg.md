@@ -30,5 +30,17 @@ ds = xr.Dataset(
     {"temp": ("x", np.arange(10))},
     coords={"cast": ("x", np.arange(10), {"cf_role": "profile_id"})}
 )
+ds.cf
+```
+
+Access `"cast"` using it's `cf_role`
+
+```{code-cell}
 ds.cf["profile_id"]
+```
+
+Find all `cf_role` variables using {py:attr}`Dataset.cf.cf_roles` and {py:attr}`DataArray.cf.cf_roles`
+
+```{code-cell}
+ds.cf.cf_roles
 ```

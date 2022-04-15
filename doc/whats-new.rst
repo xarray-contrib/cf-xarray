@@ -5,6 +5,7 @@ What's New
 
 v0.7.3 (unreleased)
 ===================
+- Increased support for ``cf_role`` variables. Added :py:attr:`Dataset.cf.cf_roles` By `Deepak Cherian`_.
 
 v0.7.2 (April 5, 2022)
 ======================

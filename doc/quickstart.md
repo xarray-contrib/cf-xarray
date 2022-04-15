@@ -89,6 +89,7 @@ Sometimes it is more useful to extract the actual variable names associated with
 - {py:attr}`Dataset.cf.axes`,
 - {py:attr}`Dataset.cf.bounds`,
 - {py:attr}`Dataset.cf.cell_measures`,
+- {py:attr}`Dataset.cf.cf_roles`,
 - {py:attr}`Dataset.cf.coordinates`,
 - {py:attr}`Dataset.cf.formula_terms`, and
 - {py:attr}`Dataset.cf.standard_names`.

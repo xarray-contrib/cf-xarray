@@ -1481,6 +1481,13 @@ class CFAccessor:
         References
         ----------
         Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#coordinates-metadata
+
+        Examples
+        --------
+        >>> import cf_xarray
+        >>> from cf_xarray.datasets import dsg
+        >>> dsg.cf.cf_roles
+        {'profile_id': ['profile'], 'trajectory_id': ['trajectory']}
         """
         if isinstance(self._obj, Dataset):
             variables = self._obj.variables

@@ -123,7 +123,7 @@ def vertices_to_bounds(
     Parameters
     ----------
     vertices : DataArray
-        The bounds to convert. Must be of shape (N + 1) or (N + 1, M + 1).
+        The vertices to convert. Must be of shape (N + 1) or (N + 1, M + 1).
     out_dims : Sequence[str],
         The name of the dimension in the output. The first is the 'bounds'
         dimension and the following are the coordinate dimensions.

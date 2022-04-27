@@ -1743,10 +1743,10 @@ class CFAccessor:
                 continue  # prevent second detection
 
             for name, pattern in regex.items():
-                is_axis = var in sum(obj.cf.axes.values(), [])
-                is_coord = var in sum(obj.cf.coordinates.values(), [])
-                if (name in _AXIS_NAMES and is_axis) or (
-                    name in _COORD_NAMES and is_coord
+                var_is_axis = var in sum(obj.cf.axes.values(), [])
+                var_is_coord = var in sum(obj.cf.coordinates.values(), [])
+                if (name in _AXIS_NAMES and var_is_axis) or (
+                    name in _COORD_NAMES and var_is_coord
                 ):
                     continue
                 # match variable names

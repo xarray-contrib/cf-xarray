@@ -1733,23 +1733,29 @@ class CFAccessor:
         obj = self._obj.copy(deep=True)
         for var in obj.coords.variables:
             if obj[var].ndim == 1 and _is_datetime_like(obj[var]):
-                new_attrs = dict(ChainMap(obj[var].attrs, ATTRS["time"]))
-                if verbose and new_attrs != obj[var].attrs:
+                if var in sum(obj.cf.coordinates.values(), []):
+                    continue  # skip coordinates
+                if verbose:
                     print(
                         f"I think {var!r} is of type 'time'. It has a datetime-like type."
                     )
-                obj[var].attrs = new_attrs
+                obj[var].attrs = dict(ChainMap(obj[var].attrs, ATTRS["time"]))
                 continue  # prevent second detection
 
             for name, pattern in regex.items():
+                is_axis = var in sum(obj.cf.axes.values(), [])
+                is_coord = var in sum(obj.cf.coordinates.values(), [])
+                if (name in _AXIS_NAMES and is_axis) or (
+                    name in _COORD_NAMES and is_coord
+                ):
+                    continue
                 # match variable names
                 if pattern.match(var.lower()):
-                    new_attrs = dict(ChainMap(obj[var].attrs, ATTRS[name]))
-                    if verbose and new_attrs != obj[var].attrs:
+                    if verbose:
                         print(
                             f"I think {var!r} is of type {name!r}. It matched {pattern!r}"
                         )
-                    obj[var].attrs = new_attrs
+                    obj[var].attrs = dict(ChainMap(obj[var].attrs, ATTRS[name]))
         return obj
 
     def drop(self, *args, **kwargs):

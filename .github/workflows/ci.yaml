@@ -9,7 +9,7 @@ on:
   schedule:
     - cron: "0 13 * * 1"
 
-concurrency: 
+concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 

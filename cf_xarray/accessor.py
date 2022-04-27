@@ -1732,7 +1732,8 @@ class CFAccessor:
         """
         obj = self._obj.copy(deep=True)
         for var in obj.coords.variables:
-            if obj[var].ndim == 1 and _is_datetime_like(obj[var]):
+            var_is_coord = any(var in val for val in obj.cf.coordinates.values())
+            if not var_is_coord and obj[var].ndim == 1 and _is_datetime_like(obj[var]):
                 if verbose:
                     print(
                         f"I think {var!r} is of type 'time'. It has a datetime-like type."
@@ -1741,6 +1742,12 @@ class CFAccessor:
                 continue  # prevent second detection
 
             for name, pattern in regex.items():
+                var_is_axis = any(var in val for val in obj.cf.axes.values())
+                var_is_coord = any(var in val for val in obj.cf.coordinates.values())
+                if (name in _AXIS_NAMES and var_is_axis) or (
+                    name in _COORD_NAMES and var_is_coord
+                ):
+                    continue  # skip known axes/coordinates and prevent multiple guesses
                 # match variable names
                 if pattern.match(var.lower()):
                     if verbose:

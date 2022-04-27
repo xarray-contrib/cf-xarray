@@ -1732,9 +1732,8 @@ class CFAccessor:
         """
         obj = self._obj.copy(deep=True)
         for var in obj.coords.variables:
-            if obj[var].ndim == 1 and _is_datetime_like(obj[var]):
-                if var in sum(obj.cf.coordinates.values(), []):
-                    continue  # skip coordinates
+            var_is_coord = var in sum(obj.cf.coordinates.values(), [])
+            if not var_is_coord and obj[var].ndim == 1 and _is_datetime_like(obj[var]):
                 if verbose:
                     print(
                         f"I think {var!r} is of type 'time'. It has a datetime-like type."

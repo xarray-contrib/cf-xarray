@@ -5,6 +5,9 @@ What's New
 
 v0.7.3 (unreleased)
 ===================
+- :py:meth:`Dataset.cf.guess_coord_axis` now skips known axes/coordinates and only returns a single guess per variable.
+  Additional attributes such as `units` must be added to known axes/coordinates using :py:meth:`Dataset.cf.add_canonical_attributes`.
+  By `Mattia Almansi`_.
 - Increased support for ``cf_role`` variables. Added :py:attr:`Dataset.cf.cf_roles` By `Deepak Cherian`_.
 
 v0.7.2 (April 5, 2022)

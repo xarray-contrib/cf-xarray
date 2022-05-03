@@ -73,3 +73,11 @@ def test_udunits_format(units, expected):
     u = ureg.parse_units(units)
 
     assert f"{u:cf}" == expected
+
+
+@pytest.mark.parametrize(
+    "alias",
+    [ureg("Celsius"), ureg("degC"), ureg("C"), ureg("deg_C"), ureg("degrees_Celsius")],
+)
+def test_temperature_aliases(alias):
+    assert alias == ureg("celsius")

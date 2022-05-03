@@ -91,7 +91,7 @@ units.define("@alias meter = gpm")
 units.define("year = 365.25 * day = yr")
 
 # Define commonly encountered units not defined by pint
-units.define("@alias degC = C = deg_C = degrees_Celsius")
+units.define("@alias degC = C = deg_C = Celsius = degrees_Celsius")
 units.define("@alias degK = deg_K")
 units.define("@alias day = d")
 units.define("@alias hour = h")  # Not the Planck constant...

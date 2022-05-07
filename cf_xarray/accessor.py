@@ -43,6 +43,7 @@ _WRAPPED_CLASSES = (
     xr.core.rolling.Rolling,
     xr.core.rolling.Coarsen,
     xr.core.weighted.Weighted,
+    xr.plot.facetgrid.FacetGrid,
 )
 
 #:  `axis` names understood by cf_xarray
@@ -504,7 +505,7 @@ def _getattr(
     attr: str,
     accessor: CFAccessor,
     key_mappers: Mapping[str, Mapper],
-    wrap_classes: bool = False,
+    wrap_classes: bool = True,
     extra_decorator: Callable = None,
 ):
     """

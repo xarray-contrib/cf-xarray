@@ -558,11 +558,10 @@ def test_dataarray_plot():
     plt.close()
 
     rv = obj.cf.plot(x="X", y="Y", col="T")
-    assert isinstance(rv, xr.plot.FacetGrid)
+    rv.map_dataarray(xr.plot.contourf, x="X", y="Y", col="T")
     plt.close()
 
     rv = obj.cf.plot.contourf(x="X", y="Y", col="T")
-    assert isinstance(rv, xr.plot.FacetGrid)
     plt.close()
 
     rv = obj.isel(lat=[0, 1], lon=1).cf.plot.line(x="T", hue="Y")
@@ -602,7 +601,6 @@ def test_dataarray_plot():
 
     obj.time.attrs.clear()
     rv = obj.cf.plot(x="X", y="Y", col="time")
-    assert isinstance(rv, xr.plot.FacetGrid)
     plt.close()
 
 

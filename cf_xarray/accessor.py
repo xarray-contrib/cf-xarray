@@ -15,6 +15,7 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
+    Sequence,
     TypeVar,
     Union,
     cast,
@@ -1070,6 +1071,52 @@ class CFAccessor:
             self._all_cell_measures = set(_CELL_MEASURES + tuple(self.cell_measures))
 
         return self._all_cell_measures
+
+    def curvefit(
+        self,
+        coords: str | DataArray | Iterable[str | DataArray],
+        func: Callable[..., Any],
+        reduce_dims: Hashable | Iterable[Hashable] = None,
+        skipna: bool = True,
+        p0: dict[str, Any] = None,
+        bounds: dict[str, Any] = None,
+        param_names: Sequence[str] = None,
+        kwargs: dict[str, Any] = None,
+    ):
+
+        if coords is not None:
+            if isinstance(coords, str):
+                coords = (coords,)
+            coords = [
+                apply_mapper(  # type: ignore
+                    [_single(_get_coords)], self._obj, v, error=False, default=[v]  # type: ignore
+                )[
+                    0
+                ]  # type: ignore
+                for v in coords
+            ]
+        if reduce_dims is not None:
+            if isinstance(reduce_dims, Hashable):
+                reduce_dims: Iterable[Hashable] = (reduce_dims,)  # type: ignore
+            reduce_dims = [
+                apply_mapper(  # type: ignore
+                    [_single(_get_dims)], self._obj, v, error=False, default=[v]  # type: ignore
+                )[
+                    0
+                ]  # type: ignore
+                for v in reduce_dims  # type: ignore
+            ]
+
+        return self._obj.curvefit(
+            coords=coords,
+            func=func,
+            reduce_dims=reduce_dims,
+            skipna=skipna,
+            p0=p0,
+            bounds=bounds,
+            param_names=param_names,
+            kwargs=kwargs,
+        )
 
     def _process_signature(
         self,

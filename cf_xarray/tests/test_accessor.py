@@ -30,7 +30,7 @@ from ..datasets import (
     romsds,
     vert,
 )
-from . import raise_if_dask_computes, requires_cftime, requires_pint
+from . import raise_if_dask_computes, requires_cftime, requires_pint, requires_scipy
 
 mpl.use("Agg")
 
@@ -1641,3 +1641,26 @@ def test_cf_role():
 
     dsg.foo.cf.plot(x="profile_id")
     dsg.foo.cf.plot(x="trajectory_id")
+
+
+@requires_scipy
+def test_curvefit():
+    from cf_xarray.datasets import airds
+
+    def line(time, slope):
+        t = (time - time[0]).astype(float)
+        return slope * t
+
+    actual = airds.air.cf.isel(lat=4, lon=5).curvefit(coords=("time",), func=line)
+    expected = airds.air.cf.isel(lat=4, lon=5).cf.curvefit(coords="T", func=line)
+    assert_identical(expected, actual)
+
+    def plane(coords, slopex, slopey):
+        x, y = coords
+        return slopex * (x - x.mean()) + slopey * (y - y.mean())
+
+    actual = airds.air.isel(time=0).curvefit(coords=("lat", "lon"), func=plane)
+    expected = airds.air.isel(time=0).cf.curvefit(
+        coords=("latitude", "longitude"), func=plane
+    )
+    assert_identical(expected, actual)

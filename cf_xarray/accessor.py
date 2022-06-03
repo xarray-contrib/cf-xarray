@@ -463,11 +463,15 @@ def _guess_bounds_dim(da, dim=None):
     if dim is None:
         if da.ndim != 1:
             raise ValueError(
-                f"If dim is None, variable {da.name} must be 1D. Received {da.ndim} dimensions instead."
+                f"If dim is None, variable {da.name} must be 1D. Received {da.ndim}D variable instead."
             )
         (dim,) = da.dims
     if dim not in da.dims:
         (dim,) = da.cf.axes[dim]
+    if dim[0] not in da._indexes:
+        raise NotImplementedError(
+            "Adding bounds for unindexed dimensions is not supported currently."
+        )
 
     diff = da.diff(dim)
     lower = da - diff / 2

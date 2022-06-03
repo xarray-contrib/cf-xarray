@@ -1073,18 +1073,26 @@ class CFAccessor:
     ):
 
         if coords is not None:
+            if isinstance(coords, str):
+                coords = (coords,)
             coords = [
-                apply_mapper(
-                    [_single(_get_coords)], self._obj, v, error=False, default=[v]
-                )[0]
+                apply_mapper(  # type: ignore
+                    [_single(_get_coords)], self._obj, v, error=False, default=[v]  # type: ignore
+                )[
+                    0
+                ]  # type: ignore
                 for v in coords
             ]
         if reduce_dims is not None:
+            if isinstance(reduce_dims, Hashable):
+                reduce_dims: Iterable[Hashable] = (reduce_dims,)  # type: ignore
             reduce_dims = [
-                apply_mapper(
-                    [_single(_get_dims)], self._obj, v, error=False, default=[v]
-                )[0]
-                for v in reduce_dims
+                apply_mapper(  # type: ignore
+                    [_single(_get_dims)], self._obj, v, error=False, default=[v]  # type: ignore
+                )[
+                    0
+                ]  # type: ignore
+                for v in reduce_dims  # type: ignore
             ]
 
         return self._obj.curvefit(

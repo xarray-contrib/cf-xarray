@@ -11,5 +11,6 @@ dependencies:
   - pandas
   - pint
   - pooch
+  - scipy
   - shapely
   - xarray

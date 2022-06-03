@@ -6,6 +6,7 @@ dependencies:
   - pytest
   - pytest-xdist
   - dask
+  - flox
   - matplotlib-base
   - netcdf4
   - pandas

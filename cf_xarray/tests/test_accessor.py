@@ -779,6 +779,28 @@ def test_add_bounds_multiple():
     assert {"x1_bounds", "x2_bounds"} <= set(multiple.cf.add_bounds("X").variables)
 
 
+def test_add_bounds_nd_variable():
+
+    ds = xr.Dataset(
+        {"z": (("x", "y"), np.arange(12).reshape(4, 3))},
+        coords={"x": np.arange(4), "y": np.arange(3)},
+    )
+
+    expected = (
+        xr.concat([ds.z - 1.5, ds.z + 1.5], dim="bounds")
+        .rename("z_bounds")
+        .transpose("bounds", "y", "x")
+    )
+    with pytest.raises(ValueError):
+        ds.cf.add_bounds("z")
+
+    actual = ds.cf.add_bounds("z", dim="x").z_bounds.reset_coords(drop=True)
+    xr.testing.assert_identical(expected, actual)
+
+    with pytest.raises(NotImplementedError):
+        ds.drop_vars("x").cf.add_bounds("z", dim="x")
+
+
 def test_bounds():
     ds = airds.copy(deep=True).cf.add_bounds("lat")
 

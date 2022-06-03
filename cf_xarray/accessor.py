@@ -456,20 +456,32 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, tuple[Mapper, ...]] = {
 }
 
 
-def _guess_bounds_dim(da):
+def _guess_bounds_dim(da, dim=None):
     """
     Guess bounds values given a 1D coordinate variable.
     Assumes equal spacing on either side of the coordinate label.
     """
-    assert da.ndim == 1
+    if dim is None:
+        if da.ndim != 1:
+            raise ValueError(
+                f"If dim is None, variable {da.name} must be 1D. Received {da.ndim}D variable instead."
+            )
+        (dim,) = da.dims
+    if dim not in da.dims:
+        (dim,) = da.cf.axes[dim]
+    if dim not in da.coords:
+        raise NotImplementedError(
+            "Adding bounds for unindexed dimensions is not supported currently."
+        )
 
-    dim = da.dims[0]
     diff = da.diff(dim)
     lower = da - diff / 2
     upper = da + diff / 2
     bounds = xr.concat([lower, upper], dim="bounds")
 
-    first = (bounds.isel({dim: 0}) - diff[0]).assign_coords({dim: da[dim][0]})
+    first = (bounds.isel({dim: 0}) - diff.isel({dim: 0})).assign_coords(
+        {dim: da[dim][0]}
+    )
     result = xr.concat([first, bounds], dim=dim)
 
     return result
@@ -2144,7 +2156,7 @@ class CFDatasetAccessor(CFAccessor):
         assert self._obj.sizes[bounds_dim] in [2, 4]
         return bounds_dim
 
-    def add_bounds(self, keys: str | Iterable[str]):
+    def add_bounds(self, keys: str | Iterable[str], *, dim=None):
         """
         Returns a new object with bounds variables. The bounds values are guessed assuming
         equal spacing on either side of a coordinate label.
@@ -2153,6 +2165,9 @@ class CFDatasetAccessor(CFAccessor):
         ----------
         keys : str or Iterable[str]
             Either a single variable name or a list of variable names.
+        dim : str, optional
+            Core dimension along whch to estimate bounds. If None, ``keys``
+            must refer to 1D variables only.
 
         Returns
         -------
@@ -2198,7 +2213,9 @@ class CFDatasetAccessor(CFAccessor):
             bname = f"{var}_bounds"
             if bname in obj.variables:
                 raise ValueError(f"Bounds variable name {bname!r} will conflict!")
-            obj.coords[bname] = _guess_bounds_dim(obj[var].reset_coords(drop=True))
+            obj.coords[bname] = _guess_bounds_dim(
+                obj[var].reset_coords(drop=True), dim=dim
+            )
             obj[var].attrs["bounds"] = bname
 
         return self._maybe_to_dataarray(obj)

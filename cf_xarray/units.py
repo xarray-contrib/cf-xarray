@@ -10,6 +10,12 @@ from pint import (  # noqa: F401
     UnitStrippedWarning,
 )
 
+try:
+    from pint.facets.plain import UnitDefinition, ScaleConverter
+except ImportError:
+    from pint.unit import UnitDefinition
+    from pint.converters import ScaleConverter
+
 # from `xclim`'s unit support module with permission of the maintainers
 try:
 
@@ -78,7 +84,7 @@ units = pint.UnitRegistry(
 )
 
 units.define(
-    pint.unit.UnitDefinition("percent", "%", (), pint.converters.ScaleConverter(0.01))
+    UnitDefinition("percent", "%", (), ScaleConverter(0.01))
 )
 
 # Define commonly encountered units (both CF and non-CF) not defined by pint

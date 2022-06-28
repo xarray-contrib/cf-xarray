@@ -58,25 +58,21 @@ jobs:
       - name: Set up conda environment
         uses: mamba-org/provision-with-micromamba@34071ca7df4983ccd272ed0d3625818b27b70dcc
         with:
-          environment-file: ci/requirements/environment.yml
-          environment-name: xarray-tests
+          environment-file: ci/upstream-dev-env.yml
+          environment-name: cf_xarray_test
           extra-specs: |
             python=${{ matrix.python-version }}
             pytest-reportlog
-      - name: Install upstream versions
-        run: |
-          bash ci/install-upstream-wheels.sh
-      - name: Install xarray
+      - name: Install cf-xarray
         run: |
           python -m pip install --no-deps -e .
       - name: Version info
         run: |
           conda info -a
           conda list
-          python xarray/util/print_versions.py
-      - name: import xarray
+      - name: import cf_xarray
         run: |
-          python -c 'import xarray'
+          python -c 'import cf_xarray'
       - name: Run Tests
         if: success()
         id: status
@@ -91,7 +87,7 @@ jobs:
           failure()
           && steps.status.outcome == 'failure'
           && github.event_name == 'schedule'
-          && github.repository == 'pydata/xarray'
+          && github.repository == 'xarray-contrib/cf-xarray'
         uses: actions/upload-artifact@v3
         with:
           name: output-${{ matrix.python-version }}-log.jsonl

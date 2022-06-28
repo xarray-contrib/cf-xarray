@@ -24,6 +24,9 @@ jobs:
         python-version: ["3.8", "3.9", "3.10"]
     steps:
       - uses: actions/checkout@v3
+        with:
+            # need to fetch all tags to get a correct version
+            fetch-depth: 0  # fetch all branches and tags
       - uses: conda-incubator/setup-miniconda@v2
         with:
           channels: conda-forge
@@ -57,6 +60,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+            # need to fetch all tags to get a correct version
+            fetch-depth: 0  # fetch all branches and tags
       - uses: conda-incubator/setup-miniconda@v2
         with:
           channels: conda-forge
@@ -68,29 +74,6 @@ jobs:
         shell: bash -l {0}
         run: |
           mamba env update -f ci/environment-no-optional-deps.yml
-          python -m pip install -e .
-          conda list
-      - name: Run Tests
-        shell: bash -l {0}
-        run: |
-          pytest -n 2
-
-  upstream-dev:
-    name: upstream-dev
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          channels: conda-forge
-          mamba-version: "*"
-          activate-environment: cf_xarray_test
-          auto-update-conda: false
-          python-version: ${{ matrix.python-version }}
-      - name: Set up conda environment
-        shell: bash -l {0}
-        run: |
-          mamba env update -f ci/upstream-dev-env.yml
           python -m pip install -e .
           conda list
       - name: Run Tests

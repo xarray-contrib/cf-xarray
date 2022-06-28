@@ -24,6 +24,9 @@ jobs:
         python-version: ["3.7", "3.8", "3.9"]
     steps:
       - uses: actions/checkout@v3
+        with:
+            # need to fetch all tags to get a correct version
+            fetch-depth: 0  # fetch all branches and tags
       - uses: conda-incubator/setup-miniconda@v2
         with:
           channels: conda-forge

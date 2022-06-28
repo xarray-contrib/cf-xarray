@@ -10,14 +10,13 @@ hide-toc: true
 
 There are four ways one can use cf_xarray.
 
-## Use CF standard names 
+## Use CF standard names
 
 Use "CF names" like `standard_name`, coordinates like `"latitude"`, axes like `"X"` instead of actual variable names. For e.g.
 
-## Extract actual variable names 
+## Extract actual variable names
 
-Use `cf_xarray` to extract the appropriate variable name through the properties: 
-
+Use `cf_xarray` to extract the appropriate variable name through the properties:
 
 ## Rename to a custom vocabulary
 

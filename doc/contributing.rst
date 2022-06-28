@@ -70,4 +70,3 @@ Primarily for developer reference. Some of these could become public API if nece
     ~accessor._get_indexes
     ~accessor._get_measure
     ~accessor._get_with_standard_name
-

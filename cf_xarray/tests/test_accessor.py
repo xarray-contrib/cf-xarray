@@ -1,4 +1,5 @@
 import itertools
+import pickle
 from textwrap import dedent
 from urllib.request import urlopen
 
@@ -20,14 +21,16 @@ from ..datasets import (
     anc,
     basin,
     ds_no_attrs,
+    dsg,
     forecast,
     mollwds,
     multiple,
+    pomds,
     popds,
     romsds,
     vert,
 )
-from . import raise_if_dask_computes, requires_pint
+from . import raise_if_dask_computes, requires_cftime, requires_pint, requires_scipy
 
 mpl.use("Agg")
 
@@ -166,6 +169,32 @@ def test_repr():
     """
     assert actual == dedent(expected)
 
+    # CF roles
+    actual = dsg.cf.__repr__()
+    expected = """
+    - CF Roles: * profile_id: ['profile']
+                * trajectory_id: ['trajectory']
+
+    Coordinates:
+    - CF Axes:   X, Y, Z, T: n/a
+
+    - CF Coordinates:   longitude, latitude, vertical, time: n/a
+
+    - Cell Measures:   area, volume: n/a
+
+    - Standard Names:   n/a
+
+    - Bounds:   n/a
+
+    Data Variables:
+    - Cell Measures:   area, volume: n/a
+
+    - Standard Names:   n/a
+
+    - Bounds:   n/a
+    """
+    assert actual == dedent(expected)
+
 
 def test_axes():
     expected = dict(T=["time"], X=["lon"], Y=["lat"])
@@ -297,6 +326,11 @@ def test_getitem_ancillary_variables():
 
     with pytest.warns(UserWarning):
         anc[["q"]].cf["q"]
+
+    with pytest.warns(None) as record:
+        with cf_xarray.set_options(warn_on_missing_variables=False):
+            anc[["q"]].cf["q"]
+            assert len(record) == 0
 
     for k in ["ULONG", "ULAT"]:
         assert k not in popds.cf["TEMP"].coords
@@ -692,9 +726,10 @@ def test_plot_xincrease_yincrease():
         assert lim[0] > lim[1]
 
 
-@pytest.mark.parametrize("dims", ["lat", "time", ["lat", "lon"]])
-@pytest.mark.parametrize("obj", [airds])
-def test_add_bounds(obj, dims):
+@pytest.mark.parametrize("dims", ["time2", "lat", "time", ["lat", "lon"]])
+def test_add_bounds(dims):
+    obj = airds.copy(deep=True)
+
     expected = {}
     expected["lat"] = xr.concat(
         [
@@ -721,10 +756,12 @@ def test_add_bounds(obj, dims):
         ],
         dim="bounds",
     )
+    expected["time2"] = expected["time"]
     expected["lat"].attrs.clear()
     expected["lon"].attrs.clear()
     expected["time"].attrs.clear()
 
+    obj.coords["time2"] = obj.time
     added = obj.cf.add_bounds(dims)
     if isinstance(dims, str):
         dims = (dims,)
@@ -735,9 +772,33 @@ def test_add_bounds(obj, dims):
         assert added[dim].attrs["bounds"] == name
         assert_allclose(added[name].reset_coords(drop=True), expected[dim])
 
+
+def test_add_bounds_multiple():
     # Test multiple dimensions
     assert not {"x1_bounds", "x2_bounds"} <= set(multiple.variables)
     assert {"x1_bounds", "x2_bounds"} <= set(multiple.cf.add_bounds("X").variables)
+
+
+def test_add_bounds_nd_variable():
+
+    ds = xr.Dataset(
+        {"z": (("x", "y"), np.arange(12).reshape(4, 3))},
+        coords={"x": np.arange(4), "y": np.arange(3)},
+    )
+
+    expected = (
+        xr.concat([ds.z - 1.5, ds.z + 1.5], dim="bounds")
+        .rename("z_bounds")
+        .transpose("bounds", "y", "x")
+    )
+    with pytest.raises(ValueError):
+        ds.cf.add_bounds("z")
+
+    actual = ds.cf.add_bounds("z", dim="x").z_bounds.reset_coords(drop=True)
+    xr.testing.assert_identical(expected, actual)
+
+    with pytest.raises(NotImplementedError):
+        ds.drop_vars("x").cf.add_bounds("z", dim="x")
 
 
 def test_bounds():
@@ -1023,31 +1084,46 @@ def test_param_vcoord_ocean_s_coord():
         romsds.hc + romsds.h
     )
     expected = romsds.zeta + (romsds.zeta + romsds.h) * Zo_rho
-    romsds.cf.decode_vertical_coords()
+    romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
     assert_allclose(
         romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
     )
 
     romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g1"
     Zo_rho = romsds.hc * (romsds.s_rho - romsds.Cs_r) + romsds.Cs_r * romsds.h
+
     expected = Zo_rho + romsds.zeta * (1 + Zo_rho / romsds.h)
-    romsds.cf.decode_vertical_coords()
+    romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
     assert_allclose(
         romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
     )
 
-    romsds.cf.decode_vertical_coords(prefix="ZZZ")
+    romsds.cf.decode_vertical_coords(outnames={"s_rho": "ZZZ_rho"})
     assert "ZZZ_rho" in romsds.coords
 
     copy = romsds.copy(deep=True)
     del copy["zeta"]
     with pytest.raises(KeyError):
-        copy.cf.decode_vertical_coords()
+        copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
     copy = romsds.copy(deep=True)
     copy.s_rho.attrs["formula_terms"] = "s: s_rho C: Cs_r depth: h depth_c: hc"
     with pytest.raises(KeyError):
+        copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
+
+
+def test_param_vcoord_ocean_sigma_coordinate():
+    expected = pomds.zeta + pomds.sigma * (pomds.depth + pomds.zeta)
+    pomds.cf.decode_vertical_coords(outnames={"sigma": "z"})
+    assert_allclose(pomds.z.reset_coords(drop=True), expected.reset_coords(drop=True))
+
+    copy = pomds.copy(deep=True)
+    del copy["zeta"]
+    with pytest.raises(AssertionError):
         copy.cf.decode_vertical_coords()
+
+    with pytest.raises(KeyError):
+        copy.cf.decode_vertical_coords(outnames={})
 
 
 def test_formula_terms():
@@ -1424,10 +1500,17 @@ def test_add_canonical_attributes_0_dim():
     ).cf.add_canonical_attributes()
 
 
-def test_datetime_like():
+@requires_cftime
+@pytest.mark.parametrize("reshape", [False, True])
+def test_datetime_like(reshape):
     """test for 0 or >= 2 time dimensions"""
+    import cftime
+
+    data = cftime.datetime(2022, 1, 12)
+    if reshape:
+        data = [[data]]
     da = xr.DataArray(
-        np.timedelta64(1, "D"),
+        data,
         attrs={"standard_name": "sea_water_age_since_surface_contact"},
     )
     new_attrs = da.cf.add_canonical_attributes().attrs
@@ -1538,3 +1621,46 @@ def test_missing_variables():
     ds = vert.copy(deep=True)
     ds = ds.drop_vars("ap")
     assert ds.cf.formula_terms == {"lev": {"b": "b", "ps": "ps"}}
+
+
+def test_pickle():
+    da = xr.DataArray([1.0], name="a")
+    ds = da.to_dataset()
+    pickle.loads(pickle.dumps(da.cf))
+    pickle.loads(pickle.dumps(ds.cf))
+
+
+def test_cf_role():
+    for name in ["profile_id", "trajectory_id"]:
+        assert name in dsg.cf.keys()
+
+    assert dsg.cf.cf_roles == {
+        "profile_id": ["profile"],
+        "trajectory_id": ["trajectory"],
+    }
+
+    dsg.foo.cf.plot(x="profile_id")
+    dsg.foo.cf.plot(x="trajectory_id")
+
+
+@requires_scipy
+def test_curvefit():
+    from cf_xarray.datasets import airds
+
+    def line(time, slope):
+        t = (time - time[0]).astype(float)
+        return slope * t
+
+    actual = airds.air.cf.isel(lat=4, lon=5).curvefit(coords=("time",), func=line)
+    expected = airds.air.cf.isel(lat=4, lon=5).cf.curvefit(coords="T", func=line)
+    assert_identical(expected, actual)
+
+    def plane(coords, slopex, slopey):
+        x, y = coords
+        return slopex * (x - x.mean()) + slopey * (y - y.mean())
+
+    actual = airds.air.isel(time=0).curvefit(coords=("lat", "lon"), func=plane)
+    expected = airds.air.isel(time=0).cf.curvefit(
+        coords=("latitude", "longitude"), func=plane
+    )
+    assert_identical(expected, actual)

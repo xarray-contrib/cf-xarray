@@ -9,6 +9,7 @@ from .utils import always_iterable
 
 OPTIONS: MutableMapping[str, Any] = {
     "custom_criteria": [],
+    "warn_on_missing_variables": True,
 }
 
 
@@ -20,6 +21,9 @@ class set_options:
     custom_criteria : dict
         Translate from axis, coord, or custom name to
         variable name optionally using ``custom_criteria``. Default: [].
+    warn_on_missing_variables : bool
+        Whether to raise a warning when variables referred to in attributes
+        are not present in the object.
 
     Examples
     --------
@@ -28,15 +32,16 @@ class set_options:
 
     >>> import numpy as np
     >>> import xarray as xr
-    >>> my_custom_criteria = { 'ssh': {'name': 'elev$'} }
+    >>> my_custom_criteria = {"ssh": {"name": "elev$"}}
     >>> ds = xr.Dataset({"elev": np.arange(1000)})
     >>> with cf_xarray.set_options(custom_criteria=my_custom_criteria):
-    ...     xr.testing.assert_identical(ds['elev'], ds.cf['ssh'])
+    ...     xr.testing.assert_identical(ds["elev"], ds.cf["ssh"])
+    ...
 
     Or to set global options:
 
     >>> cf_xarray.set_options(custom_criteria=my_custom_criteria)
-    >>> xr.testing.assert_identical(ds['elev'], ds.cf['ssh'])
+    >>> xr.testing.assert_identical(ds["elev"], ds.cf["ssh"])
     """
 
     def __init__(self, **kwargs):

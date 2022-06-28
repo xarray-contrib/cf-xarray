@@ -10,6 +10,7 @@ kernelspec:
 ```{eval-rst}
 .. currentmodule:: xarray
 ```
+
 ```{code-cell}
 ---
 tags: [remove-cell]
@@ -32,8 +33,7 @@ ds = xr.tutorial.open_dataset("air_temperature")
 ds
 ```
 
-
-``cf_xarray`` registers an "accessor" names ``cf`` on import. For a quick overview of attributes that `cf_xarray` can interpret use `.cf`
+`cf_xarray` registers an "accessor" names `cf` on import. For a quick overview of attributes that `cf_xarray` can interpret use `.cf`
 
 ```{code-cell}
 ds.cf
@@ -46,17 +46,18 @@ For best results, we recommend you tell xarray to preserve attributes as much as
 ## Using attributes
 
 Now instead of the usual xarray names on the right, you can use the "CF names" on the left.
+
 ```{code-cell}
 ds.cf.mean("latitude")  # identical to ds.mean("lat")
 ```
 
 This works because the attributes `standard_name: "latitude"` and `units: "degrees_north"` are present on `ds.latitude`
+
 ```{code-cell}
 ds.lat.attrs
 ```
 
 Similarly we could use `ds.cf.mean("Y")` because the attribute `axis: "Y"` is present.
-
 
 ```{tip}
 For a list of criteria used to identify the "longitude" variable (for e.g.) see Coordinate Criteria.
@@ -69,12 +70,13 @@ Sometimes datasets don't have all the necessary attributes. Use {py:meth}`~xarra
 ## Indexing
 
 We can use these "CF names" to index into the dataset
+
 ```{code-cell}
 ds.cf["latitude"]
 ```
 
-
 This is particularly useful if a `standard_name` attribute is present. For demonstration purposes lets add one:
+
 ```{code-cell}
 ds.air.attrs["standard_name"] = "air_temperature"
 ds.cf["air_temperature"]
@@ -83,9 +85,11 @@ ds.cf["air_temperature"]
 ## Finding variable names
 
 Sometimes it is more useful to extract the actual variable names associated with a given "CF name". `cf_xarray` exposes these variable names under a few properties:
+
 - {py:attr}`Dataset.cf.axes`,
 - {py:attr}`Dataset.cf.bounds`,
 - {py:attr}`Dataset.cf.cell_measures`,
+- {py:attr}`Dataset.cf.cf_roles`,
 - {py:attr}`Dataset.cf.coordinates`,
 - {py:attr}`Dataset.cf.formula_terms`, and
 - {py:attr}`Dataset.cf.standard_names`.
@@ -95,9 +99,11 @@ These properties all return dictionaries mapping a standard key name to a list o
 ```{code-cell}
 ds.cf.axes
 ```
+
 ```{code-cell}
 ds.cf.coordinates
 ```
+
 ```{code-cell}
 ds.cf.standard_names
 ```

@@ -6,11 +6,13 @@ kernelspec:
   display_name: Python 3
   name: python3
 ---
+
 ```{eval-rst}
 .. currentmodule:: xarray
 ```
 
 (flags)=
+
 # Flag Variables
 
 `cf_xarray` has some support for [flag variables](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags).
@@ -33,18 +35,21 @@ da.cf
 ```
 
 Now you can perform meaningful boolean comparisons that take advantage of the `flag_meanings` attribute:
+
 ```{code-cell}
 # compare to da == 1
 da.cf == "atlantic_ocean"
 ```
 
 Similarly with membership tests using {py:meth}`DataArray.cf.isin`
+
 ```{code-cell}
 # compare to da.isin([2, 3])
 da.cf.isin(["indian_ocean", "pacific_ocean"])
 ```
 
 You can also check whether a DataArray has the appropriate attributes to be recognized as a flag variable using {py:meth}`DataArray.cf.is_flag_variable`
+
 ```{code-cell}
 da.cf.is_flag_variable
 ```

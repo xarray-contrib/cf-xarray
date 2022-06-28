@@ -4,7 +4,7 @@
 .. image:: _static/full-logo.png
     :align: center
     :width: 70%
-   
+
 |
 |
 
@@ -50,6 +50,7 @@ or using ``conda``
    units
    parametricz
    bounds
+   coding
    dsg
    geometry
    plotting

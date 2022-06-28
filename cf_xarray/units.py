@@ -56,7 +56,6 @@ try:
         out = out.replace("Δ°", "delta_deg")
         return out.replace("percent", "%")
 
-
 except ImportError:
     pass
 
@@ -78,9 +77,7 @@ units = pint.UnitRegistry(
     force_ndarray_like=True,
 )
 
-units.define(
-    pint.unit.UnitDefinition("percent", "%", (), pint.converters.ScaleConverter(0.01))
-)
+units.define("percent = 0.01 = %")
 
 # Define commonly encountered units (both CF and non-CF) not defined by pint
 units.define("@alias meter = gpm")
@@ -92,7 +89,7 @@ units.define("@alias meter = gpm")
 units.define("year = 365.25 * day = yr")
 
 # Define commonly encountered units not defined by pint
-units.define("@alias degC = C = deg_C = degrees_Celsius")
+units.define("@alias degC = C = deg_C = Celsius = degrees_Celsius")
 units.define("@alias degK = deg_K")
 units.define("@alias day = d")
 units.define("@alias hour = h")  # Not the Planck constant...

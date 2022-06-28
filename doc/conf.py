@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # complexity documentation build configuration file, created by
 # sphinx-quickstart on Tue Jul  9 22:26:36 2013.
 #
@@ -251,6 +249,7 @@ man_pages = [("index", "cf_xarray", "cf_xarray Documentation", [author], 1)]
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     "xarray": ("https://xarray.pydata.org/en/stable/", None),
+    "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
 }
 
 autosummary_generate = True

@@ -14,6 +14,8 @@ Top-level API
     shapely_to_cf
     cf_to_shapely
     set_options
+    encode_multi_index_as_compress
+    decode_compress_to_multi_index
 
 .. currentmodule:: xarray
 
@@ -31,6 +33,7 @@ Attributes
 
     DataArray.cf.axes
     DataArray.cf.cell_measures
+    DataArray.cf.cf_roles
     DataArray.cf.coordinates
     DataArray.cf.formula_terms
     DataArray.cf.is_flag_variable
@@ -88,6 +91,7 @@ Attributes
     Dataset.cf.axes
     Dataset.cf.bounds
     Dataset.cf.cell_measures
+    Dataset.cf.cf_roles
     Dataset.cf.coordinates
     Dataset.cf.formula_terms
     Dataset.cf.standard_names

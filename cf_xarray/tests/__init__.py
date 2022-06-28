@@ -63,5 +63,7 @@ def LooseVersion(vstring):
     return version.LooseVersion(vstring)
 
 
-has_pint, requires_pint = _importorskip("pint")
+has_cftime, requires_cftime = _importorskip("cftime")
+has_scipy, requires_scipy = _importorskip("scipy")
 has_shapely, requires_shapely = _importorskip("shapely")
+has_pint, requires_pint = _importorskip("pint")

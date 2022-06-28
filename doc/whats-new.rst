@@ -2,8 +2,22 @@
 
 What's New
 ----------
-v0.6.4 (unreleased)
+
+v0.7.3 (unreleased)
 ===================
+- :py:meth:`Dataset.cf.guess_coord_axis` now skips known axes/coordinates and only returns a single guess per variable.
+  Additional attributes such as `units` must be added to known axes/coordinates using :py:meth:`Dataset.cf.add_canonical_attributes`.
+  By `Mattia Almansi`_.
+- Increased support for ``cf_role`` variables. Added :py:attr:`Dataset.cf.cf_roles` By `Deepak Cherian`_.
+
+v0.7.2 (April 5, 2022)
+======================
+- added encoder and decoder for writing pandas MultiIndex-es to file using "compression by gathering".
+  See :doc:`coding` for more. By `Deepak Cherian`_.
+- added another type of vertical coordinate to decode: ``ocean_sigma_coordinate``. By `Kristen Thyng`_.
+
+v0.7.0 (January 24, 2022)
+=========================
 - Many improvements to autoguessing for plotting. By `Deepak Cherian`_
 - Fix detection of datetime-like variables. By `Romain Caneill`_
 - Integrate more unit aliases from ``xclim`` (Thanks!). By `Deepak Cherian`_

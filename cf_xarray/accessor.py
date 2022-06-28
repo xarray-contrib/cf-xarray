@@ -15,6 +15,7 @@ from typing import (
     List,
     Mapping,
     MutableMapping,
+    Sequence,
     TypeVar,
     Union,
     cast,
@@ -455,20 +456,32 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, tuple[Mapper, ...]] = {
 }
 
 
-def _guess_bounds_dim(da):
+def _guess_bounds_dim(da, dim=None):
     """
     Guess bounds values given a 1D coordinate variable.
     Assumes equal spacing on either side of the coordinate label.
     """
-    assert da.ndim == 1
+    if dim is None:
+        if da.ndim != 1:
+            raise ValueError(
+                f"If dim is None, variable {da.name} must be 1D. Received {da.ndim}D variable instead."
+            )
+        (dim,) = da.dims
+    if dim not in da.dims:
+        (dim,) = da.cf.axes[dim]
+    if dim not in da.coords:
+        raise NotImplementedError(
+            "Adding bounds for unindexed dimensions is not supported currently."
+        )
 
-    dim = da.dims[0]
     diff = da.diff(dim)
     lower = da - diff / 2
     upper = da + diff / 2
     bounds = xr.concat([lower, upper], dim="bounds")
 
-    first = (bounds.isel({dim: 0}) - diff[0]).assign_coords({dim: da[dim][0]})
+    first = (bounds.isel({dim: 0}) - diff.isel({dim: 0})).assign_coords(
+        {dim: da[dim][0]}
+    )
     result = xr.concat([first, bounds], dim=dim)
 
     return result
@@ -933,6 +946,9 @@ class CFAccessor:
         self._obj = obj
         self._all_cell_measures = None
 
+    def __setstate__(self, d):
+        self.__dict__ = d
+
     def _assert_valid_other_comparison(self, other):
         flag_dict = create_flag_dict(self._obj)
         if other not in flag_dict:
@@ -1056,6 +1072,52 @@ class CFAccessor:
 
         return self._all_cell_measures
 
+    def curvefit(
+        self,
+        coords: str | DataArray | Iterable[str | DataArray],
+        func: Callable[..., Any],
+        reduce_dims: Hashable | Iterable[Hashable] = None,
+        skipna: bool = True,
+        p0: dict[str, Any] = None,
+        bounds: dict[str, Any] = None,
+        param_names: Sequence[str] = None,
+        kwargs: dict[str, Any] = None,
+    ):
+
+        if coords is not None:
+            if isinstance(coords, str):
+                coords = (coords,)
+            coords = [
+                apply_mapper(  # type: ignore
+                    [_single(_get_coords)], self._obj, v, error=False, default=[v]  # type: ignore
+                )[
+                    0
+                ]  # type: ignore
+                for v in coords
+            ]
+        if reduce_dims is not None:
+            if isinstance(reduce_dims, Hashable):
+                reduce_dims: Iterable[Hashable] = (reduce_dims,)  # type: ignore
+            reduce_dims = [
+                apply_mapper(  # type: ignore
+                    [_single(_get_dims)], self._obj, v, error=False, default=[v]  # type: ignore
+                )[
+                    0
+                ]  # type: ignore
+                for v in reduce_dims  # type: ignore
+            ]
+
+        return self._obj.curvefit(
+            coords=coords,
+            func=func,
+            reduce_dims=reduce_dims,
+            skipna=skipna,
+            p0=p0,
+            bounds=bounds,
+            param_names=param_names,
+            kwargs=kwargs,
+        )
+
     def _process_signature(
         self,
         func: Callable,
@@ -1110,7 +1172,7 @@ class CFAccessor:
     def _rewrite_values(
         self,
         kwargs,
-        key_mappers: Mapping[str, tuple[Mapper, ...]],
+        key_mappers: MutableMapping[str, tuple[Mapper, ...]],
         var_kws: tuple[str, ...],
     ):
         """
@@ -1135,7 +1197,7 @@ class CFAccessor:
 
         # allow multiple return values here.
         # these are valid for .sel, .isel, .coarsen
-        all_mappers = ChainMap(
+        all_mappers = ChainMap(  # type: ignore
             key_mappers,
             dict.fromkeys(var_kws, (_get_all,)),
         )
@@ -1236,7 +1298,7 @@ class CFAccessor:
         coords = self._obj.coords
         dims = self._obj.dims
 
-        def make_text_section(subtitle, attr, valid_values, default_keys=None):
+        def make_text_section(subtitle, attr, valid_values=None, default_keys=None):
 
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -1257,11 +1319,12 @@ class CFAccessor:
             vardict = {key: vardict[key] for key in ordered_keys if key in vardict}
 
             # Keep only valid values (e.g., coords or data_vars)
-            vardict = {
-                key: set(value).intersection(valid_values)
-                for key, value in vardict.items()
-                if set(value).intersection(valid_values)
-            }
+            if valid_values is not None:
+                vardict = {
+                    key: set(value).intersection(valid_values)
+                    for key, value in vardict.items()
+                    if set(value).intersection(valid_values)
+                }
 
             # Star for keys with dims only, tab otherwise
             rows = [
@@ -1290,6 +1353,11 @@ class CFAccessor:
             text = f"CF Flag variable with mapping:\n\t{flag_dict!r}\n\n"
         else:
             text = ""
+
+        if self.cf_roles:
+            text += make_text_section("CF Roles", "cf_roles")
+            text += "\n"
+
         text += "Coordinates:"
         text += make_text_section("CF Axes", "axes", coords, _AXIS_NAMES)
         text += make_text_section("CF Coordinates", "coordinates", coords, _COORD_NAMES)
@@ -1334,6 +1402,7 @@ class CFAccessor:
         varnames = list(self.axes) + list(self.coordinates)
         varnames.extend(list(self.cell_measures))
         varnames.extend(list(self.standard_names))
+        varnames.extend(list(self.cf_roles))
 
         return set(varnames)
 
@@ -1458,6 +1527,40 @@ class CFAccessor:
 
         return {k: sorted(v) for k, v in vardict.items()}
 
+    @property
+    def cf_roles(self) -> dict[str, list[str]]:
+        """
+        Returns a dictionary mapping cf_role names to variable names.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping cf_role names to variable names.
+
+        References
+        ----------
+        Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#coordinates-metadata
+
+        Examples
+        --------
+        >>> import cf_xarray
+        >>> from cf_xarray.datasets import dsg
+        >>> dsg.cf.cf_roles
+        {'profile_id': ['profile'], 'trajectory_id': ['trajectory']}
+        """
+        if isinstance(self._obj, Dataset):
+            variables = self._obj.variables
+        elif isinstance(self._obj, DataArray):
+            variables = self._obj.coords
+
+        vardict: dict[str, list[str]] = {}
+        for k, v in variables.items():
+            if "cf_role" in v.attrs:
+                role = v.attrs["cf_role"]
+                vardict[role] = vardict.setdefault(role, []) + [k]
+
+        return {k: sorted(v) for k, v in vardict.items()}
+
     def get_associated_variable_names(
         self, name: Hashable, skip_bounds: bool = False, error: bool = True
     ) -> dict[str, list[str]]:
@@ -1523,10 +1626,11 @@ class CFAccessor:
         allvars = itertools.chain(*coords.values())
         missing = set(allvars) - set(self._maybe_to_dataset().variables)
         if missing:
-            warnings.warn(
-                f"Variables {missing!r} not found in object but are referred to in the CF attributes.",
-                UserWarning,
-            )
+            if OPTIONS["warn_on_missing_variables"]:
+                warnings.warn(
+                    f"Variables {missing!r} not found in object but are referred to in the CF attributes.",
+                    UserWarning,
+                )
             for k, v in coords.items():
                 for m in missing:
                     if m in v:
@@ -1687,7 +1791,8 @@ class CFAccessor:
         """
         obj = self._obj.copy(deep=True)
         for var in obj.coords.variables:
-            if obj[var].ndim == 1 and _is_datetime_like(obj[var]):
+            var_is_coord = any(var in val for val in obj.cf.coordinates.values())
+            if not var_is_coord and obj[var].ndim == 1 and _is_datetime_like(obj[var]):
                 if verbose:
                     print(
                         f"I think {var!r} is of type 'time'. It has a datetime-like type."
@@ -1696,6 +1801,12 @@ class CFAccessor:
                 continue  # prevent second detection
 
             for name, pattern in regex.items():
+                var_is_axis = any(var in val for val in obj.cf.axes.values())
+                var_is_coord = any(var in val for val in obj.cf.coordinates.values())
+                if (name in _AXIS_NAMES and var_is_axis) or (
+                    name in _COORD_NAMES and var_is_coord
+                ):
+                    continue  # skip known axes/coordinates and prevent multiple guesses
                 # match variable names
                 if pattern.match(var.lower()):
                     if verbose:
@@ -2045,7 +2156,7 @@ class CFDatasetAccessor(CFAccessor):
         assert self._obj.sizes[bounds_dim] in [2, 4]
         return bounds_dim
 
-    def add_bounds(self, keys: str | Iterable[str]):
+    def add_bounds(self, keys: str | Iterable[str], *, dim=None):
         """
         Returns a new object with bounds variables. The bounds values are guessed assuming
         equal spacing on either side of a coordinate label.
@@ -2053,7 +2164,10 @@ class CFDatasetAccessor(CFAccessor):
         Parameters
         ----------
         keys : str or Iterable[str]
-            Either a single key or a list of keys corresponding to dimensions.
+            Either a single variable name or a list of variable names.
+        dim : str, optional
+            Core dimension along whch to estimate bounds. If None, ``keys``
+            must refer to 1D variables only.
 
         Returns
         -------
@@ -2066,8 +2180,8 @@ class CFDatasetAccessor(CFAccessor):
 
         Notes
         -----
-        The bounds variables are automatically named ``f"{dim}_bounds"`` where ``dim``
-        is a dimension name.
+        The bounds variables are automatically named ``f"{var}_bounds"`` where ``var``
+        is a variable name.
 
         Examples
         --------
@@ -2081,25 +2195,28 @@ class CFDatasetAccessor(CFAccessor):
         if isinstance(keys, str):
             keys = [keys]
 
-        dimensions = set()
+        variables = set()
         for key in keys:
-            dimensions.update(
-                apply_mapper(_get_dims, self._obj, key, error=False, default=[key])
-            )
-
-        bad_dims: set[str] = dimensions - set(self._obj.dims)
-        if bad_dims:
-            raise ValueError(
-                f"{bad_dims!r} are not dimensions in the underlying object."
+            variables.update(
+                apply_mapper(_get_all, self._obj, key, error=False, default=[key])
             )
 
         obj = self._maybe_to_dataset(self._obj.copy(deep=True))
-        for dim in dimensions:
-            bname = f"{dim}_bounds"
+
+        bad_vars: set[str] = variables - set(obj.variables)
+        if bad_vars:
+            raise ValueError(
+                f"{bad_vars!r} are not variables in the underlying object."
+            )
+
+        for var in variables:
+            bname = f"{var}_bounds"
             if bname in obj.variables:
                 raise ValueError(f"Bounds variable name {bname!r} will conflict!")
-            obj.coords[bname] = _guess_bounds_dim(obj[dim].reset_coords(drop=True))
-            obj[dim].attrs["bounds"] = bname
+            obj.coords[bname] = _guess_bounds_dim(
+                obj[var].reset_coords(drop=True), dim=dim
+            )
+            obj[var].attrs["bounds"] = bname
 
         return self._maybe_to_dataarray(obj)
 
@@ -2186,12 +2303,15 @@ class CFDatasetAccessor(CFAccessor):
                 )
         return obj
 
-    def decode_vertical_coords(self, prefix="z"):
+    def decode_vertical_coords(self, *, outnames=None, prefix=None):
         """
         Decode parameterized vertical coordinates in place.
 
         Parameters
         ----------
+        outnames : dict, optional
+            Keys of outnames are the input sigma/s coordinate variable name and
+            the values are the name to use for the associated vertical coordinate.
         prefix : str, optional
             Prefix for newly created z variables.
             E.g. ``s_rho`` becomes ``z_rho``
@@ -2205,7 +2325,8 @@ class CFDatasetAccessor(CFAccessor):
         Will only decode when the ``formula_terms`` and ``standard_name`` attributes
         are set on the parameter (e.g ``s_rho`` )
 
-        Currently only supports ``ocean_s_coordinate_g1`` and ``ocean_s_coordinate_g2``.
+        Currently only supports ``ocean_s_coordinate_g1``, ``ocean_s_coordinate_g2``,
+        and ``ocean_sigma_coordinate``.
 
         .. warning::
            Very lightly tested. Please double check the results.
@@ -2219,12 +2340,28 @@ class CFDatasetAccessor(CFAccessor):
         requirements = {
             "ocean_s_coordinate_g1": {"depth_c", "depth", "s", "C", "eta"},
             "ocean_s_coordinate_g2": {"depth_c", "depth", "s", "C", "eta"},
+            "ocean_sigma_coordinate": {"sigma", "eta", "depth"},
         }
 
         allterms = self.formula_terms
         for dim in allterms:
-            suffix = dim.split("_")
-            zname = f"{prefix}_" + "_".join(suffix[1:])
+            if prefix is None:
+                assert (
+                    outnames is not None
+                ), "if prefix is None, outnames must be provided"
+                # set outnames here
+                try:
+                    zname = outnames[dim]
+                except KeyError:
+                    raise KeyError("Your `outnames` need to include a key of `dim`.")
+
+            else:
+                warnings.warn(
+                    "`prefix` is being deprecated; use `outnames` instead.",
+                    DeprecationWarning,
+                )
+                suffix = dim.split("_")
+                zname = f"{prefix}_" + "_".join(suffix[1:])
 
             if "standard_name" not in ds[dim].attrs:
                 continue
@@ -2250,8 +2387,9 @@ class CFDatasetAccessor(CFAccessor):
                     terms["depth_c"] * terms["s"]
                     + (terms["depth"] - terms["depth_c"]) * terms["C"]
                 )
+
                 # z(n,k,j,i) = S(k,j,i) + eta(n,j,i) * (1 + S(k,j,i) / depth(j,i))
-                ds.coords[zname] = S + terms["eta"] * (1 + S / terms["depth"])
+                ztemp = S + terms["eta"] * (1 + S / terms["depth"])
 
             elif stdname == "ocean_s_coordinate_g2":
                 # make sure all necessary terms are present in terms
@@ -2259,13 +2397,20 @@ class CFDatasetAccessor(CFAccessor):
                 S = (terms["depth_c"] * terms["s"] + terms["depth"] * terms["C"]) / (
                     terms["depth_c"] + terms["depth"]
                 )
+
                 # z(n,k,j,i) = eta(n,j,i) + (eta(n,j,i) + depth(j,i)) * S(k,j,i)
-                ds.coords[zname] = terms["eta"] + (terms["eta"] + terms["depth"]) * S
+                ztemp = terms["eta"] + (terms["eta"] + terms["depth"]) * S
+
+            elif stdname == "ocean_sigma_coordinate":
+                # z(n,k,j,i) = eta(n,j,i) + sigma(k)*(depth(j,i)+eta(n,j,i))
+                ztemp = terms["eta"] + terms["sigma"] * (terms["depth"] + terms["eta"])
 
             else:
                 raise NotImplementedError(
                     f"Coordinate function for {stdname!r} not implemented yet. Contributions welcome!"
                 )
+
+            ds.coords[zname] = ztemp
 
 
 @xr.register_dataarray_accessor("cf")

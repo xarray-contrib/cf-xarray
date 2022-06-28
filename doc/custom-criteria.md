@@ -6,9 +6,11 @@ kernelspec:
   display_name: Python 3
   name: python3
 ---
+
 ```{eval-rst}
 .. currentmodule:: cf_xarray
 ```
+
 ```{code-cell}
 ---
 tags: [remove-cell]
@@ -18,10 +20,12 @@ xr.set_options(display_expand_data=False)
 ```
 
 (custom_criteria)=
+
 # Custom Criteria
 
 Fundamentally, cf_xarray uses rules or "criteria" to interpret user input using the
 attributes of an Xarray object (`.attrs`). These criteria are simple dictionaries. For example, here are the criteria used for identifying a "latitude" variable:
+
 ```python
 coordinate_criteria = {
     "latitude": {
@@ -42,6 +46,7 @@ coordinate_criteria = {
 This dictionary maps the user input (`"latitude"`) to another dictionary which in turn maps an attribute name to a tuple of acceptable values for that attribute. So any variable with either `standard_name: latitude` or `_CoordinateAxisType: Lat_` or any of the `unit`s listed above will match the user-input `"latitude"`.
 
 cf_xarray lets you provide your own custom criteria in addition to those built-in. Here's an example:
+
 ```{code-cell}
 import cf_xarray as cfxr
 import numpy as np
@@ -61,6 +66,7 @@ salt_criteria = {
 ```
 
 Now we apply our custom criteria temporarily using {py:func}`set_options` as a context manager. The following sets `"sea_water_salinity"` as an alias for variables that have either `"sea_water_salinity"` or `"sea_water_practical_salinity"` (note the use of regular expressions as a value). Here's how that works in practice
+
 ```{code-cell}
 with cfxr.set_options(custom_criteria=salt_criteria):
     salty = ds.cf[["sea_water_salinity"]]
@@ -68,23 +74,26 @@ salty
 ```
 
 Note that `salty` contains both `salt1` and `salt2`. Without setting these criteria, we  would only get `salt1` by default
+
 ```{code-cell}
 ds.cf[["sea_water_salinity"]]
 ```
 
 We can also use {py:func}`set_options` to set the criteria globally.
+
 ```{code-cell}
 cfxr.set_options(custom_criteria=salt_criteria)
 ds.cf[["sea_water_salinity"]]
 ```
 
-Again we get back both `salt1` and `salt2`. To limit side effects of setting criteria globally, we recommend that you use `set_options` as a context manager. 
+Again we get back both `salt1` and `salt2`. To limit side effects of setting criteria globally, we recommend that you use `set_options` as a context manager.
 
 ```{tip}
 To reset your custom criteria use `cfxr.set_options(custom_criteria=())`
 ```
 
 You can also match on the variable name, though be careful!
+
 ```{code-cell}
 salt_criteria = {
     "salinity": {"name": "salt*"}

@@ -16,6 +16,29 @@ for variable in ds_no_attrs.variables:
     ds_no_attrs[variable].attrs = {}
 
 
+# POM dataset
+pomds = xr.Dataset()
+pomds["sigma"] = (
+    # fmt: off
+    "sigma",
+    [-0.983333, -0.95    , -0.916667, -0.883333, -0.85    , -0.816667,
+     -0.783333, -0.75    , -0.716667, -0.683333, -0.65    , -0.616667,
+     -0.583333, -0.55    , -0.516667, -0.483333, -0.45    , -0.416667,
+     -0.383333, -0.35    , -0.316667, -0.283333, -0.25    , -0.216667,
+     -0.183333, -0.15    , -0.116667, -0.083333, -0.05    , -0.016667],
+    # fmt: on
+    {
+        "units": "sigma_level",
+        "long_name": "Sigma Stretched Vertical Coordinate at Nodes",
+        "positive": "down",
+        "standard_name": "ocean_sigma_coordinate",
+        "formula_terms": "sigma: sigma eta: zeta depth: depth",
+    }
+)
+pomds["depth"] = 175.0
+pomds["zeta"] = ("ocean_time", [-0.155356, -0.127435])
+
+
 popds = xr.Dataset()
 popds.coords["TLONG"] = (
     ("nlat", "nlon"),
@@ -459,4 +482,13 @@ vert = xr.Dataset.from_dict(
             },
         },
     }
+)
+
+
+dsg = xr.Dataset(
+    {"foo": (("trajectory", "profile"), [[1, 2, 3], [1, 2, 3]])},
+    coords={
+        "profile": ("profile", [0, 1, 2], {"cf_role": "profile_id"}),
+        "trajectory": ("trajectory", [0, 1], {"cf_role": "trajectory_id"}),
+    },
 )

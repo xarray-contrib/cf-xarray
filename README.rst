@@ -10,9 +10,9 @@
     :target: https://github.com/xarray-contrib/cf-xarray/actions
     :alt: GitHub Workflow CI Status
 
-.. image:: https://img.shields.io/github/workflow/status/xarray-contrib/cf-xarray/code-style?label=Code%20Style&style=for-the-badge
-    :target: https://github.com/xarray-contrib/cf-xarray/actions
-    :alt: GitHub Workflow Code Style Status
+.. image:: https://results.pre-commit.ci/badge/github/xarray-contrib/cf-xarray/main.svg
+   :target: https://results.pre-commit.ci/latest/github/xarray-contrib/cf-xarray/main
+   :alt: pre-commit.ci status
 
 .. image:: https://img.shields.io/codecov/c/github/xarray-contrib/cf-xarray.svg?style=for-the-badge
     :target: https://codecov.io/gh/xarray-contrib/cf-xarray
@@ -35,7 +35,7 @@
 cf-xarray
 =========
 
-A lightweight convenience wrapper for using CF attributes on xarray objects. 
+A lightweight convenience wrapper for using CF attributes on xarray objects.
 
 For example you can use ``.cf.mean("latitude")`` instead of ``.mean("lat")`` if appropriate attributes are set! This allows you to write code that does not require knowledge of specific dimension or coordinate names particular to a dataset.
 

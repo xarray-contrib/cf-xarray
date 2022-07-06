@@ -480,7 +480,7 @@ def _guess_bounds_dim(da, dim=None):
     first = (bounds.isel({dim: 0}) - diff.isel({dim: 0})).assign_coords(
         {dim: da[dim][0]}
     )
-    result = xr.concat([first, bounds], dim=dim)
+    result = xr.concat([first, bounds], dim=dim).transpose()
 
     return result
 

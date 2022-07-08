@@ -50,13 +50,13 @@ def test_vertices_to_bounds():
     ds = airds.cf.add_bounds(["lon", "lat", "time"])
     lat_c = cfxr.bounds_to_vertices(ds.lat_bounds, bounds_dim="bounds")
     lat_b = cfxr.vertices_to_bounds(lat_c, out_dims=("bounds", "lat"))
-    assert_array_equal(ds.lat_bounds, lat_b)
+    assert_array_equal(ds.lat_bounds, lat_b.transpose(..., "bounds"))
 
     # Datetime
     time_c = cfxr.bounds_to_vertices(ds.time_bounds, bounds_dim="bounds")
     time_b = cfxr.vertices_to_bounds(time_c, out_dims=("bounds", "time"))
-    assert_array_equal(ds.time_bounds, time_b)
+    assert_array_equal(ds.time_bounds, time_b.transpose(..., "bounds"))
 
     # 2D case
     lon_b = cfxr.vertices_to_bounds(mollwds.lon_vertices, out_dims=("bounds", "x", "y"))
-    assert_array_equal(mollwds.lon_bounds, lon_b)
+    assert_array_equal(mollwds.lon_bounds, lon_b.transpose(..., "bounds"))

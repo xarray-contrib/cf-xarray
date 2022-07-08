@@ -770,7 +770,9 @@ def test_add_bounds(dims):
         name = f"{dim}_bounds"
         assert name in added.coords
         assert added[dim].attrs["bounds"] == name
-        assert_allclose(added[name].reset_coords(drop=True), expected[dim].transpose(..., "bounds"))
+        assert_allclose(
+            added[name].reset_coords(drop=True), expected[dim].transpose(..., "bounds")
+        )
 
 
 def test_add_bounds_multiple():

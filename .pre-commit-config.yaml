@@ -24,10 +24,11 @@ repos:
        - id: mypy
          additional_dependencies: [types-all]
 
-  - repo: https://github.com/myint/rstcheck
-    rev: v6.0.0.post1
+  - repo: https://github.com/rstcheck/rstcheck
+    rev: v5.0.0
     hooks:
         - id: rstcheck
+          additional_dependencies: [sphinx]
 
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.14

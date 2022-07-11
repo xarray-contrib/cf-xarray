@@ -24,6 +24,10 @@ from typing import (
 import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
+from xarray.core.groupby import GroupBy
+from xarray.core.resample import Resample
+from xarray.core.rolling import Coarsen, Rolling
+from xarray.core.weighted import Weighted
 
 from .criteria import cf_role_criteria, coordinate_criteria, regex
 from .helpers import bounds_to_vertices
@@ -38,13 +42,7 @@ from .utils import (
 )
 
 #: Classes wrapped by cf_xarray.
-_WRAPPED_CLASSES = (
-    xr.core.resample.Resample,
-    xr.core.groupby.GroupBy,
-    xr.core.rolling.Rolling,
-    xr.core.rolling.Coarsen,
-    xr.core.weighted.Weighted,
-)
+_WRAPPED_CLASSES = (Resample, GroupBy, Rolling, Coarsen, Weighted)
 
 #:  `axis` names understood by cf_xarray
 _AXIS_NAMES = ("X", "Y", "Z", "T")

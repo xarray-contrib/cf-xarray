@@ -25,7 +25,7 @@ repos:
          additional_dependencies: [types-all]
 
   - repo: https://github.com/myint/rstcheck
-    rev: v6.0.0.post1
+    rev: v5.0.0
     hooks:
         - id: rstcheck
           additional_dependencies: [sphinx]

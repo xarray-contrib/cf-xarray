@@ -28,6 +28,7 @@ repos:
     rev: v6.0.0.post1
     hooks:
         - id: rstcheck
+          additional_dependencies: [sphinx]
 
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.14

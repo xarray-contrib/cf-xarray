@@ -24,7 +24,7 @@ repos:
        - id: mypy
          additional_dependencies: [types-all]
 
-  - repo: https://github.com/myint/rstcheck
+  - repo: https://github.com/rstcheck/rstcheck
     rev: v5.0.0
     hooks:
         - id: rstcheck

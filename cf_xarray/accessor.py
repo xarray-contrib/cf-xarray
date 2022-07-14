@@ -621,6 +621,7 @@ def _getitem(
     """
 
     obj = accessor._obj
+    all_bounds = obj.cf.bounds if isinstance(obj, Dataset) else {}
     kind = str(type(obj).__name__)
     scalar_key = isinstance(key, str)
 
@@ -638,7 +639,7 @@ def _getitem(
         if not isinstance(obj, DataArray) and scalar_key:
             bounds = set()
             for name in names:
-                bounds.update(obj.cf.bounds.get(name, []))
+                bounds.update(all_bounds.get(name, []))
             names = set(names) - bounds
         return names
 

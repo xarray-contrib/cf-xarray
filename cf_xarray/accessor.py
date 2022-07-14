@@ -99,7 +99,7 @@ def apply_mapper(
 
         try:
             results = mapper(obj, key)
-        except KeyError as e:
+        except (KeyError, ValueError) as e:
             if error or "I expected only one." in repr(e):
                 raise e
             else:

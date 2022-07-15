@@ -3,8 +3,17 @@
 What's New
 ----------
 
-v0.7.3 (unreleased)
-===================
+v0.7.4 (July 14, 2022)
+======================
+
+- Major performance improvement for ``__getitem_`` (:pr:`349`).
+  By `Deepak Cherian`_.
+- Raise warning instead of error with malformed ``cell_measures`` attributes. Warnings
+  now print names of variables with malformed attributes (:pr:`350`).
+  By `Deepak Cherian`_.
+
+v0.7.3 (June 30, 2022)
+======================
 - :py:meth:`Dataset.cf.guess_coord_axis` now skips known axes/coordinates and only returns a single guess per variable.
   Additional attributes such as `units` must be added to known axes/coordinates using :py:meth:`Dataset.cf.add_canonical_attributes`.
   By `Mattia Almansi`_.

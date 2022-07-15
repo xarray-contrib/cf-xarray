@@ -306,7 +306,12 @@ def _get_measure(obj: DataArray | Dataset, key: str) -> list[str]:
         attrs_or_encoding = ChainMap(da.attrs, da.encoding)
         if "cell_measures" in attrs_or_encoding:
             attr = attrs_or_encoding["cell_measures"]
-            measures = parse_cell_methods_attr(attr)
+            try:
+                measures = parse_cell_methods_attr(attr)
+            except ValueError as e:
+                raise ValueError(
+                    f"{var} has malformed cell_measures attribute {attr}."
+                ) from e
             if key in measures:
                 results.update([measures[key]])
 
@@ -1477,14 +1482,18 @@ class CFAccessor:
                 ChainMap(da.attrs, da.encoding).get("cell_measures", "")
                 for da in obj.data_vars.values()
             ]
+        as_dataset = self._maybe_to_dataset().reset_coords()
 
         keys = {}
         for attr in set(all_attrs):
             try:
                 keys.update(parse_cell_methods_attr(attr))
             except ValueError:
+                bad_vars = list(
+                    as_dataset.filter_by_attrs(cell_measures=attr).data_vars.keys()
+                )
                 warnings.warn(
-                    f"Ignoring bad cell_measures attribute: {attr}.",
+                    f"Ignoring bad cell_measures attribute: {attr} on {bad_vars}.",
                     UserWarning,
                     stacklevel=2,
                 )

@@ -1318,8 +1318,12 @@ def test_groupby_special_ops():
         assert_identical(group, cfgroup)
 
     # arithmetic
-    expected = grouped - grouped.mean()
-    actual = grouped - cfgrouped.mean()
+    # TODO: Extremely buggy!
+    # 1. cfgrouped - cfgrouped.mean() raises RecursionError
+    # 2. use_flox=True doesn't preserve attributes for some reason
+    with xr.set_options(keep_attrs=True):
+        expected = grouped - grouped.mean()
+        actual = grouped - cfgrouped.mean()
     assert_identical(expected, actual)
 
 

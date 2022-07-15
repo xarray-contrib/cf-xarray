@@ -646,6 +646,8 @@ def test_bad_cell_measures_attribute():
     air2 = airds.copy(deep=True)
     air2.air.attrs["cell_measures"] = "--OPT"
     with pytest.warns(UserWarning):
+        air2.cf["air"]
+    with pytest.warns(UserWarning):
         assert_identical(air2.air.drop_vars("cell_area"), air2.cf["air"])
     with pytest.warns(UserWarning):
         assert air2.cf.cell_measures == {}
@@ -658,6 +660,12 @@ def test_bad_cell_measures_attribute():
 
     #  GH216
     repr(air2.cf)
+
+    # GH340
+    air2.cf.axes
+    air2.cf.coordinates
+    with pytest.warns(UserWarning):
+        air2.cf.cell_measures
 
 
 def test_getitem_clash_standard_name():

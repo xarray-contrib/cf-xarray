@@ -13,4 +13,5 @@ dependencies:
   - shapely
   - pip:
     - git+https://github.com/pydata/xarray
+    - git+https://github.com/dcherian/flox
     - git+https://github.com/hgrecco/pint

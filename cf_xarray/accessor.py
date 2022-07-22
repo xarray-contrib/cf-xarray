@@ -948,8 +948,8 @@ def create_flag_dict(da) -> Mapping[Hashable, Sequence]:
     flag_meanings = da.attrs["flag_meanings"].split(" ")
     n_flag = len(flag_meanings)
 
-    flag_values = da.attrs.get('flag_values', [None for _ in range(n_flag)])
-    flag_masks = da.attrs.get('flag_masks', [None for _ in range(n_flag)])
+    flag_values = da.attrs.get("flag_values", [None for _ in range(n_flag)])
+    flag_masks = da.attrs.get("flag_masks", [None for _ in range(n_flag)])
 
     if not (n_flag == len(flag_values) == len(flag_masks)):
         raise IndexError("Not as many flag meanings as values or masks.")
@@ -1078,8 +1078,8 @@ class CFAccessor:
             # We cast both masks and flag variable as integers to make the
             # bitwise comparison. We could probably restrict the integer size
             # but it's difficult to make it safely for mixed type flags.
-            bit_mask = DataArray(masks, dims=['_mask']).astype('i')
-            x = self._obj.astype('i')
+            bit_mask = DataArray(masks, dims=["_mask"]).astype("i")
+            x = self._obj.astype("i")
             bit_comp = x & bit_mask
 
             for i, (f, value) in enumerate(zip(flags_reduced, values)):
@@ -1114,8 +1114,8 @@ class CFAccessor:
         # Extract all boolean masks in a Dataset
         flags_masks = self.extract_flags(test_elements)
         # Merge into a single DataArray
-        flags_masks = xr.concat(flags_masks.data_vars.values(), dim='_flags')
-        return flags_masks.any(dim='_flags').rename(self._obj.name)
+        flags_masks = xr.concat(flags_masks.data_vars.values(), dim="_flags")
+        return flags_masks.any(dim="_flags").rename(self._obj.name)
 
     def _drop_missing_variables(self, variables: list[str]) -> list[str]:
         if isinstance(self._obj, Dataset):
@@ -1422,11 +1422,15 @@ class CFAccessor:
                 text += " - INVALID MAPPING\n\n"
             else:
                 masks = [m for m, _ in flag_dict.values()]
-                repeated_masks = set(m for m in masks if masks.count(m) > 1)
-                excl_flags = [f for f, (m, v) in flag_dict.items()
-                              if m in repeated_masks]
-                indep_flags = [f for f, (m, _) in flag_dict.items()
-                               if m is not None and m not in repeated_masks]
+                repeated_masks = {m for m in masks if masks.count(m) > 1}
+                excl_flags = [
+                    f for f, (m, v) in flag_dict.items() if m in repeated_masks
+                ]
+                indep_flags = [
+                    f
+                    for f, (m, _) in flag_dict.items()
+                    if m is not None and m not in repeated_masks
+                ]
                 if indep_flags:
                     text += f"\n\tIndependent flags: {indep_flags!r}"
                 if excl_flags:
@@ -2612,8 +2616,7 @@ class CFDataArrayAccessor(CFAccessor):
         if (
             isinstance(self._obj, DataArray)
             and "flag_meanings" in self._obj.attrs
-            and ("flag_values" in self._obj.attrs
-                 or "flag_masks" in self._obj.attrs)
+            and ("flag_values" in self._obj.attrs or "flag_masks" in self._obj.attrs)
         ):
             return True
         else:

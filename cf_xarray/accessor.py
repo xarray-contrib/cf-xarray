@@ -1082,7 +1082,7 @@ class CFAccessor:
             x = self._obj.astype('i')
             bit_comp = x & bit_mask
 
-            for i, (f, v) in enumerate(zip(flags_reduced, values)):
+            for i, (f, value) in enumerate(zip(flags_reduced, values)):
                 b = bit_comp.isel(_mask=i)
                 if value is not None:
                     out[f] = b == value

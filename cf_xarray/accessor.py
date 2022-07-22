@@ -21,6 +21,7 @@ from typing import (
     cast,
 )
 
+import numpy as np
 import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
@@ -927,18 +928,33 @@ class _CFWrappedPlotMethods:
         )
 
 
-def create_flag_dict(da):
+def create_flag_dict(da) -> Mapping[Hashable, Sequence]:
+    """
+    Return possible flag meanings and associated bitmask/values.
+
+    The mapping values are a tuple containing a bitmask and a value. Either
+    can be None.
+    If only a bitmask: Independent flags.
+    If only a value: Mutually exclusive flags.
+    If both: Mix of independent and mutually exclusive flags.
+    """
     if not da.cf.is_flag_variable:
         raise ValueError(
-            "Comparisons are only supported for DataArrays that represent CF flag variables."
-            ".attrs must contain 'flag_values' and 'flag_meanings'"
+            "Comparisons are only supported for DataArrays that represent "
+            "CF flag variables. .attrs must contain 'flag_meanings' and "
+            "'flag_values' or 'flag_masks'."
         )
 
     flag_meanings = da.attrs["flag_meanings"].split(" ")
-    flag_values = da.attrs["flag_values"]
-    # TODO: assert flag_values is iterable
-    assert len(flag_values) == len(flag_meanings)
-    return dict(zip(flag_meanings, flag_values))
+    n_flag = len(flag_meanings)
+
+    flag_values = da.attrs.get('flag_values', [None for _ in range(n_flag)])
+    flag_masks = da.attrs.get('flag_masks', [None for _ in range(n_flag)])
+
+    if not (n_flag == len(flag_values) == len(flag_masks)):
+        raise IndexError("Not as many flag meanings as values or masks.")
+
+    return dict(zip(flag_meanings, zip(flag_masks, flag_values)))
 
 
 class CFAccessor:
@@ -966,22 +982,16 @@ class CFAccessor:
         Compare flag values against `other`.
 
         `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
-        compared.
         """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj == flag_dict[other]
+        return self.extract_flags(other)
 
     def __ne__(self, other):
         """
         Compare flag values against `other`.
 
         `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
-        compared.
         """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj != flag_dict[other]
+        return ~self.extract_flags(other)
 
     def __lt__(self, other):
         """
@@ -1027,6 +1037,66 @@ class CFAccessor:
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj >= flag_dict[other]
 
+    def extract_flags(self, flags: str | Sequence[str]) -> DataArray | Dataset:
+        """
+        Return boolean mask(s) corresponding to `flags`.
+
+        Parameters
+        ----------
+        flags: str or Sequence[str]
+            Flags to extract. If is a string, return a DataArray. If is a
+            sequence of strings, return a Dataset containing multiple masks as
+            variables.
+        """
+        flag_dict = create_flag_dict(self._obj)
+
+        single_flag = False
+        if isinstance(flags, str):
+            single_flag = True
+            flags = [flags]
+
+        # Output arrays
+        out = {}
+
+        masks = []
+        values = []
+        flags_reduced = []
+        for f in flags:
+            if f not in flag_dict:
+                raise KeyError(f"{f} not in flags meanings.")
+            mask, value = flag_dict[f]
+            if mask is None:
+                out[f] = self._obj == value
+            else:
+                masks.append(mask)
+                values.append(value)
+                flags_reduced.append(f)
+
+        maxbit = int(max(masks)).bit_length()
+        maxbytes = int(np.ceil(maxbit/8))
+
+        assert self._obj.dtype.itemsize > maxbytes
+
+        dtype = np.dtype('i{:d}'.format(maxbytes))
+        x = self._obj.astype(dtype)
+        bit_mask = DataArray(
+            np.asarray(masks, dtype=dtype),
+            dims=['_mask']
+        )
+        bit_comp = x & bit_mask
+
+        for i, (f, v) in enumerate(zip(flags_reduced, values)):
+            b = bit_comp.isel(_mask=i)
+            if value is not None:
+                out[f] = b == value
+            else:
+                out[f] = b.astype(bool)
+
+        if single_flag:
+            f = flags[0]
+            return out[f].rename(f)
+        return Dataset(out)
+
     def isin(self, test_elements):
         """Test each value in the array for whether it is in test_elements.
 
@@ -1034,9 +1104,6 @@ class CFAccessor:
         ----------
         test_elements : array_like, 1D
             The values against which to test each value of `element`.
-            These must be in "flag_meanings" attribute, and are mapped
-            to the corresponding value in "flag_values" before passing
-            that on to DataArray.isin.
 
         Returns
         -------
@@ -1047,15 +1114,11 @@ class CFAccessor:
             raise ValueError(
                 ".cf.isin is only supported on DataArrays that contain CF flag attributes."
             )
-        flag_dict = create_flag_dict(self._obj)
-        mapped_test_elements = []
-        for elem in test_elements:
-            if elem not in flag_dict:
-                raise ValueError(
-                    f"Did not find flag value meaning [{elem}] in known flag meanings: [{flag_dict.keys()!r}]"
-                )
-            mapped_test_elements.append(flag_dict[elem])
-        return self._obj.isin(mapped_test_elements)
+        # Extract all boolean masks in a Dataset
+        flags_masks = self.extract_flags(test_elements)
+        # Merge into a single DataArray
+        flags_masks = xr.concat(flags_masks.data_vars.values(), dim='_flags')
+        return flags_masks.any(dim='_flags')
 
     def _drop_missing_variables(self, variables: list[str]) -> list[str]:
         if isinstance(self._obj, Dataset):
@@ -1352,11 +1415,26 @@ class CFAccessor:
 
             return "\n".join(rows) + "\n"
 
+        text = ""
+
         if isinstance(self._obj, DataArray) and self._obj.cf.is_flag_variable:
-            flag_dict = create_flag_dict(self._obj)
-            text = f"CF Flag variable with mapping:\n\t{flag_dict!r}\n\n"
-        else:
-            text = ""
+            text = "CF Flag variable"
+            try:
+                flag_dict = create_flag_dict(self._obj)
+            except IndexError:
+                text += " - INVALID MAPPING\n\n"
+            else:
+                masks = [m for m, _ in flag_dict.values()]
+                repeated_masks = set(m for m in masks if masks.count(m) > 1)
+                excl_flags = [f for f, (m, v) in flag_dict.items()
+                              if m in repeated_masks]
+                indep_flags = [f for f, (m, _) in flag_dict.items()
+                               if m is not None and m not in repeated_masks]
+                if indep_flags:
+                    text += f"\n\tIndependent flags: {indep_flags!r}"
+                if excl_flags:
+                    text += f"\n\tMutually exclusive flags: {excl_flags!r}"
+                text += "\n\n"
 
         if self.cf_roles:
             text += make_text_section("CF Roles", "cf_roles")
@@ -2530,9 +2608,6 @@ class CFDataArrayAccessor(CFAccessor):
         """
         Returns True if the DataArray satisfies CF conventions for flag variables.
 
-        .. warning::
-          Flag masks are not supported yet.
-
         Returns
         -------
         bool
@@ -2540,7 +2615,8 @@ class CFDataArrayAccessor(CFAccessor):
         if (
             isinstance(self._obj, DataArray)
             and "flag_meanings" in self._obj.attrs
-            and "flag_values" in self._obj.attrs
+            and ("flag_values" in self._obj.attrs
+                 or "flag_masks" in self._obj.attrs)
         ):
             return True
         else:

@@ -1063,7 +1063,9 @@ class CFAccessor:
         flags_reduced = []
         for f in flags:
             if f not in flag_dict:
-                raise KeyError(f"{f} not in flags meanings.")
+                raise ValueError(
+                    f"Did not find flag value meaning [{f}] in known flag meanings: [{flag_dict.keys()!r}]"
+                )
             mask, value = flag_dict[f]
             if mask is None:
                 out[f] = self._obj == value

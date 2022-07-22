@@ -1118,7 +1118,7 @@ class CFAccessor:
         flags_masks = self.extract_flags(test_elements)
         # Merge into a single DataArray
         flags_masks = xr.concat(flags_masks.data_vars.values(), dim='_flags')
-        return flags_masks.any(dim='_flags')
+        return flags_masks.any(dim='_flags').rename(self._obj.name)
 
     def _drop_missing_variables(self, variables: list[str]) -> list[str]:
         if isinstance(self._obj, Dataset):

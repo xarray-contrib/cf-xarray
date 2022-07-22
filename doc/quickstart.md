@@ -33,7 +33,7 @@ ds = xr.tutorial.open_dataset("air_temperature")
 ds
 ```
 
-`cf_xarray` registers an "accessor" names `cf` on import. For a quick overview of attributes that `cf_xarray` can interpret use `.cf`
+`cf_xarray` registers an "accessor" named `cf` on import. For a quick overview of attributes that `cf_xarray` can interpret use `.cf`
 
 ```{code-cell}
 ds.cf

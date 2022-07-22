@@ -3,7 +3,6 @@ from __future__ import annotations
 import functools
 import inspect
 import itertools
-import math
 import re
 import warnings
 from collections import ChainMap

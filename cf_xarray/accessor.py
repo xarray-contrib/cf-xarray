@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 import itertools
+import math
 import re
 import warnings
 from collections import ChainMap
@@ -21,7 +22,6 @@ from typing import (
     cast,
 )
 
-import numpy as np
 import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
@@ -1075,17 +1075,11 @@ class CFAccessor:
                 flags_reduced.append(f)
 
         if len(masks) > 0:
-            maxbit = int(max(masks)).bit_length()
-            maxbytes = int(np.ceil(maxbit/8))
-
-            assert self._obj.dtype.itemsize > maxbytes
-
-            dtype = np.dtype('i{:d}'.format(maxbytes))
-            x = self._obj.astype(dtype)
-            bit_mask = DataArray(
-                np.asarray(masks, dtype=dtype),
-                dims=['_mask']
-            )
+            # We cast both masks and flag variable as integers to make the
+            # bitwise comparison. We could probably restrict the integer size
+            # but it's difficult to make it safely for mixed type flags.
+            bit_mask = DataArray(masks, dims=['_mask']).astype('i')
+            x = self._obj.astype('i')
             bit_comp = x & bit_mask
 
             for i, (f, v) in enumerate(zip(flags_reduced, values)):

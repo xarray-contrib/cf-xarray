@@ -1072,25 +1072,26 @@ class CFAccessor:
                 values.append(value)
                 flags_reduced.append(f)
 
-        maxbit = int(max(masks)).bit_length()
-        maxbytes = int(np.ceil(maxbit/8))
+        if len(masks) > 0:
+            maxbit = int(max(masks)).bit_length()
+            maxbytes = int(np.ceil(maxbit/8))
 
-        assert self._obj.dtype.itemsize > maxbytes
+            assert self._obj.dtype.itemsize > maxbytes
 
-        dtype = np.dtype('i{:d}'.format(maxbytes))
-        x = self._obj.astype(dtype)
-        bit_mask = DataArray(
-            np.asarray(masks, dtype=dtype),
-            dims=['_mask']
-        )
-        bit_comp = x & bit_mask
+            dtype = np.dtype('i{:d}'.format(maxbytes))
+            x = self._obj.astype(dtype)
+            bit_mask = DataArray(
+                np.asarray(masks, dtype=dtype),
+                dims=['_mask']
+            )
+            bit_comp = x & bit_mask
 
-        for i, (f, v) in enumerate(zip(flags_reduced, values)):
-            b = bit_comp.isel(_mask=i)
-            if value is not None:
-                out[f] = b == value
-            else:
-                out[f] = b.astype(bool)
+            for i, (f, v) in enumerate(zip(flags_reduced, values)):
+                b = bit_comp.isel(_mask=i)
+                if value is not None:
+                    out[f] = b == value
+                else:
+                    out[f] = b.astype(bool)
 
         if single_flag:
             f = flags[0]

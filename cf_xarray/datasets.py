@@ -11,7 +11,7 @@ airds.coords["cell_area"] = (
     * 110e3
 )
 
-ds_no_attrs = airds.copy(deep=True)
+ds_no_attrs = airds.copy(deep=False)
 for _variable in ds_no_attrs.variables:
     ds_no_attrs[_variable].attrs = {}
 

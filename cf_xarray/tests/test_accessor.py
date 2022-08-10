@@ -340,19 +340,18 @@ def test_getitem_ancillary_variables():
 
 
 def test_rename_like():
-    original = popds.copy(deep=False)
-
     # it'll match for axis: X (lon, nlon) and coordinate="longitude" (lon, TLONG)
     # so delete the axis attributes
+    original = popds
     newair = airds.copy(deep=False)
     del newair.lon.attrs["axis"]
     del newair.lat.attrs["axis"]
 
     renamed = popds.cf["TEMP"].cf.rename_like(newair)
-    for k in ["TLONG", "TLAT"]:
-        assert k not in renamed.coords
-        assert k in original.coords
     assert original.TEMP.attrs["coordinates"] == "TLONG TLAT"
+    for k in ["TLONG", "TLAT"]:
+        assert k in original.coords
+        assert k not in renamed.coords
 
     assert "lon" in renamed.coords
     assert "lat" in renamed.coords
@@ -736,20 +735,21 @@ def test_plot_xincrease_yincrease():
 
 @pytest.mark.parametrize("dims", ["time2", "lat", "time", ["lat", "lon"]])
 def test_add_bounds(dims):
-    obj = airds.copy(deep=False)
+    ds = airds
+    original = ds.copy(deep=True)
 
     expected = {}
     expected["lat"] = xr.concat(
         [
-            obj.lat.copy(data=np.arange(76.25, 16.0, -2.5)),
-            obj.lat.copy(data=np.arange(73.75, 13.6, -2.5)),
+            ds.lat.copy(data=np.arange(76.25, 16.0, -2.5)),
+            ds.lat.copy(data=np.arange(73.75, 13.6, -2.5)),
         ],
         dim="bounds",
     )
     expected["lon"] = xr.concat(
         [
-            obj.lon.copy(data=np.arange(198.75, 325 - 1.25, 2.5)),
-            obj.lon.copy(data=np.arange(201.25, 325 + 1.25, 2.5)),
+            ds.lon.copy(data=np.arange(198.75, 325 - 1.25, 2.5)),
+            ds.lon.copy(data=np.arange(201.25, 325 + 1.25, 2.5)),
         ],
         dim="bounds",
     )
@@ -759,8 +759,8 @@ def test_add_bounds(dims):
     dtb2 = pd.Timedelta("3h")
     expected["time"] = xr.concat(
         [
-            obj.time.copy(data=pd.date_range(start=t0 - dtb2, end=t1 - dtb2, freq=dt)),
-            obj.time.copy(data=pd.date_range(start=t0 + dtb2, end=t1 + dtb2, freq=dt)),
+            ds.time.copy(data=pd.date_range(start=t0 - dtb2, end=t1 - dtb2, freq=dt)),
+            ds.time.copy(data=pd.date_range(start=t0 + dtb2, end=t1 + dtb2, freq=dt)),
         ],
         dim="bounds",
     )
@@ -769,8 +769,9 @@ def test_add_bounds(dims):
     expected["lon"].attrs.clear()
     expected["time"].attrs.clear()
 
-    obj.coords["time2"] = obj.time
-    added = obj.cf.add_bounds(dims)
+    added = ds.copy(deep=False)
+    added.coords["time2"] = ds.time
+    added = added.cf.add_bounds(dims)
     if isinstance(dims, str):
         dims = (dims,)
 
@@ -779,6 +780,8 @@ def test_add_bounds(dims):
         assert name in added.coords
         assert added[dim].attrs["bounds"] == name
         assert_allclose(added[name].reset_coords(drop=True), expected[dim])
+
+    _check_unchanged(original, ds)
 
 
 def test_add_bounds_multiple():
@@ -858,32 +861,36 @@ def test_bounds():
 
 def test_bounds_to_vertices():
     # All available
-    ds = airds.cf.add_bounds(["lon", "lat"])
-    dsc = ds.cf.bounds_to_vertices()
-    assert "lon_vertices" in dsc
-    assert "lat_vertices" in dsc
+    ds = airds
+    original = ds.copy(deep=True)
+    dsb = ds.cf.add_bounds(["lon", "lat"])
+    dsv = dsb.cf.bounds_to_vertices()
+    assert "lon_vertices" in dsv
+    assert "lat_vertices" in dsv
 
     # Giving key
-    dsc = ds.cf.bounds_to_vertices("longitude")
-    assert "lon_vertices" in dsc
-    assert "lat_vertices" not in dsc
+    dsv = dsb.cf.bounds_to_vertices("longitude")
+    assert "lon_vertices" in dsv
+    assert "lat_vertices" not in dsv
 
-    dsc = ds.cf.bounds_to_vertices(["longitude", "latitude"])
-    assert "lon_vertices" in dsc
-    assert "lat_vertices" in dsc
+    dsv = dsb.cf.bounds_to_vertices(["longitude", "latitude"])
+    assert "lon_vertices" in dsv
+    assert "lat_vertices" in dsv
 
     # Error
     with pytest.raises(ValueError):
-        dsc = ds.cf.bounds_to_vertices("T")
+        dsv = dsb.cf.bounds_to_vertices("T")
 
     # Words on datetime arrays to
-    ds = airds.cf.add_bounds("time")
-    dsc = ds.cf.bounds_to_vertices()
-    assert "time_bounds" in dsc
+    dsb = dsb.cf.add_bounds("time")
+    dsv = dsb.cf.bounds_to_vertices()
+    assert "time_bounds" in dsv
+
+    _check_unchanged(original, ds)
 
 
 def test_get_bounds_dim_name():
-    ds = airds.copy(deep=False).cf.add_bounds("lat")
+    ds = airds.cf.add_bounds("lat")
     assert ds.cf.get_bounds_dim_name("latitude") == "bounds"
     assert ds.cf.get_bounds_dim_name("lat") == "bounds"
 
@@ -919,6 +926,26 @@ def _make_names(prefixes):
     return [
         f"{prefix}{suffix}" for prefix, suffix in itertools.product(prefixes, suffixes)
     ]
+
+
+def _check_unchanged(old, new):
+    # Check data array attributes or global dataset attributes
+    assert type(old) == type(new)
+    assert old.attrs.keys() == new.attrs.keys()  # set comparison
+    for att, old_val in old.attrs.items():
+        assert id(old_val) == id(new.attrs[att])
+
+    # Check coordinate attributes and data variable attributes
+    dicts = [(old.coords, new.coords)]
+    if isinstance(old, xr.Dataset):
+        dicts.append((old.data_vars, new.data_vars))
+    for old_dict, new_dict in dicts:
+        assert old_dict.keys() == new_dict.keys()  # set comparison
+        for key, old_obj in old_dict.items():
+            new_obj = new_dict[key]
+            assert old_obj.attrs.keys() == new_obj.attrs.keys()  # set comparison
+            for att, old_val in old_obj.attrs.items():
+                assert id(old_val) == id(new_obj.attrs[att])  # numpy-safe comparison
 
 
 _TIME_NAMES = ["t"] + _make_names(
@@ -1535,6 +1562,7 @@ def test_datetime_like(reshape):
 def test_add_canonical_attributes(override, skip, verbose, capsys):
 
     ds = airds
+    original = ds.copy(deep=True)
     cf_ds = ds.cf.add_canonical_attributes(
         override=override, skip=skip, verbose=verbose
     )
@@ -1580,6 +1608,8 @@ def test_add_canonical_attributes(override, skip, verbose, capsys):
 
         cf_da.attrs.pop("history")
         assert_identical(cf_da, cf_ds["air"])
+
+    _check_unchanged(original, ds)
 
 
 @pytest.mark.parametrize("op", ["ge", "gt", "eq", "ne", "le", "lt"])

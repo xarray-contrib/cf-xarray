@@ -1797,7 +1797,7 @@ class CFAccessor:
         DataArray or Dataset
             with appropriate attributes added
         """
-        obj = self._obj.copy(deep=True)
+        obj = self._obj.copy(deep=False)
         for var in obj.coords.variables:
             var_is_coord = any(var in val for val in obj.cf.coordinates.values())
             if not var_is_coord and obj[var].ndim == 1 and _is_datetime_like(obj[var]):
@@ -1937,7 +1937,7 @@ class CFAccessor:
         info, table, aliases = parse_cf_standard_name_table(source)
 
         # Loop over standard names
-        ds = self._maybe_to_dataset().copy()
+        ds = self._maybe_to_dataset().copy(deep=False)
         attrs_to_print: dict = {}
         for std_name, var_names in ds.cf.standard_names.items():
 
@@ -2209,7 +2209,7 @@ class CFDatasetAccessor(CFAccessor):
                 apply_mapper(_get_all, self._obj, key, error=False, default=[key])
             )
 
-        obj = self._maybe_to_dataset(self._obj.copy(deep=True))
+        obj = self._maybe_to_dataset(self._obj.copy(deep=False))
 
         bad_vars: set[str] = variables - set(obj.variables)
         if bad_vars:
@@ -2286,7 +2286,7 @@ class CFDatasetAccessor(CFAccessor):
         else:
             coords = keys
 
-        obj = self._maybe_to_dataset(self._obj.copy(deep=True))
+        obj = self._maybe_to_dataset(self._obj.copy(deep=False))
 
         for coord in coords:
             try:

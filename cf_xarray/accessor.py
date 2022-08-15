@@ -254,10 +254,12 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
         )
 
     search_in = set()
-    if "coordinates" in obj.encoding:
-        search_in.update(obj.encoding["coordinates"].split(" "))
-    if "coordinates" in obj.attrs:
-        search_in.update(obj.attrs["coordinates"].split(" "))
+    attrs_or_encoding = ChainMap(obj.attrs, obj.encoding)
+    coordinates = attrs_or_encoding.get("coordinates", None)
+    # Handles case where the coordinates attribute is None
+    # This is used to tell xarray to not write a coordinates attribute
+    if coordinates:
+        search_in.update(coordinates.split(" "))
     if not search_in:
         search_in = set(obj.coords)
 
@@ -1596,8 +1598,11 @@ class CFAccessor:
         coords: dict[str, list[str]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
 
-        if "coordinates" in attrs_or_encoding:
-            coords["coordinates"] = attrs_or_encoding["coordinates"].split(" ")
+        coordinates = attrs_or_encoding.get("coordinates", None)
+        # Handles case where the coordinates attribute is None
+        # This is used to tell xarray to not write a coordinates attribute
+        if coordinates:
+            coords["coordinates"] = coordinates.split(" ")
 
         if "cell_measures" in attrs_or_encoding:
             try:

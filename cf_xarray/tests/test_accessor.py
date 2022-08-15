@@ -298,6 +298,14 @@ def test_accessor_getattr_and_describe():
     assert str(ds_verta.cf) == str(ds_vertb.cf)
 
 
+def test_accessor_getattr_coordinate_Nonetype():
+    ds_vert = vert
+    ds_vert["o3"].encoding["coordinates"] = None
+    assert ds_vert.o3.cf["latitude"].name == "lat"
+    ds_vert["lat"].encoding["coordinates"] = None
+    assert ds_vert.cf["latitude"].name == "lat"
+
+
 def test_getitem_standard_name():
     actual = airds.cf["air_temperature"]
     expected = airds["air"]

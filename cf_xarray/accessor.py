@@ -2462,8 +2462,10 @@ class CFDataArrayAccessor(CFAccessor):
         `other` must be in the 'flag_meanings' attribute.
         """
         if other not in self.flags.data_vars:
-            raise KeyError(f"Flag meaning {other!r} not in known meanings "
-                           f"{list(self.flags.data_vars)!r}")
+            raise KeyError(
+                f"Flag meaning {other!r} not in known meanings "
+                f"{list(self.flags.data_vars)!r}"
+            )
         return self.flags[other]
 
     def __ne__(self, other: str):
@@ -2473,8 +2475,10 @@ class CFDataArrayAccessor(CFAccessor):
         `other` must be in the 'flag_meanings' attribute.
         """
         if other not in self.flags.data_vars:
-            raise KeyError(f"Flag meaning {other!r} not in known meanings "
-                           f"{list(self.flags.data_vars)!r}")
+            raise KeyError(
+                f"Flag meaning {other!r} not in known meanings "
+                f"{list(self.flags.data_vars)!r}"
+            )
         return ~self.flags[other]
 
     @property
@@ -2548,8 +2552,9 @@ class CFDataArrayAccessor(CFAccessor):
         isin : DataArray
             Has the same type and shape as this object, but with a bool dtype.
         """
-        flags_masks = self.flags.drop_vars([v for v in self.flags.data_vars
-                                            if v in test_elements])
+        flags_masks = self.flags.drop_vars(
+            [v for v in self.flags.data_vars if v in test_elements]
+        )
         # Merge into a single DataArray
         flags_masks = xr.concat(flags_masks.data_vars.values(), dim="_flags")
         return flags_masks.any(dim="_flags").rename(self._obj.name)

@@ -254,9 +254,9 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
         )
 
     search_in = set()
-    if "coordinates" in obj.encoding:
+    if "coordinates" in obj.encoding and obj.encoding["coordinates"]:
         search_in.update(obj.encoding["coordinates"].split(" "))
-    if "coordinates" in obj.attrs:
+    if "coordinates" in obj.attrs and obj.attrs["coordinates"]:
         search_in.update(obj.attrs["coordinates"].split(" "))
     if not search_in:
         search_in = set(obj.coords)
@@ -1596,7 +1596,7 @@ class CFAccessor:
         coords: dict[str, list[str]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
 
-        if "coordinates" in attrs_or_encoding:
+        if "coordinates" in attrs_or_encoding and attrs_or_encoding["coordinates"]:
             coords["coordinates"] = attrs_or_encoding["coordinates"].split(" ")
 
         if "cell_measures" in attrs_or_encoding:

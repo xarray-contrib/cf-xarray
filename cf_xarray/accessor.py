@@ -968,154 +968,6 @@ class CFAccessor:
     def __setstate__(self, d):
         self.__dict__ = d
 
-    def _assert_valid_other_comparison(self, other):
-        flag_dict = create_flag_dict(self._obj)
-        if other not in flag_dict:
-            raise ValueError(
-                f"Did not find flag value meaning [{other}] in known flag meanings: [{flag_dict.keys()!r}]"
-            )
-        return flag_dict
-
-    def __eq__(self, other):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        """
-        return self.extract_flags(other)
-
-    def __ne__(self, other):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        """
-        return ~self.extract_flags(other)
-
-    def __lt__(self, other):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
-        compared.
-        """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj < flag_dict[other]
-
-    def __le__(self, other):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
-        compared.
-        """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj <= flag_dict[other]
-
-    def __gt__(self, other):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
-        compared.
-        """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj > flag_dict[other]
-
-    def __ge__(self, other):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
-        compared.
-        """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj >= flag_dict[other]
-
-    def extract_flags(self, flags: str | Sequence[str]) -> DataArray | Dataset:
-        """
-        Return boolean mask(s) corresponding to `flags`.
-
-        Parameters
-        ----------
-        flags: str or Sequence[str]
-            Flags to extract. If is a string, return a DataArray. If is a
-            sequence of strings, return a Dataset containing multiple masks as
-            variables.
-        """
-        flag_dict = create_flag_dict(self._obj)
-
-        single_flag = False
-        if isinstance(flags, str):
-            single_flag = True
-            flags = [flags]
-
-        # Output arrays
-        out = {}
-
-        masks = []
-        values = []
-        flags_reduced = []
-        for f in flags:
-            if f not in flag_dict:
-                raise ValueError(
-                    f"Did not find flag value meaning [{f}] in known flag meanings: [{flag_dict.keys()!r}]"
-                )
-            mask, value = flag_dict[f]
-            if mask is None:
-                out[f] = self._obj == value
-            else:
-                masks.append(mask)
-                values.append(value)
-                flags_reduced.append(f)
-
-        if len(masks) > 0:
-            # We cast both masks and flag variable as integers to make the
-            # bitwise comparison. We could probably restrict the integer size
-            # but it's difficult to make it safely for mixed type flags.
-            bit_mask = DataArray(masks, dims=["_mask"]).astype("i")
-            x = self._obj.astype("i")
-            bit_comp = x & bit_mask
-
-            for i, (f, value) in enumerate(zip(flags_reduced, values)):
-                b = bit_comp.isel(_mask=i)
-                if value is not None:
-                    out[f] = b == value
-                else:
-                    out[f] = b.astype(bool)
-
-        if single_flag:
-            f = flags[0]
-            return out[f].rename(f)
-        return Dataset(out)
-
-    def isin(self, test_elements):
-        """Test each value in the array for whether it is in test_elements.
-
-        Parameters
-        ----------
-        test_elements : array_like, 1D
-            The values against which to test each value of `element`.
-
-        Returns
-        -------
-        isin : DataArray
-            Has the same type and shape as this object, but with a bool dtype.
-        """
-        if not isinstance(self._obj, DataArray):
-            raise ValueError(
-                ".cf.isin is only supported on DataArrays that contain CF flag attributes."
-            )
-        # Extract all boolean masks in a Dataset
-        flags_masks = self.extract_flags(test_elements)
-        # Merge into a single DataArray
-        flags_masks = xr.concat(flags_masks.data_vars.values(), dim="_flags")
-        return flags_masks.any(dim="_flags").rename(self._obj.name)
-
     def _drop_missing_variables(self, variables: list[str]) -> list[str]:
         if isinstance(self._obj, Dataset):
             good_names = set(self._obj.variables)
@@ -2602,6 +2454,116 @@ class CFDataArrayAccessor(CFAccessor):
             )
 
         return _getitem(self, key)
+
+    def __eq__(self, other: str):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        """
+        if other not in self.flags.data_vars:
+            raise KeyError(f"Flag meaning {other!r} not in known meanings "
+                           f"{list(self.flags.data_vars)!r}")
+        return self.flags[other]
+
+    def __ne__(self, other: str):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        """
+        if other not in self.flags.data_vars:
+            raise KeyError(f"Flag meaning {other!r} not in known meanings "
+                           f"{list(self.flags.data_vars)!r}")
+        return ~self.flags[other]
+
+    @property
+    def flags(self) -> Dataset:
+        """
+        Dataset containing boolean masks of available flags.
+        """
+        return self._extract_flags()
+
+    def _extract_flags(self, flags: str | Sequence[str] = '') -> DataArray | Dataset:
+        """
+        Return boolean mask(s) corresponding to `flags`.
+
+        Parameters
+        ----------
+        flags: str or Sequence[str]
+            Flags to extract. If is a string, return a DataArray. If is a
+            sequence of strings, return a Dataset containing multiple masks as
+            variables. If empty (string or list), return all flags in
+            `flag_meanings`.
+        """
+        flag_dict = create_flag_dict(self._obj)
+
+        if not flags:
+            flags = list(flag_dict.keys())
+
+        single_flag = False
+        if isinstance(flags, str):
+            single_flag = True
+            flags = [flags]
+
+        # Output arrays
+        out = {}
+
+        masks = []
+        values = []
+        flags_reduced = []
+        for f in flags:
+            if f not in flag_dict:
+                raise ValueError(
+                    f"Flag meaning {f!r} is not in known meanings {list(flag_dict.keys())!r}"
+                )
+            mask, value = flag_dict[f]
+            if mask is None:
+                out[f] = self._obj == value
+            else:
+                masks.append(mask)
+                values.append(value)
+                flags_reduced.append(f)
+
+        if len(masks) > 0:
+            # We cast both masks and flag variable as integers to make the
+            # bitwise comparison. We could probably restrict the integer size
+            # but it's difficult to make it safely for mixed type flags.
+            bit_mask = DataArray(masks, dims=["_mask"]).astype("i")
+            x = self._obj.astype("i")
+            bit_comp = x & bit_mask
+
+            for i, (f, value) in enumerate(zip(flags_reduced, values)):
+                b = bit_comp.isel(_mask=i)
+                if value is not None:
+                    out[f] = b == value
+                else:
+                    out[f] = b.astype(bool)
+
+        if single_flag:
+            f = flags[0]
+            return out[f].rename(f)
+        return Dataset(out)
+
+    def isin(self, test_elements):
+        """
+        Test each value in the array for whether it is in test_elements.
+
+        Parameters
+        ----------
+        test_elements : array_like, 1D
+            The values against which to test each value of `element`.
+
+        Returns
+        -------
+        isin : DataArray
+            Has the same type and shape as this object, but with a bool dtype.
+        """
+        flags_masks = self.flags.drop_vars([v for v in self.flags.data_vars
+                                            if v in test_elements])
+        # Merge into a single DataArray
+        flags_masks = xr.concat(flags_masks.data_vars.values(), dim="_flags")
+        return flags_masks.any(dim="_flags").rename(self._obj.name)
 
     @property
     def is_flag_variable(self) -> bool:

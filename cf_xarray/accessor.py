@@ -2484,34 +2484,26 @@ class CFDataArrayAccessor(CFAccessor):
         """
         return self._extract_flags()
 
-    def _extract_flags(self, flags: str | Sequence[str] = '') -> DataArray | Dataset:
+    def _extract_flags(self, flags: Sequence[str] | None = None) -> DataArray | Dataset:
         """
-        Return boolean mask(s) corresponding to `flags`.
+        Return dataset of boolean mask(s) corresponding to `flags`.
 
         Parameters
         ----------
-        flags: str or Sequence[str]
-            Flags to extract. If is a string, return a DataArray. If is a
-            sequence of strings, return a Dataset containing multiple masks as
-            variables. If empty (string or list), return all flags in
+        flags: Sequence[str]
+            Flags to extract. If empty (string or list), return all flags in
             `flag_meanings`.
         """
         flag_dict = create_flag_dict(self._obj)
 
-        if not flags:
+        if flags is None or len(flags) == 0:
             flags = list(flag_dict.keys())
 
-        single_flag = False
-        if isinstance(flags, str):
-            single_flag = True
-            flags = [flags]
+        out = {}  # Output arrays
 
-        # Output arrays
-        out = {}
-
-        masks = []
+        masks = []  # Bitmasks and values for asked flags
         values = []
-        flags_reduced = []
+        flags_reduced = []  # Flags left after removing mutually excl. flags
         for f in flags:
             if f not in flag_dict:
                 raise ValueError(
@@ -2525,7 +2517,7 @@ class CFDataArrayAccessor(CFAccessor):
                 values.append(value)
                 flags_reduced.append(f)
 
-        if len(masks) > 0:
+        if len(masks) > 0:  # If independant masks are left
             # We cast both masks and flag variable as integers to make the
             # bitwise comparison. We could probably restrict the integer size
             # but it's difficult to make it safely for mixed type flags.
@@ -2540,9 +2532,6 @@ class CFDataArrayAccessor(CFAccessor):
                 else:
                     out[f] = b.astype(bool)
 
-        if single_flag:
-            f = flags[0]
-            return out[f].rename(f)
         return Dataset(out)
 
     def isin(self, test_elements):

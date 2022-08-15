@@ -254,12 +254,10 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
         )
 
     search_in = set()
-    coordinates = obj.encoding.get("coordinates", None)
+    attrs_or_encoding = ChainMap(obj.attrs, obj.encoding)
+    coordinates = attrs_or_encoding.get("coordinates", None)
     # Handles case where the coordinates attribute is None
     # This is used to tell xarray to not write a coordinates attribute
-    if coordinates:
-        search_in.update(coordinates.split(" "))
-    coordinates = obj.attrs.get("coordinates", None)
     if coordinates:
         search_in.update(coordinates.split(" "))
     if not search_in:

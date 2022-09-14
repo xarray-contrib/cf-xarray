@@ -2460,7 +2460,7 @@ class CFDataArrayAccessor(CFAccessor):
 
         return _getitem(self, key)
 
-    def __eq__(self, other: str):
+    def __eq__(self, other: object):
         """
         Compare flag values against `other`.
 
@@ -2473,7 +2473,7 @@ class CFDataArrayAccessor(CFAccessor):
             )
         return self.flags[other]
 
-    def __ne__(self, other: str):
+    def __ne__(self, other: object):
         """
         Compare flag values against `other`.
 

@@ -254,10 +254,12 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
         )
 
     search_in = set()
-    if "coordinates" in obj.encoding:
-        search_in.update(obj.encoding["coordinates"].split(" "))
-    if "coordinates" in obj.attrs:
-        search_in.update(obj.attrs["coordinates"].split(" "))
+    attrs_or_encoding = ChainMap(obj.attrs, obj.encoding)
+    coordinates = attrs_or_encoding.get("coordinates", None)
+    # Handles case where the coordinates attribute is None
+    # This is used to tell xarray to not write a coordinates attribute
+    if coordinates:
+        search_in.update(coordinates.split(" "))
     if not search_in:
         search_in = set(obj.coords)
 
@@ -1526,8 +1528,11 @@ class CFAccessor:
         coords: dict[str, list[str]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
 
-        if "coordinates" in attrs_or_encoding:
-            coords["coordinates"] = attrs_or_encoding["coordinates"].split(" ")
+        coordinates = attrs_or_encoding.get("coordinates", None)
+        # Handles case where the coordinates attribute is None
+        # This is used to tell xarray to not write a coordinates attribute
+        if coordinates:
+            coords["coordinates"] = coordinates.split(" ")
 
         if "cell_measures" in attrs_or_encoding:
             try:
@@ -1727,7 +1732,7 @@ class CFAccessor:
         DataArray or Dataset
             with appropriate attributes added
         """
-        obj = self._obj.copy(deep=True)
+        obj = self._obj.copy(deep=False)
         for var in obj.coords.variables:
             var_is_coord = any(var in val for val in obj.cf.coordinates.values())
             if not var_is_coord and obj[var].ndim == 1 and _is_datetime_like(obj[var]):
@@ -1867,7 +1872,7 @@ class CFAccessor:
         info, table, aliases = parse_cf_standard_name_table(source)
 
         # Loop over standard names
-        ds = self._maybe_to_dataset().copy()
+        ds = self._maybe_to_dataset().copy(deep=False)
         attrs_to_print: dict = {}
         for std_name, var_names in ds.cf.standard_names.items():
 
@@ -2139,7 +2144,7 @@ class CFDatasetAccessor(CFAccessor):
                 apply_mapper(_get_all, self._obj, key, error=False, default=[key])
             )
 
-        obj = self._maybe_to_dataset(self._obj.copy(deep=True))
+        obj = self._maybe_to_dataset(self._obj.copy(deep=False))
 
         bad_vars: set[str] = variables - set(obj.variables)
         if bad_vars:
@@ -2216,7 +2221,7 @@ class CFDatasetAccessor(CFAccessor):
         else:
             coords = keys
 
-        obj = self._maybe_to_dataset(self._obj.copy(deep=True))
+        obj = self._maybe_to_dataset(self._obj.copy(deep=False))
 
         for coord in coords:
             try:

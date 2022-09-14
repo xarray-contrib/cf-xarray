@@ -10,7 +10,7 @@ import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
 from xarray import Dataset
-from xarray.testing import assert_allclose, assert_identical 
+from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
 from cf_xarray.utils import parse_cf_standard_name_table
@@ -1626,8 +1626,8 @@ def test_add_canonical_attributes(override, skip, verbose, capsys):
 
 def test_flag_excl():
     for i in range(3):
-        name = 'flag_{}'.format(i+1)
-        expected = (flag_excl == i+1).rename(name)
+        name = f"flag_{i + 1}"
+        expected = (flag_excl == i + 1).rename(name)
         actual = flag_excl.cf.flags[name]
         assert_identical(actual, expected)
 
@@ -1639,28 +1639,29 @@ def test_flag_indep():
         [False, False, False, False, True, True, True, True],  # bit 3
     ]
     for i in range(3):
-        name = 'flag_{}'.format(2**i)
+        name = f"flag_{2**i}"
         res = flag_indep.cf.flags[name]
         np.testing.assert_equal(res.to_numpy(), expected[i])
 
+
 def test_flag_mix():
     expected = [
-        [False, False, True, True, False, False, True, True],    # flag 1
-        [False, False, False, False, True, True, True, True],    # flag 2
-        [True, False, False, True, False, False, True, False],   # flag 3
+        [False, False, True, True, False, False, True, True],  # flag 1
+        [False, False, False, False, True, True, True, True],  # flag 2
+        [True, False, False, True, False, False, True, False],  # flag 3
         [False, True, False, False, True, False, False, False],  # flag 4
         [False, False, True, False, False, True, False, False],  # flag 5
     ]
     for i in range(5):
-        name = 'flag_{}'.format(i+1)
+        name = f"flag_{i + 1}"
         res = flag_mix.cf.flags[name]
         np.testing.assert_equal(res.to_numpy(), expected[i])
 
 
 def test_flag_feature():
-    assert_identical(flag_indep.cf.flags.flag_1, flag_indep.cf == 'flag_1')
-    assert_identical(flag_mix.cf.flags.flag_4, flag_mix.cf == 'flag_4')
-    assert_identical(~flag_excl.cf.flags.flag_3, flag_excl.cf != 'flag_3')
+    assert_identical(flag_indep.cf.flags.flag_1, flag_indep.cf == "flag_1")
+    assert_identical(flag_mix.cf.flags.flag_4, flag_mix.cf == "flag_4")
+    assert_identical(~flag_excl.cf.flags.flag_3, flag_excl.cf != "flag_3")
 
 
 def test_flag_isin():

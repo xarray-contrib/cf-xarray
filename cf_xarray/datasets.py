@@ -321,9 +321,9 @@ flag_excl = xr.DataArray(
     attrs={
         "flag_values": [1, 2, 3],
         "flag_meanings": "flag_1 flag_2 flag_3",
-        "standard_name": "flag_mutual_exclusive"
+        "standard_name": "flag_mutual_exclusive",
     },
-    name="flag_var"
+    name="flag_var",
 )
 
 
@@ -333,9 +333,9 @@ flag_indep = xr.DataArray(
     attrs={
         "flag_masks": [1, 2, 4],
         "flag_meanings": "flag_1 flag_2 flag_4",
-        "standard_name": "flag_independant"
+        "standard_name": "flag_independant",
     },
-    name="flag_var"
+    name="flag_var",
 )
 
 
@@ -346,9 +346,9 @@ flag_mix = xr.DataArray(
         "flag_values": [1, 2, 4, 8, 12],
         "flag_masks": [1, 2, 12, 12, 12],
         "flag_meanings": "flag_1 flag_2 flag_3 flag_4 flag_5",
-        "standard_name": "flag_mix"
+        "standard_name": "flag_mix",
     },
-    name="flag_var"
+    name="flag_var",
 )
 
 

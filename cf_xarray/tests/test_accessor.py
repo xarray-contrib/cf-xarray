@@ -10,7 +10,7 @@ import pytest
 import xarray as xr
 from matplotlib import pyplot as plt
 from xarray import Dataset
-from xarray.testing import assert_allclose, assert_identical
+from xarray.testing import assert_allclose, assert_identical 
 
 import cf_xarray  # noqa
 from cf_xarray.utils import parse_cf_standard_name_table
@@ -19,9 +19,11 @@ from ..datasets import (
     airds,
     ambig,
     anc,
-    basin,
     ds_no_attrs,
     dsg,
+    flag_excl,
+    flag_indep,
+    flag_mix,
     forecast,
     mollwds,
     multiple,
@@ -135,7 +137,9 @@ def test_repr():
     assert actual == dedent(expected)
 
     # Flag DataArray
-    assert "CF Flag variable" in repr(basin.cf)
+    assert "CF Flag variable" in repr(flag_excl.cf)
+    assert "CF Flag variable" in repr(flag_indep.cf)
+    assert "CF Flag variable" in repr(flag_mix.cf)
 
     # "Temp" dataset
     actual = airds["air"]._to_temp_dataset().cf.__repr__()
@@ -1582,36 +1586,64 @@ def test_add_canonical_attributes(override, skip, verbose, capsys):
         assert_identical(cf_da, cf_ds["air"])
 
 
-@pytest.mark.parametrize("op", ["ge", "gt", "eq", "ne", "le", "lt"])
-def test_flag_features(op):
-    actual = getattr(basin.cf, f"__{op}__")("atlantic_ocean")
-    expected = getattr(basin, f"__{op}__")(1)
-    assert_identical(actual, expected)
+def test_flag_excl():
+    for i in range(3):
+        name = 'flag_{}'.format(i+1)
+        expected = (flag_excl == i+1).rename(name)
+        actual = flag_excl.cf.flags[name]
+        assert_identical(actual, expected)
+
+
+def test_flag_indep():
+    expected = [
+        [False, True, False, True, False, True, False, True],  # bit 1
+        [False, False, True, True, False, False, True, True],  # bit 2
+        [False, False, False, False, True, True, True, True],  # bit 3
+    ]
+    for i in range(3):
+        name = 'flag_{}'.format(2**i)
+        res = flag_indep.cf.flags[name]
+        np.testing.assert_equal(res.to_numpy(), expected[i])
+
+def test_flag_mix():
+    expected = [
+        [False, False, True, True, False, False, True, True],    # flag 1
+        [False, False, False, False, True, True, True, True],    # flag 2
+        [True, False, False, True, False, False, True, False],   # flag 3
+        [False, True, False, False, True, False, False, False],  # flag 4
+        [False, False, True, False, False, True, False, False],  # flag 5
+    ]
+    for i in range(5):
+        name = 'flag_{}'.format(i+1)
+        res = flag_mix.cf.flags[name]
+        np.testing.assert_equal(res.to_numpy(), expected[i])
+
+
+def test_flag_feature():
+    assert_identical(flag_indep.cf.flags.flag_1, flag_indep.cf == 'flag_1')
+    assert_identical(flag_mix.cf.flags.flag_4, flag_mix.cf == 'flag_4')
+    assert_identical(~flag_excl.cf.flags.flag_3, flag_excl.cf != 'flag_3')
 
 
 def test_flag_isin():
-    actual = basin.cf.isin(["atlantic_ocean", "pacific_ocean"])
-    expected = basin.isin([1, 2])
+    actual = flag_excl.cf.isin(["flag_1", "flag_3"])
+    expected = flag_excl.isin([1, 3])
     assert_identical(actual, expected)
+
+    actual = flag_excl.cf.isin(["flag_ERR"])
+    assert not actual.any()
 
 
 def test_flag_errors():
+    with pytest.raises(KeyError):
+        flag_mix.cf == "ERR"
+
+    flag_excl.attrs.pop("flag_values")
     with pytest.raises(ValueError):
-        basin.cf.isin(["arctic_ocean"])
+        flag_excl.cf.isin(["flag_1"])
 
     with pytest.raises(ValueError):
-        basin.cf == "arctic_ocean"
-
-    ds = xr.Dataset({"basin": basin})
-    with pytest.raises(ValueError):
-        ds.cf.isin(["atlantic_ocean"])
-
-    basin.attrs.pop("flag_values")
-    with pytest.raises(ValueError):
-        basin.cf.isin(["pacific_ocean"])
-
-    with pytest.raises(ValueError):
-        basin.cf == "pacific_ocean"
+        flag_excl.cf == "flag_1"
 
 
 def test_missing_variables():

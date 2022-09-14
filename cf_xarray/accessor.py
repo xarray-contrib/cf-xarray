@@ -2553,8 +2553,13 @@ class CFDataArrayAccessor(CFAccessor):
             Has the same type and shape as this object, but with a bool dtype.
         """
         flags_masks = self.flags.drop_vars(
-            [v for v in self.flags.data_vars if v in test_elements]
+            [v for v in self.flags.data_vars if v not in test_elements]
         )
+        if len(flags_masks) == 0:
+            out = self.copy().astype(bool)
+            out.attrs = {}
+            out[:] = False
+            return out
         # Merge into a single DataArray
         flags_masks = xr.concat(flags_masks.data_vars.values(), dim="_flags")
         return flags_masks.any(dim="_flags").rename(self._obj.name)

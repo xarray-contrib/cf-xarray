@@ -2506,7 +2506,7 @@ class CFDataArrayAccessor(CFAccessor):
         flag_dict = create_flag_dict(self._obj)
 
         if flags is None or len(flags) == 0:
-            flags = list(flag_dict.keys())
+            flags = flag_dict.keys()
 
         out = {}  # Output arrays
 

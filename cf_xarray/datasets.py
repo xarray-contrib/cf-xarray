@@ -319,7 +319,7 @@ def _create_inexact_bounds():
     return rotated
 
 
-inexact_bounds_ds = _create_inexact_bounds()
+rotds = _create_inexact_bounds()
 
 
 forecast = xr.decode_cf(

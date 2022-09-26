@@ -3,7 +3,7 @@ from xarray.testing import assert_equal
 
 import cf_xarray as cfxr  # noqa
 
-from ..datasets import airds, mollwds
+from ..datasets import airds, mollwds, rotds
 
 try:
     from dask.array import Array as DaskArray
@@ -25,6 +25,14 @@ def test_bounds_to_vertices():
         mollwds.lat_bounds, bounds_dim="bounds", order=None
     )
     assert_equal(mollwds.lat_vertices, lat_ccw)
+    assert_equal(lat_no, lat_ccw)
+
+    # 2D case with precision issues, check if CF- order is "detected" correctly
+    lat_ccw = cfxr.bounds_to_vertices(
+        rotds.lat_bounds, bounds_dim="bounds", order="counterclockwise"
+    )
+    lat_no = cfxr.bounds_to_vertices(rotds.lat_bounds, bounds_dim="bounds", order=None)
+    # assert_equal(rotds.lat_vertices, lat_ccw)
     assert_equal(lat_no, lat_ccw)
 
     # Transposing the array changes the bounds direction

@@ -311,8 +311,6 @@ def _create_inexact_bounds():
             lat_bounds=xr.DataArray(
                 lat_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_north"}
             ),
-            #  lon_vertices=xr.DataArray(lon_vertices, dims=("x_vertices", "y_vertices")),
-            #  lat_vertices=xr.DataArray(lat_vertices, dims=("x_vertices", "y_vertices")),
         ),
     )
 

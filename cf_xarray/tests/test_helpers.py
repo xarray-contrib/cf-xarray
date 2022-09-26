@@ -28,12 +28,11 @@ def test_bounds_to_vertices():
     assert_equal(lat_no, lat_ccw)
 
     # 2D case with precision issues, check if CF- order is "detected" correctly
-    lat_ccw = cfxr.bounds_to_vertices(
-        rotds.lat_bounds, bounds_dim="bounds", order="counterclockwise"
+    lon_ccw = cfxr.bounds_to_vertices(
+        rotds.lon_bounds, bounds_dim="bounds", order="counterclockwise"
     )
-    lat_no = cfxr.bounds_to_vertices(rotds.lat_bounds, bounds_dim="bounds", order=None)
-    # assert_equal(rotds.lat_vertices, lat_ccw)
-    assert_equal(lat_no, lat_ccw)
+    lon_no = cfxr.bounds_to_vertices(rotds.lon_bounds, bounds_dim="bounds", order=None)
+    assert_equal(lon_no, lon_ccw)
 
     # Transposing the array changes the bounds direction
     ds = mollwds.transpose("bounds", "y", "x", "y_vertices", "x_vertices")

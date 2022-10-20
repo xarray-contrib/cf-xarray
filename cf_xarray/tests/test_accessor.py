@@ -14,6 +14,7 @@ from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
 from cf_xarray.utils import parse_cf_standard_name_table
+from cf_xarray.helpers import vertices_to_bounds
 
 from ..datasets import (
     airds,
@@ -805,13 +806,17 @@ def test_add_bounds_nd_variable():
         coords={"x": np.arange(4), "y": np.arange(3)},
     )
 
+    # 2D
+    expected = vertices_to_bounds(np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4))
+    actual = ds.cf.add_bounds("z").z_bounds.reset_coords(drop=True)
+    xr.testing.assert_identical(actual, expected)
+
+    # 1D
     expected = (
         xr.concat([ds.z - 1.5, ds.z + 1.5], dim="bounds")
         .rename("z_bounds")
         .transpose("bounds", "y", "x")
     )
-    with pytest.raises(ValueError):
-        ds.cf.add_bounds("z")
 
     actual = ds.cf.add_bounds("z", dim="x").z_bounds.reset_coords(drop=True)
     xr.testing.assert_identical(expected, actual)

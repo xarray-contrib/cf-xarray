@@ -13,8 +13,8 @@ from xarray import Dataset
 from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
-from cf_xarray.utils import parse_cf_standard_name_table
 from cf_xarray.helpers import vertices_to_bounds
+from cf_xarray.utils import parse_cf_standard_name_table
 
 from ..datasets import (
     airds,
@@ -807,7 +807,9 @@ def test_add_bounds_nd_variable():
     )
 
     # 2D
-    expected = vertices_to_bounds(np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4))
+    expected = vertices_to_bounds(
+        np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)
+    )
     actual = ds.cf.add_bounds("z").z_bounds.reset_coords(drop=True)
     xr.testing.assert_identical(actual, expected)
 

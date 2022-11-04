@@ -3,6 +3,11 @@
 What's New
 ----------
 
+v0.7.5 (unreleased)
+===================
+- ``cf.add_bounds`` can estimate 2D bounds using an approximate linear interpolation (:pr:`370`).
+  By `Pascal Bourgault`_.
+
 v0.7.4 (July 14, 2022)
 ======================
 

@@ -944,10 +944,18 @@ def _make_names(prefixes):
 
 def _check_unchanged(old, new):
     # Check data array attributes or global dataset attributes
+    def _check_attrs_equal(o, n):
+        # Compare values and keys,
+        # But not ids : allow for copied values (see #365)
+        assert o.keys() == n.keys()
+        for k, v in o.items():
+            if isinstance(v, np.ndarray):
+                assert np.all(v == n[k])
+            else:
+                assert v == n[k]
+
     assert type(old) == type(new)
-    assert old.attrs.keys() == new.attrs.keys()  # set comparison
-    for att, old_val in old.attrs.items():
-        assert id(old_val) == id(new.attrs[att])
+    _check_attrs_equal(old.attrs, new.attrs)
 
     # Check coordinate attributes and data variable attributes
     dicts = [(old.coords, new.coords)]
@@ -957,9 +965,7 @@ def _check_unchanged(old, new):
         assert old_dict.keys() == new_dict.keys()  # set comparison
         for key, old_obj in old_dict.items():
             new_obj = new_dict[key]
-            assert old_obj.attrs.keys() == new_obj.attrs.keys()  # set comparison
-            for att, old_val in old_obj.attrs.items():
-                assert id(old_val) == id(new_obj.attrs[att])  # numpy-safe comparison
+            _check_attrs_equal(old_obj.attrs, new_obj.attrs)
 
 
 _TIME_NAMES = ["t"] + _make_names(

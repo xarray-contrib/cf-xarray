@@ -800,7 +800,6 @@ def test_add_bounds_multiple():
 
 
 def test_add_bounds_nd_variable():
-
     ds = xr.Dataset(
         {"z": (("x", "y"), np.arange(12).reshape(4, 3))},
         coords={"x": np.arange(4), "y": np.arange(3)},
@@ -809,7 +808,7 @@ def test_add_bounds_nd_variable():
     # 2D
     expected = vertices_to_bounds(
         np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)
-    )
+    ).rename('z_bounds').assign_coords(**ds.coords)
     actual = ds.cf.add_bounds("z").z_bounds.reset_coords(drop=True)
     xr.testing.assert_identical(actual, expected)
 

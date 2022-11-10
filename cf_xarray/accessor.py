@@ -465,6 +465,7 @@ def _guess_bounds_dim(da, dim=None):
     """
     Guess bounds values given a 1D or 2D coordinate variable.
     Assumes equal spacing on either side of the coordinate label.
+    This is a coarse approximation, especially for 2D bounds on curvilinear grids.
     """
     if dim is None:
         if da.ndim not in [1, 2]:
@@ -2191,7 +2192,8 @@ class CFDatasetAccessor(CFAccessor):
     def add_bounds(self, keys: str | Iterable[str], *, dim=None):
         """
         Returns a new object with bounds variables. The bounds values are guessed assuming
-        equal spacing on either side of a coordinate label.
+        equal spacing on either side of a coordinate label. The linear estimation is only a
+        coarse approximation, especially 2D bounds, like on curvilinear grids.
 
         Parameters
         ----------

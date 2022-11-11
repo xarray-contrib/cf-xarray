@@ -830,7 +830,7 @@ def test_add_bounds_nd_variable():
         ds.drop_vars("x").cf.add_bounds("z", dim="x")
 
     with pytest.raises(ValueError, match="The `bounds` dimension already exists"):
-        ds.cf.add_bounds("z").cf_add_bounds("x")
+        ds.cf.add_bounds("z").cf.add_bounds("x")
 
 
 def test_bounds():

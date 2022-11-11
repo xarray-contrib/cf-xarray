@@ -829,6 +829,9 @@ def test_add_bounds_nd_variable():
     with pytest.raises(NotImplementedError):
         ds.drop_vars("x").cf.add_bounds("z", dim="x")
 
+    with pytest.raises(ValueError, match="The `bounds` dimension already exists"):
+        ds.cf.add_bounds("z").cf_add_bounds("x")
+
 
 def test_bounds():
     ds = airds.copy(deep=False).cf.add_bounds("lat")

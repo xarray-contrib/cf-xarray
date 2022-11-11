@@ -461,7 +461,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, tuple[Mapper, ...]] = {
 }
 
 
-def _guess_bounds_dim(da, dim=None):
+def _guess_bounds_dim(da, dim=None, out_dim="bounds"):
     """
     Guess bounds values given a 1D or 2D coordinate variable.
     Assumes equal spacing on either side of the coordinate label.
@@ -488,7 +488,7 @@ def _guess_bounds_dim(da, dim=None):
                     daXY.isel(Xbnds=1, Ybnds=1),
                     daXY.isel(Xbnds=1, Ybnds=0),
                 ],
-                "bounds",
+                out_dim,
             )
         else:
             dim = dim[0]
@@ -502,7 +502,7 @@ def _guess_bounds_dim(da, dim=None):
     diff = da.diff(dim)
     lower = da - diff / 2
     upper = da + diff / 2
-    bounds = xr.concat([lower, upper], dim="bounds")
+    bounds = xr.concat([lower, upper], dim=out_dim)
 
     first = (bounds.isel({dim: 0}) - diff.isel({dim: 0})).assign_coords(
         {dim: da[dim][0]}
@@ -2189,7 +2189,13 @@ class CFDatasetAccessor(CFAccessor):
         assert self._obj.sizes[bounds_dim] in [2, 4]
         return bounds_dim
 
-    def add_bounds(self, keys: str | Iterable[str], *, dim=None):
+    def add_bounds(
+        self,
+        keys: str | Iterable[str],
+        *,
+        dim: str | Iterable[str] | None = None,
+        output_dim: str = "bounds",
+    ):
         """
         Returns a new object with bounds variables. The bounds values are guessed assuming
         equal spacing on either side of a coordinate label. The linear estimation is only a
@@ -2203,13 +2209,13 @@ class CFDatasetAccessor(CFAccessor):
         dim : str or Iterable[str], optional
             Core dimension(s) along which to estimate bounds. For 2D bounds, it can
             be a list of 2 dimension names.
+        output_dim : str
+            The name of the bounds dimension to add.
 
         Returns
         -------
         DataArray or Dataset
             with bounds variables added and appropriate "bounds" attribute set.
-            If a bounds dimension of a different length already exists in the dataset,
-            the new dimension is named "bounds2".
 
         Raises
         ------
@@ -2250,9 +2256,16 @@ class CFDatasetAccessor(CFAccessor):
             bname = f"{var}_bounds"
             if bname in obj.variables:
                 raise ValueError(f"Bounds variable name {bname!r} will conflict!")
-            out = _guess_bounds_dim(obj[var].reset_coords(drop=True), dim=dim)
-            if "bounds" in obj.dims and out.bounds.size != obj.bounds.size:
-                out = out.rename(bounds="bounds2")
+            out = _guess_bounds_dim(
+                obj[var].reset_coords(drop=True), dim=dim, out_dim=output_dim
+            )
+            if output_dim in obj.dims and (new := out[output_dim].size) != (
+                old := obj[output_dim].size
+            ):
+                raise ValueError(
+                    f"The `{output_dim}` dimension already exists but has a different length than the new one "
+                    f"({old} vs {new}). Please provide another bound dimension name with `output_dim`."
+                )
             obj.coords[bname] = out
             obj[var].attrs["bounds"] = bname
 

@@ -13,6 +13,7 @@ from xarray import Dataset
 from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
+from cf_xarray.helpers import vertices_to_bounds
 from cf_xarray.utils import parse_cf_standard_name_table
 
 from ..datasets import (
@@ -230,7 +231,7 @@ def test_coordinates_quantified():
 
 
 def test_cell_measures():
-    ds = airds.copy(deep=True)
+    ds = airds.copy(deep=False)
     ds["foo"] = xr.DataArray(ds["cell_area"], attrs=dict(standard_name="foo_std_name"))
     ds["air"].attrs["cell_measures"] += " foo_measure: foo"
     assert ("foo_std_name" in ds.cf["air_temperature"].cf) and ("foo_measure" in ds.cf)
@@ -298,6 +299,14 @@ def test_accessor_getattr_and_describe():
     assert str(ds_verta.cf) == str(ds_vertb.cf)
 
 
+def test_accessor_getattr_coordinate_Nonetype():
+    ds_vert = vert
+    ds_vert["o3"].encoding["coordinates"] = None
+    assert ds_vert.o3.cf["latitude"].name == "lat"
+    ds_vert["lat"].encoding["coordinates"] = None
+    assert ds_vert.cf["latitude"].name == "lat"
+
+
 def test_getitem_standard_name():
     actual = airds.cf["air_temperature"]
     expected = airds["air"]
@@ -307,7 +316,7 @@ def test_getitem_standard_name():
     expected = airds["lat"]
     assert_identical(actual, expected)
 
-    ds = airds.copy(deep=True)
+    ds = airds.copy(deep=False)
     ds["air2"] = ds.air
     with pytest.raises(KeyError):
         ds.cf["air_temperature"]
@@ -340,19 +349,18 @@ def test_getitem_ancillary_variables():
 
 
 def test_rename_like():
-    original = popds.copy(deep=True)
-
     # it'll match for axis: X (lon, nlon) and coordinate="longitude" (lon, TLONG)
     # so delete the axis attributes
-    newair = airds.copy(deep=True)
+    original = popds
+    newair = airds.copy(deep=False)
     del newair.lon.attrs["axis"]
     del newair.lat.attrs["axis"]
 
     renamed = popds.cf["TEMP"].cf.rename_like(newair)
-    for k in ["TLONG", "TLAT"]:
-        assert k not in renamed.coords
-        assert k in original.coords
     assert original.TEMP.attrs["coordinates"] == "TLONG TLAT"
+    for k in ["TLONG", "TLAT"]:
+        assert k in original.coords
+        assert k not in renamed.coords
 
     assert "lon" in renamed.coords
     assert "lat" in renamed.coords
@@ -479,7 +487,7 @@ def test_pos_args_methods():
 
 def test_preserve_unused_keys():
 
-    ds = airds.copy(deep=True)
+    ds = airds.copy(deep=False)
     ds.time.attrs.clear()
     actual = ds.cf.sel(X=260, Y=40, time=airds.time[:2], method="nearest")
     expected = ds.sel(lon=260, lat=40, time=airds.time[:2], method="nearest")
@@ -528,7 +536,7 @@ def test_args_methods(obj):
 
 def test_dataarray_getitem():
 
-    air = airds.air.copy()
+    air = airds.air.copy(deep=False)
     air.name = None
 
     assert_identical(air.cf["longitude"], air["lon"])
@@ -543,7 +551,7 @@ def test_dataarray_getitem():
 
 def test_dataarray_plot():
 
-    obj = airds.air.copy(deep=True)
+    obj = airds.air.copy(deep=False)
 
     rv = obj.isel(time=1).transpose("lon", "lat").cf.plot()
     assert isinstance(rv, mpl.collections.QuadMesh)
@@ -636,15 +644,17 @@ def test_getitem(obj, key, expected_key):
 def test_getitem_errors(obj):
     with pytest.raises(KeyError):
         obj.cf["XX"]
-    obj2 = obj.copy(deep=True)
+    obj2 = obj.copy(deep=False)
     obj2.lon.attrs = {}
     with pytest.raises(KeyError):
         obj2.cf["X"]
 
 
 def test_bad_cell_measures_attribute():
-    air2 = airds.copy(deep=True)
+    air2 = airds.copy(deep=False)
     air2.air.attrs["cell_measures"] = "--OPT"
+    with pytest.warns(UserWarning):
+        air2.cf["air"]
     with pytest.warns(UserWarning):
         assert_identical(air2.air.drop_vars("cell_area"), air2.cf["air"])
     with pytest.warns(UserWarning):
@@ -658,6 +668,12 @@ def test_bad_cell_measures_attribute():
 
     #  GH216
     repr(air2.cf)
+
+    # GH340
+    air2.cf.axes
+    air2.cf.coordinates
+    with pytest.warns(UserWarning):
+        air2.cf.cell_measures
 
 
 def test_getitem_clash_standard_name():
@@ -728,20 +744,21 @@ def test_plot_xincrease_yincrease():
 
 @pytest.mark.parametrize("dims", ["time2", "lat", "time", ["lat", "lon"]])
 def test_add_bounds(dims):
-    obj = airds.copy(deep=True)
+    ds = airds
+    original = ds.copy(deep=True)
 
     expected = {}
     expected["lat"] = xr.concat(
         [
-            obj.lat.copy(data=np.arange(76.25, 16.0, -2.5)),
-            obj.lat.copy(data=np.arange(73.75, 13.6, -2.5)),
+            ds.lat.copy(data=np.arange(76.25, 16.0, -2.5)),
+            ds.lat.copy(data=np.arange(73.75, 13.6, -2.5)),
         ],
         dim="bounds",
     )
     expected["lon"] = xr.concat(
         [
-            obj.lon.copy(data=np.arange(198.75, 325 - 1.25, 2.5)),
-            obj.lon.copy(data=np.arange(201.25, 325 + 1.25, 2.5)),
+            ds.lon.copy(data=np.arange(198.75, 325 - 1.25, 2.5)),
+            ds.lon.copy(data=np.arange(201.25, 325 + 1.25, 2.5)),
         ],
         dim="bounds",
     )
@@ -751,8 +768,8 @@ def test_add_bounds(dims):
     dtb2 = pd.Timedelta("3h")
     expected["time"] = xr.concat(
         [
-            obj.time.copy(data=pd.date_range(start=t0 - dtb2, end=t1 - dtb2, freq=dt)),
-            obj.time.copy(data=pd.date_range(start=t0 + dtb2, end=t1 + dtb2, freq=dt)),
+            ds.time.copy(data=pd.date_range(start=t0 - dtb2, end=t1 - dtb2, freq=dt)),
+            ds.time.copy(data=pd.date_range(start=t0 + dtb2, end=t1 + dtb2, freq=dt)),
         ],
         dim="bounds",
     )
@@ -761,8 +778,9 @@ def test_add_bounds(dims):
     expected["lon"].attrs.clear()
     expected["time"].attrs.clear()
 
-    obj.coords["time2"] = obj.time
-    added = obj.cf.add_bounds(dims)
+    added = ds.copy(deep=False)
+    added.coords["time2"] = ds.time
+    added = added.cf.add_bounds(dims)
     if isinstance(dims, str):
         dims = (dims,)
 
@@ -774,6 +792,8 @@ def test_add_bounds(dims):
             added[name].reset_coords(drop=True), expected[dim].transpose(..., "bounds")
         )
 
+    _check_unchanged(original, ds)
+
 
 def test_add_bounds_multiple():
     # Test multiple dimensions
@@ -782,19 +802,28 @@ def test_add_bounds_multiple():
 
 
 def test_add_bounds_nd_variable():
-
     ds = xr.Dataset(
         {"z": (("x", "y"), np.arange(12).reshape(4, 3))},
         coords={"x": np.arange(4), "y": np.arange(3)},
     )
 
+    # 2D
+    expected = (
+        vertices_to_bounds(
+            np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)
+        )
+        .rename("z_bounds")
+        .assign_coords(**ds.coords)
+    )
+    actual = ds.cf.add_bounds("z").z_bounds.reset_coords(drop=True)
+    xr.testing.assert_identical(actual, expected)
+
+    # 1D
     expected = (
         xr.concat([ds.z - 1.5, ds.z + 1.5], dim="bounds")
         .rename("z_bounds")
         .transpose("bounds", "y", "x")
     )
-    with pytest.raises(ValueError):
-        ds.cf.add_bounds("z")
 
     actual = ds.cf.add_bounds("z", dim="x").z_bounds.reset_coords(drop=True)
     xr.testing.assert_identical(expected.transpose(..., "bounds"), actual)
@@ -802,9 +831,12 @@ def test_add_bounds_nd_variable():
     with pytest.raises(NotImplementedError):
         ds.drop_vars("x").cf.add_bounds("z", dim="x")
 
+    with pytest.raises(ValueError, match="The `bounds` dimension already exists"):
+        ds.cf.add_bounds("z").cf.add_bounds("x")
+
 
 def test_bounds():
-    ds = airds.copy(deep=True).cf.add_bounds("lat")
+    ds = airds.copy(deep=False).cf.add_bounds("lat")
 
     actual = ds.cf.bounds
     expected = {"Y": ["lat_bounds"], "lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
@@ -852,32 +884,36 @@ def test_bounds():
 
 def test_bounds_to_vertices():
     # All available
-    ds = airds.cf.add_bounds(["lon", "lat"])
-    dsc = ds.cf.bounds_to_vertices()
-    assert "lon_vertices" in dsc
-    assert "lat_vertices" in dsc
+    ds = airds
+    original = ds.copy(deep=True)
+    dsb = ds.cf.add_bounds(["lon", "lat"])
+    dsv = dsb.cf.bounds_to_vertices()
+    assert "lon_vertices" in dsv
+    assert "lat_vertices" in dsv
 
     # Giving key
-    dsc = ds.cf.bounds_to_vertices("longitude")
-    assert "lon_vertices" in dsc
-    assert "lat_vertices" not in dsc
+    dsv = dsb.cf.bounds_to_vertices("longitude")
+    assert "lon_vertices" in dsv
+    assert "lat_vertices" not in dsv
 
-    dsc = ds.cf.bounds_to_vertices(["longitude", "latitude"])
-    assert "lon_vertices" in dsc
-    assert "lat_vertices" in dsc
+    dsv = dsb.cf.bounds_to_vertices(["longitude", "latitude"])
+    assert "lon_vertices" in dsv
+    assert "lat_vertices" in dsv
 
     # Error
     with pytest.raises(ValueError):
-        dsc = ds.cf.bounds_to_vertices("T")
+        dsv = dsb.cf.bounds_to_vertices("T")
 
     # Words on datetime arrays to
-    ds = airds.cf.add_bounds("time")
-    dsc = ds.cf.bounds_to_vertices()
-    assert "time_bounds" in dsc
+    dsb = dsb.cf.add_bounds("time")
+    dsv = dsb.cf.bounds_to_vertices()
+    assert "time_bounds" in dsv
+
+    _check_unchanged(original, ds)
 
 
 def test_get_bounds_dim_name():
-    ds = airds.copy(deep=True).cf.add_bounds("lat")
+    ds = airds.cf.add_bounds("lat")
     assert ds.cf.get_bounds_dim_name("latitude") == "bounds"
     assert ds.cf.get_bounds_dim_name("lat") == "bounds"
 
@@ -913,6 +949,32 @@ def _make_names(prefixes):
     return [
         f"{prefix}{suffix}" for prefix, suffix in itertools.product(prefixes, suffixes)
     ]
+
+
+def _check_unchanged(old, new):
+    # Check data array attributes or global dataset attributes
+    def _check_attrs_equal(o, n):
+        # Compare values and keys,
+        # But not ids : allow for copied values (see #365)
+        assert o.keys() == n.keys()
+        for k, v in o.items():
+            if isinstance(v, np.ndarray):
+                assert np.all(v == n[k])
+            else:
+                assert v == n[k]
+
+    assert type(old) == type(new)
+    _check_attrs_equal(old.attrs, new.attrs)
+
+    # Check coordinate attributes and data variable attributes
+    dicts = [(old.coords, new.coords)]
+    if isinstance(old, xr.Dataset):
+        dicts.append((old.data_vars, new.data_vars))
+    for old_dict, new_dict in dicts:
+        assert old_dict.keys() == new_dict.keys()  # set comparison
+        for key, old_obj in old_dict.items():
+            new_obj = new_dict[key]
+            _check_attrs_equal(old_obj.attrs, new_obj.attrs)
 
 
 _TIME_NAMES = ["t"] + _make_names(
@@ -1009,7 +1071,7 @@ def test_attributes():
     with pytest.raises(AttributeError):
         airds.da.cf.chunks
 
-    airds2 = airds.copy(deep=True)
+    airds2 = airds.copy(deep=False)
     airds2.lon.attrs = {}
     actual = airds2.cf.sizes
     expected = {"lon": 50, "Y": 25, "T": 4, "latitude": 25, "time": 4}
@@ -1040,7 +1102,7 @@ def test_attributes():
     assert_identical(ds1.cf.data_vars["T"], ds1["T"])
 
     # multiple latitudes but only one latitude data_var
-    ds = popds.copy(deep=True)
+    ds = popds.copy(deep=False)
     for var in ["ULAT", "TLAT"]:
         ds[var].attrs["standard_name"] = "latitude"
     ds = ds.reset_coords("ULAT")
@@ -1062,7 +1124,7 @@ def test_Z_vs_vertical_ROMS():
         romsds.z_rho_dummy.reset_coords(drop=True), romsds.temp.cf["vertical"]
     )
 
-    romsds = romsds.copy(deep=True)
+    romsds = romsds.copy(deep=False)
 
     romsds.temp.attrs.clear()
     # look in encoding
@@ -1103,12 +1165,12 @@ def test_param_vcoord_ocean_s_coord():
     romsds.cf.decode_vertical_coords(outnames={"s_rho": "ZZZ_rho"})
     assert "ZZZ_rho" in romsds.coords
 
-    copy = romsds.copy(deep=True)
+    copy = romsds.copy(deep=False)
     del copy["zeta"]
     with pytest.raises(KeyError):
         copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
-    copy = romsds.copy(deep=True)
+    copy = romsds.copy(deep=False)
     copy.s_rho.attrs["formula_terms"] = "s: s_rho C: Cs_r depth: h depth_c: hc"
     with pytest.raises(KeyError):
         copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
@@ -1119,7 +1181,7 @@ def test_param_vcoord_ocean_sigma_coordinate():
     pomds.cf.decode_vertical_coords(outnames={"sigma": "z"})
     assert_allclose(pomds.z.reset_coords(drop=True), expected.reset_coords(drop=True))
 
-    copy = pomds.copy(deep=True)
+    copy = pomds.copy(deep=False)
     del copy["zeta"]
     with pytest.raises(AssertionError):
         copy.cf.decode_vertical_coords()
@@ -1140,7 +1202,7 @@ def test_formula_terms():
     assert romsds["temp"].cf.formula_terms == srhoterms
     assert romsds["s_rho"].cf.formula_terms == srhoterms
 
-    s_rho = romsds["s_rho"].copy(deep=True)
+    s_rho = romsds["s_rho"].copy(deep=False)
     del s_rho.attrs["standard_name"]
     del s_rho.s_rho.attrs["standard_name"]  # TODO: xarray bug
     assert s_rho.cf.formula_terms == srhoterms
@@ -1320,8 +1382,12 @@ def test_groupby_special_ops():
         assert_identical(group, cfgroup)
 
     # arithmetic
-    expected = grouped - grouped.mean()
-    actual = grouped - cfgrouped.mean()
+    # TODO: Extremely buggy!
+    # 1. cfgrouped - cfgrouped.mean() raises RecursionError
+    # 2. use_flox=True doesn't preserve attributes for some reason
+    with xr.set_options(keep_attrs=True):
+        expected = grouped - grouped.mean()
+        actual = grouped - cfgrouped.mean()
     assert_identical(expected, actual)
 
 
@@ -1525,6 +1591,7 @@ def test_datetime_like(reshape):
 def test_add_canonical_attributes(override, skip, verbose, capsys):
 
     ds = airds
+    original = ds.copy(deep=True)
     cf_ds = ds.cf.add_canonical_attributes(
         override=override, skip=skip, verbose=verbose
     )
@@ -1571,6 +1638,8 @@ def test_add_canonical_attributes(override, skip, verbose, capsys):
         cf_da.attrs.pop("history")
         assert_identical(cf_da, cf_ds["air"])
 
+    _check_unchanged(original, ds)
+
 
 @pytest.mark.parametrize("op", ["ge", "gt", "eq", "ne", "le", "lt"])
 def test_flag_features(op):
@@ -1607,7 +1676,7 @@ def test_flag_errors():
 def test_missing_variables():
 
     # Bounds
-    ds = mollwds.copy(deep=True)
+    ds = mollwds.copy(deep=False)
     ds = ds.drop_vars("lon_bounds")
     assert ds.cf.bounds == {"lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
 
@@ -1615,12 +1684,12 @@ def test_missing_variables():
         ds.cf.get_bounds("longitude")
 
     # Cell measures
-    ds = airds.copy(deep=True)
+    ds = airds.copy(deep=False)
     ds = ds.drop_vars("cell_area")
     assert ds.cf.cell_measures == {}
 
     # Formula terms
-    ds = vert.copy(deep=True)
+    ds = vert.copy(deep=False)
     ds = ds.drop_vars("ap")
     assert ds.cf.formula_terms == {"lev": {"b": "b", "ps": "ps"}}
 

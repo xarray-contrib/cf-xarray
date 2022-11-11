@@ -99,7 +99,7 @@ def apply_mapper(
 
         try:
             results = mapper(obj, key)
-        except KeyError as e:
+        except (KeyError, ValueError) as e:
             if error or "I expected only one." in repr(e):
                 raise e
             else:
@@ -254,10 +254,12 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
         )
 
     search_in = set()
-    if "coordinates" in obj.encoding:
-        search_in.update(obj.encoding["coordinates"].split(" "))
-    if "coordinates" in obj.attrs:
-        search_in.update(obj.attrs["coordinates"].split(" "))
+    attrs_or_encoding = ChainMap(obj.attrs, obj.encoding)
+    coordinates = attrs_or_encoding.get("coordinates", None)
+    # Handles case where the coordinates attribute is None
+    # This is used to tell xarray to not write a coordinates attribute
+    if coordinates:
+        search_in.update(coordinates.split(" "))
     if not search_in:
         search_in = set(obj.coords)
 
@@ -306,7 +308,12 @@ def _get_measure(obj: DataArray | Dataset, key: str) -> list[str]:
         attrs_or_encoding = ChainMap(da.attrs, da.encoding)
         if "cell_measures" in attrs_or_encoding:
             attr = attrs_or_encoding["cell_measures"]
-            measures = parse_cell_methods_attr(attr)
+            try:
+                measures = parse_cell_methods_attr(attr)
+            except ValueError as e:
+                raise ValueError(
+                    f"{var} has malformed cell_measures attribute {attr}."
+                ) from e
             if key in measures:
                 results.update([measures[key]])
 
@@ -454,17 +461,37 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, tuple[Mapper, ...]] = {
 }
 
 
-def _guess_bounds_dim(da, dim=None):
+def _guess_bounds_dim(da, dim=None, out_dim="bounds"):
     """
-    Guess bounds values given a 1D coordinate variable.
+    Guess bounds values given a 1D or 2D coordinate variable.
     Assumes equal spacing on either side of the coordinate label.
+    This is a coarse approximation, especially for 2D bounds on curvilinear grids.
     """
     if dim is None:
-        if da.ndim != 1:
+        if da.ndim not in [1, 2]:
             raise ValueError(
-                f"If dim is None, variable {da.name} must be 1D. Received {da.ndim}D variable instead."
+                f"If dim is None, variable {da.name} must be 1D or 2D. Received {da.ndim}D variable instead."
             )
-        (dim,) = da.dims
+        dim = da.dims
+    if not isinstance(dim, str):
+        if len(dim) > 2:
+            raise NotImplementedError(
+                "Adding bounds with more than 2 dimensions is not supported."
+            )
+        elif len(dim) == 2:
+            daX = _guess_bounds_dim(da, dim[0]).rename(bounds="Xbnds")
+            daXY = _guess_bounds_dim(daX, dim[1]).rename(bounds="Ybnds")
+            return xr.concat(
+                [
+                    daXY.isel(Xbnds=0, Ybnds=0),
+                    daXY.isel(Xbnds=0, Ybnds=1),
+                    daXY.isel(Xbnds=1, Ybnds=1),
+                    daXY.isel(Xbnds=1, Ybnds=0),
+                ],
+                out_dim,
+            )
+        else:
+            dim = dim[0]
     if dim not in da.dims:
         (dim,) = da.cf.axes[dim]
     if dim not in da.coords:
@@ -475,7 +502,7 @@ def _guess_bounds_dim(da, dim=None):
     diff = da.diff(dim)
     lower = da - diff / 2
     upper = da + diff / 2
-    bounds = xr.concat([lower, upper], dim="bounds")
+    bounds = xr.concat([lower, upper], dim=out_dim)
 
     first = (bounds.isel({dim: 0}) - diff.isel({dim: 0})).assign_coords(
         {dim: da[dim][0]}
@@ -621,6 +648,7 @@ def _getitem(
     """
 
     obj = accessor._obj
+    all_bounds = obj.cf.bounds if isinstance(obj, Dataset) else {}
     kind = str(type(obj).__name__)
     scalar_key = isinstance(key, str)
 
@@ -638,7 +666,7 @@ def _getitem(
         if not isinstance(obj, DataArray) and scalar_key:
             bounds = set()
             for name in names:
-                bounds.update(obj.cf.bounds.get(name, []))
+                bounds.update(all_bounds.get(name, []))
             names = set(names) - bounds
         return names
 
@@ -1476,14 +1504,18 @@ class CFAccessor:
                 ChainMap(da.attrs, da.encoding).get("cell_measures", "")
                 for da in obj.data_vars.values()
             ]
+        as_dataset = self._maybe_to_dataset().reset_coords()
 
         keys = {}
         for attr in set(all_attrs):
             try:
                 keys.update(parse_cell_methods_attr(attr))
             except ValueError:
+                bad_vars = list(
+                    as_dataset.filter_by_attrs(cell_measures=attr).data_vars.keys()
+                )
                 warnings.warn(
-                    f"Ignoring bad cell_measures attribute: {attr}.",
+                    f"Ignoring bad cell_measures attribute: {attr} on {bad_vars}.",
                     UserWarning,
                     stacklevel=2,
                 )
@@ -1586,8 +1618,11 @@ class CFAccessor:
         coords: dict[str, list[str]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
 
-        if "coordinates" in attrs_or_encoding:
-            coords["coordinates"] = attrs_or_encoding["coordinates"].split(" ")
+        coordinates = attrs_or_encoding.get("coordinates", None)
+        # Handles case where the coordinates attribute is None
+        # This is used to tell xarray to not write a coordinates attribute
+        if coordinates:
+            coords["coordinates"] = coordinates.split(" ")
 
         if "cell_measures" in attrs_or_encoding:
             try:
@@ -1787,7 +1822,7 @@ class CFAccessor:
         DataArray or Dataset
             with appropriate attributes added
         """
-        obj = self._obj.copy(deep=True)
+        obj = self._obj.copy(deep=False)
         for var in obj.coords.variables:
             var_is_coord = any(var in val for val in obj.cf.coordinates.values())
             if not var_is_coord and obj[var].ndim == 1 and _is_datetime_like(obj[var]):
@@ -1927,7 +1962,7 @@ class CFAccessor:
         info, table, aliases = parse_cf_standard_name_table(source)
 
         # Loop over standard names
-        ds = self._maybe_to_dataset().copy()
+        ds = self._maybe_to_dataset().copy(deep=False)
         attrs_to_print: dict = {}
         for std_name, var_names in ds.cf.standard_names.items():
 
@@ -2154,18 +2189,28 @@ class CFDatasetAccessor(CFAccessor):
         assert self._obj.sizes[bounds_dim] in [2, 4]
         return bounds_dim
 
-    def add_bounds(self, keys: str | Iterable[str], *, dim=None):
+    def add_bounds(
+        self,
+        keys: str | Iterable[str],
+        *,
+        dim: str | Iterable[str] | None = None,
+        output_dim: str = "bounds",
+    ):
         """
         Returns a new object with bounds variables. The bounds values are guessed assuming
-        equal spacing on either side of a coordinate label.
+        equal spacing on either side of a coordinate label. The linear estimation is only a
+        coarse approximation, especially 2D bounds on curvilinear grids. It is always better to use
+        bounds generated as part of the grid creation process. This method is purely for convenience.
 
         Parameters
         ----------
         keys : str or Iterable[str]
             Either a single variable name or a list of variable names.
-        dim : str, optional
-            Core dimension along whch to estimate bounds. If None, ``keys``
-            must refer to 1D variables only.
+        dim : str or Iterable[str], optional
+            Core dimension(s) along which to estimate bounds. For 2D bounds, it can
+            be a list of 2 dimension names.
+        output_dim : str
+            The name of the bounds dimension to add.
 
         Returns
         -------
@@ -2199,7 +2244,7 @@ class CFDatasetAccessor(CFAccessor):
                 apply_mapper(_get_all, self._obj, key, error=False, default=[key])
             )
 
-        obj = self._maybe_to_dataset(self._obj.copy(deep=True))
+        obj = self._maybe_to_dataset(self._obj.copy(deep=False))
 
         bad_vars: set[str] = variables - set(obj.variables)
         if bad_vars:
@@ -2211,9 +2256,17 @@ class CFDatasetAccessor(CFAccessor):
             bname = f"{var}_bounds"
             if bname in obj.variables:
                 raise ValueError(f"Bounds variable name {bname!r} will conflict!")
-            obj.coords[bname] = _guess_bounds_dim(
-                obj[var].reset_coords(drop=True), dim=dim
+            out = _guess_bounds_dim(
+                obj[var].reset_coords(drop=True), dim=dim, out_dim=output_dim
             )
+            if output_dim in obj.dims and (new := out[output_dim].size) != (
+                old := obj[output_dim].size
+            ):
+                raise ValueError(
+                    f"The `{output_dim}` dimension already exists but has a different length than the new one "
+                    f"({old} vs {new}). Please provide another bound dimension name with `output_dim`."
+                )
+            obj.coords[bname] = out
             obj[var].attrs["bounds"] = bname
 
         return self._maybe_to_dataarray(obj)
@@ -2276,7 +2329,7 @@ class CFDatasetAccessor(CFAccessor):
         else:
             coords = keys
 
-        obj = self._maybe_to_dataset(self._obj.copy(deep=True))
+        obj = self._maybe_to_dataset(self._obj.copy(deep=False))
 
         for coord in coords:
             try:

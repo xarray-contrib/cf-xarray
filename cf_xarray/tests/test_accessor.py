@@ -13,6 +13,7 @@ from xarray import Dataset
 from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
+from cf_xarray.helpers import vertices_to_bounds
 from cf_xarray.utils import parse_cf_standard_name_table
 
 from ..datasets import (
@@ -799,25 +800,37 @@ def test_add_bounds_multiple():
 
 
 def test_add_bounds_nd_variable():
-
     ds = xr.Dataset(
         {"z": (("x", "y"), np.arange(12).reshape(4, 3))},
         coords={"x": np.arange(4), "y": np.arange(3)},
     )
 
+    # 2D
+    expected = (
+        vertices_to_bounds(
+            np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)
+        )
+        .rename("z_bounds")
+        .assign_coords(**ds.coords)
+    )
+    actual = ds.cf.add_bounds("z").z_bounds.reset_coords(drop=True)
+    xr.testing.assert_identical(actual, expected)
+
+    # 1D
     expected = (
         xr.concat([ds.z - 1.5, ds.z + 1.5], dim="bounds")
         .rename("z_bounds")
         .transpose("bounds", "y", "x")
     )
-    with pytest.raises(ValueError):
-        ds.cf.add_bounds("z")
 
     actual = ds.cf.add_bounds("z", dim="x").z_bounds.reset_coords(drop=True)
     xr.testing.assert_identical(expected, actual)
 
     with pytest.raises(NotImplementedError):
         ds.drop_vars("x").cf.add_bounds("z", dim="x")
+
+    with pytest.raises(ValueError, match="The `bounds` dimension already exists"):
+        ds.cf.add_bounds("z").cf.add_bounds("x")
 
 
 def test_bounds():

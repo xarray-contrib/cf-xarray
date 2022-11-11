@@ -2193,7 +2193,8 @@ class CFDatasetAccessor(CFAccessor):
         """
         Returns a new object with bounds variables. The bounds values are guessed assuming
         equal spacing on either side of a coordinate label. The linear estimation is only a
-        coarse approximation, especially 2D bounds, like on curvilinear grids.
+        coarse approximation, especially 2D bounds on curvilinear grids. It is always better to use 
+        bounds generated as part of the grid creation process. This method is purely for convenience.
 
         Parameters
         ----------

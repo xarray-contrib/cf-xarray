@@ -17,7 +17,7 @@ def test_bounds_to_vertices():
     lat_c = cfxr.bounds_to_vertices(ds.lat_bounds, bounds_dim="bounds")
     assert_array_equal(ds.lat.values + 1.25, lat_c.values[:-1])
 
-    # 2D case, CF- order
+    # 2D case
     lat_ccw = cfxr.bounds_to_vertices(
         mollwds.lat_bounds, bounds_dim="bounds", order="counterclockwise"
     )
@@ -28,13 +28,13 @@ def test_bounds_to_vertices():
     assert_equal(lat_no, lat_ccw)
 
     # Transposing the array changes the bounds direction
-    ds = mollwds.transpose("bounds", "y", "x", "y_vertices", "x_vertices")
-    lon_c = cfxr.bounds_to_vertices(
+    ds = mollwds.transpose("x", "y", "x_vertices", "y_vertices", "bounds")
+    lon_cw = cfxr.bounds_to_vertices(
         ds.lon_bounds, bounds_dim="bounds", order="clockwise"
     )
-    lon_c2 = cfxr.bounds_to_vertices(ds.lon_bounds, bounds_dim="bounds", order=None)
-    assert_equal(ds.lon_vertices, lon_c)
-    assert_equal(ds.lon_vertices, lon_c2)
+    lon_no2 = cfxr.bounds_to_vertices(ds.lon_bounds, bounds_dim="bounds", order=None)
+    assert_equal(ds.lon_vertices, lon_cw)
+    assert_equal(ds.lon_vertices, lon_no2)
 
     # Preserves dask-backed arrays
     if DaskArray is not None:
@@ -50,13 +50,13 @@ def test_vertices_to_bounds():
     ds = airds.cf.add_bounds(["lon", "lat", "time"])
     lat_c = cfxr.bounds_to_vertices(ds.lat_bounds, bounds_dim="bounds")
     lat_b = cfxr.vertices_to_bounds(lat_c, out_dims=("bounds", "lat"))
-    assert_array_equal(ds.lat_bounds, lat_b.transpose(..., "bounds"))
+    assert_array_equal(ds.lat_bounds, lat_b)
 
     # Datetime
     time_c = cfxr.bounds_to_vertices(ds.time_bounds, bounds_dim="bounds")
     time_b = cfxr.vertices_to_bounds(time_c, out_dims=("bounds", "time"))
-    assert_array_equal(ds.time_bounds, time_b.transpose(..., "bounds"))
+    assert_array_equal(ds.time_bounds, time_b)
 
     # 2D case
     lon_b = cfxr.vertices_to_bounds(mollwds.lon_vertices, out_dims=("bounds", "x", "y"))
-    assert_array_equal(mollwds.lon_bounds, lon_b.transpose(..., "bounds"))
+    assert_array_equal(mollwds.lon_bounds, lon_b)

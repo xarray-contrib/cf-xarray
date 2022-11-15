@@ -3,10 +3,15 @@
 What's New
 ----------
 
-v0.7.5 (unreleased)
-===================
+v0.7.5 (Nov 15, 2022)
+=====================
+
 - ``cf.add_bounds`` can estimate 2D bounds using an approximate linear interpolation (:pr:`370`).
   By `Pascal Bourgault`_.
+- Improve detection of bounds order by rellaxing check a bit (:pr:`361`).
+  By `Lars Buntemeyer`_.
+- Performance improvements. (:pr:`358`). By `Luke Davis`
+- Fix coordinate/axis detection (:pr:`359`). By `Martin Schupfner`_
 
 v0.7.4 (July 14, 2022)
 ======================
@@ -177,4 +182,7 @@ v0.1.3
 .. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Tom Vo`: https://github.com/tomvothecoder
 .. _`Romain Caneill`: https://github.com/rcaneill
+.. _`Lars Buntemeyer`: https://github.com/larsbuntemeyer
+.. _`Luke Davis`: https://github.com/lukelbd
+.. _`Martin Schupfner`: https://github.com/sol1105
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

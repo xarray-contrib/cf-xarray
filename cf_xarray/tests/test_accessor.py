@@ -788,7 +788,9 @@ def test_add_bounds(dims):
         name = f"{dim}_bounds"
         assert name in added.coords
         assert added[dim].attrs["bounds"] == name
-        assert_allclose(added[name].reset_coords(drop=True), expected[dim])
+        assert_allclose(
+            added[name].reset_coords(drop=True), expected[dim].transpose(..., "bounds")
+        )
 
     _check_unchanged(original, ds)
 
@@ -824,7 +826,7 @@ def test_add_bounds_nd_variable():
     )
 
     actual = ds.cf.add_bounds("z", dim="x").z_bounds.reset_coords(drop=True)
-    xr.testing.assert_identical(expected, actual)
+    xr.testing.assert_identical(expected.transpose(..., "bounds"), actual)
 
     with pytest.raises(NotImplementedError):
         ds.drop_vars("x").cf.add_bounds("z", dim="x")

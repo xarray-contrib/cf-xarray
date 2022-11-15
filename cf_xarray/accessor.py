@@ -489,7 +489,7 @@ def _guess_bounds_dim(da, dim=None, out_dim="bounds"):
                     daXY.isel(Xbnds=1, Ybnds=0),
                 ],
                 out_dim,
-            )
+            ).transpose(..., "bounds")
         else:
             dim = dim[0]
     if dim not in da.dims:
@@ -507,7 +507,7 @@ def _guess_bounds_dim(da, dim=None, out_dim="bounds"):
     first = (bounds.isel({dim: 0}) - diff.isel({dim: 0})).assign_coords(
         {dim: da[dim][0]}
     )
-    result = xr.concat([first, bounds], dim=dim)
+    result = xr.concat([first, bounds], dim=dim).transpose(..., "bounds")
 
     return result
 

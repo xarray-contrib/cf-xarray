@@ -21,7 +21,6 @@ from typing import (
     cast,
 )
 
-import numpy as np
 import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
@@ -31,7 +30,7 @@ from xarray.core.rolling import Coarsen, Rolling
 from xarray.core.weighted import Weighted
 
 from .criteria import cf_role_criteria, coordinate_criteria, regex
-from .helpers import bounds_to_vertices
+from .helpers import _guess_bounds_1d, _guess_bounds_2d, bounds_to_vertices
 from .options import OPTIONS
 from .utils import (
     _get_version,
@@ -462,7 +461,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, tuple[Mapper, ...]] = {
 }
 
 
-def _guess_bounds_dim(da, dim=None, out_dim="bounds"):
+def _guess_bounds(da, dim=None, out_dim="bounds"):
     """
     Guess bounds values given a 1D or 2D coordinate variable.
     Assumes equal spacing on either side of the coordinate label.
@@ -474,101 +473,18 @@ def _guess_bounds_dim(da, dim=None, out_dim="bounds"):
                 f"If dim is None, variable {da.name} must be 1D or 2D. Received {da.ndim}D variable instead."
             )
         dim = da.dims
+
     if not isinstance(dim, str):
         if len(dim) > 2:
             raise NotImplementedError(
                 "Adding bounds with more than 2 dimensions is not supported."
             )
         elif len(dim) == 2:
-            daX = _guess_bounds_dim(da, dim[0]).rename(bounds="Xbnds")
-            daXY = _guess_bounds_dim(daX, dim[1]).rename(bounds="Ybnds")
-            # At this point, we might have different corners for adjacent cells, we average them together to have a nice grid
-            # To make this vectorized and keep the edges, we'll pad with NaNs and ignore them in the averages
-            daXYp = (
-                daXY.pad(
-                    {d: (1, 1) for d in dim}, mode="constant", constant_values=np.NaN
-                )
-                .transpose(*dim, "Xbnds", "Ybnds")
-                .values
-            )  # Tranpose for an easier notation
-            # Mean of the corners that should be the same point.
-            daXYm = np.stack(
-                (
-                    # Lower left corner (mean of : upper right of the lower left cell, lower right of the upper left cell, and so on, ccw)
-                    np.nanmean(
-                        np.stack(
-                            (
-                                daXYp[:-2, :-2, 1, 1],
-                                daXYp[:-2, 1:-1, 1, 0],
-                                daXYp[1:-1, 1:-1, 0, 0],
-                                daXYp[1:-1, :-2, 0, 1],
-                            )
-                        ),
-                        axis=0,
-                    ),
-                    # Upper left corner
-                    np.nanmean(
-                        np.stack(
-                            (
-                                daXYp[:-2, 1:-1, 1, 1],
-                                daXYp[:-2, 2:, 1, 0],
-                                daXYp[1:-1, 2:, 0, 0],
-                                daXYp[1:-1, 1:-1, 0, 1],
-                            )
-                        ),
-                        axis=0,
-                    ),
-                    # Upper right
-                    np.nanmean(
-                        np.stack(
-                            (
-                                daXYp[1:-1, 1:-1, 1, 1],
-                                daXYp[1:-1, 2:, 1, 0],
-                                daXYp[2:, 2:, 0, 0],
-                                daXYp[2:, 1:-1, 0, 1],
-                            )
-                        ),
-                        axis=0,
-                    ),
-                    # Lower right
-                    np.nanmean(
-                        np.stack(
-                            (
-                                daXYp[1:-1, :-2, 1, 1],
-                                daXYp[1:-1, 1:-1, 1, 0],
-                                daXYp[2:, 1:-1, 0, 0],
-                                daXYp[2:, :-2, 0, 1],
-                            )
-                        ),
-                        axis=0,
-                    ),
-                ),
-                axis=-1,
-            )
-            return xr.DataArray(daXYm, dims=(*dim, "bounds"), coords=da.coords)
+            return _guess_bounds_2d(da, dim).rename(bounds=out_dim)
         else:
             dim = dim[0]
-    if dim not in da.dims:
-        (dim,) = da.cf.axes[dim]
 
-    ADDED_INDEX = False
-    if dim not in da.coords:
-        # For proper alignment in the lines below, we need an index on dim.
-        da = da.assign_coords({dim: da[dim]})
-        ADDED_INDEX = True
-
-    diff = da.diff(dim)
-    lower = da - diff / 2
-    upper = da + diff / 2
-    bounds = xr.concat([lower, upper], dim=out_dim)
-
-    first = (bounds.isel({dim: 0}) - diff.isel({dim: 0})).assign_coords(
-        {dim: da[dim][0]}
-    )
-    result = xr.concat([first, bounds], dim=dim).transpose(..., "bounds")
-    if ADDED_INDEX:
-        result = result.drop_vars(dim)
-    return result
+    return _guess_bounds_1d(da, dim).rename(bounds=out_dim)
 
 
 def _build_docstring(func):
@@ -2315,7 +2231,7 @@ class CFDatasetAccessor(CFAccessor):
             bname = f"{var}_bounds"
             if bname in obj.variables:
                 raise ValueError(f"Bounds variable name {bname!r} will conflict!")
-            out = _guess_bounds_dim(
+            out = _guess_bounds(
                 obj[var].reset_coords(drop=True), dim=dim, out_dim=output_dim
             )
             if output_dim in obj.dims and (new := out[output_dim].size) != (

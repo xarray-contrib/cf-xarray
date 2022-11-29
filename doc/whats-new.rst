@@ -5,7 +5,8 @@ What's New
 
 v0.7.6 (unreleased)
 ===================
-
+- Fix to ``cf.add_bounds`` to support all types of curved grids (:pr:`376`).
+  By `Pascal Bourgault`_.
 
 
 v0.7.5 (Nov 15, 2022)

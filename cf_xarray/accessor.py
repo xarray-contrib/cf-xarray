@@ -21,6 +21,7 @@ from typing import (
     cast,
 )
 
+import numpy as np
 import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.arithmetic import SupportsArithmetic
@@ -481,23 +482,80 @@ def _guess_bounds_dim(da, dim=None, out_dim="bounds"):
         elif len(dim) == 2:
             daX = _guess_bounds_dim(da, dim[0]).rename(bounds="Xbnds")
             daXY = _guess_bounds_dim(daX, dim[1]).rename(bounds="Ybnds")
-            return xr.concat(
-                [
-                    daXY.isel(Xbnds=0, Ybnds=0),
-                    daXY.isel(Xbnds=0, Ybnds=1),
-                    daXY.isel(Xbnds=1, Ybnds=1),
-                    daXY.isel(Xbnds=1, Ybnds=0),
-                ],
-                out_dim,
-            ).transpose(..., "bounds")
+            # At this point, we might have different corners for adjacent cells, we average them together to have a nice grid
+            # To make this vectorized and keep the edges, we'll pad with NaNs and ignore them in the averages
+            daXYp = (
+                daXY.pad(
+                    {d: (1, 1) for d in dim}, mode="constant", constant_values=np.NaN
+                )
+                .transpose(*dim, "Xbnds", "Ybnds")
+                .values
+            )  # Tranpose for an easier notation
+            # Mean of the corners that should be the same point.
+            daXYm = np.stack(
+                (
+                    # Lower left corner (mean of : upper right of the lower left cell, lower right of the upper left cell, and so on, ccw)
+                    np.nanmean(
+                        np.stack(
+                            (
+                                daXYp[:-2, :-2, 1, 1],
+                                daXYp[:-2, 1:-1, 1, 0],
+                                daXYp[1:-1, 1:-1, 0, 0],
+                                daXYp[1:-1, :-2, 0, 1],
+                            )
+                        ),
+                        axis=0,
+                    ),
+                    # Upper left corner
+                    np.nanmean(
+                        np.stack(
+                            (
+                                daXYp[:-2, 1:-1, 1, 1],
+                                daXYp[:-2, 2:, 1, 0],
+                                daXYp[1:-1, 2:, 0, 0],
+                                daXYp[1:-1, 1:-1, 0, 1],
+                            )
+                        ),
+                        axis=0,
+                    ),
+                    # Upper right
+                    np.nanmean(
+                        np.stack(
+                            (
+                                daXYp[1:-1, 1:-1, 1, 1],
+                                daXYp[1:-1, 2:, 1, 0],
+                                daXYp[2:, 2:, 0, 0],
+                                daXYp[2:, 1:-1, 0, 1],
+                            )
+                        ),
+                        axis=0,
+                    ),
+                    # Lower right
+                    np.nanmean(
+                        np.stack(
+                            (
+                                daXYp[1:-1, :-2, 1, 1],
+                                daXYp[1:-1, 1:-1, 1, 0],
+                                daXYp[2:, 1:-1, 0, 0],
+                                daXYp[2:, :-2, 0, 1],
+                            )
+                        ),
+                        axis=0,
+                    ),
+                ),
+                axis=-1,
+            )
+            return xr.DataArray(daXYm, dims=(*dim, "bounds"), coords=da.coords)
         else:
             dim = dim[0]
     if dim not in da.dims:
         (dim,) = da.cf.axes[dim]
+
+    ADDED_INDEX = False
     if dim not in da.coords:
-        raise NotImplementedError(
-            "Adding bounds for unindexed dimensions is not supported currently."
-        )
+        # For proper alignment in the lines below, we need an index on dim.
+        da = da.assign_coords({dim: da[dim]})
+        ADDED_INDEX = True
 
     diff = da.diff(dim)
     lower = da - diff / 2
@@ -508,7 +566,8 @@ def _guess_bounds_dim(da, dim=None, out_dim="bounds"):
         {dim: da[dim][0]}
     )
     result = xr.concat([first, bounds], dim=dim).transpose(..., "bounds")
-
+    if ADDED_INDEX:
+        result = result.drop_vars(dim)
     return result
 
 

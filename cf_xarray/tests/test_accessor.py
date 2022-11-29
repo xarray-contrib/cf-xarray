@@ -828,8 +828,9 @@ def test_add_bounds_nd_variable():
     actual = ds.cf.add_bounds("z", dim="x").z_bounds.reset_coords(drop=True)
     xr.testing.assert_identical(expected.transpose(..., "bounds"), actual)
 
-    with pytest.raises(NotImplementedError):
-        ds.drop_vars("x").cf.add_bounds("z", dim="x")
+    # Requesting bounds on a non-variable dimension
+    with pytest.raises(ValueError):
+        ds.drop_vars("x").cf.add_bounds("x")
 
     with pytest.raises(ValueError, match="The `bounds` dimension already exists"):
         ds.cf.add_bounds("z").cf.add_bounds("x")

@@ -1498,6 +1498,10 @@ def test_custom_criteria():
     ds["salinity"] = ("dim", np.arange(10))
     assert_identical(ds.cf["salt"], ds["salinity"])
 
+    # match by name of coords for DataArray (#378)
+    da = xr.DataArray([0, 1], coords={"salinity": [2, 3]})
+    assert_identical(da.cf["salt"], da["salinity"])
+
     # Match by standard_name regex match
     ds = xr.Dataset()
     ds["elev"] = ("dim", np.arange(10), {"standard_name": "sea_surface_elevBLAH"})

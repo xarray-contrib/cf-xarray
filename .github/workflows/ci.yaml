@@ -17,41 +17,82 @@ jobs:
   build:
     name: Build (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
     strategy:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.10"]
     steps:
       - uses: actions/checkout@v3
         with:
-            # need to fetch all tags to get a correct version
-            fetch-depth: 0  # fetch all branches and tags
-      - uses: conda-incubator/setup-miniconda@v2
-        with:
-          channels: conda-forge
-          mamba-version: "*"
-          activate-environment: cf_xarray_test
-          auto-update-conda: false
-          python-version: ${{ matrix.python-version }}
+          fetch-depth: 0 # Fetch all history for all branches and tags.
+      - name: Set environment variables
+        run: |
+          echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
       - name: Set up conda environment
-        shell: bash -l {0}
+        uses: mamba-org/provision-with-micromamba@v14
+        with:
+          environment-file: ci/environment.yml
+          environment-name: cf_xarray_test
+          cache-env: true
+          extra-specs: |
+            python="${{ matrix.python-version }}"
+      - name: Install cf_xarray
         run: |
-          mamba env update -f ci/environment.yml
-          python -m pip install -e .
-          conda list
-
+          python -m pip install --no-deps -e .
       - name: Run Tests
-        shell: bash -l {0}
         run: |
-          pytest --cov=./ --cov-report=xml
-
+          pytest -n auto --cov=./ --cov-report=xml
       - name: Upload code coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v3.1.1
         with:
           file: ./coverage.xml
           flags: unittests
-          env_vars: OS,PYTHON
+          env_vars: RUNNER_OS,PYTHON_VERSION
+          name: codecov-umbrella
+          fail_ci_if_error: false
+
+  old-xarray:
+    name: xarray 2022.03.0
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Fetch all history for all branches and tags.
+      - name: Set environment variables
+        run: |
+          echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
+      - name: Set up conda environment
+        uses: mamba-org/provision-with-micromamba@v14
+        with:
+          environment-file: ci/environment.yml
+          environment-name: cf_xarray_test
+          cache-env: true
+          extra-specs: |
+            python="${{ matrix.python-version }}"
+            xarray="2022.03.0"
+      - name: Install cf_xarray
+        run: |
+          python -m pip install --no-deps -e .
+      - name: Run Tests
+        run: |
+          pytest -n auto --cov=./ --cov-report=xml
+      - name: Upload code coverage to Codecov
+        uses: codecov/codecov-action@v3.1.1
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          env_vars: RUNNER_OS,PYTHON_VERSION
           name: codecov-umbrella
           fail_ci_if_error: false
 
@@ -61,8 +102,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-            # need to fetch all tags to get a correct version
-            fetch-depth: 0  # fetch all branches and tags
+          # need to fetch all tags to get a correct version
+          fetch-depth: 0  # fetch all branches and tags
       - uses: conda-incubator/setup-miniconda@v2
         with:
           channels: conda-forge

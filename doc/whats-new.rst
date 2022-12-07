@@ -5,9 +5,10 @@ What's New
 
 v0.7.6 (unreleased)
 ===================
-- Fix to ``cf.add_bounds`` to support all types of curved grids (:pr:`376`).
-  By `Pascal Bourgault`_.
 
+- Fix to ``cf.add_bounds`` to support all types of curved grids (:pr:`376`).
+  By `Pascal Bourgault`_
+- Allow custom criteria to match the variable name of DataArray objects (:pr:`379`). By `Mathias Hauser`_
 
 v0.7.5 (Nov 15, 2022)
 =====================
@@ -191,4 +192,5 @@ v0.1.3
 .. _`Lars Buntemeyer`: https://github.com/larsbuntemeyer
 .. _`Luke Davis`: https://github.com/lukelbd
 .. _`Martin Schupfner`: https://github.com/sol1105
+.. _`Mathias Hauser`: https://github.com/mathause
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

@@ -214,7 +214,11 @@ def _get_custom_criteria(
                 if re.match(patterns, obj[var].attrs.get(criterion, "")):
                     results.update((var,))
                 # also check name specifically since not in attributes
-                elif criterion == "name" and re.match(patterns, var):
+                elif (
+                    criterion == "name"
+                    and isinstance(var, str)
+                    and re.match(patterns, var)
+                ):
                     results.update((var,))
     return list(results)
 

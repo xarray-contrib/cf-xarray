@@ -106,14 +106,26 @@ def decode_compress_to_multi_index(encoded, idxnames=None):
         names = encoded[idxname].attrs["compress"].split(" ")
         shape = [encoded.sizes[dim] for dim in names]
         indices = np.unravel_index(encoded[idxname].data, shape)
-        arrays = [encoded[dim].data[index] for dim, index in zip(names, indices)]
-        mindex = pd.MultiIndex.from_arrays(arrays, names=names)
+        try:
+            from xarray.indexes import PandasMultiIndex
 
-        decoded.coords[idxname] = mindex
-        decoded.coords[idxname].attrs = encoded[idxname].attrs.copy()
-        for coord in mindex.names:
-            decoded[coord].attrs = encoded[coord].attrs.copy()
-            decoded[coord].encoding = encoded[coord].encoding.copy()
+            variables = {
+                dim: encoded[dim].isel({dim: xr.Variable(data=index, dims=idxname)})
+                for dim, index in zip(names, indices)
+            }
+            decoded = decoded.assign_coords(variables).set_xindex(
+                names, PandasMultiIndex
+            )
+        except ImportError:
+            arrays = [encoded[dim].data[index] for dim, index in zip(names, indices)]
+            mindex = pd.MultiIndex.from_arrays(arrays, names=names)
+            decoded.coords[idxname] = mindex
+
+        decoded[idxname].attrs = encoded[idxname].attrs.copy()
+        for coord in names:
+            variable = encoded._variables[coord]
+            decoded[coord].attrs = variable.attrs.copy()
+            decoded[coord].encoding = variable.encoding.copy()
         del decoded[idxname].attrs["compress"]
 
     return decoded

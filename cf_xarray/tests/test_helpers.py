@@ -3,7 +3,7 @@ from xarray.testing import assert_equal
 
 import cf_xarray as cfxr  # noqa
 
-from ..datasets import airds, mollwds
+from ..datasets import airds, mollwds, rotds
 
 try:
     from dask.array import Array as DaskArray
@@ -17,7 +17,7 @@ def test_bounds_to_vertices():
     lat_c = cfxr.bounds_to_vertices(ds.lat_bounds, bounds_dim="bounds")
     assert_array_equal(ds.lat.values + 1.25, lat_c.values[:-1])
 
-    # 2D case, CF- order
+    # 2D case
     lat_ccw = cfxr.bounds_to_vertices(
         mollwds.lat_bounds, bounds_dim="bounds", order="counterclockwise"
     )
@@ -27,14 +27,21 @@ def test_bounds_to_vertices():
     assert_equal(mollwds.lat_vertices, lat_ccw)
     assert_equal(lat_no, lat_ccw)
 
+    # 2D case with precision issues, check if CF- order is "detected" correctly
+    lon_ccw = cfxr.bounds_to_vertices(
+        rotds.lon_bounds, bounds_dim="bounds", order="counterclockwise"
+    )
+    lon_no = cfxr.bounds_to_vertices(rotds.lon_bounds, bounds_dim="bounds", order=None)
+    assert_equal(lon_no, lon_ccw)
+
     # Transposing the array changes the bounds direction
-    ds = mollwds.transpose("bounds", "y", "x", "y_vertices", "x_vertices")
-    lon_c = cfxr.bounds_to_vertices(
+    ds = mollwds.transpose("x", "y", "x_vertices", "y_vertices", "bounds")
+    lon_cw = cfxr.bounds_to_vertices(
         ds.lon_bounds, bounds_dim="bounds", order="clockwise"
     )
-    lon_c2 = cfxr.bounds_to_vertices(ds.lon_bounds, bounds_dim="bounds", order=None)
-    assert_equal(ds.lon_vertices, lon_c)
-    assert_equal(ds.lon_vertices, lon_c2)
+    lon_no2 = cfxr.bounds_to_vertices(ds.lon_bounds, bounds_dim="bounds", order=None)
+    assert_equal(ds.lon_vertices, lon_cw)
+    assert_equal(ds.lon_vertices, lon_no2)
 
     # Preserves dask-backed arrays
     if DaskArray is not None:

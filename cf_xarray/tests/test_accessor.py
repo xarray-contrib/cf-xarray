@@ -13,6 +13,7 @@ from xarray import Dataset
 from xarray.testing import assert_allclose, assert_identical
 
 import cf_xarray  # noqa
+from cf_xarray.helpers import vertices_to_bounds
 from cf_xarray.utils import parse_cf_standard_name_table
 
 from ..datasets import (
@@ -791,7 +792,9 @@ def test_add_bounds(dims):
         name = f"{dim}_bounds"
         assert name in added.coords
         assert added[dim].attrs["bounds"] == name
-        assert_allclose(added[name].reset_coords(drop=True), expected[dim])
+        assert_allclose(
+            added[name].reset_coords(drop=True), expected[dim].transpose(..., "bounds")
+        )
 
     _check_unchanged(original, ds)
 
@@ -803,25 +806,37 @@ def test_add_bounds_multiple():
 
 
 def test_add_bounds_nd_variable():
-
     ds = xr.Dataset(
         {"z": (("x", "y"), np.arange(12).reshape(4, 3))},
         coords={"x": np.arange(4), "y": np.arange(3)},
     )
 
+    # 2D
+    expected = (
+        vertices_to_bounds(
+            np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)
+        )
+        .rename("z_bounds")
+        .assign_coords(**ds.coords)
+    )
+    actual = ds.cf.add_bounds("z").z_bounds.reset_coords(drop=True)
+    xr.testing.assert_identical(actual, expected)
+
+    # 1D
     expected = (
         xr.concat([ds.z - 1.5, ds.z + 1.5], dim="bounds")
         .rename("z_bounds")
         .transpose("bounds", "y", "x")
     )
-    with pytest.raises(ValueError):
-        ds.cf.add_bounds("z")
 
     actual = ds.cf.add_bounds("z", dim="x").z_bounds.reset_coords(drop=True)
-    xr.testing.assert_identical(expected, actual)
+    xr.testing.assert_identical(expected.transpose(..., "bounds"), actual)
 
     with pytest.raises(NotImplementedError):
         ds.drop_vars("x").cf.add_bounds("z", dim="x")
+
+    with pytest.raises(ValueError, match="The `bounds` dimension already exists"):
+        ds.cf.add_bounds("z").cf.add_bounds("x")
 
 
 def test_bounds():
@@ -942,10 +957,18 @@ def _make_names(prefixes):
 
 def _check_unchanged(old, new):
     # Check data array attributes or global dataset attributes
+    def _check_attrs_equal(o, n):
+        # Compare values and keys,
+        # But not ids : allow for copied values (see #365)
+        assert o.keys() == n.keys()
+        for k, v in o.items():
+            if isinstance(v, np.ndarray):
+                assert np.all(v == n[k])
+            else:
+                assert v == n[k]
+
     assert type(old) == type(new)
-    assert old.attrs.keys() == new.attrs.keys()  # set comparison
-    for att, old_val in old.attrs.items():
-        assert id(old_val) == id(new.attrs[att])
+    _check_attrs_equal(old.attrs, new.attrs)
 
     # Check coordinate attributes and data variable attributes
     dicts = [(old.coords, new.coords)]
@@ -955,9 +978,7 @@ def _check_unchanged(old, new):
         assert old_dict.keys() == new_dict.keys()  # set comparison
         for key, old_obj in old_dict.items():
             new_obj = new_dict[key]
-            assert old_obj.attrs.keys() == new_obj.attrs.keys()  # set comparison
-            for att, old_val in old_obj.attrs.items():
-                assert id(old_val) == id(new_obj.attrs[att])  # numpy-safe comparison
+            _check_attrs_equal(old_obj.attrs, new_obj.attrs)
 
 
 _TIME_NAMES = ["t"] + _make_names(
@@ -1480,6 +1501,10 @@ def test_custom_criteria():
     ds = xr.Dataset()
     ds["salinity"] = ("dim", np.arange(10))
     assert_identical(ds.cf["salt"], ds["salinity"])
+
+    # match by name of coords for DataArray (#378)
+    da = xr.DataArray([0, 1], coords={"salinity": [2, 3]})
+    assert_identical(da.cf["salt"], da["salinity"])
 
     # Match by standard_name regex match
     ds = xr.Dataset()

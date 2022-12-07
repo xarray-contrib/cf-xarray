@@ -30,7 +30,7 @@ from xarray.core.rolling import Coarsen, Rolling
 from xarray.core.weighted import Weighted
 
 from .criteria import cf_role_criteria, coordinate_criteria, regex
-from .helpers import bounds_to_vertices
+from .helpers import _guess_bounds_1d, _guess_bounds_2d, bounds_to_vertices
 from .options import OPTIONS
 from .utils import (
     _get_version,
@@ -465,7 +465,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, tuple[Mapper, ...]] = {
 }
 
 
-def _guess_bounds_dim(da, dim=None, out_dim="bounds"):
+def _guess_bounds(da, dim=None, out_dim="bounds"):
     """
     Guess bounds values given a 1D or 2D coordinate variable.
     Assumes equal spacing on either side of the coordinate label.
@@ -477,43 +477,18 @@ def _guess_bounds_dim(da, dim=None, out_dim="bounds"):
                 f"If dim is None, variable {da.name} must be 1D or 2D. Received {da.ndim}D variable instead."
             )
         dim = da.dims
+
     if not isinstance(dim, str):
         if len(dim) > 2:
             raise NotImplementedError(
                 "Adding bounds with more than 2 dimensions is not supported."
             )
         elif len(dim) == 2:
-            daX = _guess_bounds_dim(da, dim[0]).rename(bounds="Xbnds")
-            daXY = _guess_bounds_dim(daX, dim[1]).rename(bounds="Ybnds")
-            return xr.concat(
-                [
-                    daXY.isel(Xbnds=0, Ybnds=0),
-                    daXY.isel(Xbnds=0, Ybnds=1),
-                    daXY.isel(Xbnds=1, Ybnds=1),
-                    daXY.isel(Xbnds=1, Ybnds=0),
-                ],
-                out_dim,
-            ).transpose(..., "bounds")
+            return _guess_bounds_2d(da, dim).rename(bounds=out_dim)
         else:
             dim = dim[0]
-    if dim not in da.dims:
-        (dim,) = da.cf.axes[dim]
-    if dim not in da.coords:
-        raise NotImplementedError(
-            "Adding bounds for unindexed dimensions is not supported currently."
-        )
 
-    diff = da.diff(dim)
-    lower = da - diff / 2
-    upper = da + diff / 2
-    bounds = xr.concat([lower, upper], dim=out_dim)
-
-    first = (bounds.isel({dim: 0}) - diff.isel({dim: 0})).assign_coords(
-        {dim: da[dim][0]}
-    )
-    result = xr.concat([first, bounds], dim=dim).transpose(..., "bounds")
-
-    return result
+    return _guess_bounds_1d(da, dim).rename(bounds=out_dim)
 
 
 def _build_docstring(func):
@@ -2252,15 +2227,17 @@ class CFDatasetAccessor(CFAccessor):
 
         bad_vars: set[str] = variables - set(obj.variables)
         if bad_vars:
-            raise ValueError(
-                f"{bad_vars!r} are not variables in the underlying object."
-            )
+            msg = f"{bad_vars!r} are not variables in the underlying object."
+            dims_no_idx = bad_vars.intersection(obj.dims)
+            if dims_no_idx:
+                msg += f" {dims_no_idx!r} are dimensions with no index."
+            raise ValueError(msg)
 
         for var in variables:
             bname = f"{var}_bounds"
             if bname in obj.variables:
                 raise ValueError(f"Bounds variable name {bname!r} will conflict!")
-            out = _guess_bounds_dim(
+            out = _guess_bounds(
                 obj[var].reset_coords(drop=True), dim=dim, out_dim=output_dim
             )
             if output_dim in obj.dims and (new := out[output_dim].size) != (

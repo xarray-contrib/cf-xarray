@@ -29,6 +29,7 @@ from ..datasets import (
     pomds,
     popds,
     romsds,
+    rotds,
     vert,
 )
 from . import raise_if_dask_computes, requires_cftime, requires_pint, requires_scipy
@@ -818,6 +819,18 @@ def test_add_bounds_nd_variable():
     actual = ds.cf.add_bounds("z").z_bounds.reset_coords(drop=True)
     xr.testing.assert_identical(actual, expected)
 
+    # 2D rotated ds
+    lon_bounds = (
+        rotds.drop_vars(["lon_bounds"])
+        .assign(x=rotds["x"], y=rotds["y"])
+        .cf.add_bounds(["lon"])
+        .lon_bounds
+    )
+    # upper left of cell must be the EXACT same as the lower left of the cell above
+    assert lon_bounds[0, 1, 1] == lon_bounds[0, 2, 0]
+    # upper right of cell must be the EXACT same as the lower right of the cell above
+    assert lon_bounds[0, 1, 2] == lon_bounds[0, 2, 3]
+
     # 1D
     expected = (
         xr.concat([ds.z - 1.5, ds.z + 1.5], dim="bounds")
@@ -828,8 +841,9 @@ def test_add_bounds_nd_variable():
     actual = ds.cf.add_bounds("z", dim="x").z_bounds.reset_coords(drop=True)
     xr.testing.assert_identical(expected.transpose(..., "bounds"), actual)
 
-    with pytest.raises(NotImplementedError):
-        ds.drop_vars("x").cf.add_bounds("z", dim="x")
+    # Requesting bounds on a non-variable dimension
+    with pytest.raises(ValueError, match="are dimensions with no index."):
+        ds.drop_vars("x").cf.add_bounds("x")
 
     with pytest.raises(ValueError, match="The `bounds` dimension already exists"):
         ds.cf.add_bounds("z").cf.add_bounds("x")

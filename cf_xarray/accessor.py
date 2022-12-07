@@ -2227,9 +2227,11 @@ class CFDatasetAccessor(CFAccessor):
 
         bad_vars: set[str] = variables - set(obj.variables)
         if bad_vars:
-            raise ValueError(
-                f"{bad_vars!r} are not variables in the underlying object."
-            )
+            msg = f"{bad_vars!r} are not variables in the underlying object."
+            dims_no_idx = bad_vars.intersection(obj.dims)
+            if dims_no_idx:
+                msg += f" {dims_no_idx!r} are dimensions with no index."
+            raise ValueError(msg)
 
         for var in variables:
             bname = f"{var}_bounds"

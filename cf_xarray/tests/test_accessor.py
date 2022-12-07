@@ -842,7 +842,7 @@ def test_add_bounds_nd_variable():
     xr.testing.assert_identical(expected.transpose(..., "bounds"), actual)
 
     # Requesting bounds on a non-variable dimension
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="are dimensions with no index."):
         ds.drop_vars("x").cf.add_bounds("x")
 
     with pytest.raises(ValueError, match="The `bounds` dimension already exists"):

@@ -412,6 +412,18 @@ forecast = xr.decode_cf(
     )
 )
 
+# Same as flags_excl but easier to read
+basin = xr.DataArray(
+    [1, 2, 1, 1, 2, 2, 3, 3, 3, 3],
+    dims=("time",),
+    attrs={
+        "flag_values": [1, 2, 3],
+        "flag_meanings": "atlantic_ocean pacific_ocean indian_ocean",
+        "standard_name": "region",
+    },
+    name="basin",
+)
+
 
 flag_excl = xr.DataArray(
     [1, 1, 2, 1, 2, 3, 3, 2],

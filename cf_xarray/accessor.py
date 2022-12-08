@@ -973,11 +973,14 @@ def create_flag_dict(da) -> Mapping[Hashable, Sequence]:
     flag_meanings = da.attrs["flag_meanings"].split(" ")
     n_flag = len(flag_meanings)
 
-    flag_values = da.attrs.get("flag_values", [None for _ in range(n_flag)])
-    flag_masks = da.attrs.get("flag_masks", [None for _ in range(n_flag)])
+    flag_values = da.attrs.get("flag_values", [None] * n_flag)
+    flag_masks = da.attrs.get("flag_masks", [None] * n_flag)
 
     if not (n_flag == len(flag_values) == len(flag_masks)):
-        raise IndexError("Not as many flag meanings as values or masks.")
+        raise ValueError(
+            "Not as many flag meanings as values or masks. "
+            "Please check the flag_meanings, flag_values, flag_masks attributes "
+        )
 
     return dict(zip(flag_meanings, zip(flag_masks, flag_values)))
 
@@ -1295,7 +1298,7 @@ class CFAccessor:
             text = "CF Flag variable"
             try:
                 flag_dict = create_flag_dict(self._obj)
-            except IndexError:
+            except ValueError:
                 text += " - INVALID MAPPING\n\n"
             else:
                 masks = [m for m, _ in flag_dict.values()]

@@ -2538,7 +2538,9 @@ class CFDataArrayAccessor(CFAccessor):
         """
         return self._extract_flags()
 
-    def _extract_flags(self, flags: Sequence[str] | None = None) -> DataArray | Dataset:
+    def _extract_flags(
+        self, flags: Sequence[Hashable] | None = None
+    ) -> DataArray | Dataset:
         """
         Return dataset of boolean mask(s) corresponding to `flags`.
 
@@ -2550,8 +2552,8 @@ class CFDataArrayAccessor(CFAccessor):
         """
         flag_dict = create_flag_dict(self._obj)
 
-        if flags is None or len(flags) == 0:
-            flags = flag_dict.keys()
+        if flags is None:
+            flags = tuple(flag_dict.keys())
 
         out = {}  # Output arrays
 

@@ -2538,9 +2538,7 @@ class CFDataArrayAccessor(CFAccessor):
         """
         return self._extract_flags()
 
-    def _extract_flags(
-        self, flags: Sequence[Hashable] | None = None
-    ) -> DataArray | Dataset:
+    def _extract_flags(self, flags: Sequence[Hashable] | None = None) -> Dataset:
         """
         Return dataset of boolean mask(s) corresponding to `flags`.
 
@@ -2560,18 +2558,18 @@ class CFDataArrayAccessor(CFAccessor):
         masks = []  # Bitmasks and values for asked flags
         values = []
         flags_reduced = []  # Flags left after removing mutually excl. flags
-        for f in flags:
-            if f not in flag_dict:
+        for flag in flags:
+            if flag not in flag_dict:
                 raise ValueError(
-                    f"Flag meaning {f!r} is not in known meanings {list(flag_dict.keys())!r}"
+                    f"Flag meaning {flag!r} is not in known meanings {list(flag_dict.keys())!r}"
                 )
-            mask, value = flag_dict[f]
+            mask, value = flag_dict[flag]
             if mask is None:
-                out[f] = self._obj == value
+                out[flag] = self._obj == value
             else:
                 masks.append(mask)
                 values.append(value)
-                flags_reduced.append(f)
+                flags_reduced.append(flag)
 
         if len(masks) > 0:  # If independant masks are left
             # We cast both masks and flag variable as integers to make the
@@ -2581,12 +2579,12 @@ class CFDataArrayAccessor(CFAccessor):
             x = self._obj.astype("i")
             bit_comp = x & bit_mask
 
-            for i, (f, value) in enumerate(zip(flags_reduced, values)):
-                b = bit_comp.isel(_mask=i)
+            for i, (flag, value) in enumerate(zip(flags_reduced, values)):
+                bit = bit_comp.isel(_mask=i)
                 if value is not None:
-                    out[f] = b == value
+                    out[flag] = bit == value
                 else:
-                    out[f] = b.astype(bool)
+                    out[flag] = bit.astype(bool)
 
         return Dataset(out)
 

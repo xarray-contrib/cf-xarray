@@ -1651,13 +1651,13 @@ def test_add_canonical_attributes(override, skip, verbose, capsys):
 
 
 @pytest.mark.parametrize("op", ["ge", "gt", "eq", "ne", "le", "lt"])
-def test_flag_rich_comp(op):
+def test_flag_rich_comp(op) -> None:
     actual = getattr(basin.cf, f"__{op}__")("atlantic_ocean")
     expected = getattr(basin, f"__{op}__")(1)
     assert_identical(actual, expected)
 
 
-def test_flag_excl():
+def test_flag_excl() -> None:
     for i in range(3):
         name = f"flag_{i + 1}"
         expected = (flag_excl == i + 1).rename(name)
@@ -1665,7 +1665,7 @@ def test_flag_excl():
         assert_identical(actual, expected)
 
 
-def test_flag_indep():
+def test_flag_indep() -> None:
     expected = [
         [False, True, False, True, False, True, False, True],  # bit 1
         [False, False, True, True, False, False, True, True],  # bit 2
@@ -1677,7 +1677,7 @@ def test_flag_indep():
         np.testing.assert_equal(res.to_numpy(), expected[i])
 
 
-def test_flag_mix():
+def test_flag_mix() -> None:
     expected = [
         [False, False, True, True, False, False, True, True],  # flag 1
         [False, False, False, False, True, True, True, True],  # flag 2
@@ -1691,13 +1691,13 @@ def test_flag_mix():
         np.testing.assert_equal(res.to_numpy(), expected[i])
 
 
-def test_flag_feature():
+def test_flag_feature() -> None:
     assert_identical(flag_indep.cf.flags.flag_1, flag_indep.cf == "flag_1")
     assert_identical(flag_mix.cf.flags.flag_4, flag_mix.cf == "flag_4")
     assert_identical(~flag_excl.cf.flags.flag_3, flag_excl.cf != "flag_3")
 
 
-def test_flag_isin():
+def test_flag_isin() -> None:
     actual = flag_excl.cf.isin(["flag_1", "flag_3"])
     expected = flag_excl.isin([1, 3])
     assert_identical(actual, expected)
@@ -1706,7 +1706,7 @@ def test_flag_isin():
     assert not actual.any()
 
 
-def test_flag_errors():
+def test_flag_errors() -> None:
     with pytest.raises(KeyError):
         flag_mix.cf == "ERR"
 

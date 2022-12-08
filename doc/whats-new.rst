@@ -3,12 +3,14 @@
 What's New
 ----------
 
-v0.7.6 (unreleased)
-===================
+v0.7.6 (Dec 07, 2022)
+=====================
 
 - Fix to ``cf.add_bounds`` to support all types of curved grids (:pr:`376`).
   By `Pascal Bourgault`_
 - Allow custom criteria to match the variable name of DataArray objects (:pr:`379`). By `Mathias Hauser`_
+- Support new Xarray indexes API when creating MultiIndex for "compression by gathering" datasets.
+  (:pr:`381`). By `Deepak Cherian`_
 
 v0.7.5 (Nov 15, 2022)
 =====================

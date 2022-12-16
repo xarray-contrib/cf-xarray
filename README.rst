@@ -6,7 +6,7 @@
     :target: https://cf-xarray.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
-.. image:: https://img.shields.io/github/workflow/status/xarray-contrib/cf-xarray/CI?logo=github&style=for-the-badge
+.. image:: https://img.shields.io/github/actions/workflow/status/xarray-contrib/cf-xarray/ci.yaml?branch=main&logo=github&style=for-the-badge
     :target: https://github.com/xarray-contrib/cf-xarray/actions
     :alt: GitHub Workflow CI Status
 

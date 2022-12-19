@@ -3,6 +3,11 @@
 What's New
 ----------
 
+v0.7.7 (Unreleased)
+===================
+- Fix to ``geometry.points_to_cf`` to support shapely 2.0. (:pr:`386`).
+  By `Pascal Bourgault`_
+
 v0.7.6 (Dec 07, 2022)
 =====================
 

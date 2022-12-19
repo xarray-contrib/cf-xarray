@@ -195,7 +195,10 @@ def points_to_cf(pts: Union[xr.DataArray, Sequence]):
 
     x, y, node_count, crdX, crdY = [], [], [], [], []
     for pt in pts:
-        xy = np.atleast_2d(np.array(pt))
+        if hasattr(pt, 'geoms'):  # MultiPoint
+            xy = np.concatenate([p.coords for p in pt.geoms])
+        else:
+            xy = np.atleast_2d(pt.coords)
         x.extend(xy[:, 0])
         y.extend(xy[:, 1])
         node_count.append(xy.shape[0])

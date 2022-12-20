@@ -185,6 +185,8 @@ def points_to_cf(pts: Union[xr.DataArray, Sequence]):
         A Dataset with variables 'x', 'y', 'crd_x', 'crd_y', 'node_count' and 'geometry_container'.
         The coordinates of MultiPoint instances are their first point.
     """
+    from shapely.geometry import MultiPoint
+
     if isinstance(pts, xr.DataArray):
         dim = pts.dims[0]
         coord = pts[dim] if dim in pts.coords else None
@@ -195,7 +197,7 @@ def points_to_cf(pts: Union[xr.DataArray, Sequence]):
 
     x, y, node_count, crdX, crdY = [], [], [], [], []
     for pt in pts:
-        if hasattr(pt, "geoms"):  # MultiPoint
+        if isinstance(pt, MultiPoint):
             xy = np.concatenate([p.coords for p in pt.geoms])
         else:
             xy = np.atleast_2d(pt.coords)

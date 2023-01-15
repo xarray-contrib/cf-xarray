@@ -522,7 +522,7 @@ def _getattr(
     accessor: CFAccessor,
     key_mappers: Mapping[str, Mapper],
     wrap_classes: bool = False,
-    extra_decorator: Callable = None,
+    extra_decorator: Callable | None = None,
 ):
     """
     Common getattr functionality.
@@ -613,7 +613,7 @@ def _getattr(
 
 
 def _getitem(
-    accessor: CFAccessor, key: str | list[str], skip: list[str] = None
+    accessor: CFAccessor, key: str | list[str], skip: list[str] | None = None
 ) -> DataArray | Dataset:
     """
     Index into obj using key. Attaches CF associated variables.
@@ -1081,12 +1081,12 @@ class CFAccessor:
         self,
         coords: str | DataArray | Iterable[str | DataArray],
         func: Callable[..., Any],
-        reduce_dims: Hashable | Iterable[Hashable] = None,
+        reduce_dims: Hashable | Iterable[Hashable] | None = None,
         skipna: bool = True,
-        p0: dict[str, Any] = None,
-        bounds: dict[str, Any] = None,
-        param_names: Sequence[str] = None,
-        kwargs: dict[str, Any] = None,
+        p0: dict[str, Any] | None = None,
+        bounds: dict[str, Any] | None = None,
+        param_names: Sequence[str] | None = None,
+        kwargs: dict[str, Any] | None = None,
     ):
 
         if coords is not None:

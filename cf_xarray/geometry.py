@@ -69,7 +69,9 @@ def reshape_unique_geometries(
     return out
 
 
-def shapely_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str = None):
+def shapely_to_cf(
+    geometries: Union[xr.DataArray, Sequence], grid_mapping: str | None = None
+):
     """Convert a DataArray with shapely geometry objects into a CF-compliant dataset.
 
     .. warning::

@@ -3,8 +3,9 @@
 What's New
 ----------
 
-v0.7.7 (Unreleased)
-===================
+v0.7.7 (Jan 14, 2023)
+=====================
+
 - Fix to ``geometry.points_to_cf`` to support shapely 2.0. (:pr:`386`).
   By `Pascal Bourgault`_
 

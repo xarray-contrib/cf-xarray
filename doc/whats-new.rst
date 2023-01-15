@@ -194,7 +194,6 @@ v0.1.3
 .. _`Julia Kent`: https://github.com/jukent
 .. _`Kristen Thyng`: https://github.com/kthyng
 .. _`Julius Busecke`: https://github.com/jbusecke
-.. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Tom Vo`: https://github.com/tomvothecoder
 .. _`Romain Caneill`: https://github.com/rcaneill
 .. _`Lars Buntemeyer`: https://github.com/larsbuntemeyer

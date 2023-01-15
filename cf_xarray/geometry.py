@@ -1,4 +1,6 @@
-from typing import Sequence, Union
+from __future__ import annotations
+
+from typing import Sequence
 
 import numpy as np
 import pandas as pd
@@ -69,9 +71,7 @@ def reshape_unique_geometries(
     return out
 
 
-def shapely_to_cf(
-    geometries: Union[xr.DataArray, Sequence], grid_mapping: str | None = None
-):
+def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None = None):
     """Convert a DataArray with shapely geometry objects into a CF-compliant dataset.
 
     .. warning::
@@ -173,7 +173,7 @@ def cf_to_shapely(ds: xr.Dataset):
     return geometries.rename("geometry")
 
 
-def points_to_cf(pts: Union[xr.DataArray, Sequence]):
+def points_to_cf(pts: xr.DataArray | Sequence):
     """Get a list of points (shapely.geometry.[Multi]Point) and return a CF-compliant geometry dataset.
 
     Parameters

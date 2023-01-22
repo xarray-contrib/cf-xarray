@@ -99,6 +99,8 @@ units.define(
 units.define(
     "degrees_east = degree = degrees_east = degrees_E = degreesE = degree_east = degree_E = degreeE"
 )
+# degrees for grid_longitude / grid_latitude for grid_mappings
+units.define("degrees = degree = degrees") 
 units.define("[speed] = [length] / [time]")
 # ----- end block copied from xclim
 

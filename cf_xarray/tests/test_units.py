@@ -30,7 +30,7 @@ def test_added_degrees_units():
     assert ureg("degrees_north").to_base_units().units == ureg.radian
     assert ureg("degrees_east") == ureg("degrees")
     assert ureg("degrees_east").to_base_units().units == ureg.radian
-    
+
     assert ureg("degrees").to_base_units().units == ureg.radian
 
 

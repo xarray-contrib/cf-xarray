@@ -352,6 +352,32 @@ def _get_bounds(obj: DataArray | Dataset, key: str) -> list[str]:
     return list(results)
 
 
+def _get_grid_mapping(obj: DataArray | Dataset, key: str) -> list[str]:
+    """
+    Translate from key (either CF key or variable name) to its grid mapping variable name.
+    This function interprets the ``grid_mapping`` attribute on DataArrays.
+
+    Parameters
+    ----------
+    obj : DataArray, Dataset
+        DataArray belonging to the coordinate to be checked
+    key : str
+        key to check for.
+
+    Returns
+    -------
+    List[str], Variable name(s) in parent xarray object that is grid mapping of `key`
+    """
+
+    results = set()
+    for var in apply_mapper(_get_all, obj, key, error=False, default=[key]):
+        attrs_or_encoding = ChainMap(obj[var].attrs, obj[var].encoding)
+        if "grid_mapping" in attrs_or_encoding:
+            results |= {attrs_or_encoding["grid_mapping"]}
+
+    return list(results)
+
+
 def _get_with_standard_name(
     obj: DataArray | Dataset, name: str | list[str]
 ) -> list[str]:
@@ -1379,6 +1405,7 @@ class CFAccessor:
             )
             text += make_text_section("Standard Names", "standard_names", data_vars)
             text += make_text_section("Bounds", "bounds", data_vars)
+            text += make_text_section("Grid Mappings", "grid_mappings", data_vars)
 
         return text
 
@@ -2334,6 +2361,60 @@ class CFDatasetAccessor(CFAccessor):
                     }
                 )
         return obj
+
+    @property
+    def grid_mappings(self) -> dict[str, list[str]]:
+        """
+        Property that returns a dictionary mapping keys
+        to the variable names of their bounds.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping keys to the variable names of their bounds.
+
+        See Also
+        --------
+        Dataset.cf.get_bounds_dim_name
+
+        Examples
+        --------
+        >>> from cf_xarray.datasets import mollwds
+        >>> mollwds.cf.bounds
+        {'lat': ['lat_bounds'], 'latitude': ['lat_bounds'], 'lon': ['lon_bounds'], 'longitude': ['lon_bounds']}
+        """
+
+        obj = self._obj
+        keys = self.keys() | set(obj.variables)
+
+        vardict = {
+            key: self._drop_missing_variables(
+                apply_mapper(_get_grid_mapping, obj, key, error=False)
+            )
+            for key in keys
+        }
+
+        return {k: sorted(v) for k, v in vardict.items() if v}
+
+    def get_grid_mapping(self, key: str) -> DataArray | Dataset:
+        """
+        Get grid mapping variable corresponding to key.
+
+        Parameters
+        ----------
+        key : str
+            Name of variable whose grid mapping is desired
+
+        Returns
+        -------
+        DataArray
+        """
+
+        results = self.grid_mappings.get(key, [])
+        if not results:
+            raise KeyError(f"No results found for {key!r}.")
+
+        return self._obj[results[0] if len(results) == 1 else results]
 
     def decode_vertical_coords(self, *, outnames=None, prefix=None):
         """

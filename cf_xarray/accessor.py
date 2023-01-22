@@ -1397,6 +1397,7 @@ class CFAccessor:
         )
         text += make_text_section("Standard Names", "standard_names", coords)
         text += make_text_section("Bounds", "bounds", coords)
+        text += make_text_section("Grid Mappings", "grid_mappings", coords)
         if isinstance(self._obj, Dataset):
             data_vars = self._obj.data_vars
             text += "\nData Variables:"
@@ -2366,16 +2367,16 @@ class CFDatasetAccessor(CFAccessor):
     def grid_mappings(self) -> dict[str, list[str]]:
         """
         Property that returns a dictionary mapping keys
-        to the variable names of their bounds.
+        to the variable names of their grid_mapping.
 
         Returns
         -------
         dict
-            Dictionary mapping keys to the variable names of their bounds.
+            Dictionary mapping keys to the variable names of their grid_mapping.
 
         See Also
         --------
-        Dataset.cf.get_bounds_dim_name
+        Dataset.cf.get_grid_mapping_name
 
         Examples
         --------
@@ -2398,12 +2399,12 @@ class CFDatasetAccessor(CFAccessor):
 
     def get_grid_mapping(self, key: str) -> DataArray | Dataset:
         """
-        Get grid mapping variable corresponding to key.
+        Get grid_mapping variable corresponding to key.
 
         Parameters
         ----------
         key : str
-            Name of variable whose grid mapping is desired
+            Name of variable whose grid_mapping is desired
 
         Returns
         -------
@@ -2415,6 +2416,28 @@ class CFDatasetAccessor(CFAccessor):
             raise KeyError(f"No results found for {key!r}.")
 
         return self._obj[results[0] if len(results) == 1 else results]
+
+    def get_grid_mapping_name(self, key: str) -> str:
+        """
+        Get bounds dim name for variable corresponding to key.
+
+        Parameters
+        ----------
+        key : str
+            Name of variable whose bounds dimension name is desired.
+
+        Returns
+        -------
+        str
+        """
+        grid_mapping = self.get_grid_mapping(key)
+        grid_mapping_name = grid_mapping.attrs.get("grid_mapping_name", "")
+        if not grid_mapping_name:
+            raise KeyError(
+                f"Missing grid_mapping_name attribute for {grid_mapping.name!r}."
+            )
+
+        return grid_mapping_name
 
     def decode_vertical_coords(self, *, outnames=None, prefix=None):
         """

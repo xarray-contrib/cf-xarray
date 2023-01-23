@@ -225,6 +225,10 @@ mollwds = _create_mollw_ds()
 def _create_inexact_bounds():
     # Dataset that creates rotated pole curvilinear coordinates with CF bounds in
     # counterclockwise order that have precision issues.
+    # dataset created using: https://gist.github.com/larsbuntemeyer/105d83c1eb39b1462150d3fabca0b66b
+    rlon = np.array([17.935, 18.045, 18.155])
+    rlat = np.array([21.615, 21.725, 21.835])
+
     lon = np.array(
         [
             [64.21746363939087, 64.42305921561967, 64.62774455060337],
@@ -293,23 +297,67 @@ def _create_inexact_bounds():
 
     rotated = xr.Dataset(
         coords=dict(
+            rlon=xr.DataArray(
+                rlon,
+                dims="rlon",
+                attrs={
+                    "units": "degrees",
+                    "axis": "X",
+                    "standard_name": "grid_longitude",
+                },
+            ),
+            rlat=xr.DataArray(
+                rlat,
+                dims="rlat",
+                attrs={
+                    "units": "degrees",
+                    "axis": "Y",
+                    "standard_name": "grid_latitude",
+                },
+            ),
             lon=xr.DataArray(
                 lon,
-                dims=("x", "y"),
-                attrs={"units": "degrees_east", "bounds": "lon_bounds"},
+                dims=("rlon", "rlat"),
+                attrs={
+                    "units": "degrees_east",
+                    "bounds": "lon_bounds",
+                    "standard_name": "longitude",
+                },
             ),
             lat=xr.DataArray(
                 lat,
-                dims=("x", "y"),
-                attrs={"units": "degrees_north", "bounds": "lat_bounds"},
+                dims=("rlon", "rlat"),
+                attrs={
+                    "units": "degrees_north",
+                    "bounds": "lat_bounds",
+                    "standard_name": "latitude",
+                },
             ),
         ),
         data_vars=dict(
             lon_bounds=xr.DataArray(
-                lon_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_east"}
+                lon_bounds,
+                dims=("bounds", "rlon", "rlat"),
+                attrs={"units": "degrees_east"},
             ),
             lat_bounds=xr.DataArray(
-                lat_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_north"}
+                lat_bounds,
+                dims=("bounds", "rlon", "rlat"),
+                attrs={"units": "degrees_north"},
+            ),
+            rotated_pole=xr.DataArray(
+                [],
+                dims=None,
+                attrs={
+                    "grid_mapping_name": "rotated_latitude_longitude",
+                    "grid_north_pole_latitude": 39.25,
+                    "grid_north_pole_longitude": -162.0,
+                },
+            ),
+            dummy=xr.DataArray(
+                np.random.rand(3, 3),
+                dims=("rlat", "rlon"),
+                attrs={"grid_mapping": "rotated_pole"},
             ),
         ),
     )

@@ -346,7 +346,7 @@ def _create_inexact_bounds():
                 attrs={"units": "degrees_north"},
             ),
             rotated_pole=xr.DataArray(
-                np.array([], np.int32),
+                np.zeros((), dtype=np.int32),
                 dims=None,
                 attrs={
                     "grid_mapping_name": "rotated_latitude_longitude",

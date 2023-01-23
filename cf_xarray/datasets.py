@@ -354,10 +354,13 @@ def _create_inexact_bounds():
                     "grid_north_pole_longitude": -162.0,
                 },
             ),
-            dummy=xr.DataArray(
+            temp=xr.DataArray(
                 np.random.rand(3, 3),
                 dims=("rlat", "rlon"),
-                attrs={"grid_mapping": "rotated_pole"},
+                attrs={
+                    "standard_name": "air_temperature",
+                    "grid_mapping": "rotated_pole",
+                },
             ),
         ),
     )

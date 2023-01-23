@@ -2378,6 +2378,11 @@ class CFDatasetAccessor(CFAccessor):
         --------
         Dataset.cf.get_grid_mapping_name
 
+        References
+        ----------
+        Please refer to the CF conventions document : https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#grid-mappings-and-projections
+        For a list of valid grid_mapping names, refer to: https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#appendix-grid-mappings
+
         Examples
         --------
         >>> from cf_xarray.datasets import rotds

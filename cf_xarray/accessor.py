@@ -2419,12 +2419,12 @@ class CFDatasetAccessor(CFAccessor):
 
     def get_grid_mapping_name(self, key: str) -> str:
         """
-        Get bounds dim name for variable corresponding to key.
+        Get name of the grid_mapping for variable corresponding to key.
 
         Parameters
         ----------
         key : str
-            Name of variable whose bounds dimension name is desired.
+            Name of variable whose grid_mapping name is desired.
 
         Returns
         -------

@@ -94,6 +94,7 @@ Attributes
     Dataset.cf.cf_roles
     Dataset.cf.coordinates
     Dataset.cf.formula_terms
+    Dataset.cf.grid_mappings
     Dataset.cf.standard_names
 
 .. _dsmeth:
@@ -114,6 +115,8 @@ Methods
     Dataset.cf.differentiate
     Dataset.cf.get_bounds
     Dataset.cf.get_bounds_dim_name
+    Dataset.cf.get_grid_mapping
+    Dataset.cf.get_grid_mapping_name
     Dataset.cf.guess_coord_axis
     Dataset.cf.keys
     Dataset.cf.rename_like

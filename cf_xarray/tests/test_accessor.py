@@ -73,12 +73,16 @@ def test_repr():
 
     - Bounds:   n/a
 
+    - Grid Mappings:   n/a
+
     Data Variables:
     - Cell Measures:   area, volume: n/a
 
     - Standard Names:   air_temperature: ['air']
 
     - Bounds:   n/a
+
+    - Grid Mappings:   n/a
     """
     assert actual == dedent(expected)
 
@@ -105,6 +109,8 @@ def test_repr():
                       * time: ['time']
 
     - Bounds:   n/a
+
+    - Grid Mappings:   n/a
     """
     assert actual == dedent(expected)
 
@@ -126,6 +132,8 @@ def test_repr():
 
     - Bounds:   n/a
 
+    - Grid Mappings:   n/a
+
     Data Variables:
     - Cell Measures:   area, volume: n/a
 
@@ -133,6 +141,8 @@ def test_repr():
                         sea_water_x_velocity: ['UVEL']
 
     - Bounds:   n/a
+
+    - Grid Mappings:   n/a
     """
     assert actual == dedent(expected)
 
@@ -162,12 +172,16 @@ def test_repr():
 
     - Bounds:   n/a
 
+    - Grid Mappings:   n/a
+
     Data Variables:
     - Cell Measures:   area, volume: n/a
 
     - Standard Names:   air_temperature: [<this-array>]
 
     - Bounds:   n/a
+
+    - Grid Mappings:   n/a
     """
     assert actual == dedent(expected)
 
@@ -188,12 +202,16 @@ def test_repr():
 
     - Bounds:   n/a
 
+    - Grid Mappings:   n/a
+
     Data Variables:
     - Cell Measures:   area, volume: n/a
 
     - Standard Names:   n/a
 
     - Bounds:   n/a
+
+    - Grid Mappings:   n/a
     """
     assert actual == dedent(expected)
 
@@ -259,6 +277,8 @@ def test_cell_measures():
                         foo_std_name: ['foo']
 
     - Bounds:   n/a
+
+    - Grid Mappings:   n/a
     """
     assert actual.endswith(dedent(expected))
 
@@ -822,7 +842,7 @@ def test_add_bounds_nd_variable():
     # 2D rotated ds
     lon_bounds = (
         rotds.drop_vars(["lon_bounds"])
-        .assign(x=rotds["x"], y=rotds["y"])
+        .assign(x=rotds["rlon"], y=rotds["rlat"])
         .cf.add_bounds(["lon"])
         .lon_bounds
     )

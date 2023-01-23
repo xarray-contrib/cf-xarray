@@ -22,5 +22,5 @@ rotds
 ```
 
 ```{code-cell}
-rotds.cf
+rotds.cf.grid_mappings
 ```

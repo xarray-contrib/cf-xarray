@@ -2380,9 +2380,9 @@ class CFDatasetAccessor(CFAccessor):
 
         Examples
         --------
-        >>> from cf_xarray.datasets import mollwds
-        >>> mollwds.cf.bounds
-        {'lat': ['lat_bounds'], 'latitude': ['lat_bounds'], 'lon': ['lon_bounds'], 'longitude': ['lon_bounds']}
+        >>> from cf_xarray.datasets import rotds
+        >>> rotds.cf.grid_mappings
+        {'air_temperature': ['rotated_pole'], 'temp': ['rotated_pole']}
         """
 
         obj = self._obj

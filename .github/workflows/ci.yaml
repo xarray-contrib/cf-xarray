@@ -126,7 +126,6 @@ jobs:
 mypy:
     name: mypy
     runs-on: "ubuntu-latest"
-    needs: detect-ci-trigger
     defaults:
       run:
         shell: bash -l {0}

@@ -39,9 +39,9 @@ The related grid mappings can be accessed using:
 rotds.cf.grid_mappings
 ```
 
-## Use for projections
+## Use `grid_mapping` in projections
 
-The grid mapping information use very useful in projections, e.g., for plotting. `pypro` understands CF conventions right away, e.g.
+The grid mapping information use very useful in projections, e.g., for plotting. [pyproj](https://pyproj4.github.io/pyproj/stable/api/crs/crs.html#pyproj.crs.CRS.from_cf) understands CF conventions right away, e.g.
 
 ```python
 from pyproj import CRS

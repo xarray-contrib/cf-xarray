@@ -123,7 +123,7 @@ jobs:
         run: |
           pytest -n 2
 
-mypy:
+  mypy:
     name: mypy
     runs-on: "ubuntu-latest"
     defaults:

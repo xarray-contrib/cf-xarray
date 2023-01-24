@@ -2375,7 +2375,7 @@ class CFDatasetAccessor(CFAccessor):
     @property
     def grid_mappings(self) -> dict[str, list[str]]:
         """
-        Property that returns a dictionary mapping keys
+        Property that returns a dictionary mapping variable names
         to the variable names of their grid_mapping.
 
         Returns

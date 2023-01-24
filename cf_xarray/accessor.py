@@ -2385,6 +2385,7 @@ class CFDatasetAccessor(CFAccessor):
 
         See Also
         --------
+        Dataset.cf.get_grid_mappings
         Dataset.cf.get_grid_mapping_name
 
         References

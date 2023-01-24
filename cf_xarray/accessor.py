@@ -1631,6 +1631,7 @@ class CFAccessor:
         ]
         coords: dict[str, list[str]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
+
         coordinates = attrs_or_encoding.get("coordinates", None)
         # Handles case where the coordinates attribute is None
         # This is used to tell xarray to not write a coordinates attribute

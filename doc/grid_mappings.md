@@ -39,8 +39,9 @@ rotds.cf.grid_mappings
 
 The grid mapping information use very useful in projections, e.g., for plotting. `pypro` understands CF conventions right away, e.g.
 
-```
+```python
 from pyproj import CRS
+
 CRS.from_cf(rotds.cf.get_grid_mapping("temp").attrs)
 ```
 
@@ -62,9 +63,9 @@ Datum: World Geodetic System 1984
 - Prime Meridian: Greenwich
 ```
 
-For use in cartopy, there is some more overhead due to {this issue}(https://github.com/SciTools/cartopy/issues/2099). So you should select the right cartopy CRS and just feed in the grid mapping info:
+For use in cartopy, there is some more overhead due to [this issue](https://github.com/SciTools/cartopy/issues/2099). So you should select the right cartopy CRS and just feed in the grid mapping info:
 
-```
+```python
 from cartopy import crs as ccrs
 
 grid_mapping = rotds.cf.get_grid_mapping("temp")

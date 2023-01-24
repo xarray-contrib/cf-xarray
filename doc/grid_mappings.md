@@ -7,6 +7,10 @@ kernelspec:
   name: python3
 ---
 
+```{eval-rst}
+.. currentmodule:: cf_xarray
+```
+
 # Grid Mappings
 
 See

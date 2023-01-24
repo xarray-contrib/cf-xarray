@@ -1,2 +1,18 @@
 [tool.nbqa.md]
 mdformat = true
+
+[tool.mypy]
+exclude = "doc|flycheck"
+files = "cf_xarray/"
+show_error_codes = true
+
+[[tool.mypy.overrides]]
+module=[
+    "cftime",
+    "pandas",
+    "matplotlib",
+    "pytest",
+    "shapely.geometry",
+    "xarray.core.pycompat",
+]
+ignore_missing_imports = true

@@ -1382,15 +1382,6 @@ class CFAccessor:
 
         return text
 
-    def get_valid_keys(self) -> set[str]:
-
-        warnings.warn(
-            "Now called `keys` and `get_valid_keys` will be removed in a future version.",
-            DeprecationWarning,
-        )
-
-        return self.keys()
-
     def keys(self) -> set[str]:
         """
         Utility function that returns valid keys for .cf[].
@@ -1503,15 +1494,6 @@ class CFAccessor:
         }
 
         return {k: sorted(set(v)) for k, v in measures.items() if v}
-
-    def get_standard_names(self) -> list[str]:
-
-        warnings.warn(
-            "`get_standard_names` will be removed in a future version in favor of `standard_names`.",
-            DeprecationWarning,
-        )
-
-        return list(self.standard_names.keys())
 
     @property
     def standard_names(self) -> dict[str, list[str]]:

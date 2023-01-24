@@ -1607,6 +1607,7 @@ class CFAccessor:
             2. "bounds"
             3. "cell_measures"
             4. "coordinates"
+            5. "grid_mapping"
         to a list of variable names referred to in the appropriate attribute
 
         Parameters
@@ -1621,10 +1622,15 @@ class CFAccessor:
         names : dict
             Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds".
         """
-        keys = ["ancillary_variables", "cell_measures", "coordinates", "bounds"]
+        keys = [
+            "ancillary_variables",
+            "cell_measures",
+            "coordinates",
+            "bounds",
+            "grid_mapping",
+        ]
         coords: dict[str, list[str]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
-
         coordinates = attrs_or_encoding.get("coordinates", None)
         # Handles case where the coordinates attribute is None
         # This is used to tell xarray to not write a coordinates attribute
@@ -1662,6 +1668,9 @@ class CFAccessor:
                 dbounds = self._obj[dim].attrs.get("bounds", None)
                 if dbounds:
                     coords["bounds"].append(dbounds)
+
+        if "grid_mapping" in attrs_or_encoding:
+            coords["grid_mapping"] = [attrs_or_encoding["grid_mapping"]]
 
         allvars = itertools.chain(*coords.values())
         missing = set(allvars) - set(self._maybe_to_dataset().variables)

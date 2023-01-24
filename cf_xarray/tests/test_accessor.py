@@ -955,6 +955,38 @@ def test_get_bounds_dim_name():
     assert mollwds.cf.get_bounds_dim_name("lon") == "bounds"
 
 
+def test_grid_mappings():
+    ds = rotds  # .copy(deep=False)
+
+    actual = ds.cf.grid_mappings
+    expected = {"air_temperature": ["rotated_pole"], "temp": ["rotated_pole"]}
+    assert ds.cf.grid_mappings == expected
+
+    actual = ds.cf.get_grid_mapping("temp")
+    expected = ds.cf["rotated_pole"]
+    assert_identical(actual, expected)
+
+    actual = ds.cf[["temp"]]
+    assert "rotated_pole" in actual.coords
+
+    # Dataset has bounds
+    expected = """\
+    - Grid Mappings:   air_temperature: ['rotated_pole']
+                       temp: ['rotated_pole']
+    """
+    assert dedent(expected) in ds.cf.__repr__()
+
+    # DataArray
+    # propagation does not work yet
+    # actual = ds.cf["temp"].cf.__repr__()
+    # assert actual == expected
+
+
+def test_get_grid_mapping_name():
+    ds = rotds
+    assert ds.cf.get_grid_mapping_name("temp") == "rotated_latitude_longitude"
+
+
 def test_docstring():
     assert "One of ('X'" in airds.cf.groupby.__doc__
     assert "Time variable accessor e.g. 'T.month'" in airds.cf.groupby.__doc__

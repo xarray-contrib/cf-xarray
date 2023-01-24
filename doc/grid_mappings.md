@@ -8,7 +8,7 @@ kernelspec:
 ---
 
 ```{eval-rst}
-.. currentmodule:: cf_xarray
+.. currentmodule:: xarray
 ```
 
 # Grid Mappings

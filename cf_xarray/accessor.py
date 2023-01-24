@@ -1524,9 +1524,9 @@ class CFAccessor:
             Dictionary mapping standard names to variable names.
         """
         if isinstance(self._obj, Dataset):
-            variables = self._obj.variables
+            variables = self._obj._variables
         elif isinstance(self._obj, DataArray):
-            variables = self._obj.coords
+            variables = self._obj._coords
 
         vardict: dict[str, list[str]] = {}
         for k, v in variables.items():
@@ -1558,9 +1558,9 @@ class CFAccessor:
         {'profile_id': ['profile'], 'trajectory_id': ['trajectory']}
         """
         if isinstance(self._obj, Dataset):
-            variables = self._obj.variables
+            variables = self._obj._variables
         elif isinstance(self._obj, DataArray):
-            variables = self._obj.coords
+            variables = self._obj._coords
 
         vardict: dict[str, list[str]] = {}
         for k, v in variables.items():
@@ -1636,7 +1636,7 @@ class CFAccessor:
                     coords["bounds"].append(dbounds)
 
         allvars = itertools.chain(*coords.values())
-        missing = set(allvars) - set(self._maybe_to_dataset().variables)
+        missing = set(allvars) - set(self._maybe_to_dataset()._variables)
         if missing:
             if OPTIONS["warn_on_missing_variables"]:
                 warnings.warn(

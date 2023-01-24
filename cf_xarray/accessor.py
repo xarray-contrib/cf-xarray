@@ -2381,7 +2381,7 @@ class CFDatasetAccessor(CFAccessor):
         Returns
         -------
         dict
-            Dictionary mapping keys to the variable names of their grid_mapping.
+            Dictionary mapping variable names to the variable names of their grid_mapping.
 
         See Also
         --------

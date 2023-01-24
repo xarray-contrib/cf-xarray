@@ -49,7 +49,7 @@ from pyproj import CRS
 CRS.from_cf(rotds.cf.get_grid_mapping("temp").attrs)
 ```
 
-gives you more details on the project:
+gives you more details on the projection:
 
 ```
 <Derived Geographic 2D CRS: {"$schema": "https://proj.org/schemas/v0.2/projjso ...>

@@ -1743,7 +1743,7 @@ class CFAccessor:
             renamer = {
                 v["ours"][0]: v["theirs"][0]
                 for k, v in keydict.items()
-                if k not in conflicts
+                if k not in conflicts and v["ours"][0] != v["theirs"][0]
             }
 
             return renamer, conflicts

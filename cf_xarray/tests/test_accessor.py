@@ -956,7 +956,7 @@ def test_get_bounds_dim_name():
 
 
 def test_grid_mappings():
-    ds = rotds  # .copy(deep=False)
+    ds = rotds.copy(deep=False)
 
     actual = ds.cf.grid_mappings
     expected = {"air_temperature": ["rotated_pole"], "temp": ["rotated_pole"]}
@@ -969,7 +969,17 @@ def test_grid_mappings():
     actual = ds.cf[["temp"]]
     assert "rotated_pole" in actual.coords
 
-    # Dataset has bounds
+    # Do not attempt to get grid_mapping when extracting a DataArray
+    # raise a warning when extracting a Dataset and grid_mapping does not exist
+    ds["temp"].attrs["grid_mapping"] = "foo"
+    with pytest.warns(None) as record:
+        ds.cf["temp"]
+    assert len(record) == 0
+    with pytest.warns(UserWarning, match="{'foo'} not found in object"):
+        ds.cf[["temp"]]
+    ds["temp"].attrs["grid_mapping"] = "rotated_pole"
+
+    # Dataset has grid mappings
     expected = """\
     - Grid Mappings:   air_temperature: ['rotated_pole']
                        temp: ['rotated_pole']

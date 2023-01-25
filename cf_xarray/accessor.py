@@ -1599,7 +1599,11 @@ class CFAccessor:
         return {k: sorted(v) for k, v in vardict.items()}
 
     def get_associated_variable_names(
-        self, name: Hashable, skip_bounds: bool = False, error: bool = True
+        self,
+        name: Hashable,
+        skip_bounds: bool = False,
+        skip_grid_mappings: bool = False,
+        error: bool = True,
     ) -> dict[str, list[str]]:
         """
         Returns a dict mapping
@@ -1614,6 +1618,7 @@ class CFAccessor:
         ----------
         name : Hashable
         skip_bounds : bool, optional
+        skip_grid_mappings : bool, optional
         error : bool, optional
             Raise or ignore errors.
 
@@ -1670,8 +1675,9 @@ class CFAccessor:
                 if dbounds:
                     coords["bounds"].append(dbounds)
 
-        if "grid_mapping" in attrs_or_encoding:
-            coords["grid_mapping"] = [attrs_or_encoding["grid_mapping"]]
+        if not skip_grid_mappings:
+            if "grid_mapping" in attrs_or_encoding:
+                coords["grid_mapping"] = [attrs_or_encoding["grid_mapping"]]
 
         allvars = itertools.chain(*coords.values())
         missing = set(allvars) - set(self._maybe_to_dataset().variables)

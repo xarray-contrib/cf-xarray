@@ -30,6 +30,7 @@ To access `grid_mapping` attributes, consider this example:
 
 ```{code-cell}
 from cf_xarray.datasets import rotds
+
 rotds
 ```
 

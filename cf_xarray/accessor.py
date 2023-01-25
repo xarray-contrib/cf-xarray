@@ -19,6 +19,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import xarray as xr
@@ -143,7 +144,7 @@ def apply_mapper(
     return results
 
 
-def _get_groupby_time_accessor(obj: DataArray | Dataset, key: str) -> list[Hashable]:
+def _get_groupby_time_accessor(obj: DataArray | Dataset, key: str) -> list[str]:
     # This first docstring is used by _build_docstring. Do not remove.
     """
     Time variable accessor e.g. 'T.month'
@@ -214,13 +215,12 @@ def _get_custom_criteria(
         criteria = OPTIONS["custom_criteria"]
 
     if criteria is not None:
-        criteria = always_iterable(criteria, allowed=(tuple, list, set))
+        criteria_iter = always_iterable(criteria, allowed=(tuple, list, set))
 
-    criteria = ChainMap(*criteria)
-
+    criteria_map = ChainMap(*criteria_iter)
     results: set = set()
-    if key in criteria:
-        for criterion, patterns in criteria[key].items():
+    if key in criteria_map:
+        for criterion, patterns in criteria_map[key].items():
             for var in obj.variables:
                 if re.match(patterns, obj[var].attrs.get(criterion, "")):
                     results.update((var,))
@@ -388,7 +388,7 @@ def _get_all(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     """
     all_mappers: tuple[Mapper] = (
         _get_custom_criteria,
-        functools.partial(_get_custom_criteria, criteria=cf_role_criteria),
+        functools.partial(_get_custom_criteria, criteria=cf_role_criteria),  # type: ignore
         _get_axis_coord,
         _get_measure,
         _get_with_standard_name,
@@ -424,7 +424,7 @@ def _get_coords(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
 def _variables(func: F) -> F:
     @functools.wraps(func)
     def wrapper(obj: DataArray | Dataset, key: Hashable) -> list[DataArray]:
-        return [obj[k] for k in func(obj, key)]
+        return [obj[k] for k in func(obj, key)]  # type: ignore
 
     return cast(F, wrapper)
 
@@ -591,7 +591,10 @@ def _getattr(
             newmap.update(dict.fromkeys(inverted[key], value))
         newmap.update({key: attribute[key] for key in unused_keys})
 
-        skip = {"data_vars": ["coords"], "coords": None}
+        skip: dict[str, list[Hashable] | None] = {
+            "data_vars": ["coords"],
+            "coords": None,
+        }
         if attr in ["coords", "data_vars"]:
             for key in newmap:
                 newmap[key] = _getitem(accessor, key, skip=skip[attr])
@@ -623,11 +626,29 @@ def _getattr(
     return wrapper
 
 
+@overload
 def _getitem(
     accessor: CFAccessor,
-    key: Hashable | Iterable[Hashable],
+    key: Hashable,
     skip: list[Hashable] | None = None,
-) -> DataArray | Dataset:
+) -> DataArray:
+    ...
+
+
+@overload
+def _getitem(
+    accessor: CFAccessor,
+    key: Iterable[Hashable],
+    skip: list[Hashable] | None = None,
+) -> Dataset:
+    ...
+
+
+def _getitem(
+    accessor,
+    key,
+    skip=None,
+):
     """
     Index into obj using key. Attaches CF associated variables.
 
@@ -1933,7 +1954,7 @@ class CFAccessor:
         args = ", ".join([f"{k!s}={v!r}" for k, v in locals().items() if k != "self"])
 
         # Defaults
-        skip = [skip] if isinstance(skip, str) else (skip or [])
+        skip_ = [skip] if isinstance(skip, Hashable) else (skip or [])
 
         # Parse table
         info, table, aliases = parse_cf_standard_name_table(source)
@@ -1951,7 +1972,11 @@ class CFAccessor:
 
                 # Loop over attributes
                 for key, value in new_attrs.items():
-                    if value and key not in skip and (override or key not in old_attrs):
+                    if (
+                        value
+                        and key not in skip_
+                        and (override or key not in old_attrs)
+                    ):
 
                         # Don't add units to time variables (e.g., datetime64, ...)
                         if key == "units" and _is_datetime_like(ds[var_name]):
@@ -2032,7 +2057,7 @@ class CFDatasetAccessor(CFAccessor):
         return _getitem(self, key)
 
     @property
-    def formula_terms(self) -> dict[str, dict[str, str]]:
+    def formula_terms(self) -> dict[Hashable, dict[str, str]]:
         """
         Property that returns a dictionary mapping the parametric coordinate's name
         to a dictionary that maps "standard term names" to actual variable names.
@@ -2085,9 +2110,11 @@ class CFDatasetAccessor(CFAccessor):
         for dim in _get_dims(self._obj, "Z"):
             terms = self._obj[dim].cf.formula_terms
             variables = self._drop_missing_variables(list(terms.values()))
-            terms = {key: val for key, val in terms.items() if val in variables}
-            if terms:
-                results[dim] = terms
+            terms_dict: dict[str, str] = {
+                key: val for key, val in terms.items() if val in variables
+            }
+            if terms_dict:
+                results[dim] = terms_dict
 
         return results
 
@@ -2123,9 +2150,9 @@ class CFDatasetAccessor(CFAccessor):
             for key in keys
         }
 
-        return {k: sorted(v) for k, v in vardict.items() if v}
+        return {k: sort_maybe_hashable(v) for k, v in vardict.items() if v}
 
-    def get_bounds(self, key: str) -> DataArray | Dataset:
+    def get_bounds(self, key: Hashable) -> DataArray | Dataset:
         """
         Get bounds variable corresponding to key.
 
@@ -2252,7 +2279,7 @@ class CFDatasetAccessor(CFAccessor):
 
     def bounds_to_vertices(
         self,
-        keys: str | Iterable[str] | None = None,
+        keys: Hashable | Iterable[Hashable] | None = None,
         order: str | None = "counterclockwise",
     ) -> Dataset:
         """
@@ -2302,11 +2329,11 @@ class CFDatasetAccessor(CFAccessor):
         Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-boundaries.
         """
         if keys is None:
-            coords: Iterable[str] = self.keys()
-        elif isinstance(keys, str):
+            coords = tuple(self.keys())
+        elif isinstance(keys, Hashable):
             coords = (keys,)
         else:
-            coords = keys
+            coords = tuple(keys)
 
         obj = self._maybe_to_dataset(self._obj.copy(deep=False))
 
@@ -2319,6 +2346,7 @@ class CFDatasetAccessor(CFAccessor):
                         f"vertices are computed from bounds but given key {coord} did not correspond to existing bounds."
                     ) from exc
             else:
+                assert isinstance(bounds, DataArray)
                 name = f"{self[coord].name}_vertices"
                 obj = obj.assign(  # Overwrite any variable with the same name.
                     {

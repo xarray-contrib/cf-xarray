@@ -48,7 +48,7 @@ def assert_dicts_identical(dict1, dict2):
         assert_identical(dict1[k], dict2[k])
 
 
-def test_repr():
+def test_repr() -> None:
     # Dataset.
     # Stars: axes, coords, and std names
     actual = airds.cf.__repr__()
@@ -198,7 +198,7 @@ def test_repr():
     assert actual == dedent(expected)
 
 
-def test_axes():
+def test_axes() -> None:
     expected = dict(T=["time"], X=["lon"], Y=["lat"])
     actual = airds.cf.axes
     assert actual == expected
@@ -208,7 +208,7 @@ def test_axes():
     assert actual == expected
 
 
-def test_coordinates():
+def test_coordinates() -> None:
     expected = dict(latitude=["lat"], longitude=["lon"], time=["time"])
     actual = airds.cf.coordinates
     assert actual == expected
@@ -219,7 +219,7 @@ def test_coordinates():
 
 
 @requires_pint
-def test_coordinates_quantified():
+def test_coordinates_quantified() -> None:
     # note: import order is important
     from .. import units  # noqa
 
@@ -231,7 +231,7 @@ def test_coordinates_quantified():
     )
 
 
-def test_cell_measures():
+def test_cell_measures() -> None:
     ds = airds.copy(deep=False)
     ds["foo"] = xr.DataArray(ds["cell_area"], attrs=dict(standard_name="foo_std_name"))
     ds["air"].attrs["cell_measures"] += " foo_measure: foo"
@@ -263,7 +263,7 @@ def test_cell_measures():
     assert actual.endswith(dedent(expected))
 
 
-def test_standard_names():
+def test_standard_names() -> None:
     expected = dict(
         air_temperature=["air"], latitude=["lat"], longitude=["lon"], time=["time"]
     )
@@ -276,14 +276,14 @@ def test_standard_names():
     assert dsnew.cf.standard_names == dict(a=["a", "b"])
 
 
-def test_drop_bounds():
+def test_drop_bounds() -> None:
     assert ambig.cf["latitude"].name == "lat"
     assert ambig.cf["longitude"].name == "lon"
     assert ambig.cf.bounds["latitude"] == ["vertices_latitude"]
     assert ambig.cf.bounds["longitude"] == ["vertices_longitude"]
 
 
-def test_accessor_getattr_and_describe():
+def test_accessor_getattr_and_describe() -> None:
     ds_verta = vert.set_coords(
         (
             "ps",
@@ -300,7 +300,7 @@ def test_accessor_getattr_and_describe():
     assert str(ds_verta.cf) == str(ds_vertb.cf)
 
 
-def test_accessor_getattr_coordinate_Nonetype():
+def test_accessor_getattr_coordinate_Nonetype() -> None:
     ds_vert = vert
     ds_vert["o3"].encoding["coordinates"] = None
     assert ds_vert.o3.cf["latitude"].name == "lat"
@@ -308,7 +308,7 @@ def test_accessor_getattr_coordinate_Nonetype():
     assert ds_vert.cf["latitude"].name == "lat"
 
 
-def test_getitem_standard_name():
+def test_getitem_standard_name() -> None:
     actual = airds.cf["air_temperature"]
     expected = airds["air"]
     assert_identical(actual, expected)
@@ -329,7 +329,7 @@ def test_getitem_standard_name():
         ds.air.cf["air_temperature"]
 
 
-def test_getitem_ancillary_variables():
+def test_getitem_ancillary_variables() -> None:
     expected = anc.set_coords(["q_error_limit", "q_detection_limit"])["q"]
     assert_identical(anc.cf["q"], expected)
     assert_identical(anc.cf["specific_humidity"], expected)
@@ -349,7 +349,7 @@ def test_getitem_ancillary_variables():
         assert k not in popds.cf["UVEL"].coords
 
 
-def test_rename_like():
+def test_rename_like() -> None:
     # it'll match for axis: X (lon, nlon) and coordinate="longitude" (lon, TLONG)
     # so delete the axis attributes
     original = popds
@@ -473,7 +473,7 @@ def test_kwargs_methods(obj):
     assert_identical(expected, actual)
 
 
-def test_pos_args_methods():
+def test_pos_args_methods() -> None:
     expected = airds.transpose("lon", "time", "lat")
     actual = airds.cf.transpose("longitude", "T", "latitude")
     assert_identical(actual, expected)
@@ -486,7 +486,7 @@ def test_pos_args_methods():
     assert_identical(actual, expected)
 
 
-def test_preserve_unused_keys():
+def test_preserve_unused_keys() -> None:
 
     ds = airds.copy(deep=False)
     ds.time.attrs.clear()
@@ -495,7 +495,7 @@ def test_preserve_unused_keys():
     assert_identical(actual, expected)
 
 
-def test_kwargs_expand_key_to_multiple_keys():
+def test_kwargs_expand_key_to_multiple_keys() -> None:
 
     actual = multiple.cf.isel(X=5, Y=3)
     expected = multiple.isel(x1=5, y1=3, x2=5, y2=3)
@@ -535,7 +535,7 @@ def test_args_methods(obj):
     assert_identical(expected, actual)
 
 
-def test_dataarray_getitem():
+def test_dataarray_getitem() -> None:
 
     air = airds.air.copy(deep=False)
     air.name = None
@@ -550,7 +550,7 @@ def test_dataarray_getitem():
     assert_identical(air.cf["area_grid_cell"], air.cell_area.reset_coords(drop=True))
 
 
-def test_dataarray_plot():
+def test_dataarray_plot() -> None:
 
     obj = airds.air.copy(deep=False)
 
@@ -651,7 +651,7 @@ def test_getitem_errors(obj):
         obj2.cf["X"]
 
 
-def test_bad_cell_measures_attribute():
+def test_bad_cell_measures_attribute() -> None:
     air2 = airds.copy(deep=False)
     air2.air.attrs["cell_measures"] = "--OPT"
     with pytest.warns(UserWarning):
@@ -677,7 +677,7 @@ def test_bad_cell_measures_attribute():
         air2.cf.cell_measures
 
 
-def test_getitem_clash_standard_name():
+def test_getitem_clash_standard_name() -> None:
     ds = xr.Dataset()
     ds.coords["area"] = xr.DataArray(np.ones(10), attrs={"standard_name": "cell_area"})
     assert_identical(ds.cf["cell_area"], ds["area"].reset_coords(drop=True))
@@ -707,7 +707,7 @@ def test_getitem_clash_standard_name():
     assert_identical(ds["lat"], ds.cf["latitude"])
 
 
-def test_getitem_uses_coordinates():
+def test_getitem_uses_coordinates() -> None:
     # POP-like dataset
     ds = popds
     assert_identical(
@@ -722,7 +722,7 @@ def test_getitem_uses_coordinates():
     assert_identical(ds.TEMP.cf["latitude"], ds["TLAT"].reset_coords(drop=True))
 
 
-def test_getitem_uses_dimension_names_when_coordinates_attr():
+def test_getitem_uses_dimension_names_when_coordinates_attr() -> None:
     # POP-like dataset
     ds = popds
     assert_identical(ds.cf["X"], ds["nlon"])
@@ -731,7 +731,7 @@ def test_getitem_uses_dimension_names_when_coordinates_attr():
     assert_identical(ds.TEMP.cf["Y"], ds["nlat"])
 
 
-def test_plot_xincrease_yincrease():
+def test_plot_xincrease_yincrease() -> None:
     ds = xr.tutorial.open_dataset("air_temperature").isel(time=slice(4), lon=slice(50))
     ds.lon.attrs["positive"] = "down"
     ds.lat.attrs["positive"] = "down"
@@ -796,13 +796,13 @@ def test_add_bounds(dims):
     _check_unchanged(original, ds)
 
 
-def test_add_bounds_multiple():
+def test_add_bounds_multiple() -> None:
     # Test multiple dimensions
     assert not {"x1_bounds", "x2_bounds"} <= set(multiple.variables)
     assert {"x1_bounds", "x2_bounds"} <= set(multiple.cf.add_bounds("X").variables)
 
 
-def test_add_bounds_nd_variable():
+def test_add_bounds_nd_variable() -> None:
     ds = xr.Dataset(
         {"z": (("x", "y"), np.arange(12).reshape(4, 3))},
         coords={"x": np.arange(4), "y": np.arange(3)},
@@ -849,7 +849,7 @@ def test_add_bounds_nd_variable():
         ds.cf.add_bounds("z").cf.add_bounds("x")
 
 
-def test_bounds():
+def test_bounds() -> None:
     ds = airds.copy(deep=False).cf.add_bounds("lat")
 
     actual = ds.cf.bounds
@@ -896,7 +896,7 @@ def test_bounds():
     assert actual == expected
 
 
-def test_bounds_to_vertices():
+def test_bounds_to_vertices() -> None:
     # All available
     ds = airds
     original = ds.copy(deep=True)
@@ -926,7 +926,7 @@ def test_bounds_to_vertices():
     _check_unchanged(original, ds)
 
 
-def test_get_bounds_dim_name():
+def test_get_bounds_dim_name() -> None:
     ds = airds.cf.add_bounds("lat")
     assert ds.cf.get_bounds_dim_name("latitude") == "bounds"
     assert ds.cf.get_bounds_dim_name("lat") == "bounds"
@@ -935,7 +935,7 @@ def test_get_bounds_dim_name():
     assert mollwds.cf.get_bounds_dim_name("lon") == "bounds"
 
 
-def test_docstring():
+def test_docstring() -> None:
     assert "One of ('X'" in airds.cf.groupby.__doc__
     assert "Time variable accessor e.g. 'T.month'" in airds.cf.groupby.__doc__
     assert "One or more of ('X'" in airds.cf.mean.__doc__
@@ -1053,14 +1053,14 @@ def test_guess_coord_axis(kind, names):
         assert dsnew[varname].attrs == ATTRS[kind]
 
 
-def test_guess_coord_axis_datetime():
+def test_guess_coord_axis_datetime() -> None:
     ds = xr.Dataset()
     ds["time"] = ("time", pd.date_range("2001-01-01", "2001-04-01"))
     dsnew = ds.cf.guess_coord_axis()
     assert dsnew.time.attrs == {"standard_name": "time", "axis": "T"}
 
 
-def test_attributes():
+def test_attributes() -> None:
     actual = airds.cf.sizes
     expected = {"X": 50, "Y": 25, "T": 4, "longitude": 50, "latitude": 25, "time": 4}
     assert actual == expected
@@ -1123,14 +1123,14 @@ def test_attributes():
     assert_identical(ds.cf.data_vars["latitude"], ds.cf["ULAT"])
 
 
-def test_missing_variable_in_coordinates():
+def test_missing_variable_in_coordinates() -> None:
     airds.air.attrs["coordinates"] = "lat lon time"
     with xr.set_options(keep_attrs=True):
         # keep bad coordinates attribute after mean
         assert_identical(airds.time, airds.air.cf.mean(["X", "Y"]).cf["time"])
 
 
-def test_Z_vs_vertical_ROMS():
+def test_Z_vs_vertical_ROMS() -> None:
     from ..datasets import romsds
 
     assert_identical(romsds.s_rho.reset_coords(drop=True), romsds.temp.cf["Z"])
@@ -1156,7 +1156,7 @@ def test_Z_vs_vertical_ROMS():
     )
 
 
-def test_param_vcoord_ocean_s_coord():
+def test_param_vcoord_ocean_s_coord() -> None:
     romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g2"
     Zo_rho = (romsds.hc * romsds.s_rho + romsds.Cs_r * romsds.h) / (
         romsds.hc + romsds.h
@@ -1190,7 +1190,7 @@ def test_param_vcoord_ocean_s_coord():
         copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
 
-def test_param_vcoord_ocean_sigma_coordinate():
+def test_param_vcoord_ocean_sigma_coordinate() -> None:
     expected = pomds.zeta + pomds.sigma * (pomds.depth + pomds.zeta)
     pomds.cf.decode_vertical_coords(outnames={"sigma": "z"})
     assert_allclose(pomds.z.reset_coords(drop=True), expected.reset_coords(drop=True))
@@ -1204,7 +1204,7 @@ def test_param_vcoord_ocean_sigma_coordinate():
         copy.cf.decode_vertical_coords(outnames={})
 
 
-def test_formula_terms():
+def test_formula_terms() -> None:
     srhoterms = {
         "s": "s_rho",
         "C": "Cs_r",
@@ -1226,7 +1226,7 @@ def test_formula_terms():
         romsds["zeta"].cf.formula_terms
 
 
-def test_standard_name_mapper():
+def test_standard_name_mapper() -> None:
     da = xr.DataArray(
         np.arange(6),
         dims="time",
@@ -1333,7 +1333,7 @@ def test_differentiate(ds):
         assert_identical(ds.differentiate("lon"), ds.cf.differentiate("X"))
 
 
-def test_new_standard_name_mappers():
+def test_new_standard_name_mappers() -> None:
     assert_identical(forecast.cf.mean("realization"), forecast.mean("M"))
     assert_identical(
         forecast.cf.mean(["realization", "forecast_period"]), forecast.mean(["M", "L"])
@@ -1347,7 +1347,7 @@ def test_new_standard_name_mappers():
     )
 
 
-def test_possible_x_y_plot():
+def test_possible_x_y_plot() -> None:
     from ..accessor import _possible_x_y_plot
 
     # choose axes
@@ -1386,7 +1386,7 @@ def test_possible_x_y_plot():
     assert _possible_x_y_plot(xtds, "x", skip="lon") == "T"
 
 
-def test_groupby_special_ops():
+def test_groupby_special_ops() -> None:
     cfgrouped = airds.cf.groupby_bins("latitude", np.arange(20, 50, 10))
     grouped = airds.groupby_bins("lat", np.arange(20, 50, 10))
 
@@ -1466,7 +1466,7 @@ def test_differentiate_positive_upward(obj):
         obj.cf.differentiate("z", positive_upward=True)
 
 
-def test_cmip6_attrs():
+def test_cmip6_attrs() -> None:
     da = xr.DataArray(
         np.ones((10, 10)),
         dims=("nlon", "nlat"),
@@ -1487,7 +1487,7 @@ def test_cmip6_attrs():
     assert da.cf.axes["Y"] == ["nlat"]
 
 
-def test_custom_criteria():
+def test_custom_criteria() -> None:
     my_custom_criteria = {
         "ssh": {
             "standard_name": "sea_surface_elev*|sea_surface_height",
@@ -1568,7 +1568,7 @@ def test_custom_criteria():
         assert_identical(ds.cf["temp"], ds["temperature"])
 
 
-def test_cf_standard_name_table_version():
+def test_cf_standard_name_table_version() -> None:
 
     url = (
         "https://raw.githubusercontent.com/cf-convention/cf-convention.github.io/"
@@ -1579,7 +1579,7 @@ def test_cf_standard_name_table_version():
     assert expected_info == actual_info
 
 
-def test_add_canonical_attributes_0_dim():
+def test_add_canonical_attributes_0_dim() -> None:
     """test if works for variables with 0 dimension"""
     xr.DataArray(
         0, attrs={"standard_name": "sea_water_potential_temperature"}
@@ -1666,13 +1666,13 @@ def test_flag_features(op):
     assert_identical(actual, expected)
 
 
-def test_flag_isin():
+def test_flag_isin() -> None:
     actual = basin.cf.isin(["atlantic_ocean", "pacific_ocean"])
     expected = basin.isin([1, 2])
     assert_identical(actual, expected)
 
 
-def test_flag_errors():
+def test_flag_errors() -> None:
     with pytest.raises(ValueError):
         basin.cf.isin(["arctic_ocean"])
 
@@ -1691,7 +1691,7 @@ def test_flag_errors():
         basin.cf == "pacific_ocean"
 
 
-def test_missing_variables():
+def test_missing_variables() -> None:
 
     # Bounds
     ds = mollwds.copy(deep=False)
@@ -1712,14 +1712,14 @@ def test_missing_variables():
     assert ds.cf.formula_terms == {"lev": {"b": "b", "ps": "ps"}}
 
 
-def test_pickle():
+def test_pickle() -> None:
     da = xr.DataArray([1.0], name="a")
     ds = da.to_dataset()
     pickle.loads(pickle.dumps(da.cf))
     pickle.loads(pickle.dumps(ds.cf))
 
 
-def test_cf_role():
+def test_cf_role() -> None:
     for name in ["profile_id", "trajectory_id"]:
         assert name in dsg.cf.keys()
 
@@ -1733,7 +1733,7 @@ def test_cf_role():
 
 
 @requires_scipy
-def test_curvefit():
+def test_curvefit() -> None:
     from cf_xarray.datasets import airds
 
     def line(time, slope):

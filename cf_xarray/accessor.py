@@ -2386,7 +2386,7 @@ class CFDatasetAccessor(CFAccessor):
 
         See Also
         --------
-        Dataset.cf.get_grid_mappings
+        Dataset.cf.get_grid_mapping
         Dataset.cf.get_grid_mapping_name
 
         References
@@ -2426,6 +2426,12 @@ class CFDatasetAccessor(CFAccessor):
         Returns
         -------
         DataArray
+
+        See Also
+        --------
+        Dataset.cf.grid_mappings
+        Dataset.cf.get_grid_mapping_name
+
         """
 
         results = self.grid_mappings.get(key, [])
@@ -2446,6 +2452,12 @@ class CFDatasetAccessor(CFAccessor):
         Returns
         -------
         str
+
+        See Also
+        --------
+        Dataset.cf.grid_mappings
+        Dataset.cf.get_grid_mapping
+
         """
         grid_mapping = self.get_grid_mapping(key)
         grid_mapping_name = grid_mapping.attrs.get("grid_mapping_name", "")

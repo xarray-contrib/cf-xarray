@@ -893,7 +893,7 @@ def test_bounds() -> None:
     # DataArray does not have bounds
     expected_repr = airds.cf["air"].cf.__repr__()
     actual = ds.cf["air"].cf.__repr__()
-    assert actual == expected
+    assert actual == expected_repr
 
 
 def test_bounds_to_vertices() -> None:
@@ -1750,6 +1750,6 @@ def test_curvefit() -> None:
 
     actual = airds.air.isel(time=0).curvefit(coords=("lat", "lon"), func=plane)
     expected = airds.air.isel(time=0).cf.curvefit(
-        coords=("latitude", "longitude"), func=plane
+        coords=["latitude", "longitude"], func=plane
     )
     assert_identical(expected, actual)

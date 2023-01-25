@@ -1117,7 +1117,7 @@ class CFAccessor:
 
     def curvefit(
         self,
-        coords: str | DataArray | Iterable[str | DataArray],
+        coords: Hashable | DataArray | Iterable[Hashable | DataArray],
         func: Callable[..., Any],
         reduce_dims: Hashable | Iterable[Hashable] | None = None,
         skipna: bool = True,
@@ -1130,6 +1130,8 @@ class CFAccessor:
         if coords is not None:
             if isinstance(coords, Hashable):
                 coords_iter = (coords,)
+            else:
+                coords_iter = coords
             coords = [
                 apply_mapper(
                     [_single(_get_coords)], self._obj, v, error=False, default=[v]  # type: ignore
@@ -1139,6 +1141,8 @@ class CFAccessor:
         if reduce_dims is not None:
             if isinstance(reduce_dims, Hashable):
                 reduce_dims_iter = (reduce_dims,)
+            else:
+                reduce_dims_iter = reduce_dims
             reduce_dims = [
                 apply_mapper(
                     [_single(_get_dims)], self._obj, v, error=False, default=[v]  # type: ignore

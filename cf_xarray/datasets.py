@@ -16,6 +16,9 @@ for _variable in ds_no_attrs.variables:
     ds_no_attrs[_variable].attrs = {}
 
 
+ds_with_tuple = airds.copy(deep=False)
+ds_with_tuple = airds.rename({"air": (1, 2, 3)})
+
 # POM dataset
 pomds = xr.Dataset()
 pomds["sigma"] = (

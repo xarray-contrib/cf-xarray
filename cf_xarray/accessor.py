@@ -1128,8 +1128,8 @@ class CFAccessor:
     ):
 
         if coords is not None:
-            if isinstance(coords, Hashable):
-                coords_iter = (coords,)
+            if isinstance(coords, (Hashable, DataArray)):
+                coords_iter: Iterable[Hashable | DataArray] = [coords]
             else:
                 coords_iter = coords
             coords = [
@@ -1140,9 +1140,9 @@ class CFAccessor:
             ]
         if reduce_dims is not None:
             if isinstance(reduce_dims, Hashable):
-                reduce_dims_iter = (reduce_dims,)
+                reduce_dims_iter = [reduce_dims]
             else:
-                reduce_dims_iter = reduce_dims
+                reduce_dims_iter = list(reduce_dims)
             reduce_dims = [
                 apply_mapper(
                     [_single(_get_dims)], self._obj, v, error=False, default=[v]  # type: ignore
@@ -1690,7 +1690,7 @@ class CFAccessor:
     def rename_like(
         self,
         other: DataArray | Dataset,
-        skip: Hashable | Iterable[Hashable] | None = None,
+        skip: str | Iterable[str] | None = None,
     ) -> DataArray | Dataset:
         """
         Renames variables in object to match names of like-variables in ``other``.
@@ -1718,10 +1718,10 @@ class CFAccessor:
         """
         if skip is None:
             skip_iter = []
-        elif isinstance(skip, Hashable):
+        elif isinstance(skip, str):
             skip_iter = [skip]
         else:
-            skip_iter = skip
+            skip_iter = list(skip)
 
         ourkeys = self.keys()
         theirkeys = other.cf.keys()

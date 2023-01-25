@@ -23,6 +23,7 @@ from ..datasets import (
     anc,
     basin,
     ds_no_attrs,
+    ds_with_tuple,
     dsg,
     forecast,
     mollwds,
@@ -50,6 +51,9 @@ def assert_dicts_identical(dict1, dict2):
 
 
 def test_repr() -> None:
+
+    repr(ds_with_tuple.cf)
+
     # Dataset.
     # Stars: axes, coords, and std names
     actual = airds.cf.__repr__()
@@ -1318,6 +1322,14 @@ def test_rename(obj):
     }
     assert_identical(obj.rename(xr_dict), obj.cf.rename(cf_dict))
     assert_identical(obj.rename(**xr_dict), obj.cf.rename(**cf_dict))
+
+
+def test_rename_tuple():
+    obj = ds_with_tuple
+
+    cf_dict = {"air_temperature": "renamed"}
+    xr_dict = {(1, 2, 3): "renamed"}
+    assert_identical(obj.rename(xr_dict), obj.cf.rename(cf_dict))
 
 
 @pytest.mark.parametrize("ds", datasets)

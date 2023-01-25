@@ -377,7 +377,7 @@ def _get_with_standard_name(
     for vname, var in obj._variables.items():
         stdname = var.attrs.get("standard_name", None)
         if stdname == name:
-            varnames.append(str(vname))
+            varnames.append(vname)
 
     return varnames
 
@@ -1690,7 +1690,7 @@ class CFAccessor:
     def rename_like(
         self,
         other: DataArray | Dataset,
-        skip: str | Iterable[str] | None = None,
+        skip: Hashable | Iterable[Hashable] | None = None,
     ) -> DataArray | Dataset:
         """
         Renames variables in object to match names of like-variables in ``other``.
@@ -1716,7 +1716,7 @@ class CFAccessor:
         DataArray or Dataset
             with renamed variables
         """
-        skip = [skip] if isinstance(skip, str) else skip or []
+        skip = [skip] if isinstance(skip, Hashable) else skip or []
 
         ourkeys = self.keys()
         theirkeys = other.cf.keys()

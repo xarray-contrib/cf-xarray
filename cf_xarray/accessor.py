@@ -144,7 +144,9 @@ def apply_mapper(
     return results
 
 
-def _get_groupby_time_accessor(obj: DataArray | Dataset, key: str) -> list[str]:
+def _get_groupby_time_accessor(
+    obj: DataArray | Dataset, key: Hashable
+) -> list[Hashable]:
     # This first docstring is used by _build_docstring. Do not remove.
     """
     Time variable accessor e.g. 'T.month'
@@ -168,6 +170,7 @@ def _get_groupby_time_accessor(obj: DataArray | Dataset, key: str) -> list[str]:
     Returns an empty list if there is no frequency extension specified.
     """
 
+    assert isinstance(key, str)
     if "." in key:
         key, ext = key.split(".", 1)
 
@@ -471,7 +474,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, tuple[Mapper, ...]] = {
     "group": (_single(_get_all), _get_groupby_time_accessor),  # groupby
     "indexer": (_single(_get_indexes),),  # resample
     "variables": (_get_all,),  # sortby
-    "weights": (_variables(_single(_get_all)),),  # type: ignore
+    "weights": (_variables(_single(_get_all)),),
     "chunks": (_get_dims,),  # chunk
 }
 
@@ -1127,26 +1130,22 @@ class CFAccessor:
     ):
 
         if coords is not None:
-            if isinstance(coords, str):
-                coords = (coords,)
+            if isinstance(coords, Hashable):
+                coords_iter = (coords,)
             coords = [
-                apply_mapper(  # type: ignore
+                apply_mapper(
                     [_single(_get_coords)], self._obj, v, error=False, default=[v]  # type: ignore
-                )[
-                    0
-                ]  # type: ignore
-                for v in coords
+                )[0]
+                for v in coords_iter
             ]
         if reduce_dims is not None:
             if isinstance(reduce_dims, Hashable):
-                reduce_dims: Iterable[Hashable] = (reduce_dims,)  # type: ignore
+                reduce_dims_iter = (reduce_dims,)
             reduce_dims = [
-                apply_mapper(  # type: ignore
+                apply_mapper(
                     [_single(_get_dims)], self._obj, v, error=False, default=[v]  # type: ignore
-                )[
-                    0
-                ]  # type: ignore
-                for v in reduce_dims  # type: ignore
+                )[0]
+                for v in reduce_dims_iter
             ]
 
         return self._obj.curvefit(

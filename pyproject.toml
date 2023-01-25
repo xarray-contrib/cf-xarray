@@ -5,6 +5,7 @@ mdformat = true
 exclude = "doc|flycheck"
 files = "cf_xarray/"
 show_error_codes = true
+warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
 module=[

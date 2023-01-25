@@ -249,7 +249,7 @@ def test_cell_measures() -> None:
 
     # Additional cell measure in repr
     actual = ds.cf.__repr__()
-    expected = """\
+    expected_repr = """\
     Data Variables:
     - Cell Measures:   foo_measure: ['foo']
                        volume: ['foo']
@@ -260,7 +260,7 @@ def test_cell_measures() -> None:
 
     - Bounds:   n/a
     """
-    assert actual.endswith(dedent(expected))
+    assert actual.endswith(dedent(expected_repr))
 
 
 def test_standard_names() -> None:
@@ -290,7 +290,7 @@ def test_accessor_getattr_and_describe() -> None:
             "areacella",
         )
     )
-    ds_vertb = xr.decode_cf(vert, decode_coords="all")
+    ds_vertb = xr.decode_cf(vert, decode_coords="all")  # type: ignore
 
     assert ds_verta.cf.cell_measures == ds_vertb.cf.cell_measures
     assert ds_verta.o3.cf.cell_measures == ds_vertb.o3.cf.cell_measures
@@ -322,8 +322,8 @@ def test_getitem_standard_name() -> None:
     with pytest.raises(KeyError):
         ds.cf["air_temperature"]
     actual = ds.cf[["air_temperature"]]
-    expected = ds[["air", "air2"]]
-    assert_identical(actual, expected)
+    expected_ds = ds[["air", "air2"]]
+    assert_identical(actual, expected_ds)
 
     with pytest.raises(KeyError):
         ds.air.cf["air_temperature"]
@@ -337,7 +337,7 @@ def test_getitem_ancillary_variables() -> None:
     with pytest.warns(UserWarning):
         anc[["q"]].cf["q"]
 
-    with pytest.warns(None) as record:
+    with pytest.warns(Warning) as record:
         with cf_xarray.set_options(warn_on_missing_variables=False):
             anc[["q"]].cf["q"]
             assert len(record) == 0
@@ -811,7 +811,7 @@ def test_add_bounds_nd_variable() -> None:
     # 2D
     expected = (
         vertices_to_bounds(
-            np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)
+            np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)  # type: ignore
         )
         .rename("z_bounds")
         .assign_coords(**ds.coords)
@@ -876,22 +876,22 @@ def test_bounds() -> None:
     # Do not attempt to get bounds when extracting a DataArray
     # raise a warning when extracting a Dataset and bounds do not exists
     ds["time"].attrs["bounds"] = "foo"
-    with pytest.warns(None) as record:
+    with pytest.warns(Warning) as record:
         ds.cf["air"]
     assert len(record) == 0
     with pytest.warns(UserWarning, match="{'foo'} not found in object"):
         ds.cf[["air"]]
 
     # Dataset has bounds
-    expected = """\
+    expected_repr = """\
     - Bounds:   Y: ['lat_bounds']
                 lat: ['lat_bounds']
                 latitude: ['lat_bounds']
     """
-    assert dedent(expected) in ds.cf.__repr__()
+    assert dedent(expected_repr) in ds.cf.__repr__()
 
     # DataArray does not have bounds
-    expected = airds.cf["air"].cf.__repr__()
+    expected_repr = airds.cf["air"].cf.__repr__()
     actual = ds.cf["air"].cf.__repr__()
     assert actual == expected
 
@@ -944,7 +944,7 @@ def test_docstring() -> None:
     assert "present in .indexes" in airds.cf.resample.__doc__
 
     # Make sure docs are up to date
-    get_all_doc = cf_xarray.accessor._get_all.__doc__
+    get_all_doc: str = cf_xarray.accessor._get_all.__doc__  # type: ignore
     all_keys = (
         cf_xarray.accessor._AXIS_NAMES
         + cf_xarray.accessor._COORD_NAMES
@@ -1072,7 +1072,7 @@ def test_attributes() -> None:
 
     assert airds.cf.chunks == {}
 
-    expected = {
+    expected_chunks = {
         "X": (50,),
         "Y": (5, 5, 5, 5, 5),
         "T": (4,),
@@ -1080,7 +1080,8 @@ def test_attributes() -> None:
         "latitude": (5, 5, 5, 5, 5),
         "time": (4,),
     }
-    assert airds.chunk({"lat": 5}).cf.chunks == expected
+    assert airds.chunk({"lat": 5}).cf.chunks == expected_chunks
+    assert airds.chunk({"lat": 5}).cf.chunksizes == expected_chunks
 
     with pytest.raises(AttributeError):
         airds.da.cf.chunks
@@ -1088,19 +1089,18 @@ def test_attributes() -> None:
     airds2 = airds.copy(deep=False)
     airds2.lon.attrs = {}
     actual = airds2.cf.sizes
-    expected = {"lon": 50, "Y": 25, "T": 4, "latitude": 25, "time": 4}
-    assert actual == expected
+    expected_sizes = {"lon": 50, "Y": 25, "T": 4, "latitude": 25, "time": 4}
+    assert actual == expected_sizes
 
     actual = popds.cf.data_vars
-    expected = {
+    expected_data_vars = {
         "sea_water_x_velocity": popds.cf["UVEL"],
         "sea_water_potential_temperature": popds.cf["TEMP"],
     }
-    assert_dicts_identical(actual, expected)
+    assert_dicts_identical(actual, expected_data_vars)
 
     actual = multiple.cf.data_vars
-    expected = dict(multiple.data_vars)
-    assert_dicts_identical(actual, expected)
+    assert_dicts_identical(actual, dict(multiple.data_vars))
 
     # check that data_vars contains ancillary variables
     assert_identical(anc.cf.data_vars["specific_humidity"], anc.cf["specific_humidity"])
@@ -1340,7 +1340,7 @@ def test_new_standard_name_mappers() -> None:
     )
     assert_identical(forecast.cf.chunk({"realization": 1}), forecast.chunk({"M": 1}))
     assert_identical(forecast.cf.isel({"realization": 1}), forecast.isel({"M": 1}))
-    assert_identical(forecast.cf.isel(**{"realization": 1}), forecast.isel(**{"M": 1}))
+    assert_identical(forecast.cf.isel(**{"realization": 1}), forecast.isel(**{"M": 1}))  # type: ignore
     assert_identical(
         forecast.cf.groupby("forecast_reference_time.month").mean(),
         forecast.groupby("S.month").mean(),

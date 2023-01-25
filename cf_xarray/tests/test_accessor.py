@@ -317,6 +317,7 @@ def test_accessor_getattr_and_describe():
     assert ds_verta.cf.formula_terms == ds_vertb.cf.formula_terms
     assert ds_verta.o3.cf.formula_terms == ds_vertb.o3.cf.formula_terms
     assert ds_verta.cf.bounds == ds_vertb.cf.bounds
+    assert ds_verta.cf.grid_mappings == ds_vertb.cf.grid_mappings
     assert str(ds_verta.cf) == str(ds_vertb.cf)
 
 
@@ -969,16 +970,6 @@ def test_grid_mappings():
     actual = ds.cf[["temp"]]
     assert "rotated_pole" in actual.coords
 
-    # Do not attempt to get grid_mapping when extracting a DataArray
-    # raise a warning when extracting a Dataset and grid_mapping does not exist
-    ds["temp"].attrs["grid_mapping"] = "foo"
-    with pytest.warns(None) as record:
-        ds.cf["temp"]
-    assert len(record) == 0
-    with pytest.warns(UserWarning, match="{'foo'} not found in object"):
-        ds.cf[["temp"]]
-    ds["temp"].attrs["grid_mapping"] = "rotated_pole"
-
     # Dataset has grid mappings
     expected = """\
     - Grid Mappings:   air_temperature: ['rotated_pole']
@@ -986,10 +977,29 @@ def test_grid_mappings():
     """
     assert dedent(expected) in ds.cf.__repr__()
 
+    # Extraction
+    assert ds.cf["temp"].coords["rotated_pole"] == rotds.rotated_pole
+
     # DataArray
-    # propagation does not work yet
-    # actual = ds.cf["temp"].cf.__repr__()
-    # assert actual == expected
+    # propagation does not work yet properly
+    actual = ds.cf["temp"].cf.__repr__()
+    assert actual == expected
+
+
+def test_bad_grid_mapping_attribute():
+    ds = rotds.copy(deep=False)
+    ds.temp.attrs["grid_mapping"] = "foo"
+    # warning when extracting a Datarray and grid_mapping does not exist
+    with pytest.warns(UserWarning):
+        ds.cf["temp"]
+    # warning when extracting a Dataset and grid_mapping does not exist
+    with pytest.warns(UserWarning):
+        ds.cf[["temp"]]
+    # this should probably also raise a warning (like cell_measures)
+    # with pytest.warns(UserWarning):
+    #    assert ds.cf.grid_mappings == {}
+    with pytest.warns(UserWarning):
+        ds.cf.get_associated_variable_names("temp", error=False)
 
 
 def test_get_grid_mapping_name():

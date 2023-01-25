@@ -410,6 +410,9 @@ def test_rename_like() -> None:
     renamed = airds.cf["air"].cf.rename_like(other)
     assert renamed.cf.cell_measures["area"] == ["CELL_AREA"]
 
+    renamed = ds_with_tuple.cf.rename_like(airds)
+    assert renamed.identical(airds)
+
 
 @pytest.mark.parametrize("obj", objects)
 @pytest.mark.parametrize(

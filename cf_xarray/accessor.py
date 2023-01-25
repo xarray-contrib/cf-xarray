@@ -1716,7 +1716,12 @@ class CFAccessor:
         DataArray or Dataset
             with renamed variables
         """
-        skip = [skip] if isinstance(skip, Hashable) else skip or []
+        if skip is None:
+            skip_iter = []
+        elif isinstance(skip, Hashable):
+            skip_iter = [skip]
+        else:
+            skip_iter = skip
 
         ourkeys = self.keys()
         theirkeys = other.cf.keys()
@@ -1726,7 +1731,7 @@ class CFAccessor:
         for key in good_keys:
             ours = set(apply_mapper(_get_all, self._obj, key))
             theirs = set(apply_mapper(_get_all, other, key))
-            for attr in skip:
+            for attr in skip_iter:
                 ours.difference_update(getattr(self, attr).get(key, []))
                 theirs.difference_update(getattr(other.cf, attr).get(key, []))
             if ours and theirs:
@@ -1755,7 +1760,7 @@ class CFAccessor:
         # Run get_renamer_and_conflicts twice.
         # The second time add the bounds associated with variables to rename
         renamer, conflicts = get_renamer_and_conflicts(keydict)
-        if "bounds" not in skip:
+        if "bounds" not in skip_iter:
             for k, v in renamer.items():
                 ours = set(getattr(self, "bounds", {}).get(k, []))
                 theirs = set(getattr(other.cf, "bounds", {}).get(v, []))

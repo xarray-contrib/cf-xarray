@@ -71,6 +71,14 @@ Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]
 F = TypeVar("F", bound=Callable[..., Any])
 
 
+def sort_maybe_hashable(iterable: Iterable[Hashable]) -> list[Hashable]:
+    is_str = [isinstance(elem, str) for elem in iterable]
+    if all(is_str):
+        return sorted(iterable)  # type: ignore
+    else:
+        return list(iterable)
+
+
 def apply_mapper(
     mappers: Mapper | tuple[Mapper, ...],
     obj: DataArray | Dataset,
@@ -412,8 +420,8 @@ def _get_coords(obj: DataArray | Dataset, key: str) -> list[str]:
 
 def _variables(func: F) -> F:
     @functools.wraps(func)
-    def wrapper(obj: DataArray | Dataset, key: str) -> list[DataArray]:
-        return [obj[k] for k in func(obj, key)]
+    def wrapper(obj: DataArray | Dataset, key: Hashable) -> list[DataArray]:
+        return [obj[k] for k in func(obj, key)]  # type: ignore
 
     return cast(F, wrapper)
 
@@ -613,7 +621,7 @@ def _getattr(
 
 
 def _getitem(
-    accessor: CFAccessor, key: str | list[str], skip: list[str] | None = None
+    accessor: CFAccessor, key: Hashable | list[Hashable], skip: list[Hashable] | None = None
 ) -> DataArray | Dataset:
     """
     Index into obj using key. Attaches CF associated variables.
@@ -1403,7 +1411,7 @@ class CFAccessor:
         return set(varnames)
 
     @property
-    def axes(self) -> dict[str, list[str]]:
+    def axes(self) -> dict[str, list[Hashable]]:
         """
         Property that returns a dictionary mapping valid Axis standard names for ``.cf[]``
         to variable names.
@@ -1422,10 +1430,10 @@ class CFAccessor:
         """
         vardict = {key: _get_coords(self._obj, key) for key in _AXIS_NAMES}
 
-        return {k: sorted(v) for k, v in vardict.items() if v}
+        return {k: sort_maybe_hashable(v) for k, v in vardict.items() if v}
 
     @property
-    def coordinates(self) -> dict[str, list[str]]:
+    def coordinates(self) -> dict[str, list[Hashable]]:
         """
         Property that returns a dictionary mapping valid Coordinate standard names for ``.cf[]``
         to variable names.
@@ -1445,10 +1453,10 @@ class CFAccessor:
         """
         vardict = {key: _get_coords(self._obj, key) for key in _COORD_NAMES}
 
-        return {k: sorted(v) for k, v in vardict.items() if v}
+        return {k: sort_maybe_hashable(v) for k, v in vardict.items() if v}
 
     @property
-    def cell_measures(self) -> dict[str, list[str]]:
+    def cell_measures(self) -> dict[str, list[Hashable]]:
         """
         Property that returns a dictionary mapping valid cell measure standard names for ``.cf[]``
         to variable names.
@@ -1493,10 +1501,10 @@ class CFAccessor:
             key: self._drop_missing_variables(_get_all(self._obj, key)) for key in keys
         }
 
-        return {k: sorted(set(v)) for k, v in measures.items() if v}
+        return {k: sort_maybe_hashable(set(v)) for k, v in measures.items() if v}
 
     @property
-    def standard_names(self) -> dict[str, list[str]]:
+    def standard_names(self) -> dict[str, list[Hashable]]:
         """
         Returns a dictionary mapping standard names to variable names.
 
@@ -1510,16 +1518,16 @@ class CFAccessor:
         elif isinstance(self._obj, DataArray):
             variables = self._obj._coords
 
-        vardict: dict[str, list[str]] = {}
+        vardict: dict[str, list[Hashable]] = {}
         for k, v in variables.items():
             if "standard_name" in v.attrs:
                 std_name = v.attrs["standard_name"]
                 vardict[std_name] = vardict.setdefault(std_name, []) + [k]
 
-        return {k: sorted(v) for k, v in vardict.items()}
+        return {std: sort_maybe_hashable(v) for std, v in vardict.items()}
 
     @property
-    def cf_roles(self) -> dict[str, list[str]]:
+    def cf_roles(self) -> dict[str, list[Hashable]]:
         """
         Returns a dictionary mapping cf_role names to variable names.
 
@@ -1544,17 +1552,17 @@ class CFAccessor:
         elif isinstance(self._obj, DataArray):
             variables = self._obj._coords
 
-        vardict: dict[str, list[str]] = {}
+        vardict: dict[str, list[Hashable]] = {}
         for k, v in variables.items():
             if "cf_role" in v.attrs:
                 role = v.attrs["cf_role"]
                 vardict[role] = vardict.setdefault(role, []) + [k]
 
-        return {k: sorted(v) for k, v in vardict.items()}
+        return {role_: sort_maybe_hashable(v) for role_, v in vardict.items()}
 
     def get_associated_variable_names(
         self, name: Hashable, skip_bounds: bool = False, error: bool = True
-    ) -> dict[str, list[str]]:
+    ) -> dict[str, list[Hashable]]:
         """
         Returns a dict mapping
             1. "ancillary_variables"
@@ -1576,7 +1584,7 @@ class CFAccessor:
             Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds".
         """
         keys = ["ancillary_variables", "cell_measures", "coordinates", "bounds"]
-        coords: dict[str, list[str]] = {k: [] for k in keys}
+        coords: dict[str, list[Hashable]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
 
         coordinates = attrs_or_encoding.get("coordinates", None)
@@ -1983,7 +1991,7 @@ class CFAccessor:
 
 @xr.register_dataset_accessor("cf")
 class CFDatasetAccessor(CFAccessor):
-    def __getitem__(self, key: str | list[str]) -> DataArray | Dataset:
+    def __getitem__(self, key: Hashable | list[Hashable]) -> DataArray | Dataset:
         """
         Index into a Dataset making use of CF attributes.
 
@@ -2129,7 +2137,7 @@ class CFDatasetAccessor(CFAccessor):
 
         return self._obj[results[0] if len(results) == 1 else results]
 
-    def get_bounds_dim_name(self, key: str) -> str:
+    def get_bounds_dim_name(self, key: Hashable) -> Hashable:
         """
         Get bounds dim name for variable corresponding to key.
 
@@ -2492,7 +2500,7 @@ class CFDataArrayAccessor(CFAccessor):
             terms[key] = value
         return terms
 
-    def __getitem__(self, key: str | list[str]) -> DataArray:
+    def __getitem__(self, key: Hashable | list[Hashable]) -> DataArray:
         """
         Index into a DataArray making use of CF attributes.
 

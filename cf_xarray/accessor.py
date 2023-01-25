@@ -172,8 +172,8 @@ def _get_groupby_time_accessor(var: DataArray | Dataset, key: str) -> list[str]:
 
 
 def _get_custom_criteria(
-    obj: DataArray | Dataset, key: str, criteria=None
-) -> list[str]:
+    obj: DataArray | Dataset, key: Hashable, criteria: Mapping | None = None
+) -> list[Hashable]:
     """
     Translate from axis, coord, or custom name to variable name optionally
     using ``custom_criteria``
@@ -375,7 +375,7 @@ def _get_all(obj: DataArray | Dataset, key: str) -> list[str]:
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names
     """
-    all_mappers = (
+    all_mappers: tuple[Mapper] = (
         _get_custom_criteria,
         functools.partial(_get_custom_criteria, criteria=cf_role_criteria),
         _get_axis_coord,
@@ -1412,7 +1412,7 @@ class CFAccessor:
         return set(varnames)
 
     @property
-    def axes(self) -> dict[str, list[str]]:
+    def axes(self) -> dict[str, list[Hashable]]:
         """
         Property that returns a dictionary mapping valid Axis standard names for ``.cf[]``
         to variable names.
@@ -1431,10 +1431,10 @@ class CFAccessor:
         """
         vardict = {key: _get_coords(self._obj, key) for key in _AXIS_NAMES}
 
-        return {k: sorted(v) for k, v in vardict.items() if v}
+        return {k: v for k, v in vardict.items() if v}
 
     @property
-    def coordinates(self) -> dict[str, list[str]]:
+    def coordinates(self) -> dict[str, list[Hashable]]:
         """
         Property that returns a dictionary mapping valid Coordinate standard names for ``.cf[]``
         to variable names.
@@ -1454,10 +1454,10 @@ class CFAccessor:
         """
         vardict = {key: _get_coords(self._obj, key) for key in _COORD_NAMES}
 
-        return {k: sorted(v) for k, v in vardict.items() if v}
+        return {k: v for k, v in vardict.items() if v}
 
     @property
-    def cell_measures(self) -> dict[str, list[str]]:
+    def cell_measures(self) -> dict[str, list[Hashable]]:
         """
         Property that returns a dictionary mapping valid cell measure standard names for ``.cf[]``
         to variable names.
@@ -1502,7 +1502,7 @@ class CFAccessor:
             key: self._drop_missing_variables(_get_all(self._obj, key)) for key in keys
         }
 
-        return {k: sorted(set(v)) for k, v in measures.items() if v}
+        return {k: list(set(v)) for k, v in measures.items() if v}
 
     def get_standard_names(self) -> list[str]:
 
@@ -1534,7 +1534,7 @@ class CFAccessor:
                 std_name = v.attrs["standard_name"]
                 vardict[std_name] = vardict.setdefault(std_name, []) + [k]
 
-        return {k: sorted(v) for k, v in vardict.items()}
+        return {k: v for k, v in vardict.items()}
 
     @property
     def cf_roles(self) -> dict[str, list[str]]:
@@ -1568,7 +1568,7 @@ class CFAccessor:
                 role = v.attrs["cf_role"]
                 vardict[role] = vardict.setdefault(role, []) + [k]
 
-        return {k: sorted(v) for k, v in vardict.items()}
+        return {k: v for k, v in vardict.items()}
 
     def get_associated_variable_names(
         self, name: Hashable, skip_bounds: bool = False, error: bool = True
@@ -1704,6 +1704,8 @@ class CFAccessor:
         good_keys = ourkeys & theirkeys
         keydict = {}
         for key in good_keys:
+            reveal_type(good_keys)
+            reveal_type(key)
             ours = set(apply_mapper(_get_all, self._obj, key))
             theirs = set(apply_mapper(_get_all, other, key))
             for attr in skip:
@@ -2094,7 +2096,7 @@ class CFDatasetAccessor(CFAccessor):
         return results
 
     @property
-    def bounds(self) -> dict[str, list[str]]:
+    def bounds(self) -> dict[Hashable, list[Hashable]]:
         """
         Property that returns a dictionary mapping keys
         to the variable names of their bounds.

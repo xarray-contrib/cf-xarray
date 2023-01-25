@@ -876,7 +876,7 @@ def test_bounds() -> None:
     # Do not attempt to get bounds when extracting a DataArray
     # raise a warning when extracting a Dataset and bounds do not exists
     ds["time"].attrs["bounds"] = "foo"
-    with pytest.warns(None) as record:
+    with pytest.warns(None) as record:  # type: ignore
         ds.cf["air"]
     assert len(record) == 0
     with pytest.warns(UserWarning, match="{'foo'} not found in object"):

@@ -73,11 +73,9 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 
 def sort_maybe_hashable(iterable: Iterable[Hashable]) -> list[Hashable]:
-    is_str = [isinstance(elem, str) for elem in iterable]
-    if all(is_str):
-        return sorted(iterable)  # type: ignore
-    else:
-        return list(iterable)
+    only_str: list[str] = [elem for elem in iterable if isinstance(elem, str)]
+    non_str: list[Hashable] = [elem for elem in iterable if not isinstance(elem, str)]
+    return sorted(only_str) + non_str
 
 
 def apply_mapper(

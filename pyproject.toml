@@ -18,6 +18,8 @@ classifiers = [
 dependencies = [
     "xarray",
 ]
+dynamic = ["version"]
+
 [project.urls]
 homepage = "https://cf-xarray.readthedocs.io"
 documentation = "https://cf-xarray.readthedocs.io"
@@ -26,15 +28,26 @@ changelog = "https://github.com/xarray-contrib/cf-xarray/blob/main/doc/whats-new
 
 [build-system]
 requires = [
-    "setuptools>=42",
+    "xarray",
+    "setuptools>=45",
     "wheel",
-    "setuptools_scm[toml]>=3.4",
+    "setuptools_scm[toml]>=6.2",
     "setuptools_scm_git_archive",
 ]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools]
+include-package-data = false
+packages = ["cf_xarray"]
+
+[tool.setuptools.dynamic]
+version = {attr = "cf_xarray.__version__"}
+
 [tool.setuptools_scm]
 fallback_version = "999"
+write_to = "cf_xarray/_version.py"
+write_to_template= '__version__ = "{version}"'
+tag_regex= "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
 
 [tool.black]
 target-version = ["py38"]

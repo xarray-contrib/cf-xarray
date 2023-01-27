@@ -1,5 +1,5 @@
 [project]
-name = "cf-xarray"
+name = "cf_xarray"
 description = "A convenience wrapper for using CF attributes on xarray objects"
 readme = "README.rst"
 requires-python = ">=3.8"

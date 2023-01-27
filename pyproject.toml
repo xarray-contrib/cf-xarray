@@ -28,11 +28,11 @@ changelog = "https://github.com/xarray-contrib/cf-xarray/blob/main/doc/whats-new
 
 [build-system]
 requires = [
+    # xarray is need for dynamic version string
     "xarray",
     "setuptools>=45",
     "wheel",
     "setuptools_scm[toml]>=6.2",
-    "setuptools_scm_git_archive",
 ]
 build-backend = "setuptools.build_meta"
 

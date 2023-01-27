@@ -81,9 +81,9 @@ jobs:
           python -m pip install dist/cf_xarray*.whl
           python -m cf_xarray.scripts.print_versions
 
-      - name: Publish package to TestPyPI
-        uses: pypa/gh-action-pypi-publish@v1.6.4
-        with:
-          password: ${{ secrets.TESTPYPI_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
-          verbose: true
+      # - name: Publish package to TestPyPI
+      #   uses: pypa/gh-action-pypi-publish@v1.6.4
+      #   with:
+      #     password: ${{ secrets.TESTPYPI_TOKEN }}
+      #     repository_url: https://test.pypi.org/legacy/
+      #     verbose: true

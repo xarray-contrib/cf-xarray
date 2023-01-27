@@ -18,7 +18,8 @@ repos:
     rev: v6.1.1
     hooks:
         - id: rstcheck
-          additional_dependencies: [sphinx]
+          additional_dependencies: [sphinx, tomli]
+          args: ['--config', 'pyproject.toml']
 
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.16

@@ -103,13 +103,10 @@ report_level = "WARNING"
 ignore_roles = [
     "pr",
     "issue",
-    "py:meth",
-    "py:attr",
 ]
 ignore_directives = [
     "ipython",
     "autodata",
-    "csv-table",
     "autosummary",
 ]
 

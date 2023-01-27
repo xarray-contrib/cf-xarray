@@ -37,7 +37,7 @@ jobs:
       - name: Set up conda environment
         uses: mamba-org/provision-with-micromamba@v14
         with:
-          environment-file: ci/environment.yml
+          environment-file: ci/upstream-dev-env.yml
           environment-name: cf_xarray_test
           cache-env: true
           extra-specs: |

@@ -20,23 +20,55 @@ authors:
     family-names: Bourgault
     given-names: Pascal
     orcid: 'https://orcid.org/0000-0003-1192-0403'
-  - affiliation: 'National Center for Atmospheric Research, USA'
-    family-names: Kent
-    given-names: Julia
-    orcid: 'https://orcid.org/0000-0002-5611-8986'
-  - family-names: Magin
-    given-names: Justus
-  - family-names: Thielen
-    given-names: Jon
-    orcid: 'https://orcid.org/0000-0002-5479-0189'
-    affiliation: 'Iowa State University, Ames, IA, USA'
   - affiliation: Axiom Data Science
     family-names: Thyng
     given-names: Kristen
     orcid: 'https://orcid.org/0000-0002-8746-614X'
+  - family-names: Thielen
+    given-names: Jonathan
+    orcid: 'https://orcid.org/0000-0002-5479-0189'
+    affiliation: 'Iowa State University, Ames, IA, USA'
+  - family-names: Magin
+    given-names: Justus
+  - affiliation: 'National Center for Atmospheric Research, USA'
+    family-names: Kent
+    given-names: Julia
+    orcid: 'https://orcid.org/0000-0002-5611-8986'
+  - family-names: Fernandes
+    given-names: Filipe
+  - family-names: Caneill
+    given-names: Romain
+    orcid: 'https://orcid.org/0000-0001-6649-4275'
+    affiliation: Gothenburg University
+  - family-names: Mankoff
+    given-names: Ken
+    orcid: 'https://orcid.org/0000-0001-5453-2019'
+    affiliation: Goddard Institute for Space Studies
+  - family-names: Buntemeyer
+    given-names: Lars
+    orcid: 'https://orcid.org/0000-0002-0849-2404'
+    affiliation: Helmholtz-Zentrum Hereon
+  - family-names: Aoun
+    given-names: Abel
+    orcid: 'https://orcid.org/0000-0003-2289-2890'
+    affiliation: CERFACS
+  - family-names: Davis
+    given-names: Luke
+    orcid: 'https://orcid.org/0000-0003-1072-4638'
+    affiliation: Colorado State University
+  - family-names: Müller
+    given-names: Sebastian
+    affiliation: Helmholtz Centre for Environmental Research
+  - family-names: Vo
+    given-names: Tom
+    orcid: 'https://orcid.org/0000-0002-2461-0191'
+    affiliation: Lawrence Livermore National Laboratory
+  - given-names: Martin
+    family-names: Schupfner
+    orcid: 'https://orcid.org/0000-0001-8075-589X'
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.4749736
+    value: 10.5281/zenodo.7538737
     description: Zenodo DOI
 repository-code: 'https://github.com/xarray-contrib/cf-xarray'
 url: 'https://cf-xarray.readthedocs.io'

@@ -1,3 +1,81 @@
+[project]
+name = "cf-xarray"
+description = "A convenience wrapper for using CF attributes on xarray objects"
+readme = "README.rst"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+keywords = ["xarray", "metadata", "CF conventions"]
+classifiers = [
+    "Development Status :: 6 - Mature",
+    "License :: OSI Approved :: Apache License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+dependencies = [
+    "xarray",
+]
+[project.urls]
+homepage = "https://cf-xarray.readthedocs.io"
+documentation = "https://cf-xarray.readthedocs.io"
+repository = "https://github.com/xarray-contrib/cf-xarray.git"
+changelog = "https://github.com/xarray-contrib/cf-xarray/blob/main/doc/whats-new.rst"
+
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel",
+    "setuptools_scm[toml]>=3.4",
+    "setuptools_scm_git_archive",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+fallback_version = "999"
+
+[tool.black]
+target-version = ["py38"]
+
+[tool.isort]
+profile = "black"
+skip_gitignore = true
+float_to_top = false
+known_first_party = "cf_xarray"
+known_third_party = [
+    "dask",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pint",
+    "pkg_resources",
+    "pytest",
+    "setuptools",
+    "sphinx_autosummary_accessors",
+    "xarray"
+]
+
+[tool.pytest]
+python_files = "test_*.py"
+testpaths = ["cf_xarray/tests"]
+
+[tool.rstcheck]
+report_level = "WARNING"
+ignore_roles = [
+    "pr",
+    "issue",
+    "py:meth",
+    "py:attr",
+]
+ignore_directives = [
+    "ipython",
+    "autodata",
+    "csv-table",
+    "autosummary",
+]
+
 [tool.nbqa.md]
 mdformat = true
 

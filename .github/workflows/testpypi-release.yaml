@@ -5,15 +5,17 @@ on:
     branches:
       - "main"
   pull_request:
+    types: [opened, reopened, synchronize, labeled]
     branches:
       - "*"
+  workflow_dispatch:
 
 # no need for concurrency limits
 
 jobs:
   build-artifacts:
+    if: ${{ contains( github.event.pull_request.labels.*.name, 'test-build') && github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
-    if: github.repository == 'xarray-contrib/cf-xarray'
     steps:
       - uses: actions/checkout@v3
         with:

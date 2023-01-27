@@ -32,21 +32,12 @@ repos:
     rev: 1.6.0
     hooks:
         - id: nbqa-black
-        - id: nbqa-pyupgrade
-          args: [--py38-plus]
         - id: nbqa-ruff
         - id: nbqa
           entry: nbqa mdformat
           name: nbqa-mdformat
           alias: nbqa-mdformat
           additional_dependencies: [mdformat==0.7.14]
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
-    hooks:
-     - id: pyupgrade
-       args:
-         - "--py38-plus"
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0

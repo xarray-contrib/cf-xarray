@@ -192,13 +192,14 @@ def points_to_cf(pts: xr.DataArray | Sequence):
     if isinstance(pts, xr.DataArray):
         dim = pts.dims[0]
         coord = pts[dim] if dim in pts.coords else None
-        pts = pts.values
+        pts_ = pts.values.tolist()
     else:
         dim = "features"
         coord = None
+        pts_ = pts
 
     x, y, node_count, crdX, crdY = [], [], [], [], []
-    for pt in pts:
+    for pt in pts_:
         if isinstance(pt, MultiPoint):
             xy = np.concatenate([p.coords for p in pt.geoms])
         else:

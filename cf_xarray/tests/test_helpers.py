@@ -8,10 +8,10 @@ from ..datasets import airds, mollwds, rotds
 try:
     from dask.array import Array as DaskArray
 except ImportError:
-    DaskArray = None
+    DaskArray = None  # type: ignore
 
 
-def test_bounds_to_vertices():
+def test_bounds_to_vertices() -> None:
     # 1D case
     ds = airds.cf.add_bounds(["lon", "lat", "time"])
     lat_c = cfxr.bounds_to_vertices(ds.lat_bounds, bounds_dim="bounds")
@@ -52,7 +52,7 @@ def test_bounds_to_vertices():
         assert isinstance(lon_c.data, DaskArray)
 
 
-def test_vertices_to_bounds():
+def test_vertices_to_bounds() -> None:
     # 1D case
     ds = airds.cf.add_bounds(["lon", "lat", "time"])
     lat_c = cfxr.bounds_to_vertices(ds.lat_bounds, bounds_dim="bounds")

@@ -38,7 +38,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 include-package-data = false
-packages = ["cf_xarray"]
+packages = ["cf_xarray", "cf_xarray.scripts"]
 
 [tool.setuptools.dynamic]
 version = {attr = "cf_xarray.__version__"}

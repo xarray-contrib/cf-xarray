@@ -30,11 +30,11 @@ jobs:
           python -m pip install build twine
           python -m pip install tomli tomli_w
 
-      - name: Disable local versions
-        run: |
-          python .github/workflows/configure-testpypi-version.py pyproject.toml
-          git update-index --assume-unchanged pyproject.toml
-          cat pyproject.toml
+      # - name: Disable local versions
+      #   run: |
+      #     python .github/workflows/configure-testpypi-version.py pyproject.toml
+      #     git update-index --assume-unchanged pyproject.toml
+      #     cat pyproject.toml
 
       - name: Build tarball and wheels
         run: |

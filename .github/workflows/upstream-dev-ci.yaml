@@ -39,9 +39,9 @@ jobs:
         with:
           environment-file: ci/upstream-dev-env.yml
           environment-name: cf_xarray_test
-          cache-env: true
           extra-specs: |
             python="${{ matrix.python-version }}"
+            pytest-reportlog
       - name: Install cf_xarray
         run: |
           python -m pip install --no-deps -e .

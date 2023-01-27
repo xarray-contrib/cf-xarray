@@ -16,19 +16,77 @@
             "orcid": "0000-0003-1192-0403"
         },
         {
+            "name": "Kristen Thyng",
+            "affiliation": "Axiom Data Science",
+            "orcid": "0000-0002-8746-614X"
+        },
+        {
+            "name": "Justus Magin",
+            "orcid": "0000-0002-4254-8002"
+        },
+        {
+            "name": "Joe Hamman",
+            "affiliation": "CarbonPlan",
+            "orcid": "0000-0001-7479-8439"
+        },
+        {
+            "name": "Lars Buntemeyer",
+            "affiliation": "Helmholtz-Zentrum Hereon",
+            "orcid": "0000-0002-0849-2404"
+        },
+        {
+            "name": "Sebastian Müller"
+        },
+        {
+            "name": "Filipe Fernandes"
+        },
+        {
+            "name": "Ken Mankoff",
+            "affiliation": "Goddard Institute for Space Studies",
+            "orcid": "0000-0001-5453-2019"
+        },
+        {
+            "name": "Luke Davis",
+            "orcid": "0000-0003-1072-4638"
+        },
+        {
+            "name": "Jonathan Thielen",
+            "orcid": "0000-0002-5479-0189"
+        },
+        {
+            "name": "Romain Caneill",
+            "affiliation": "Gothenburg University",
+            "orcid": "0000-0001-6649-4275"
+        },
+        {
             "name": "Julia Kent",
             "affiliation": "National Center for Atmospheric Research",
             "orcid": "0000-0002-5611-8986"
         },
         {
-            "name": "Justus Magin"
+            "name": "Tom Vo",
+            "affiliation": "Lawrence Livermore National Laboratory",
+            "orcid": "0000-0002-2461-0191"
         },
         {
-            "name": "Kristen Thyng",
-            "affiliation": "Axiom Data Science",
-            "orcid": "0000-0002-8746-614X"
+            "name": "Martin Schupfner",
+            "orcid": "0000-0001-8075-589X"
+        },
+        {
+            "name": "Mathias Hauser",
+            "orcid": "0000-0002-0057-4878"
+        },
+        {
+            "name": "Abel Aoun",
+            "affiliation": "CERFACS",
+            "orcid": "0000-0003-2289-2890"
         }
-    ],
+         {
+            "name": "Shubhendra Singh Chauhan",
+            "affiliation": "Indian Institute of Vegetable Research",
+            "orcid": "0000-0001-8475-5571"
+        },
+   ],
     "upload_type": "software",
     "keywords": []
 }

@@ -10,7 +10,8 @@
         "name": "Mattia Almansi",
         "blog": "https://malmans2.github.io",
         "orcid": "0000-0001-6849-3647",
-        "affiliation": "National Oceanography Centre"
+        "affiliation": "National Oceanography Centre",
+        "bio": "Scientific Software Engineer @bopen\r\n\r\nFormerly: Physical Oceanographer specialized in high performance computing at JHU and NOC"
     },
     "aulemahal": {
         "name": "Pascal Bourgault",
@@ -19,7 +20,8 @@
         "affiliation": "Ouranos Inc"
     },
     "keewis": {
-        "name": "Justus Magin"
+        "name": "Justus Magin",
+        "orcid": "0000-0002-4254-8002"
     },
     "jukent": {
         "name": "Julia Kent",
@@ -43,6 +45,70 @@
     "withshubh": {
         "name": "Shubhendra Singh Chauhan",
         "bio": "Developer Advocate at @deepsourcelabs  🥑 \r\n👨🏻‍💻 work profile: @shubhendra-deepsource",
-        "blog": "camelcaseguy.com"
+        "blog": "camelcaseguy.com",
+        "orcid": "0000-0001-8475-5571",
+        "affiliation": "Indian Institute of Vegetable Research"
+    },
+    "ocefpaf": {
+        "name": "Filipe Fernandes",
+        "bio": "Filipe Fernandes is a Physical oceanographer by training, turned research software engineer, and a software packager hobbyist.",
+        "blog": "http://ocefpaf.github.io/python4oceanographers"
+    },
+    "rcaneill": {
+        "name": "Romain Caneill",
+        "bio": "PhD student in Physical Oceanography. Doing numerical modelling using NEMO, and obs analyzes. ",
+        "blog": "https://fediscience.org/@rcaneill",
+        "orcid": "0000-0001-6649-4275",
+        "affiliation": "Gothenburg University"
+    },
+    "sol1105": {
+        "name": "Martin Schupfner",
+        "orcid": "0000-0001-8075-589X"
+    },
+    "mathause": {
+        "name": "Mathias Hauser",
+        "orcid": "0000-0002-0057-4878"
+    },
+    "bzah": {
+        "name": "Abel Aoun",
+        "bio": "Software engineer for climate and earth observation data processing.",
+        "orcid": "0000-0003-2289-2890",
+        "affiliation": "CERFACS"
+    },
+    "jthielen": {
+        "name": "Jonathan Thielen",
+        "bio": "Meteorology graduate student @ CSU. I mostly do research with MCSs and machine learning. A bit of a Python fanatic.",
+        "blog": "thielen.science",
+        "orcid": "0000-0002-5479-0189"
+    },
+    "mankoff": {
+        "name": "Ken Mankoff",
+        "bio": "Research scientist studying ice sheets and polar oceans as indicators of climate change. Advocate of open reproducible science.",
+        "blog": "http://kenmankoff.com",
+        "orcid": "0000-0001-5453-2019",
+        "affiliation": "Goddard Institute for Space Studies"
+    },
+    "larsbuntemeyer": {
+        "name": "Lars Buntemeyer",
+        "blog": "larsbuntemeyer.github.io",
+        "orcid": "0000-0002-0849-2404",
+        "affiliation": "Helmholtz-Zentrum Hereon"
+    },
+    "lukelbd": {
+        "name": "Luke Davis",
+        "bio": "PhD candidate in climate science at the Department of Atmospheric Science, Colorado State University.",
+        "orcid": "0000-0003-1072-4638"
+    },
+    "MuellerSeb": {
+        "name": "Sebastian Müller",
+        "bio": "I'm a Model-Keeper at the Department for Computational Hydrosystems within the Helmholtz Centre for Environmental Research (UFZ) in Leipzig.",
+        "blog": "https://geostat-framework.org"
+    },
+    "tomvothecoder": {
+        "name": "Tom Vo",
+        "bio": "Climate Science | Software Engineer | Python | Full Stack (React, Django, TypeScript) | DevOps",
+        "blog": "tomvo.me/career",
+        "orcid": "0000-0002-2461-0191",
+        "affiliation": "Lawrence Livermore National Laboratory"
     }
 }

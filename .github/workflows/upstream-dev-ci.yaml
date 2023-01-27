@@ -49,14 +49,6 @@ jobs:
         run: |
           pytest -rf -n auto --cov=./ --cov-report=xml \
             --report-log output-${{ matrix.python-version }}-log.jsonl
-      - name: Upload code coverage to Codecov
-        uses: codecov/codecov-action@v3.1.1
-        with:
-          file: ./coverage.xml
-          flags: unittests
-          env_vars: RUNNER_OS,PYTHON_VERSION
-          name: codecov-umbrella
-          fail_ci_if_error: false
       - name: Generate and publish the report
         if: |
           failure()

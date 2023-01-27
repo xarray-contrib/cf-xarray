@@ -2646,6 +2646,20 @@ class CFDataArrayAccessor(CFAccessor):
             terms[key] = value
         return terms
 
+    @property
+    def grid_mapping(self) -> DataArray | None:
+        """ """
+        da = self._obj
+
+        if "grid_mapping" not in ChainMap(da.attrs, da.encoding):
+            return None
+        grid_mapping = ChainMap(da.attrs, da.encoding)["grid_mapping"]
+
+        if grid_mapping in da.coords:
+            return da.coords[grid_mapping]
+        else:
+            raise KeyError(f"No grid_mapping named {grid_mapping!r} in coordinates.")
+
     def __getitem__(self, key: str | list[str]) -> DataArray:
         """
         Index into a DataArray making use of CF attributes.

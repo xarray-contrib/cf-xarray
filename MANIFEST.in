@@ -1,8 +1,10 @@
 graft cf_xarray/data
 exclude cf_xarray/_version.py
 
+graft cf_xarray/scripts
 prune ci
 prune doc
+prune cf_xarray/tests
 prune *.egg-info
 prune .binder/
 prune .github/

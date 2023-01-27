@@ -25,7 +25,7 @@ v0.7.5 (Nov 15, 2022)
   By `Pascal Bourgault`_.
 - Improve detection of bounds order by rellaxing check a bit (:pr:`361`).
   By `Lars Buntemeyer`_.
-- Performance improvements. (:pr:`358`). By `Luke Davis`
+- Performance improvements. (:pr:`358`). By `Luke Davis`_
 - Fix coordinate/axis detection (:pr:`359`). By `Martin Schupfner`_
 
 v0.7.4 (July 14, 2022)

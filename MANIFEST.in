@@ -3,7 +3,6 @@ exclude cf_xarray/_version.py
 
 prune ci
 prune doc
-prune cf_xarray/scripts
 prune cf_xarray/tests
 prune *.egg-info
 prune .binder/

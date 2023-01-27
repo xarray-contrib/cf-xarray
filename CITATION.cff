@@ -67,6 +67,10 @@ authors:
   - given-names: Martin
     family-names: Schupfner
     orcid: 'https://orcid.org/0000-0001-8075-589X'
+  - given-names: Hauser
+    family-names: Matthias
+    orcid: 'https://orcid.org/0000-0002-0057-4878'
+    affiliation: Eidgenössische Technische Hochschule Zürich
 identifiers:
   - type: doi
     value: 10.5281/zenodo.7538737

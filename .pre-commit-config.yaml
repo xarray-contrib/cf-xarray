@@ -4,7 +4,7 @@ ci:
 repos:
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.0.235'
+    rev: 'v0.0.237'
     hooks:
       - id: ruff
         args: ["--fix"]
@@ -30,7 +30,7 @@ repos:
         - mdformat-myst
 
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.6.0
+    rev: 1.6.1
     hooks:
         - id: nbqa-black
         - id: nbqa-ruff
@@ -56,7 +56,7 @@ repos:
         files: .+\.py$
 
   - repo: https://github.com/citation-file-format/cff-converter-python
-    rev: ebf0b5e44d67f8beaa1cd13a0d0393ea04c6058d
+    rev: "44e8fc9"
     hooks:
     - id: validate-cff
 

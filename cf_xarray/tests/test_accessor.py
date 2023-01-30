@@ -1584,6 +1584,14 @@ def test_custom_criteria() -> None:
         ds["temperature"] = ("dim", np.arange(10))
         assert_identical(ds.cf["temp"], ds["temperature"])
 
+    # test that having a global regex expression flag later in the expression will work if
+    # regex is found
+    vocab = {"temp": {"name": "tem|(?i)temp"}}
+    ds = xr.Dataset()
+    ds["Tempblah"] = [0, 1, 2]
+    with cf_xarray.set_options(custom_criteria=vocab):
+        assert_identical(ds.cf["temp"], ds["Tempblah"])
+
 
 def test_cf_standard_name_table_version() -> None:
 

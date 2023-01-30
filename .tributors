@@ -99,6 +99,8 @@
     },
     "MuellerSeb": {
         "name": "Sebastian Müller",
+        "orcid": "0000-0001-9060-4008",
+        "affiliation": "Helmholtz Centre for Environmental Research - UFZ",
         "bio": "I'm a Model-Keeper at the Department for Computational Hydrosystems within the Helmholtz Centre for Environmental Research (UFZ) in Leipzig.",
         "blog": "https://geostat-framework.org"
     },

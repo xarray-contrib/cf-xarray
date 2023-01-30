@@ -54,3 +54,8 @@ repos:
     hooks:
       - id: blackdoc
         files: .+\.py$
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: main
+    hooks:
+      - id: validate-pyproject

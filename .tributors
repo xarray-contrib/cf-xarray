@@ -21,7 +21,8 @@
     },
     "keewis": {
         "name": "Justus Magin",
-        "orcid": "0000-0002-4254-8002"
+        "orcid": "0000-0002-4254-8002",
+        "affiliation": "IFREMER"
     },
     "jukent": {
         "name": "Julia Kent",
@@ -45,12 +46,14 @@
     "withshubh": {
         "name": "Shubhendra Singh Chauhan",
         "bio": "Developer Advocate at @deepsourcelabs  🥑 \r\n👨🏻‍💻 work profile: @shubhendra-deepsource",
-        "blog": "camelcaseguy.com",
+        "blog": "camelcaseguy.com"
     },
     "ocefpaf": {
         "name": "Filipe Fernandes",
         "bio": "Filipe Fernandes is a Physical oceanographer by training, turned research software engineer, and a software packager hobbyist.",
-        "blog": "http://ocefpaf.github.io/python4oceanographers"
+        "blog": "http://ocefpaf.github.io/python4oceanographers",
+        "orcid": "0000-0003-4165-2913",
+        "affiliation": "IOOS"
     },
     "rcaneill": {
         "name": "Romain Caneill",
@@ -61,11 +64,13 @@
     },
     "sol1105": {
         "name": "Martin Schupfner",
-        "orcid": "0000-0001-8075-589X"
+        "orcid": "0000-0001-8075-589X",
+        "affiliation": "DKRZ (German Climate Computing Center)"
     },
     "mathause": {
         "name": "Mathias Hauser",
-        "orcid": "0000-0002-0057-4878"
+        "orcid": "0000-0002-0057-4878",
+        "affiliation": "ETH Zurich"
     },
     "bzah": {
         "name": "Abel Aoun",
@@ -110,5 +115,10 @@
         "blog": "tomvo.me/career",
         "orcid": "0000-0002-2461-0191",
         "affiliation": "Lawrence Livermore National Laboratory"
+    },
+    "aidanheerdegen": {
+        "name": "Aidan Heerdegen",
+        "bio": "Model Release Team Lead for the Australian Earth-System Simulator National Research Infrastructure (ACCESS-NRI)",
+        "blog": "https://www.access-nri.org.au"
     }
 }

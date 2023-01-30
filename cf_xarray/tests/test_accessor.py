@@ -83,8 +83,7 @@ def test_repr() -> None:
 
     - Standard Names:   air_temperature: ['air']
 
-    - Bounds:   n/a
-    """
+    - Bounds:   n/a"""
     assert actual == dedent(expected)
 
     # DataArray (Coordinates section same as Dataset)
@@ -109,8 +108,7 @@ def test_repr() -> None:
                       * longitude: ['lon']
                       * time: ['time']
 
-    - Bounds:   n/a
-    """
+    - Bounds:   n/a"""
     assert actual == dedent(expected)
 
     # Empty Standard Names
@@ -137,12 +135,11 @@ def test_repr() -> None:
     - Standard Names:   sea_water_potential_temperature: ['TEMP']
                         sea_water_x_velocity: ['UVEL']
 
-    - Bounds:   n/a
-    """
+    - Bounds:   n/a"""
     assert actual == dedent(expected)
 
     # Flag DataArray
-    assert "CF Flag variable" in repr(basin.cf)
+    assert "Flag Variable" in repr(basin.cf)
 
     # "Temp" dataset
     actual = airds["air"]._to_temp_dataset().cf.__repr__()
@@ -172,13 +169,13 @@ def test_repr() -> None:
 
     - Standard Names:   air_temperature: [<this-array>]
 
-    - Bounds:   n/a
-    """
+    - Bounds:   n/a"""
     assert actual == dedent(expected)
 
     # CF roles
     actual = dsg.cf.__repr__()
-    expected = """
+    expected = """\
+    Discrete Sampling Geometry:
     - CF Roles: * profile_id: ['profile']
                 * trajectory_id: ['trajectory']
 
@@ -198,8 +195,7 @@ def test_repr() -> None:
 
     - Standard Names:   n/a
 
-    - Bounds:   n/a
-    """
+    - Bounds:   n/a"""
     assert actual == dedent(expected)
 
 

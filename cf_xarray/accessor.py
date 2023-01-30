@@ -72,6 +72,23 @@ Mapper = Callable[[Union[DataArray, Dataset], Hashable], List[Hashable]]
 F = TypeVar("F", bound=Callable[..., Any])
 
 
+def _maybe_panel(textgen, title, rich):
+    text = "".join(textgen)
+    if rich:
+        from rich.panel import Panel
+
+        return Panel(
+            text.rstrip(),
+            expand=True,
+            title_align="left",
+            title=f"[bold]{title}[/bold]",
+            highlight=True,
+            width=120,
+        )
+    else:
+        return title + ":\n" + text
+
+
 def sort_maybe_hashable(iterable: Iterable[Hashable]) -> list[Hashable]:
     only_str: list[str] = [elem for elem in iterable if isinstance(elem, str)]
     non_str: list[Hashable] = [elem for elem in iterable if not isinstance(elem, str)]
@@ -555,6 +572,11 @@ def _getattr(
         An extra decorator, if necessary. This is used by _CFPlotMethods to set default
         kwargs based on CF attributes.
     """
+
+    # UGH. this seems unavoidable because I'm overriding getattr
+    if attr in ["_repr_html_", "__rich__", "__rich_console__"]:
+        raise AttributeError
+
     try:
         attribute: Mapping | Callable = getattr(obj, attr)
     except AttributeError:
@@ -622,7 +644,9 @@ def _getattr(
 
         return result
 
-    wrapper.__doc__ = _build_docstring(func) + wrapper.__doc__
+    # handle rich
+    if wrapper.__doc__:
+        wrapper.__doc__ = _build_docstring(func) + wrapper.__doc__
 
     return wrapper
 
@@ -1337,22 +1361,38 @@ class CFAccessor:
         print(repr(self))
 
     def __repr__(self):
+        return ("".join(self._generate_repr(rich=False))).rstrip()
 
+    def __rich__(self):
+        from rich.console import Group
+
+        return Group(*self._generate_repr(rich=True))
+
+    def _generate_repr(self, rich=False):
         coords = self._obj.coords
         dims = self._obj.dims
 
-        def make_text_section(subtitle, attr, valid_values=None, default_keys=None):
+        def _format_varname(name):
+            if rich:
+                return f"[green]{name}[/green]"
+            else:
+                return name
 
+        def _format_subtitle(name):
+            if rich:
+                return f"[grey62 bold]{name}[/grey62 bold]"
+            else:
+                return name
+
+        def make_text_section(subtitle, attr, valid_values=None, default_keys=None):
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
                 try:
                     vardict = getattr(self, attr, {})
                 except ValueError:
                     vardict = {}
-
             star = " * "
             tab = len(star) * " "
-            subtitle = f"- {subtitle}:"
 
             # Sort keys if there aren't extra keys,
             # preserve default keys order otherwise.
@@ -1371,7 +1411,7 @@ class CFAccessor:
 
             # Star for keys with dims only, tab otherwise
             rows = [
-                f"{star if set(value) <= set(dims) else tab}{key}: {sorted(value)}"
+                f"{star if set(value) <= set(dims) else tab}{key}: {_format_varname(sorted(value))}"
                 for key, value in vardict.items()
             ]
 
@@ -1383,42 +1423,70 @@ class CFAccessor:
             elif not rows:
                 rows = [tab + "n/a"]
 
+            return _print_rows(subtitle, rows)
+
+        def _print_rows(subtitle, rows):
+            subtitle = f"- {subtitle}:" if not rich else f"    {subtitle}:"
+
             # Add subtitle to the first row, align other rows
             rows = [
-                "\n" + subtitle + row if i == 0 else len(subtitle) * " " + row
+                _format_subtitle(subtitle) + row
+                if i == 0
+                else len(subtitle) * " " + row
                 for i, row in enumerate(rows)
             ]
 
-            return "\n".join(rows) + "\n"
+            return "\n".join(rows) + "\n\n"
 
-        if isinstance(self._obj, DataArray) and self._obj.cf.is_flag_variable:
+        def _format_flags():
             flag_dict = create_flag_dict(self._obj)
-            text = f"CF Flag variable with mapping:\n\t{flag_dict!r}\n\n"
-        else:
-            text = ""
+            rows = [
+                f"   [green]{v}[/green]: [dodger_blue1]{k}[/dodger_blue1]"
+                if rich
+                else f"{k}: {v}"
+                for k, v in flag_dict.items()
+            ]
+            return _print_rows("Flag Meanings", rows)
 
-        if self.cf_roles:
-            text += make_text_section("CF Roles", "cf_roles")
-            text += "\n"
+        def _format_roles():
+            yield make_text_section("CF Roles", "cf_roles")
 
-        text += "Coordinates:"
-        text += make_text_section("CF Axes", "axes", coords, _AXIS_NAMES)
-        text += make_text_section("CF Coordinates", "coordinates", coords, _COORD_NAMES)
-        text += make_text_section(
-            "Cell Measures", "cell_measures", coords, _CELL_MEASURES
-        )
-        text += make_text_section("Standard Names", "standard_names", coords)
-        text += make_text_section("Bounds", "bounds", coords)
-        if isinstance(self._obj, Dataset):
+        def _format_coordinates():
+            yield make_text_section("CF Axes", "axes", coords, _AXIS_NAMES)
+            yield make_text_section(
+                "CF Coordinates", "coordinates", coords, _COORD_NAMES
+            )
+            yield make_text_section(
+                "Cell Measures", "cell_measures", coords, _CELL_MEASURES
+            )
+            yield make_text_section("Standard Names", "standard_names", coords)
+            yield make_text_section("Bounds", "bounds", coords)
+
+        def _format_data_vars():
             data_vars = self._obj.data_vars
-            text += "\nData Variables:"
-            text += make_text_section(
+            yield make_text_section(
                 "Cell Measures", "cell_measures", data_vars, _CELL_MEASURES
             )
-            text += make_text_section("Standard Names", "standard_names", data_vars)
-            text += make_text_section("Bounds", "bounds", data_vars)
+            yield make_text_section("Standard Names", "standard_names", data_vars)
+            yield make_text_section("Bounds", "bounds", data_vars)
 
-        return text
+        if isinstance(self._obj, DataArray) and self._obj.cf.is_flag_variable:
+            yield _maybe_panel(
+                "".join(_format_flags()), title="Flag Variable", rich=rich
+            )
+
+        if self.cf_roles:
+            yield _maybe_panel(
+                "".join(_format_roles()), title="Discrete Sampling Geometry", rich=rich
+            )
+
+        yield _maybe_panel(
+            "".join(_format_coordinates()), title="Coordinates", rich=rich
+        )
+        if isinstance(self._obj, Dataset):
+            yield _maybe_panel(_format_data_vars(), title="Data Variables", rich=rich)
+
+        return
 
     def keys(self) -> set[Hashable]:
         """

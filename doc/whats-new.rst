@@ -3,10 +3,14 @@
 What's New
 ----------
 
+v0.7.8 (unreleased)
+===================
+
+- Change to ``accessor.py`` to continue supporting global flags in regular expressions that are not at start of pattern. (:pr:`408`). By `Kristen Thyng`_
+
 v0.7.7 (Jan 14, 2023)
 =====================
 
-- Change to ``accessor.py`` to continue supporting global flags in regular expressions that are not at start of pattern.
 - Fix to ``geometry.points_to_cf`` to support shapely 2.0. (:pr:`386`).
   By `Pascal Bourgault`_
 

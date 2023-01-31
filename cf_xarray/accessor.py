@@ -1486,8 +1486,6 @@ class CFAccessor:
         if isinstance(self._obj, Dataset):
             yield _maybe_panel(_format_data_vars(), title="Data Variables", rich=rich)
 
-        return
-
     def keys(self) -> set[Hashable]:
         """
         Utility function that returns valid keys for .cf[].

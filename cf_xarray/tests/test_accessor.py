@@ -259,8 +259,7 @@ def test_cell_measures() -> None:
     - Standard Names:   air_temperature: ['air']
                         foo_std_name: ['foo']
 
-    - Bounds:   n/a
-    """
+    - Bounds:   n/a"""
     assert actual.endswith(dedent(expected_repr))
 
 

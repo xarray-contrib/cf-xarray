@@ -3,11 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 import itertools
-
-try:
-    import regex as re
-except ImportError:
-    import re
+import re
 import warnings
 from collections import ChainMap
 from datetime import datetime
@@ -211,6 +207,11 @@ def _get_custom_criteria(
     List[str], Variable name(s) in parent xarray object that matches axis, coordinate, or custom `key`
     """
 
+    try:
+        from regex import match as regex_match
+    except ImportError:
+        from re import match as regex_match  # type: ignore
+
     if isinstance(obj, DataArray):
         obj = obj._to_temp_dataset()
 
@@ -227,13 +228,13 @@ def _get_custom_criteria(
     if key in criteria_map:
         for criterion, patterns in criteria_map[key].items():
             for var in obj.variables:
-                if re.match(patterns, obj[var].attrs.get(criterion, "")):
+                if regex_match(patterns, obj[var].attrs.get(criterion, "")):
                     results.update((var,))
                 # also check name specifically since not in attributes
                 elif (
                     criterion == "name"
                     and isinstance(var, str)
-                    and re.match(patterns, var)
+                    and regex_match(patterns, var)
                 ):
                     results.update((var,))
     return list(results)

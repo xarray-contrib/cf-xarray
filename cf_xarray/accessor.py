@@ -5,7 +5,7 @@ import inspect
 import itertools
 
 try:
-    import regex
+    import regex as re
 except ImportError:
     import re
 import warnings

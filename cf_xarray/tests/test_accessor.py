@@ -1701,12 +1701,13 @@ def test_flag_errors() -> None:
     with pytest.raises(ValueError):
         ds.cf.isin(["atlantic_ocean"])
 
-    basin.attrs.pop("flag_values")
+    basin_ = basin.copy(deep=True)
+    basin_.attrs.pop("flag_values")
     with pytest.raises(ValueError):
-        basin.cf.isin(["pacific_ocean"])
+        basin_.cf.isin(["pacific_ocean"])
 
     with pytest.raises(ValueError):
-        basin.cf == "pacific_ocean"
+        basin_.cf == "pacific_ocean"
 
 
 def test_missing_variables() -> None:

@@ -114,5 +114,6 @@ ds = xr.Dataset()
 ds["sea_ice_velocity_x"] = [0,1,2]
 
 with cfxr.set_options(custom_criteria=vocab):
-    ds.cf["sea_ice_u"]
+    seaiceu = ds.cf["sea_ice_u"]
+seaiceu
 ```

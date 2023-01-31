@@ -5,10 +5,9 @@ import inspect
 import itertools
 
 try:
-    from regex import match
+    import regex
 except ImportError:
-    from re import match
-import re
+    import re
 import warnings
 from collections import ChainMap
 from datetime import datetime
@@ -228,13 +227,13 @@ def _get_custom_criteria(
     if key in criteria_map:
         for criterion, patterns in criteria_map[key].items():
             for var in obj.variables:
-                if match(patterns, obj[var].attrs.get(criterion, "")):
+                if re.match(patterns, obj[var].attrs.get(criterion, "")):
                     results.update((var,))
                 # also check name specifically since not in attributes
                 elif (
                     criterion == "name"
                     and isinstance(var, str)
-                    and match(patterns, var)
+                    and re.match(patterns, var)
                 ):
                     results.update((var,))
     return list(results)

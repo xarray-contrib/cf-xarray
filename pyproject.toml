@@ -27,7 +27,7 @@ all = ["matplotlib", "pint", "shapely", "regex"]
 homepage = "https://cf-xarray.readthedocs.io"
 documentation = "https://cf-xarray.readthedocs.io"
 repository = "https://github.com/xarray-contrib/cf-xarray.git"
-changelog = "https://github.com/xarray-contrib/cf-xarray/blob/main/doc/whats-new.rst"
+changelog = "https://cf-xarray.readthedocs.io/en/latest/whats-new.html"
 
 [build-system]
 requires = [

@@ -1786,7 +1786,7 @@ def test_curvefit() -> None:
 def test_rich_repr(obj, contains):
     from rich.console import Console
 
-    console = Console()
+    console = Console(force_terminal=True)
     console.begin_capture()
     console.print(obj.cf)
     printed = console.end_capture()

@@ -3,6 +3,11 @@
 What's New
 ----------
 
+v0.7.8 (unreleased)
+===================
+
+- Optionally use the `regex` package to continue supporting global flags in regular expressions that are not at start of pattern. (:pr:`408`). By `Kristen Thyng`_
+
 v0.7.7 (Jan 14, 2023)
 =====================
 

@@ -34,7 +34,13 @@ from ..datasets import (
     rotds,
     vert,
 )
-from . import raise_if_dask_computes, requires_cftime, requires_pint, requires_scipy
+from . import (
+    raise_if_dask_computes,
+    requires_cftime,
+    requires_pint,
+    requires_regex,
+    requires_scipy,
+)
 
 mpl.use("Agg")
 
@@ -1584,6 +1590,9 @@ def test_custom_criteria() -> None:
         ds["temperature"] = ("dim", np.arange(10))
         assert_identical(ds.cf["temp"], ds["temperature"])
 
+
+@requires_regex
+def test_regex_match():
     # test that having a global regex expression flag later in the expression will work if
     # regex is found
     vocab = {"temp": {"name": "tem|(?i)temp"}}

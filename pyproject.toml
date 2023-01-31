@@ -40,8 +40,10 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-include-package-data = false
 packages = ["cf_xarray", "cf_xarray.data", "cf_xarray.scripts"]
+
+[tool.setuptools.exclude-package-data]
+cf_xarray = ["tests/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "cf_xarray.__version__"}

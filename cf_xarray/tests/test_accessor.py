@@ -34,7 +34,13 @@ from ..datasets import (
     rotds,
     vert,
 )
-from . import raise_if_dask_computes, requires_cftime, requires_pint, requires_scipy
+from . import (
+    raise_if_dask_computes,
+    requires_cftime,
+    requires_pint,
+    requires_rich,
+    requires_scipy,
+)
 
 mpl.use("Agg")
 
@@ -1765,3 +1771,24 @@ def test_curvefit() -> None:
         coords=["latitude", "longitude"], func=plane
     )
     assert_identical(expected, actual)
+
+
+@requires_rich
+@pytest.mark.parametrize(
+    "obj, contains",
+    (
+        [airds.air, "Coordinates"],
+        [popds, "Data Variables"],
+        [basin, "Flag Variable"],
+        [dsg, "Discrete Sampling Geometry"],
+    ),
+)
+def test_rich_repr(obj, contains):
+    from rich.console import Console
+
+    console = Console()
+    console.begin_capture()
+    console.print(obj.cf)
+    printed = console.end_capture()
+
+    assert contains in printed

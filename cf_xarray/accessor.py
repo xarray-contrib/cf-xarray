@@ -1471,18 +1471,14 @@ class CFAccessor:
             yield make_text_section("Bounds", "bounds", data_vars)
 
         if isinstance(self._obj, DataArray) and self._obj.cf.is_flag_variable:
-            yield _maybe_panel(
-                "".join(_format_flags()), title="Flag Variable", rich=rich
-            )
+            yield _maybe_panel(_format_flags(), title="Flag Variable", rich=rich)
 
         if self.cf_roles:
             yield _maybe_panel(
-                "".join(_format_roles()), title="Discrete Sampling Geometry", rich=rich
+                _format_roles(), title="Discrete Sampling Geometry", rich=rich
             )
 
-        yield _maybe_panel(
-            "".join(_format_coordinates()), title="Coordinates", rich=rich
-        )
+        yield _maybe_panel(_format_coordinates(), title="Coordinates", rich=rich)
         if isinstance(self._obj, Dataset):
             yield _maybe_panel(_format_data_vars(), title="Data Variables", rich=rich)
 

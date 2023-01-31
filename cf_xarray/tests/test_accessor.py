@@ -38,6 +38,7 @@ from . import (
     raise_if_dask_computes,
     requires_cftime,
     requires_pint,
+    requires_regex,
     requires_rich,
     requires_scipy,
 )
@@ -1584,6 +1585,17 @@ def test_custom_criteria() -> None:
         ds = xr.Dataset()
         ds["temperature"] = ("dim", np.arange(10))
         assert_identical(ds.cf["temp"], ds["temperature"])
+
+
+@requires_regex
+def test_regex_match():
+    # test that having a global regex expression flag later in the expression will work if
+    # regex is found
+    vocab = {"temp": {"name": "tem|(?i)temp"}}
+    ds = xr.Dataset()
+    ds["Tempblah"] = [0, 1, 2]
+    with cf_xarray.set_options(custom_criteria=vocab):
+        assert_identical(ds.cf["temp"], ds["Tempblah"])
 
 
 def test_cf_standard_name_table_version() -> None:

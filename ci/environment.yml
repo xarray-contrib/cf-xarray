@@ -13,6 +13,7 @@ dependencies:
   - pandas
   - pint
   - pooch
+  - regex
   - rich
   - scipy
   - shapely

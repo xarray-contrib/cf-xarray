@@ -21,7 +21,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-all = ["matplotlib", "pint", "shapely"]
+all = ["matplotlib", "pint", "shapely", "regex"]
 
 [project.urls]
 homepage = "https://cf-xarray.readthedocs.io"

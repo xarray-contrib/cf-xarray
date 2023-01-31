@@ -17,3 +17,6 @@ dependencies:
   - scipy
   - shapely
   - xarray
+  - pip
+  - pip:
+      - pytest-pretty

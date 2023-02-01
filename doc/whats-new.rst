@@ -3,6 +3,11 @@
 What's New
 ----------
 
+v0.7.9 (Jan 31, 2023)
+=====================
+
+- Fix packaging of v0.7.8. That release was yanked off PyPI.
+
 v0.7.8 (Jan 31, 2023)
 =====================
 

@@ -55,10 +55,10 @@ write_to_template= '__version__ = "{version}"'
 tag_regex= "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
 
 [tool.black]
-target-version = ["py38"]
+target-version = ["py39"]
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py39"
 builtins = ["ellipsis"]
 exclude = [
     ".eggs",

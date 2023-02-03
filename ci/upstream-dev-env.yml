@@ -10,7 +10,9 @@ dependencies:
   - netcdf4
   - pandas
   - pooch
+  - rich
   - shapely
+  - pip
   - pip
     - pytest-pretty
     - git+https://github.com/pydata/xarray

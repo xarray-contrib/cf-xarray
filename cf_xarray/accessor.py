@@ -1470,6 +1470,7 @@ class CFAccessor:
         varnames.extend(list(self.cell_measures))
         varnames.extend(list(self.standard_names))
         varnames.extend(list(self.cf_roles))
+        varnames.extend(list(self.grid_mappings))
 
         return set(varnames)
 
@@ -2439,17 +2440,37 @@ class CFDatasetAccessor(CFAccessor):
         {'air_temperature': ['rotated_pole'], 'temp': ['rotated_pole']}
         """
 
+        #         obj = self._obj
+        #         keys = self.keys() | set(obj.variables)
+
+        #         vardict = {
+        #             key: self._drop_missing_variables(
+        #                 apply_mapper(_get_grid_mapping, obj, key, error=False)
+        #             )
+        #             for key in keys
+        #         }
+
+        #         return {k: sorted(v) for k, v in vardict.items() if v}
+
         obj = self._obj
-        keys = self.keys() | set(obj.variables)
+        keys = set(obj.variables)
 
         vardict = {
-            key: self._drop_missing_variables(
-                apply_mapper(_get_grid_mapping, obj, key, error=False)
-            )
+            key: obj[key].grid_mapping_name
             for key in keys
+            if "grid_mapping_name" in obj[key].attrs
         }
 
-        return {k: sorted(v) for k, v in vardict.items() if v}
+        results = {}
+        for k, v in vardict.items():
+            if v not in results:
+                results[v] = [k]
+            else:
+                results[v].append(k)
+        return results
+        # for key, grid_mapping_name in vdeardict.items():
+
+        # return {k: sorted(v) for k, v in vardict.items() if v}
 
     def get_grid_mapping(self, key: str) -> DataArray | Dataset:
         """

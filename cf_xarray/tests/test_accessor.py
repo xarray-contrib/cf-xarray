@@ -297,7 +297,7 @@ def test_accessor_getattr_and_describe() -> None:
             "areacella",
         )
     )
-    ds_vertb = xr.decode_cf(vert, decode_coords="all")  # type: ignore
+    ds_vertb = xr.decode_cf(vert, decode_coords="all")
 
     assert ds_verta.cf.cell_measures == ds_vertb.cf.cell_measures
     assert ds_verta.o3.cf.cell_measures == ds_vertb.o3.cf.cell_measures
@@ -821,7 +821,7 @@ def test_add_bounds_nd_variable() -> None:
     # 2D
     expected = (
         vertices_to_bounds(
-            np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)  # type: ignore
+            np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)
         )
         .rename("z_bounds")
         .assign_coords(**ds.coords)
@@ -1358,7 +1358,7 @@ def test_new_standard_name_mappers() -> None:
     )
     assert_identical(forecast.cf.chunk({"realization": 1}), forecast.chunk({"M": 1}))
     assert_identical(forecast.cf.isel({"realization": 1}), forecast.isel({"M": 1}))
-    assert_identical(forecast.cf.isel(**{"realization": 1}), forecast.isel(**{"M": 1}))  # type: ignore
+    assert_identical(forecast.cf.isel(**{"realization": 1}), forecast.isel(**{"M": 1}))
     assert_identical(
         forecast.cf.groupby("forecast_reference_time.month").mean(),
         forecast.groupby("S.month").mean(),

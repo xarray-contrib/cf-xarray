@@ -1,4 +1,5 @@
 import warnings
+from typing import Dict, Hashable, Iterable, List
 
 STAR = " * "
 TAB = len(STAR) * " "
@@ -11,7 +12,7 @@ def _format_missing_row(row: str, rich: bool) -> str:
         return row
 
 
-def _format_varname(name: str, rich: bool) -> str:
+def _format_varname(name, rich: bool):
     return name
 
 
@@ -39,12 +40,14 @@ def make_text_section(
     rich: bool = False,
 ):
 
+    from .accessor import sort_maybe_hashable
+
     if dims is None:
         dims = []
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         try:
-            vardict = getattr(accessor, attr, {})
+            vardict: Dict[str, Iterable[Hashable]] = getattr(accessor, attr, {})
         except ValueError:
             vardict = {}
 
@@ -67,7 +70,8 @@ def make_text_section(
     rows = [
         (
             f"{STAR if dims and set(value) <= set(dims) else TAB}"
-            f"{_format_cf_name(key, rich)}: {_format_varname(sorted(value), rich)}"
+            f"{_format_cf_name(key, rich)}: "
+            f"{_format_varname(sort_maybe_hashable(value), rich)}"
         )
         for key, value in vardict.items()
     ]
@@ -85,7 +89,7 @@ def make_text_section(
     return _print_rows(subtitle, rows, rich)
 
 
-def _print_rows(subtitle: str, rows: list[str], rich: bool):
+def _print_rows(subtitle: str, rows: List[str], rich: bool):
     subtitle = f"{subtitle.rjust(20)}:"
 
     # Add subtitle to the first row, align other rows

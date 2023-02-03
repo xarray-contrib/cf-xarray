@@ -36,7 +36,7 @@ jobs:
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
       - name: Set up conda environment
-        uses: mamba-org/provision-with-micromamba@v14
+        uses: mamba-org/provision-with-micromamba@v15
         with:
           environment-file: ci/environment.yml
           environment-name: cf_xarray_test
@@ -76,7 +76,7 @@ jobs:
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
       - name: Set up conda environment
-        uses: mamba-org/provision-with-micromamba@v14
+        uses: mamba-org/provision-with-micromamba@v15
         with:
           environment-file: ci/environment.yml
           environment-name: cf_xarray_test
@@ -111,7 +111,7 @@ jobs:
           # need to fetch all tags to get a correct version
           fetch-depth: 0  # fetch all branches and tags
       - name: Set up conda environment
-        uses: mamba-org/provision-with-micromamba@v14
+        uses: mamba-org/provision-with-micromamba@v15
         with:
           environment-file: ci/environment-no-optional-deps.yml
           environment-name: cf_xarray_test
@@ -138,7 +138,7 @@ jobs:
         with:
           fetch-depth: 0 # Fetch all history for all branches and tags.
       - name: Set up conda environment
-        uses: mamba-org/provision-with-micromamba@v14
+        uses: mamba-org/provision-with-micromamba@v15
         with:
           environment-file: ci/environment.yml
           environment-name: cf_xarray_test

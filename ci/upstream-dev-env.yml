@@ -5,6 +5,7 @@ dependencies:
   - pytest-cov
   - pytest
   - pytest-xdist
+  - pytest-reportlog
   - dask
   - matplotlib-base
   - netcdf4

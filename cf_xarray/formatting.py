@@ -24,7 +24,7 @@ def _format_subtitle(name: str, rich: bool) -> str:
 
 def _format_cf_name(name: str, rich: bool) -> str:
     if rich:
-        return f"[dodger_blue1]{name}[/dodger_blue1]"
+        return f"[color(33)]{name}[/color(33)]"
     else:
         return name
 
@@ -105,12 +105,12 @@ def _maybe_panel(textgen, title: str, rich: bool):
         from rich.panel import Panel
 
         return Panel(
-            text.rstrip(),
+            f"[color(241)]{text.rstrip()}[/color(241)]",
             expand=True,
             title_align="left",
-            title=f"[bold]{title}[/bold]",
+            title=f"[bold][color(244)]{title}[/bold][/color(244)]",
             highlight=True,
-            width=120,
+            width=100,
         )
     else:
         return title + ":\n" + text

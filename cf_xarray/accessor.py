@@ -1397,7 +1397,7 @@ class CFAccessor:
         )
         text += make_text_section("Standard Names", "standard_names", coords)
         text += make_text_section("Bounds", "bounds", coords)
-        text += make_text_section("Grid Mappings", "grid_mappings", coords)
+        text += make_text_section("Grid Mappings", "grid_mapping", coords)
         if isinstance(self._obj, Dataset):
             data_vars = self._obj.data_vars
             text += "\nData Variables:"
@@ -2659,6 +2659,22 @@ class CFDataArrayAccessor(CFAccessor):
             return da.coords[grid_mapping]
         else:
             raise KeyError(f"No grid_mapping named {grid_mapping!r} in coordinates.")
+
+    @property
+    def grid_mapping_name(self) -> str:
+        """ """
+        grid_mapping = self.grid_mapping
+
+        if grid_mapping is None:
+            return ""
+        if "grid_mapping_name" not in ChainMap(
+            grid_mapping.attrs, grid_mapping.encoding
+        ):
+            warnings.warn(
+                f"{grid_mapping.name} has not grid_mapping_name attribute!",
+                UserWarning,
+            )
+        return grid_mapping.attrs["grid_mapping_name"]
 
     def __getitem__(self, key: str | list[str]) -> DataArray:
         """

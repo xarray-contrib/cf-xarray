@@ -14,7 +14,7 @@ dependencies:
   - rich
   - shapely
   - pip
-  - pip
+  - pip:
     - pytest-pretty
     - git+https://github.com/pydata/xarray.git
     - git+https://github.com/dcherian/flox.git

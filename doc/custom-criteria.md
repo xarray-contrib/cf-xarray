@@ -102,3 +102,20 @@ cfxr.set_options(custom_criteria=salt_criteria)
 
 ds.cf[["salinity"]]
 ```
+
+## More complex matches with `regex`
+
+Here is an example of a more complicated custom criteria, which requires the package [`regex`](https://github.com/mrabarnett/mrab-regex) to be installed since a behavior (allowing global flags like "(?i)" for matching case insensitive) was recently deprecated in the `re` package. The custom criteria, called "vocab", matches – case insensitive – to the variable alias "sea_ice_u" a variable whose name includes "sea" and "ice" and "u" but not "qc" or "status", or "sea" and "ice" and "x" and "vel" but not "qc" or "status".
+
+```{code-cell}
+import cf_xarray as cfxr
+import xarray as xr
+
+vocab = {"sea_ice_u": {"name": "(?i)^(?!.*(qc|status))(?=.*sea)(?=.*ice)(?=.*u)|(?i)^(?!.*(qc|status))(?=.*sea)(?=.*ice)(?=.*x)(?=.*vel)"}}
+ds = xr.Dataset()
+ds["sea_ice_velocity_x"] = [0,1,2]
+
+with cfxr.set_options(custom_criteria=vocab):
+    seaiceu = ds.cf["sea_ice_u"]
+seaiceu
+```

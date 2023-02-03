@@ -18,6 +18,7 @@ dependencies:
   - pandas
   - pooch
   - pint
+  - regex
   - furo
   - pip:
       - git+https://github.com/xarray-contrib/cf-xarray

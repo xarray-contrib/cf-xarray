@@ -19,6 +19,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    overload,
 )
 
 import xarray as xr
@@ -65,10 +66,16 @@ ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
 
 # Type for Mapper functions
-Mapper = Callable[[Union[DataArray, Dataset], str], List[str]]
+Mapper = Callable[[Union[DataArray, Dataset], Hashable], List[Hashable]]
 
 # Type for decorators
 F = TypeVar("F", bound=Callable[..., Any])
+
+
+def sort_maybe_hashable(iterable: Iterable[Hashable]) -> list[Hashable]:
+    only_str: list[str] = [elem for elem in iterable if isinstance(elem, str)]
+    non_str: list[Hashable] = [elem for elem in iterable if not isinstance(elem, str)]
+    return sorted(only_str) + non_str
 
 
 def apply_mapper(
@@ -135,7 +142,9 @@ def apply_mapper(
     return results
 
 
-def _get_groupby_time_accessor(var: DataArray | Dataset, key: str) -> list[str]:
+def _get_groupby_time_accessor(
+    obj: DataArray | Dataset, key: Hashable
+) -> list[Hashable]:
     # This first docstring is used by _build_docstring. Do not remove.
     """
     Time variable accessor e.g. 'T.month'
@@ -145,7 +154,7 @@ def _get_groupby_time_accessor(var: DataArray | Dataset, key: str) -> list[str]:
 
     Parameters
     ----------
-    var : DataArray, Dataset
+    obj : DataArray, Dataset
         DataArray belonging to the coordinate to be checked
     key : str, [e.g. "T.month"]
         key to check for.
@@ -159,21 +168,25 @@ def _get_groupby_time_accessor(var: DataArray | Dataset, key: str) -> list[str]:
     Returns an empty list if there is no frequency extension specified.
     """
 
+    assert isinstance(key, str)
     if "." in key:
         key, ext = key.split(".", 1)
 
-        results = apply_mapper((_get_all,), var, key, error=False)
+        results = apply_mapper((_get_all,), obj, key, error=False)
         if len(results) > 1:
             raise KeyError(f"Multiple results received for {key}.")
-        return [v + "." + ext for v in results]
+        var = results[0]
+        if not isinstance(var, str):
+            raise KeyError(f"Resolved {key} to {var} but {var} is not a string.")
+        return [var + "." + ext]
 
     else:
         return []
 
 
 def _get_custom_criteria(
-    obj: DataArray | Dataset, key: str, criteria=None
-) -> list[str]:
+    obj: DataArray | Dataset, key: Hashable, criteria: Mapping | None = None
+) -> list[Hashable]:
     """
     Translate from axis, coord, or custom name to variable name optionally
     using ``custom_criteria``
@@ -194,6 +207,11 @@ def _get_custom_criteria(
     List[str], Variable name(s) in parent xarray object that matches axis, coordinate, or custom `key`
     """
 
+    try:
+        from regex import match as regex_match
+    except ImportError:
+        from re import match as regex_match  # type: ignore
+
     if isinstance(obj, DataArray):
         obj = obj._to_temp_dataset()
 
@@ -203,21 +221,20 @@ def _get_custom_criteria(
         criteria = OPTIONS["custom_criteria"]
 
     if criteria is not None:
-        criteria = always_iterable(criteria, allowed=(tuple, list, set))
+        criteria_iter = always_iterable(criteria, allowed=(tuple, list, set))
 
-    criteria = ChainMap(*criteria)
-
+    criteria_map = ChainMap(*criteria_iter)
     results: set = set()
-    if key in criteria:
-        for criterion, patterns in criteria[key].items():
+    if key in criteria_map:
+        for criterion, patterns in criteria_map[key].items():
             for var in obj.variables:
-                if re.match(patterns, obj[var].attrs.get(criterion, "")):
+                if regex_match(patterns, obj[var].attrs.get(criterion, "")):
                     results.update((var,))
                 # also check name specifically since not in attributes
                 elif (
                     criterion == "name"
                     and isinstance(var, str)
-                    and re.match(patterns, var)
+                    and regex_match(patterns, var)
                 ):
                     results.update((var,))
     return list(results)
@@ -326,7 +343,7 @@ def _get_measure(obj: DataArray | Dataset, key: str) -> list[str]:
     return list(results)
 
 
-def _get_bounds(obj: DataArray | Dataset, key: str) -> list[str]:
+def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     """
     Translate from key (either CF key or variable name) to its bounds' variable names.
     This function interprets the ``bounds`` attribute on DataArrays.
@@ -379,31 +396,31 @@ def _get_grid_mapping(obj: DataArray | Dataset, key: str) -> list[str]:
 
 
 def _get_with_standard_name(
-    obj: DataArray | Dataset, name: str | list[str]
-) -> list[str]:
+    obj: DataArray | Dataset, name: Hashable | Iterable[Hashable]
+) -> list[Hashable]:
     """returns a list of variable names with standard name == name."""
     if name is None:
         return []
 
-    varnames = []
+    varnames: list[Hashable] = []
     if isinstance(obj, DataArray):
         obj = obj.coords.to_dataset()
-    for vname, var in obj.variables.items():
+    for vname, var in obj._variables.items():
         stdname = var.attrs.get("standard_name", None)
         if stdname == name:
-            varnames.append(str(vname))
+            varnames.append(vname)
 
     return varnames
 
 
-def _get_all(obj: DataArray | Dataset, key: str) -> list[str]:
+def _get_all(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     """
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names
     """
-    all_mappers = (
+    all_mappers: tuple[Mapper] = (
         _get_custom_criteria,
-        functools.partial(_get_custom_criteria, criteria=cf_role_criteria),
+        functools.partial(_get_custom_criteria, criteria=cf_role_criteria),  # type: ignore
         _get_axis_coord,
         _get_measure,
         _get_with_standard_name,
@@ -412,7 +429,7 @@ def _get_all(obj: DataArray | Dataset, key: str) -> list[str]:
     return results
 
 
-def _get_dims(obj: DataArray | Dataset, key: str) -> list[str]:
+def _get_dims(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     """
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names present in .dims
@@ -420,7 +437,7 @@ def _get_dims(obj: DataArray | Dataset, key: str) -> list[str]:
     return [k for k in _get_all(obj, key) if k in obj.dims]
 
 
-def _get_indexes(obj: DataArray | Dataset, key: str) -> list[str]:
+def _get_indexes(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     """
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names present in .indexes
@@ -428,7 +445,7 @@ def _get_indexes(obj: DataArray | Dataset, key: str) -> list[str]:
     return [k for k in _get_all(obj, key) if k in obj.indexes]
 
 
-def _get_coords(obj: DataArray | Dataset, key: str) -> list[str]:
+def _get_coords(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     """
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names present in .coords
@@ -438,15 +455,15 @@ def _get_coords(obj: DataArray | Dataset, key: str) -> list[str]:
 
 def _variables(func: F) -> F:
     @functools.wraps(func)
-    def wrapper(obj: DataArray | Dataset, key: str) -> list[DataArray]:
-        return [obj[k] for k in func(obj, key)]
+    def wrapper(obj: DataArray | Dataset, key: Hashable) -> list[DataArray]:
+        return [obj[k] for k in func(obj, key)]  # type: ignore
 
     return cast(F, wrapper)
 
 
 def _single(func: F) -> F:
     @functools.wraps(func)
-    def wrapper(obj: DataArray | Dataset, key: str):
+    def wrapper(obj: DataArray | Dataset, key: Hashable):
         results = func(obj, key)
         if len(results) > 1:
             raise KeyError(
@@ -486,7 +503,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, tuple[Mapper, ...]] = {
     "group": (_single(_get_all), _get_groupby_time_accessor),  # groupby
     "indexer": (_single(_get_indexes),),  # resample
     "variables": (_get_all,),  # sortby
-    "weights": (_variables(_single(_get_all)),),  # type: ignore
+    "weights": (_variables(_single(_get_all)),),
     "chunks": (_get_dims,),  # chunk
 }
 
@@ -606,7 +623,10 @@ def _getattr(
             newmap.update(dict.fromkeys(inverted[key], value))
         newmap.update({key: attribute[key] for key in unused_keys})
 
-        skip = {"data_vars": ["coords"], "coords": None}
+        skip: dict[str, list[Hashable] | None] = {
+            "data_vars": ["coords"],
+            "coords": None,
+        }
         if attr in ["coords", "data_vars"]:
             for key in newmap:
                 newmap[key] = _getitem(accessor, key, skip=skip[attr])
@@ -638,9 +658,29 @@ def _getattr(
     return wrapper
 
 
+@overload
 def _getitem(
-    accessor: CFAccessor, key: str | list[str], skip: list[str] | None = None
-) -> DataArray | Dataset:
+    accessor: CFAccessor,
+    key: Hashable,
+    skip: list[Hashable] | None = None,
+) -> DataArray:
+    ...
+
+
+@overload
+def _getitem(
+    accessor: CFAccessor,
+    key: Iterable[Hashable],
+    skip: list[Hashable] | None = None,
+) -> Dataset:
+    ...
+
+
+def _getitem(
+    accessor,
+    key,
+    skip=None,
+):
     """
     Index into obj using key. Attaches CF associated variables.
 
@@ -655,10 +695,13 @@ def _getitem(
     obj = accessor._obj
     all_bounds = obj.cf.bounds if isinstance(obj, Dataset) else {}
     kind = str(type(obj).__name__)
-    scalar_key = isinstance(key, str)
+    scalar_key = isinstance(key, Hashable)
 
-    if scalar_key:
-        key = (key,)  # type: ignore
+    key_iter: Iterable[Hashable]
+    if isinstance(key, Hashable):  # using scalar_key breaks mypy type narrowing
+        key_iter = (key,)
+    else:
+        key_iter = key
 
     if skip is None:
         skip = []
@@ -693,8 +736,8 @@ def _getitem(
 
     varnames: list[Hashable] = []
     coords: list[Hashable] = []
-    successful = dict.fromkeys(key, False)
-    for k in key:
+    successful = dict.fromkeys(key_iter, False)
+    for k in key_iter:
         if "coords" not in skip and k in _AXIS_NAMES + _COORD_NAMES:
             names = _get_all(obj, k)
             names = drop_bounds(names)
@@ -750,8 +793,8 @@ def _getitem(
                 return da
             else:
                 raise KeyError(
-                    f"Received scalar key {key[0]!r} but multiple results: {allnames!r}. "
-                    f"Please pass a list instead (['{key[0]}']) to get back a Dataset "
+                    f"Received scalar key {key!r} but multiple results: {allnames!r}. "
+                    f"Please pass a list instead (['{key}']) to get back a Dataset "
                     f"with {allnames!r}."
                 )
 
@@ -1084,11 +1127,11 @@ class CFAccessor:
             mapped_test_elements.append(flag_dict[elem])
         return self._obj.isin(mapped_test_elements)
 
-    def _drop_missing_variables(self, variables: list[str]) -> list[str]:
+    def _drop_missing_variables(self, variables: list[Hashable]) -> list[Hashable]:
         if isinstance(self._obj, Dataset):
-            good_names = set(self._obj.variables)
+            good_names = set(self._obj._variables)
         elif isinstance(self._obj, DataArray):
-            good_names = set(self._obj.coords)
+            good_names = set(self._obj._coords)
 
         return [var for var in variables if var in good_names]
 
@@ -1105,7 +1148,7 @@ class CFAccessor:
 
     def curvefit(
         self,
-        coords: str | DataArray | Iterable[str | DataArray],
+        coords: Hashable | DataArray | Iterable[Hashable | DataArray],
         func: Callable[..., Any],
         reduce_dims: Hashable | Iterable[Hashable] | None = None,
         skipna: bool = True,
@@ -1116,26 +1159,26 @@ class CFAccessor:
     ):
 
         if coords is not None:
-            if isinstance(coords, str):
-                coords = (coords,)
+            if isinstance(coords, (Hashable, DataArray)):
+                coords_iter: Iterable[Hashable | DataArray] = [coords]
+            else:
+                coords_iter = coords
             coords = [
-                apply_mapper(  # type: ignore
+                apply_mapper(
                     [_single(_get_coords)], self._obj, v, error=False, default=[v]  # type: ignore
-                )[
-                    0
-                ]  # type: ignore
-                for v in coords
+                )[0]
+                for v in coords_iter
             ]
         if reduce_dims is not None:
             if isinstance(reduce_dims, Hashable):
-                reduce_dims: Iterable[Hashable] = (reduce_dims,)  # type: ignore
+                reduce_dims_iter = [reduce_dims]
+            else:
+                reduce_dims_iter = list(reduce_dims)
             reduce_dims = [
-                apply_mapper(  # type: ignore
+                apply_mapper(
                     [_single(_get_dims)], self._obj, v, error=False, default=[v]  # type: ignore
-                )[
-                    0
-                ]  # type: ignore
-                for v in reduce_dims  # type: ignore
+                )[0]
+                for v in reduce_dims_iter
             ]
 
         return self._obj.curvefit(
@@ -1410,16 +1453,7 @@ class CFAccessor:
 
         return text
 
-    def get_valid_keys(self) -> set[str]:
-
-        warnings.warn(
-            "Now called `keys` and `get_valid_keys` will be removed in a future version.",
-            DeprecationWarning,
-        )
-
-        return self.keys()
-
-    def keys(self) -> set[str]:
+    def keys(self) -> set[Hashable]:
         """
         Utility function that returns valid keys for .cf[].
 
@@ -1440,7 +1474,7 @@ class CFAccessor:
         return set(varnames)
 
     @property
-    def axes(self) -> dict[str, list[str]]:
+    def axes(self) -> dict[str, list[Hashable]]:
         """
         Property that returns a dictionary mapping valid Axis standard names for ``.cf[]``
         to variable names.
@@ -1459,10 +1493,10 @@ class CFAccessor:
         """
         vardict = {key: _get_coords(self._obj, key) for key in _AXIS_NAMES}
 
-        return {k: sorted(v) for k, v in vardict.items() if v}
+        return {k: sort_maybe_hashable(v) for k, v in vardict.items() if v}
 
     @property
-    def coordinates(self) -> dict[str, list[str]]:
+    def coordinates(self) -> dict[str, list[Hashable]]:
         """
         Property that returns a dictionary mapping valid Coordinate standard names for ``.cf[]``
         to variable names.
@@ -1482,10 +1516,10 @@ class CFAccessor:
         """
         vardict = {key: _get_coords(self._obj, key) for key in _COORD_NAMES}
 
-        return {k: sorted(v) for k, v in vardict.items() if v}
+        return {k: sort_maybe_hashable(v) for k, v in vardict.items() if v}
 
     @property
-    def cell_measures(self) -> dict[str, list[str]]:
+    def cell_measures(self) -> dict[str, list[Hashable]]:
         """
         Property that returns a dictionary mapping valid cell measure standard names for ``.cf[]``
         to variable names.
@@ -1530,19 +1564,10 @@ class CFAccessor:
             key: self._drop_missing_variables(_get_all(self._obj, key)) for key in keys
         }
 
-        return {k: sorted(set(v)) for k, v in measures.items() if v}
-
-    def get_standard_names(self) -> list[str]:
-
-        warnings.warn(
-            "`get_standard_names` will be removed in a future version in favor of `standard_names`.",
-            DeprecationWarning,
-        )
-
-        return list(self.standard_names.keys())
+        return {k: sort_maybe_hashable(set(v)) for k, v in measures.items() if v}
 
     @property
-    def standard_names(self) -> dict[str, list[str]]:
+    def standard_names(self) -> dict[str, list[Hashable]]:
         """
         Returns a dictionary mapping standard names to variable names.
 
@@ -1552,20 +1577,20 @@ class CFAccessor:
             Dictionary mapping standard names to variable names.
         """
         if isinstance(self._obj, Dataset):
-            variables = self._obj.variables
+            variables = self._obj._variables
         elif isinstance(self._obj, DataArray):
-            variables = self._obj.coords
+            variables = self._obj._coords
 
-        vardict: dict[str, list[str]] = {}
+        vardict: dict[str, list[Hashable]] = {}
         for k, v in variables.items():
             if "standard_name" in v.attrs:
                 std_name = v.attrs["standard_name"]
                 vardict[std_name] = vardict.setdefault(std_name, []) + [k]
 
-        return {k: sorted(v) for k, v in vardict.items()}
+        return {std: sort_maybe_hashable(v) for std, v in vardict.items()}
 
     @property
-    def cf_roles(self) -> dict[str, list[str]]:
+    def cf_roles(self) -> dict[str, list[Hashable]]:
         """
         Returns a dictionary mapping cf_role names to variable names.
 
@@ -1586,24 +1611,21 @@ class CFAccessor:
         {'profile_id': ['profile'], 'trajectory_id': ['trajectory']}
         """
         if isinstance(self._obj, Dataset):
-            variables = self._obj.variables
+            variables = self._obj._variables
         elif isinstance(self._obj, DataArray):
-            variables = self._obj.coords
+            variables = self._obj._coords
 
-        vardict: dict[str, list[str]] = {}
+        vardict: dict[str, list[Hashable]] = {}
         for k, v in variables.items():
             if "cf_role" in v.attrs:
                 role = v.attrs["cf_role"]
                 vardict[role] = vardict.setdefault(role, []) + [k]
 
-        return {k: sorted(v) for k, v in vardict.items()}
+        return {role_: sort_maybe_hashable(v) for role_, v in vardict.items()}
 
     def get_associated_variable_names(
-        self,
-        name: Hashable,
-        skip_bounds: bool = False,
-        error: bool = True,
-    ) -> dict[str, list[str]]:
+        self, name: Hashable, skip_bounds: bool = False, error: bool = True
+    ) -> dict[str, list[Hashable]]:
         """
         Returns a dict mapping
             1. "ancillary_variables"
@@ -1632,7 +1654,7 @@ class CFAccessor:
             "bounds",
             "grid_mapping",
         ]
-        coords: dict[str, list[str]] = {k: [] for k in keys}
+        coords: dict[str, list[Hashable]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
 
         coordinates = attrs_or_encoding.get("coordinates", None)
@@ -1677,7 +1699,7 @@ class CFAccessor:
             coords["grid_mapping"] = [attrs_or_encoding["grid_mapping"]]
 
         allvars = itertools.chain(*coords.values())
-        missing = set(allvars) - set(self._maybe_to_dataset().variables)
+        missing = set(allvars) - set(self._maybe_to_dataset()._variables)
         if missing:
             if OPTIONS["warn_on_missing_variables"]:
                 warnings.warn(
@@ -1737,7 +1759,12 @@ class CFAccessor:
         DataArray or Dataset
             with renamed variables
         """
-        skip = [skip] if isinstance(skip, str) else skip or []
+        if skip is None:
+            skip_iter = []
+        elif isinstance(skip, str):
+            skip_iter = [skip]
+        else:
+            skip_iter = list(skip)
 
         ourkeys = self.keys()
         theirkeys = other.cf.keys()
@@ -1747,7 +1774,7 @@ class CFAccessor:
         for key in good_keys:
             ours = set(apply_mapper(_get_all, self._obj, key))
             theirs = set(apply_mapper(_get_all, other, key))
-            for attr in skip:
+            for attr in skip_iter:
                 ours.difference_update(getattr(self, attr).get(key, []))
                 theirs.difference_update(getattr(other.cf, attr).get(key, []))
             if ours and theirs:
@@ -1768,7 +1795,7 @@ class CFAccessor:
             renamer = {
                 v["ours"][0]: v["theirs"][0]
                 for k, v in keydict.items()
-                if k not in conflicts
+                if k not in conflicts and v["ours"][0] != v["theirs"][0]
             }
 
             return renamer, conflicts
@@ -1776,7 +1803,7 @@ class CFAccessor:
         # Run get_renamer_and_conflicts twice.
         # The second time add the bounds associated with variables to rename
         renamer, conflicts = get_renamer_and_conflicts(keydict)
-        if "bounds" not in skip:
+        if "bounds" not in skip_iter:
             for k, v in renamer.items():
                 ours = set(getattr(self, "bounds", {}).get(k, []))
                 theirs = set(getattr(other.cf, "bounds", {}).get(v, []))
@@ -1938,7 +1965,7 @@ class CFAccessor:
     def add_canonical_attributes(
         self,
         override: bool = False,
-        skip: str | list[str] | None = None,
+        skip: Hashable | Iterable[Hashable] | None = None,
         verbose: bool = False,
         source=None,
     ) -> Dataset | DataArray:
@@ -1976,7 +2003,7 @@ class CFAccessor:
         args = ", ".join([f"{k!s}={v!r}" for k, v in locals().items() if k != "self"])
 
         # Defaults
-        skip = [skip] if isinstance(skip, str) else (skip or [])
+        skip_ = [skip] if isinstance(skip, Hashable) else (skip or [])
 
         # Parse table
         info, table, aliases = parse_cf_standard_name_table(source)
@@ -1994,7 +2021,11 @@ class CFAccessor:
 
                 # Loop over attributes
                 for key, value in new_attrs.items():
-                    if value and key not in skip and (override or key not in old_attrs):
+                    if (
+                        value
+                        and key not in skip_
+                        and (override or key not in old_attrs)
+                    ):
 
                         # Don't add units to time variables (e.g., datetime64, ...)
                         if key == "units" and _is_datetime_like(ds[var_name]):
@@ -2042,7 +2073,7 @@ class CFAccessor:
 
 @xr.register_dataset_accessor("cf")
 class CFDatasetAccessor(CFAccessor):
-    def __getitem__(self, key: str | list[str]) -> DataArray | Dataset:
+    def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray | Dataset:
         """
         Index into a Dataset making use of CF attributes.
 
@@ -2075,7 +2106,7 @@ class CFDatasetAccessor(CFAccessor):
         return _getitem(self, key)
 
     @property
-    def formula_terms(self) -> dict[str, dict[str, str]]:
+    def formula_terms(self) -> dict[Hashable, dict[str, str]]:
         """
         Property that returns a dictionary mapping the parametric coordinate's name
         to a dictionary that maps "standard term names" to actual variable names.
@@ -2128,14 +2159,16 @@ class CFDatasetAccessor(CFAccessor):
         for dim in _get_dims(self._obj, "Z"):
             terms = self._obj[dim].cf.formula_terms
             variables = self._drop_missing_variables(list(terms.values()))
-            terms = {key: val for key, val in terms.items() if val in variables}
-            if terms:
-                results[dim] = terms
+            terms_dict: dict[str, str] = {
+                key: val for key, val in terms.items() if val in variables
+            }
+            if terms_dict:
+                results[dim] = terms_dict
 
         return results
 
     @property
-    def bounds(self) -> dict[str, list[str]]:
+    def bounds(self) -> dict[Hashable, list[Hashable]]:
         """
         Property that returns a dictionary mapping keys
         to the variable names of their bounds.
@@ -2166,9 +2199,9 @@ class CFDatasetAccessor(CFAccessor):
             for key in keys
         }
 
-        return {k: sorted(v) for k, v in vardict.items() if v}
+        return {k: sort_maybe_hashable(v) for k, v in vardict.items() if v}
 
-    def get_bounds(self, key: str) -> DataArray | Dataset:
+    def get_bounds(self, key: Hashable) -> DataArray | Dataset:
         """
         Get bounds variable corresponding to key.
 
@@ -2188,7 +2221,7 @@ class CFDatasetAccessor(CFAccessor):
 
         return self._obj[results[0] if len(results) == 1 else results]
 
-    def get_bounds_dim_name(self, key: str) -> str:
+    def get_bounds_dim_name(self, key: Hashable) -> Hashable:
         """
         Get bounds dim name for variable corresponding to key.
 
@@ -2295,7 +2328,7 @@ class CFDatasetAccessor(CFAccessor):
 
     def bounds_to_vertices(
         self,
-        keys: str | Iterable[str] | None = None,
+        keys: Hashable | Iterable[Hashable] | None = None,
         order: str | None = "counterclockwise",
     ) -> Dataset:
         """
@@ -2345,11 +2378,11 @@ class CFDatasetAccessor(CFAccessor):
         Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-boundaries.
         """
         if keys is None:
-            coords: Iterable[str] = self.keys()
-        elif isinstance(keys, str):
+            coords = tuple(self.keys())
+        elif isinstance(keys, Hashable):
             coords = (keys,)
         else:
-            coords = keys
+            coords = tuple(keys)
 
         obj = self._maybe_to_dataset(self._obj.copy(deep=False))
 
@@ -2362,6 +2395,7 @@ class CFDatasetAccessor(CFAccessor):
                         f"vertices are computed from bounds but given key {coord} did not correspond to existing bounds."
                     ) from exc
             else:
+                assert isinstance(bounds, DataArray)
                 name = f"{self[coord].name}_vertices"
                 obj = obj.assign(  # Overwrite any variable with the same name.
                     {
@@ -2723,7 +2757,7 @@ class CFDataArrayAccessor(CFAccessor):
             )
         return grid_mapping.attrs["grid_mapping_name"]
 
-    def __getitem__(self, key: str | list[str]) -> DataArray:
+    def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray:
         """
         Index into a DataArray making use of CF attributes.
 
@@ -2755,9 +2789,9 @@ class CFDataArrayAccessor(CFAccessor):
         Add additional keys by specifying "custom criteria". See :ref:`custom_criteria` for more.
         """
 
-        if not isinstance(key, str):
+        if not isinstance(key, Hashable):
             raise KeyError(
-                f"Cannot use a list of keys with DataArrays. Expected a single string. Received {key!r} instead."
+                f"Cannot use an Iterable of keys with DataArrays. Expected a single string. Received {key!r} instead."
             )
 
         return _getitem(self, key)

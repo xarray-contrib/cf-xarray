@@ -7,11 +7,16 @@ dependencies:
   - pytest-xdist
   - dask
   - flox
+  - lxml
   - matplotlib-base
   - netcdf4
   - pandas
   - pint
   - pooch
+  - regex
   - scipy
   - shapely
   - xarray
+  - pip
+  - pip:
+      - pytest-pretty

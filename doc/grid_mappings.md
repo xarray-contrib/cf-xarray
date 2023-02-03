@@ -18,6 +18,8 @@ See
 1. {py:attr}`Dataset.cf.grid_mappings`,
 1. {py:func}`Dataset.cf.get_grid_mapping`,
 1. {py:func}`Dataset.cf.get_grid_mapping_name`
+1. {py:func}`DataArray.cf.grid_mapping`
+1. {py:func}`DataArray.cf.grid_mapping_name`
 
 `cf_xarray` understands the concept of coordinate projections using the [grid_mapping](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#grid-mappings-and-projections) attribute convention. For example, the dataset might contain two sets of coordinates:
 

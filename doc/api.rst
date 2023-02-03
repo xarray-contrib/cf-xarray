@@ -36,6 +36,8 @@ Attributes
     DataArray.cf.cf_roles
     DataArray.cf.coordinates
     DataArray.cf.formula_terms
+    DataArray.cf.grid_mapping
+    DataArray.cf.grid_mapping_name
     DataArray.cf.is_flag_variable
     DataArray.cf.standard_names
     DataArray.cf.plot

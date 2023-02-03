@@ -1377,15 +1377,24 @@ class CFAccessor:
         coords = self._obj.coords
         dims = self._obj.dims
 
-        def _format_varname(name):
+        def _format_missing_row(row: str) -> str:
             if rich:
-                return f"[green]{name}[/green]"
+                return f"[grey62]{row}[/grey62]"
+            else:
+                return row
+
+        def _format_varname(name: str) -> str:
+            return name
+
+        def _format_subtitle(name: str) -> str:
+            if rich:
+                return f"[bold]{name}[/bold]"
             else:
                 return name
 
-        def _format_subtitle(name):
+        def _format_cf_name(name: str) -> str:
             if rich:
-                return f"[grey62 bold]{name}[/grey62 bold]"
+                return f"[dodger_blue1]{name}[/dodger_blue1]"
             else:
                 return name
 
@@ -1416,7 +1425,7 @@ class CFAccessor:
 
             # Star for keys with dims only, tab otherwise
             rows = [
-                f"{star if set(value) <= set(dims) else tab}{key}: {_format_varname(sorted(value))}"
+                f"{star if set(value) <= set(dims) else tab}{_format_cf_name(key)}: {_format_varname(sorted(value))}"
                 for key, value in vardict.items()
             ]
 
@@ -1424,9 +1433,11 @@ class CFAccessor:
             if default_keys:
                 missing_keys = [key for key in default_keys if key not in vardict]
                 if missing_keys:
-                    rows += [tab + ", ".join(missing_keys) + ": n/a"]
+                    rows.append(
+                        _format_missing_row(tab + ", ".join(missing_keys) + ": n/a")
+                    )
             elif not rows:
-                rows = [tab + "n/a"]
+                rows.append(_format_missing_row(tab + "n/a"))
 
             return _print_rows(subtitle, rows)
 
@@ -1446,7 +1457,7 @@ class CFAccessor:
         def _format_flags():
             flag_dict = create_flag_dict(self._obj)
             rows = [
-                f"   [green]{v}[/green]: [dodger_blue1]{k}[/dodger_blue1]"
+                f"   {_format_varname(v)}: {_format_cf_name(k)}"
                 if rich
                 else f"{k}: {v}"
                 for k, v in flag_dict.items()

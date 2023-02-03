@@ -36,7 +36,9 @@ airds.cf.mean("latitude")
 Most xarray methods are wrapped by cf-xarray. Simply access them as `DataArray.cf.method(dim="latitude")` for example  and try it! If something does not work, please raise an issue.
 ```
 
-## Coordinate Names
+(coordinate-criteria)=
+
+## Coordinate Criteria
 
 How does this work? `cf_xarray` has an internal table of criteria (mostly copied from MetPy) that lets it identify specific coordinate names `"latitude", "longitude", "vertical", "time"`.
 

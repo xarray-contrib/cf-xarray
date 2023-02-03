@@ -1374,7 +1374,9 @@ class CFAccessor:
 
         if self.cf_roles:
             yield _maybe_panel(
-                _format_roles(self, rich), title="Discrete Sampling Geometry", rich=rich
+                _format_roles(self, dims, rich),
+                title="Discrete Sampling Geometry",
+                rich=rich,
             )
 
         yield _maybe_panel(

@@ -131,8 +131,8 @@ def _format_flags(accessor, rich):
     return _print_rows("Flag Meanings", rows, rich)
 
 
-def _format_roles(accessor, rich):
-    yield make_text_section(accessor, "CF Roles", "cf_roles", rich=rich)
+def _format_roles(accessor, dims, rich):
+    yield make_text_section(accessor, "CF Roles", "cf_roles", dims=dims, rich=rich)
 
 
 def _format_coordinates(accessor, dims, coords, rich):

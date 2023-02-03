@@ -31,6 +31,13 @@ from xarray.core.rolling import Coarsen, Rolling
 from xarray.core.weighted import Weighted
 
 from .criteria import cf_role_criteria, coordinate_criteria, regex
+from .formatting import (
+    _format_coordinates,
+    _format_data_vars,
+    _format_flags,
+    _format_roles,
+    _maybe_panel,
+)
 from .helpers import _guess_bounds_1d, _guess_bounds_2d, bounds_to_vertices
 from .options import OPTIONS
 from .utils import (
@@ -70,23 +77,6 @@ Mapper = Callable[[Union[DataArray, Dataset], Hashable], List[Hashable]]
 
 # Type for decorators
 F = TypeVar("F", bound=Callable[..., Any])
-
-
-def _maybe_panel(textgen, title, rich):
-    text = "".join(textgen)
-    if rich:
-        from rich.panel import Panel
-
-        return Panel(
-            text.rstrip(),
-            expand=True,
-            title_align="left",
-            title=f"[bold]{title}[/bold]",
-            highlight=True,
-            width=120,
-        )
-    else:
-        return title + ":\n" + text
 
 
 def sort_maybe_hashable(iterable: Iterable[Hashable]) -> list[Hashable]:
@@ -1374,129 +1364,30 @@ class CFAccessor:
         return Group(*self._generate_repr(rich=True))
 
     def _generate_repr(self, rich=False):
-        coords = self._obj.coords
         dims = self._obj.dims
-
-        def _format_missing_row(row: str) -> str:
-            if rich:
-                return f"[grey62]{row}[/grey62]"
-            else:
-                return row
-
-        def _format_varname(name: str) -> str:
-            return name
-
-        def _format_subtitle(name: str) -> str:
-            if rich:
-                return f"[bold]{name}[/bold]"
-            else:
-                return name
-
-        def _format_cf_name(name: str) -> str:
-            if rich:
-                return f"[dodger_blue1]{name}[/dodger_blue1]"
-            else:
-                return name
-
-        def make_text_section(subtitle, attr, valid_values=None, default_keys=None):
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                try:
-                    vardict = getattr(self, attr, {})
-                except ValueError:
-                    vardict = {}
-            star = " * "
-            tab = len(star) * " "
-
-            # Sort keys if there aren't extra keys,
-            # preserve default keys order otherwise.
-            default_keys = [] if not default_keys else list(default_keys)
-            extra_keys = list(set(vardict) - set(default_keys))
-            ordered_keys = sorted(vardict) if extra_keys else default_keys
-            vardict = {key: vardict[key] for key in ordered_keys if key in vardict}
-
-            # Keep only valid values (e.g., coords or data_vars)
-            if valid_values is not None:
-                vardict = {
-                    key: set(value).intersection(valid_values)
-                    for key, value in vardict.items()
-                    if set(value).intersection(valid_values)
-                }
-
-            # Star for keys with dims only, tab otherwise
-            rows = [
-                f"{star if set(value) <= set(dims) else tab}{_format_cf_name(key)}: {_format_varname(sorted(value))}"
-                for key, value in vardict.items()
-            ]
-
-            # Append missing default keys followed by n/a
-            if default_keys:
-                missing_keys = [key for key in default_keys if key not in vardict]
-                if missing_keys:
-                    rows.append(
-                        _format_missing_row(tab + ", ".join(missing_keys) + ": n/a")
-                    )
-            elif not rows:
-                rows.append(_format_missing_row(tab + "n/a"))
-
-            return _print_rows(subtitle, rows)
-
-        def _print_rows(subtitle: str, rows: list[str]):
-            subtitle = f"{subtitle.rjust(20)}:"
-
-            # Add subtitle to the first row, align other rows
-            rows = [
-                _format_subtitle(subtitle) + row
-                if i == 0
-                else len(subtitle) * " " + row
-                for i, row in enumerate(rows)
-            ]
-
-            return "\n".join(rows) + "\n\n"
-
-        def _format_flags():
-            flag_dict = create_flag_dict(self._obj)
-            rows = [
-                f"   {_format_varname(v)}: {_format_cf_name(k)}"
-                if rich
-                else f"{k}: {v}"
-                for k, v in flag_dict.items()
-            ]
-            return _print_rows("Flag Meanings", rows)
-
-        def _format_roles():
-            yield make_text_section("CF Roles", "cf_roles")
-
-        def _format_coordinates():
-            yield make_text_section("CF Axes", "axes", coords, _AXIS_NAMES)
-            yield make_text_section(
-                "CF Coordinates", "coordinates", coords, _COORD_NAMES
-            )
-            yield make_text_section(
-                "Cell Measures", "cell_measures", coords, _CELL_MEASURES
-            )
-            yield make_text_section("Standard Names", "standard_names", coords)
-            yield make_text_section("Bounds", "bounds", coords)
-
-        def _format_data_vars():
-            data_vars = self._obj.data_vars
-            yield make_text_section(
-                "Cell Measures", "cell_measures", data_vars, _CELL_MEASURES
-            )
-            yield make_text_section("Standard Names", "standard_names", data_vars)
-            yield make_text_section("Bounds", "bounds", data_vars)
+        coords = self._obj.coords
 
         if isinstance(self._obj, DataArray) and self._obj.cf.is_flag_variable:
-            yield _maybe_panel(_format_flags(), title="Flag Variable", rich=rich)
+            yield _maybe_panel(
+                _format_flags(self, rich), title="Flag Variable", rich=rich
+            )
 
         if self.cf_roles:
             yield _maybe_panel(
-                _format_roles(), title="Discrete Sampling Geometry", rich=rich
+                _format_roles(self, rich), title="Discrete Sampling Geometry", rich=rich
             )
 
-        yield _maybe_panel(_format_coordinates(), title="Coordinates", rich=rich)
+        yield _maybe_panel(
+            _format_coordinates(self, dims, coords, rich),
+            title="Coordinates",
+            rich=rich,
+        )
         if isinstance(self._obj, Dataset):
-            yield _maybe_panel(_format_data_vars(), title="Data Variables", rich=rich)
+            yield _maybe_panel(
+                _format_data_vars(self, self._obj.data_vars, rich),
+                title="Data Variables",
+                rich=rich,
+            )
 
     def keys(self) -> set[Hashable]:
         """

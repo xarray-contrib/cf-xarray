@@ -16,6 +16,6 @@ dependencies:
   - pip
   - pip
     - pytest-pretty
-    - git+https://github.com/pydata/xarray
-    - git+https://github.com/dcherian/flox
-    - git+https://github.com/hgrecco/pint
+    - git+https://github.com/pydata/xarray.git
+    - git+https://github.com/dcherian/flox.git
+    - git+https://github.com/hgrecco/pint.git

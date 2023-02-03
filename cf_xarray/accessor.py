@@ -371,7 +371,7 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
 
 def _get_grid_mapping(obj: DataArray | Dataset, key: str) -> list[str]:
     """
-    Translate from key (either CF key or variable name) to its grid mapping variable name.
+    Translate from grid mapping name attribute to appropriate variable name.
     This function interprets the ``grid_mapping`` attribute on DataArrays.
 
     Parameters
@@ -383,15 +383,28 @@ def _get_grid_mapping(obj: DataArray | Dataset, key: str) -> list[str]:
 
     Returns
     -------
-    List[str], Variable name(s) in parent xarray object that is grid mapping of `key`
+    List[str], Variable name(s) in parent xarray object that matches grid_mapping_name `key`
     """
 
-    results = set()
-    for var in apply_mapper(_get_all, obj, key, error=False, default=[key]):
-        attrs_or_encoding = ChainMap(obj[var].attrs, obj[var].encoding)
-        if "grid_mapping" in attrs_or_encoding:
-            results |= {attrs_or_encoding["grid_mapping"]}
+    if isinstance(obj, DataArray):
+        obj = obj._to_temp_dataset()
 
+    results = set()
+    for var in obj.variables:
+        da = obj[var]
+        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
+        if "grid_mapping" in attrs_or_encoding:
+            grid_mapping = attrs_or_encoding["grid_mapping"]
+            try:
+                da = obj[grid_mapping]
+            except ValueError as e:
+                raise ValueError(
+                    f"{var} defines non-existing grid_mapping variable {grid_mapping}."
+                ) from e
+            results.update([grid_mapping])
+
+    if isinstance(results, str):
+        return [results]
     return list(results)
 
 
@@ -423,6 +436,7 @@ def _get_all(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
         functools.partial(_get_custom_criteria, criteria=cf_role_criteria),  # type: ignore
         _get_axis_coord,
         _get_measure,
+        _get_grid_mapping,
         _get_with_standard_name,
     )
     results = apply_mapper(all_mappers, obj, key, error=False, default=None)
@@ -732,6 +746,8 @@ def _getitem(
         measures = []
         warnings.warn("Ignoring bad cell_measures attribute.", UserWarning)
 
+    grid_mappings = accessor.grid_mappings
+
     custom_criteria = ChainMap(*OPTIONS["custom_criteria"])
 
     varnames: list[Hashable] = []
@@ -750,6 +766,12 @@ def _getitem(
             successful[k] = bool(measure)
             if measure:
                 varnames.extend(measure)
+        elif "grid_mappings" not in skip and k in grid_mappings:
+            grid_mapping = _get_all(obj, k)
+            check_results(grid_mapping, k)
+            successful[k] = bool(grid_mapping)
+            if grid_mapping:
+                varnames.extend(grid_mapping)
         elif k in custom_criteria or k in cf_role_criteria:
             names = _get_all(obj, k)
             check_results(names, k)

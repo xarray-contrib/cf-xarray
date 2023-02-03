@@ -12,6 +12,7 @@ from typing import (
     Callable,
     Hashable,
     Iterable,
+    List,
     Mapping,
     MutableMapping,
     Sequence,
@@ -65,7 +66,7 @@ ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
 
 # Type for Mapper functions
-Mapper = Callable[[Union[DataArray, Dataset], Hashable], list[Hashable]]
+Mapper = Callable[[Union[DataArray, Dataset], Hashable], List[Hashable]]
 
 # Type for decorators
 F = TypeVar("F", bound=Callable[..., Any])

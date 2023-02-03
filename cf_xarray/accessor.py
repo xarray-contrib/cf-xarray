@@ -2648,7 +2648,37 @@ class CFDataArrayAccessor(CFAccessor):
 
     @property
     def grid_mapping(self) -> DataArray | None:
-        """ """
+        """
+        Property that returns an associated grid mapping variable.
+
+        Returns
+        -------
+        DataArray
+            with associated grid mapping attributes.
+
+        See Also
+        --------
+        DataArray.cf.grid_mapping_name
+
+        References
+        ----------
+        Please refer to the CF conventions document : https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#grid-mappings-and-projections
+
+        For a list of valid grid_mapping names, refer to: https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#appendix-grid-mappings
+
+        Examples
+        --------
+        >>> from cf_xarray.datasets import rotds
+        >>> rotds.cf["temp"].cf.grid_mapping
+        <xarray.DataArray 'rotated_pole' ()>
+        array(0, dtype=int32)
+        Coordinates:
+            rotated_pole  int32 0
+        Attributes:
+            grid_mapping_name:          rotated_latitude_longitude
+            grid_north_pole_latitude:   39.25
+            grid_north_pole_longitude:  -162.0
+        """
         da = self._obj
 
         if "grid_mapping" not in ChainMap(da.attrs, da.encoding):
@@ -2662,7 +2692,24 @@ class CFDataArrayAccessor(CFAccessor):
 
     @property
     def grid_mapping_name(self) -> str:
-        """ """
+        """
+        Get CF grid mapping name associated with this variable.
+
+        Parameters
+        ----------
+        key : str
+            Name of variable whose grid_mapping name is desired.
+
+        Returns
+        -------
+        str
+            CF Name of the associated grid mapping.
+
+        See Also
+        --------
+        DataArray.cf.grid_mapping
+
+        """
         grid_mapping = self.grid_mapping
 
         if grid_mapping is None:

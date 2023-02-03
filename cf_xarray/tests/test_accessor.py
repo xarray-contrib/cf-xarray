@@ -59,38 +59,38 @@ def assert_dicts_identical(dict1, dict2):
 
 def test_repr() -> None:
 
-    repr(ds_with_tuple.cf)
+    assert "air_temperature: [(1, 2, 3)]" in ds_with_tuple.cf.__repr__()
 
     # Dataset.
     # Stars: axes, coords, and std names
     actual = airds.cf.__repr__()
     expected = """\
     Coordinates:
-    - CF Axes: * X: ['lon']
-               * Y: ['lat']
-               * T: ['time']
-                 Z: n/a
+                 CF Axes: * X: ['lon']
+                          * Y: ['lat']
+                          * T: ['time']
+                            Z: n/a
 
-    - CF Coordinates: * longitude: ['lon']
-                      * latitude: ['lat']
-                      * time: ['time']
-                        vertical: n/a
+          CF Coordinates: * longitude: ['lon']
+                          * latitude: ['lat']
+                          * time: ['time']
+                            vertical: n/a
 
-    - Cell Measures:   area: ['cell_area']
-                       volume: n/a
+           Cell Measures:   area: ['cell_area']
+                            volume: n/a
 
-    - Standard Names: * latitude: ['lat']
-                      * longitude: ['lon']
-                      * time: ['time']
+          Standard Names: * latitude: ['lat']
+                          * longitude: ['lon']
+                          * time: ['time']
 
-    - Bounds:   n/a
+                  Bounds:   n/a
 
     Data Variables:
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   air_temperature: ['air']
+          Standard Names:   air_temperature: ['air']
 
-    - Bounds:   n/a"""
+                  Bounds:   n/a"""
     assert actual == dedent(expected)
 
     # DataArray (Coordinates section same as Dataset)
@@ -98,51 +98,51 @@ def test_repr() -> None:
     actual = airds["air"].cf.__repr__()
     expected = """\
     Coordinates:
-    - CF Axes: * X: ['lon']
-               * Y: ['lat']
-               * T: ['time']
-                 Z: n/a
+                 CF Axes: * X: ['lon']
+                          * Y: ['lat']
+                          * T: ['time']
+                            Z: n/a
 
-    - CF Coordinates: * longitude: ['lon']
-                      * latitude: ['lat']
-                      * time: ['time']
-                        vertical: n/a
+          CF Coordinates: * longitude: ['lon']
+                          * latitude: ['lat']
+                          * time: ['time']
+                            vertical: n/a
 
-    - Cell Measures:   area: ['cell_area']
-                       volume: n/a
+           Cell Measures:   area: ['cell_area']
+                            volume: n/a
 
-    - Standard Names: * latitude: ['lat']
-                      * longitude: ['lon']
-                      * time: ['time']
+          Standard Names: * latitude: ['lat']
+                          * longitude: ['lon']
+                          * time: ['time']
 
-    - Bounds:   n/a"""
+                  Bounds:   n/a"""
     assert actual == dedent(expected)
 
     # Empty Standard Names
     actual = popds.cf.__repr__()
     expected = """\
     Coordinates:
-    - CF Axes: * X: ['nlon']
-               * Y: ['nlat']
-                 Z, T: n/a
+                 CF Axes: * X: ['nlon']
+                          * Y: ['nlat']
+                            Z, T: n/a
 
-    - CF Coordinates:   longitude: ['TLONG', 'ULONG']
-                        latitude: ['TLAT', 'ULAT']
-                        vertical, time: n/a
+          CF Coordinates:   longitude: ['TLONG', 'ULONG']
+                            latitude: ['TLAT', 'ULAT']
+                            vertical, time: n/a
 
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   n/a
+          Standard Names:   n/a
 
-    - Bounds:   n/a
+                  Bounds:   n/a
 
     Data Variables:
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   sea_water_potential_temperature: ['TEMP']
-                        sea_water_x_velocity: ['UVEL']
+          Standard Names:   sea_water_potential_temperature: ['TEMP']
+                            sea_water_x_velocity: ['UVEL']
 
-    - Bounds:   n/a"""
+                  Bounds:   n/a"""
     assert actual == dedent(expected)
 
     # Flag DataArray
@@ -152,57 +152,57 @@ def test_repr() -> None:
     actual = airds["air"]._to_temp_dataset().cf.__repr__()
     expected = """\
     Coordinates:
-    - CF Axes: * X: ['lon']
-               * Y: ['lat']
-               * T: ['time']
-                 Z: n/a
+                 CF Axes: * X: ['lon']
+                          * Y: ['lat']
+                          * T: ['time']
+                            Z: n/a
 
-    - CF Coordinates: * longitude: ['lon']
-                      * latitude: ['lat']
-                      * time: ['time']
-                        vertical: n/a
+          CF Coordinates: * longitude: ['lon']
+                          * latitude: ['lat']
+                          * time: ['time']
+                            vertical: n/a
 
-    - Cell Measures:   area: ['cell_area']
-                       volume: n/a
+           Cell Measures:   area: ['cell_area']
+                            volume: n/a
 
-    - Standard Names: * latitude: ['lat']
-                      * longitude: ['lon']
-                      * time: ['time']
+          Standard Names: * latitude: ['lat']
+                          * longitude: ['lon']
+                          * time: ['time']
 
-    - Bounds:   n/a
+                  Bounds:   n/a
 
     Data Variables:
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   air_temperature: [<this-array>]
+          Standard Names:   air_temperature: [<this-array>]
 
-    - Bounds:   n/a"""
+                  Bounds:   n/a"""
     assert actual == dedent(expected)
 
     # CF roles
     actual = dsg.cf.__repr__()
     expected = """\
     Discrete Sampling Geometry:
-    - CF Roles: * profile_id: ['profile']
-                * trajectory_id: ['trajectory']
+                CF Roles: * profile_id: ['profile']
+                          * trajectory_id: ['trajectory']
 
     Coordinates:
-    - CF Axes:   X, Y, Z, T: n/a
+                 CF Axes:   X, Y, Z, T: n/a
 
-    - CF Coordinates:   longitude, latitude, vertical, time: n/a
+          CF Coordinates:   longitude, latitude, vertical, time: n/a
 
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   n/a
+          Standard Names:   n/a
 
-    - Bounds:   n/a
+                  Bounds:   n/a
 
     Data Variables:
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   n/a
+          Standard Names:   n/a
 
-    - Bounds:   n/a"""
+                  Bounds:   n/a"""
     assert actual == dedent(expected)
 
 

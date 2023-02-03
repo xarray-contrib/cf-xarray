@@ -1430,8 +1430,8 @@ class CFAccessor:
 
             return _print_rows(subtitle, rows)
 
-        def _print_rows(subtitle, rows):
-            subtitle = f"- {subtitle}:" if not rich else f"    {subtitle}:"
+        def _print_rows(subtitle: str, rows: list[str]):
+            subtitle = f"{subtitle.rjust(20)}:"
 
             # Add subtitle to the first row, align other rows
             rows = [

@@ -1,5 +1,8 @@
 import warnings
 
+STAR = " * "
+TAB = len(STAR) * " "
+
 
 def _format_missing_row(row: str, rich: bool) -> str:
     if rich:
@@ -44,8 +47,6 @@ def make_text_section(
             vardict = getattr(accessor, attr, {})
         except ValueError:
             vardict = {}
-    star = " * "
-    tab = len(star) * " "
 
     # Sort keys if there aren't extra keys,
     # preserve default keys order otherwise.
@@ -65,7 +66,7 @@ def make_text_section(
     # Star for keys with dims only, tab otherwise
     rows = [
         (
-            f"{star if dims and set(value) <= set(dims) else tab}"
+            f"{STAR if dims and set(value) <= set(dims) else TAB}"
             f"{_format_cf_name(key, rich)}: {_format_varname(sorted(value), rich)}"
         )
         for key, value in vardict.items()
@@ -76,10 +77,10 @@ def make_text_section(
         missing_keys = [key for key in default_keys if key not in vardict]
         if missing_keys:
             rows.append(
-                _format_missing_row(tab + ", ".join(missing_keys) + ": n/a", rich)
+                _format_missing_row(TAB + ", ".join(missing_keys) + ": n/a", rich)
             )
     elif not rows:
-        rows.append(_format_missing_row(tab + "n/a", rich))
+        rows.append(_format_missing_row(TAB + "n/a", rich))
 
     return _print_rows(subtitle, rows, rich)
 
@@ -120,7 +121,7 @@ def _format_flags(accessor, rich):
 
     flag_dict = create_flag_dict(accessor._obj)
     rows = [
-        f"   {_format_varname(v, rich)}: {_format_cf_name(k, rich)}"
+        f"{TAB}{_format_varname(v, rich)}: {_format_cf_name(k, rich)}"
         for k, v in flag_dict.items()
     ]
     return _print_rows("Flag Meanings", rows, rich)

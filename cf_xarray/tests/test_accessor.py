@@ -259,14 +259,14 @@ def test_cell_measures() -> None:
     actual = ds.cf.__repr__()
     expected_repr = """\
     Data Variables:
-    - Cell Measures:   foo_measure: ['foo']
-                       volume: ['foo']
-                       area: n/a
+           Cell Measures:   foo_measure: ['foo']
+                            volume: ['foo']
+                            area: n/a
 
-    - Standard Names:   air_temperature: ['air']
-                        foo_std_name: ['foo']
+          Standard Names:   air_temperature: ['air']
+                            foo_std_name: ['foo']
 
-    - Bounds:   n/a"""
+                  Bounds:   n/a"""
     assert actual.endswith(dedent(expected_repr))
 
 
@@ -895,11 +895,10 @@ def test_bounds() -> None:
 
     # Dataset has bounds
     expected_repr = """\
-    - Bounds:   Y: ['lat_bounds']
-                lat: ['lat_bounds']
-                latitude: ['lat_bounds']
-    """
-    assert dedent(expected_repr) in ds.cf.__repr__()
+              Bounds:   Y: ['lat_bounds']
+                        lat: ['lat_bounds']
+                        latitude: ['lat_bounds']"""
+    assert expected_repr in ds.cf.__repr__()
 
     # DataArray does not have bounds
     expected_repr = airds.cf["air"].cf.__repr__()

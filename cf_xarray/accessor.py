@@ -746,7 +746,10 @@ def _getitem(
         measures = []
         warnings.warn("Ignoring bad cell_measures attribute.", UserWarning)
 
-    grid_mappings = accessor.grid_mappings
+    if isinstance(obj, Dataset):
+        grid_mappings = accessor.grid_mappings
+    else:
+        grid_mappings = []
 
     custom_criteria = ChainMap(*OPTIONS["custom_criteria"])
 
@@ -1492,7 +1495,7 @@ class CFAccessor:
         varnames.extend(list(self.cell_measures))
         varnames.extend(list(self.standard_names))
         varnames.extend(list(self.cf_roles))
-        varnames.extend(list(self.grid_mappings))
+        # varnames.extend(list(self.grid_mappings))
 
         return set(varnames)
 
@@ -2763,7 +2766,9 @@ class CFDataArrayAccessor(CFAccessor):
         grid_mapping = ChainMap(da.attrs, da.encoding)["grid_mapping"]
 
         if grid_mapping in da.coords:
-            return da.coords[grid_mapping]
+            grid_mapping_var = da.coords[grid_mapping]
+            # drop grid_mapping coordinate
+            return grid_mapping_var.drop_vars(grid_mapping_var.name)
         else:
             raise KeyError(f"No grid_mapping named {grid_mapping!r} in coordinates.")
 

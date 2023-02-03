@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Sequence
+from typing import Hashable, Sequence
 
 import numpy as np
 import xarray as xr
@@ -111,7 +111,7 @@ def _guess_bounds_2d(da, dims):
 
 def bounds_to_vertices(
     bounds: DataArray,
-    bounds_dim: str,
+    bounds_dim: Hashable,
     core_dims=None,
     order: str | None = "counterclockwise",
 ) -> DataArray:

@@ -1,2 +1,137 @@
+[project]
+name = "cf_xarray"
+description = "A convenience wrapper for using CF attributes on xarray objects"
+readme = "README.rst"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+keywords = ["xarray", "metadata", "CF conventions"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+dependencies = [
+    "xarray",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+all = ["matplotlib", "pint", "shapely", "regex"]
+
+[project.urls]
+homepage = "https://cf-xarray.readthedocs.io"
+documentation = "https://cf-xarray.readthedocs.io"
+repository = "https://github.com/xarray-contrib/cf-xarray.git"
+changelog = "https://cf-xarray.readthedocs.io/en/latest/whats-new.html"
+
+[build-system]
+requires = [
+    # xarray is need for dynamic version string
+    "xarray",
+    "setuptools>=45",
+    "wheel",
+    "setuptools_scm[toml]>=6.2",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["cf_xarray", "cf_xarray.data", "cf_xarray.scripts"]
+
+[tool.setuptools.exclude-package-data]
+cf_xarray = ["tests/*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "cf_xarray.__version__"}
+
+[tool.setuptools_scm]
+fallback_version = "999"
+write_to = "cf_xarray/_version.py"
+write_to_template= '__version__ = "{version}"'
+tag_regex= "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
+
+[tool.black]
+target-version = ["py38"]
+
+[tool.ruff]
+target-version = "py38"
+builtins = ["ellipsis"]
+exclude = [
+    ".eggs",
+    "doc",
+]
+# E402: module level import not at top of file
+# E501: line too long - let black worry about that
+# E731: do not assign a lambda expression, use a def
+ignore = [
+    "E402",
+    "E501",
+    "E731",
+]
+select = [
+    # Pyflakes
+    "F",
+    # Pycodestyle
+    "E",
+    "W",
+    # isort
+    "I",
+    # Pyupgrade
+    "UP",
+]
+
+[tool.ruff.isort]
+known-first-party = ["cf_xarray"]
+known-third-party = [
+    "dask",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "pint",
+    "pkg_resources",
+    "pytest",
+    "setuptools",
+    "sphinx_autosummary_accessors",
+    "xarray"
+]
+
+[tool.pytest]
+python_files = "test_*.py"
+testpaths = ["cf_xarray/tests"]
+
+[tool.rstcheck]
+report_level = "WARNING"
+ignore_roles = [
+    "pr",
+    "issue",
+]
+ignore_directives = [
+    "ipython",
+    "autodata",
+    "autosummary",
+]
+
 [tool.nbqa.md]
 mdformat = true
+
+[tool.mypy]
+exclude = "doc|flycheck"
+files = "cf_xarray/"
+show_error_codes = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module=[
+    "cftime",
+    "pandas",
+    "matplotlib",
+    "pytest",
+    "shapely.geometry",
+    "xarray.core.pycompat",
+]
+ignore_missing_imports = true

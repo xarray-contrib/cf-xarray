@@ -3,6 +3,21 @@
 What's New
 ----------
 
+v (unreleased)
+==============
+
+
+v0.7.9 (Jan 31, 2023)
+=====================
+
+- Fix packaging of v0.7.8. That release was yanked off PyPI.
+
+v0.7.8 (Jan 31, 2023)
+=====================
+
+- Optionally use the `regex` package to continue supporting global flags in regular expressions that are not at start of pattern (:pr:`408`). By `Kristen Thyng`_
+- Added link to docs for a new example "COSIMA ocean-sea ice model demo" (:pr:`397`). By `Aidan Heerdegen`_
+
 v0.7.7 (Jan 14, 2023)
 =====================
 
@@ -25,7 +40,7 @@ v0.7.5 (Nov 15, 2022)
   By `Pascal Bourgault`_.
 - Improve detection of bounds order by rellaxing check a bit (:pr:`361`).
   By `Lars Buntemeyer`_.
-- Performance improvements. (:pr:`358`). By `Luke Davis`
+- Performance improvements. (:pr:`358`). By `Luke Davis`_
 - Fix coordinate/axis detection (:pr:`359`). By `Martin Schupfner`_
 
 v0.7.4 (July 14, 2022)
@@ -200,4 +215,5 @@ v0.1.3
 .. _`Luke Davis`: https://github.com/lukelbd
 .. _`Martin Schupfner`: https://github.com/sol1105
 .. _`Mathias Hauser`: https://github.com/mathause
+.. _`Aidan Heerdegen`: https://github.com/aidanheerdegen
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

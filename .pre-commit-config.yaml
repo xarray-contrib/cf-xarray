@@ -2,33 +2,24 @@ ci:
     autoupdate_schedule: quarterly
 
 repos:
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.11.4
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    # Ruff version.
+    rev: 'v0.0.237'
     hooks:
-      - id: isort
-        files: .+\.py$
+      - id: ruff
+        args: ["--fix"]
 
   - repo: https://github.com/psf/black
     rev: 22.12.0
     hooks:
       - id: black
 
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
-    hooks:
-      - id: flake8
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.991
-    hooks:
-       - id: mypy
-         additional_dependencies: [types-all]
-
   - repo: https://github.com/rstcheck/rstcheck
     rev: v6.1.1
     hooks:
         - id: rstcheck
-          additional_dependencies: [sphinx]
+          additional_dependencies: [sphinx, tomli]
+          args: ['--config', 'pyproject.toml']
 
   - repo: https://github.com/executablebooks/mdformat
     rev: 0.7.16
@@ -39,24 +30,15 @@ repos:
         - mdformat-myst
 
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.6.0
+    rev: 1.6.1
     hooks:
         - id: nbqa-black
-        - id: nbqa-pyupgrade
-          args: [--py37-plus]
-        - id: nbqa-isort
+        - id: nbqa-ruff
         - id: nbqa
           entry: nbqa mdformat
           name: nbqa-mdformat
           alias: nbqa-mdformat
           additional_dependencies: [mdformat==0.7.14]
-
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v3.3.1
-    hooks:
-     - id: pyupgrade
-       args:
-         - "--py37-plus"
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.4.0
@@ -65,9 +47,20 @@ repos:
       - id: end-of-file-fixer
       - id: check-toml
       - id: check-yaml
+      - id: debug-statements
 
   - repo: https://github.com/keewis/blackdoc
     rev: v0.3.8
     hooks:
       - id: blackdoc
         files: .+\.py$
+
+  - repo: https://github.com/citation-file-format/cff-converter-python
+    rev: "44e8fc9"
+    hooks:
+    - id: validate-cff
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: main
+    hooks:
+      - id: validate-pyproject

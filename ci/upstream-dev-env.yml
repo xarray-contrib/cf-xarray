@@ -5,13 +5,17 @@ dependencies:
   - pytest-cov
   - pytest
   - pytest-xdist
+  - pytest-reportlog
   - dask
   - matplotlib-base
   - netcdf4
   - pandas
   - pooch
+  - rich
   - shapely
+  - pip
   - pip:
-    - git+https://github.com/pydata/xarray
-    - git+https://github.com/dcherian/flox
-    - git+https://github.com/hgrecco/pint
+    - pytest-pretty
+    - git+https://github.com/pydata/xarray.git
+    - git+https://github.com/dcherian/flox.git
+    - git+https://github.com/hgrecco/pint.git

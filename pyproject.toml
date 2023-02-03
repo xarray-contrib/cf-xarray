@@ -27,7 +27,7 @@ all = ["matplotlib", "pint", "shapely", "regex"]
 homepage = "https://cf-xarray.readthedocs.io"
 documentation = "https://cf-xarray.readthedocs.io"
 repository = "https://github.com/xarray-contrib/cf-xarray.git"
-changelog = "https://github.com/xarray-contrib/cf-xarray/blob/main/doc/whats-new.rst"
+changelog = "https://cf-xarray.readthedocs.io/en/latest/whats-new.html"
 
 [build-system]
 requires = [
@@ -40,8 +40,10 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-include-package-data = false
-packages = ["cf_xarray", "cf_xarray.scripts"]
+packages = ["cf_xarray", "cf_xarray.data", "cf_xarray.scripts"]
+
+[tool.setuptools.exclude-package-data]
+cf_xarray = ["tests/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "cf_xarray.__version__"}

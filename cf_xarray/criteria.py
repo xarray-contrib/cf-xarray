@@ -4,12 +4,20 @@ Reused with modification from MetPy under the terms of the BSD 3-Clause License.
 Copyright (c) 2017 MetPy Developers.
 """
 
+try:
+    import regex as re
+except ImportError:
+    import re
 
-import re
 from typing import Mapping, MutableMapping, Tuple
 
 cf_role_criteria: Mapping[str, Mapping[str, str]] = {
     k: {"cf_role": k} for k in ("timeseries_id", "profile_id", "trajectory_id")
+}
+
+# A grid mapping varibale is anything with a grid_mapping_name attribute
+grid_mapping_var_criteria: Mapping[str, Mapping[str, str]] = {
+    "grid_mapping": {"grid_mapping_name": re.compile(".")}
 }
 
 coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {

@@ -30,7 +30,12 @@ from xarray.core.resample import Resample
 from xarray.core.rolling import Coarsen, Rolling
 from xarray.core.weighted import Weighted
 
-from .criteria import cf_role_criteria, coordinate_criteria, regex
+from .criteria import (
+    cf_role_criteria,
+    coordinate_criteria,
+    grid_mapping_var_criteria,
+    regex,
+)
 from .helpers import _guess_bounds_1d, _guess_bounds_2d, bounds_to_vertices
 from .options import OPTIONS
 from .utils import (
@@ -430,6 +435,7 @@ def _get_all(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     all_mappers: tuple[Mapper] = (
         _get_custom_criteria,
         functools.partial(_get_custom_criteria, criteria=cf_role_criteria),  # type: ignore
+        functools.partial(_get_custom_criteria, criteria=grid_mapping_var_criteria),  # type: ignore
         _get_axis_coord,
         _get_measure,
         _get_grid_mapping,

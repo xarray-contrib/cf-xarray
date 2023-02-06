@@ -374,7 +374,7 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     return list(results)
 
 
-def _get_grid_mapping(obj: DataArray | Dataset, key: str) -> list[str]:
+def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
     """
     Translate from grid mapping name attribute to appropriate variable name.
     This function interprets the ``grid_mapping`` attribute on DataArrays.
@@ -438,7 +438,7 @@ def _get_all(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
         functools.partial(_get_custom_criteria, criteria=grid_mapping_var_criteria),  # type: ignore
         _get_axis_coord,
         _get_measure,
-        _get_grid_mapping,
+        _get_grid_mapping_name,
         _get_with_standard_name,
     )
     results = apply_mapper(all_mappers, obj, key, error=False, default=None)
@@ -749,9 +749,9 @@ def _getitem(
         warnings.warn("Ignoring bad cell_measures attribute.", UserWarning)
 
     if isinstance(obj, Dataset):
-        grid_mappings = accessor.grid_mappings
+        grid_mapping_names = list(accessor.grid_mapping_names)
     else:
-        grid_mappings = []
+        grid_mapping_names = []
 
     custom_criteria = ChainMap(*OPTIONS["custom_criteria"])
 
@@ -771,7 +771,7 @@ def _getitem(
             successful[k] = bool(measure)
             if measure:
                 varnames.extend(measure)
-        elif "grid_mappings" not in skip and k in grid_mappings:
+        elif "grid_mapping_names" not in skip and k in grid_mapping_names:
             grid_mapping = _get_all(obj, k)
             check_results(grid_mapping, k)
             successful[k] = bool(grid_mapping)
@@ -1467,7 +1467,7 @@ class CFAccessor:
         )
         text += make_text_section("Standard Names", "standard_names", coords)
         text += make_text_section("Bounds", "bounds", coords)
-        text += make_text_section("Grid Mappings", "grid_mappings", coords)
+        text += make_text_section("Grid Mappings", "grid_mapping_names", coords)
         if isinstance(self._obj, Dataset):
             data_vars = self._obj.data_vars
             text += "\nData Variables:"
@@ -1476,7 +1476,7 @@ class CFAccessor:
             )
             text += make_text_section("Standard Names", "standard_names", data_vars)
             text += make_text_section("Bounds", "bounds", data_vars)
-            text += make_text_section("Grid Mappings", "grid_mappings", data_vars)
+            text += make_text_section("Grid Mappings", "grid_mapping_names", data_vars)
 
         return text
 
@@ -2439,7 +2439,7 @@ class CFDatasetAccessor(CFAccessor):
         return obj
 
     @property
-    def grid_mappings(self) -> dict[str, list[str]]:
+    def grid_mapping_names(self) -> dict[str, list[str]]:
         """
         Property that returns a dictionary mapping variable names
         to the variable names of their grid_mapping.
@@ -2451,8 +2451,7 @@ class CFDatasetAccessor(CFAccessor):
 
         See Also
         --------
-        Dataset.cf.get_grid_mapping
-        Dataset.cf.get_grid_mapping_name
+        DataArray.cf.grid_mapping
 
         References
         ----------
@@ -2463,7 +2462,7 @@ class CFDatasetAccessor(CFAccessor):
         Examples
         --------
         >>> from cf_xarray.datasets import rotds
-        >>> rotds.cf.grid_mappings
+        >>> rotds.cf.grid_mapping_names
         {'air_temperature': ['rotated_pole'], 'temp': ['rotated_pole']}
         """
 

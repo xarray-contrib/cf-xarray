@@ -328,7 +328,7 @@ def test_accessor_getattr_and_describe() -> None:
     assert ds_verta.cf.formula_terms == ds_vertb.cf.formula_terms
     assert ds_verta.o3.cf.formula_terms == ds_vertb.o3.cf.formula_terms
     assert ds_verta.cf.bounds == ds_vertb.cf.bounds
-    assert ds_verta.cf.grid_mappings == ds_vertb.cf.grid_mappings
+    assert ds_verta.cf.grid_mapping_names == ds_vertb.cf.grid_mapping_names
     assert str(ds_verta.cf) == str(ds_vertb.cf)
 
 
@@ -974,9 +974,9 @@ def test_get_bounds_dim_name() -> None:
 def test_grid_mappings():
     ds = rotds.copy(deep=False)
 
-    actual = ds.cf.grid_mappings
+    actual = ds.cf.grid_mapping_names
     expected = {"rotated_latitude_longitude": ["rotated_pole"]}
-    assert ds.cf.grid_mappings == expected
+    assert actual == expected
 
     expected = ds.rotated_pole
     actual = ds.cf["rotated_latitude_longitude"]

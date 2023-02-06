@@ -105,7 +105,7 @@ For use in cartopy, there is some more overhead due to [this issue](https://gith
 ```python
 from cartopy import crs as ccrs
 
-grid_mapping = rotds.cf.get_grid_mapping("temp")
+grid_mapping = rotds.temp.cf["grid_mapping"]
 pole_latitude = grid_mapping.grid_north_pole_latitude
 pole_longitude = grid_mapping.grid_north_pole_longitude
 

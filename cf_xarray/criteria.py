@@ -7,9 +7,9 @@ Copyright (c) 2017 MetPy Developers.
 try:
     import regex as re
 except ImportError:
-    import re
+    import re  # type: ignore
 
-from typing import Mapping, MutableMapping, Tuple
+from typing import Any, Mapping, MutableMapping, Tuple
 
 cf_role_criteria: Mapping[str, Mapping[str, str]] = {
     k: {"cf_role": k}
@@ -26,7 +26,7 @@ cf_role_criteria: Mapping[str, Mapping[str, str]] = {
 }
 
 # A grid mapping varibale is anything with a grid_mapping_name attribute
-grid_mapping_var_criteria: Mapping[str, Mapping[str, str]] = {
+grid_mapping_var_criteria: Mapping[str, Mapping[str, Any]] = {
     "grid_mapping": {"grid_mapping_name": re.compile(".")}
 }
 

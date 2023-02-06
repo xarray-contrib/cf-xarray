@@ -751,7 +751,11 @@ def _getitem(
     if isinstance(obj, Dataset):
         grid_mapping_names = list(accessor.grid_mapping_names)
     else:
-        grid_mapping_names = []
+        try:
+            grid_mapping_names = [accessor.grid_mapping_name]
+        except ValueError:
+            grid_mapping_names = []
+    grid_mapping_names.append("grid_mapping")
 
     custom_criteria = ChainMap(*OPTIONS["custom_criteria"])
 
@@ -1497,7 +1501,14 @@ class CFAccessor:
         varnames.extend(list(self.cell_measures))
         varnames.extend(list(self.standard_names))
         varnames.extend(list(self.cf_roles))
-        # varnames.extend(list(self.grid_mappings))
+        if isinstance(self._obj, xr.Dataset):
+            varnames.extend(list(self.grid_mapping_names))
+        else:
+            try:
+                gmname = self.grid_mapping_name
+                varnames.extend(list(gmname))
+            except ValueError:
+                pass
 
         return set(varnames)
 
@@ -2659,52 +2670,6 @@ class CFDataArrayAccessor(CFAccessor):
         return terms
 
     @property
-    def grid_mapping(self) -> DataArray | None:
-        """
-        Property that returns an associated grid mapping variable.
-
-        Returns
-        -------
-        DataArray
-            with associated grid mapping attributes.
-
-        See Also
-        --------
-        DataArray.cf.grid_mapping_name
-
-        References
-        ----------
-        Please refer to the CF conventions document : https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#grid-mappings-and-projections
-
-        For a list of valid grid_mapping names, refer to: https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#appendix-grid-mappings
-
-        Examples
-        --------
-        >>> from cf_xarray.datasets import rotds
-        >>> rotds.cf["temp"].cf.grid_mapping
-        <xarray.DataArray 'rotated_pole' ()>
-        array(0, dtype=int32)
-        Coordinates:
-            rotated_pole  int32 0
-        Attributes:
-            grid_mapping_name:          rotated_latitude_longitude
-            grid_north_pole_latitude:   39.25
-            grid_north_pole_longitude:  -162.0
-        """
-        da = self._obj
-
-        if "grid_mapping" not in ChainMap(da.attrs, da.encoding):
-            return None
-        grid_mapping = ChainMap(da.attrs, da.encoding)["grid_mapping"]
-
-        if grid_mapping in da.coords:
-            grid_mapping_var = da.coords[grid_mapping]
-            # drop grid_mapping coordinate
-            return grid_mapping_var.drop_vars(grid_mapping_var.name)
-        else:
-            raise KeyError(f"No grid_mapping named {grid_mapping!r} in coordinates.")
-
-    @property
     def grid_mapping_name(self) -> str:
         """
         Get CF grid mapping name associated with this variable.
@@ -2721,21 +2686,19 @@ class CFDataArrayAccessor(CFAccessor):
 
         See Also
         --------
-        DataArray.cf.grid_mapping
+        Dataset.cf.grid_mapping_names
 
         """
-        grid_mapping = self.grid_mapping
 
-        if grid_mapping is None:
-            return ""
-        if "grid_mapping_name" not in ChainMap(
-            grid_mapping.attrs, grid_mapping.encoding
-        ):
-            warnings.warn(
-                f"{grid_mapping.name} has not grid_mapping_name attribute!",
-                UserWarning,
-            )
-        return grid_mapping.attrs["grid_mapping_name"]
+        da = self._obj
+
+        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
+        grid_mapping = attrs_or_encoding.get("grid_mapping", None)
+        if not grid_mapping:
+            raise ValueError("No 'grid_mapping' attribute present.")
+
+        grid_mapping_var = da[grid_mapping]
+        return grid_mapping_var.attrs["grid_mapping_name"]
 
     def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray:
         """

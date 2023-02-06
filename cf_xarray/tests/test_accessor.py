@@ -981,34 +981,36 @@ def test_grid_mappings():
     expected = ds.rotated_pole
     actual = ds.cf["rotated_latitude_longitude"]
     assert_identical(actual, expected)
-    actual = ds.cf["temp"].cf.grid_mapping
-    assert_identical(actual, expected)
 
-    # Extraction
-    actual = ds.cf["temp"].coords["rotated_pole"].drop_vars("rotated_pole")
+    expected = ds.rotated_pole
+    actual = ds.cf["grid_mapping"]
     assert_identical(actual, expected)
-
-    # This does not work yet because ds.cf["temp"].cf.grid_mapping returns DataArray
-    # actual = ds.cf["temp"].cf["rotated_latitude_longitude"]
-    # assert_identical(actual, expected)
 
     # Propagation
     actual = ds.cf[["temp"]]
     assert "rotated_pole" in actual.coords
+
+    actual = ds.cf["temp"]
+    assert "rotated_pole" in actual.coords
+
+    actual = ds.cf["temp"].cf["grid_mapping"]
+    assert_identical(actual, expected)
+
+    actual = ds.cf["temp"].coords["rotated_pole"].drop_vars("rotated_pole")
+    assert_identical(actual, expected)
+
+    actual = ds.cf["temp"].cf["rotated_latitude_longitude"]
+    assert_identical(actual, expected)
 
     # Test repr
     expected = """\
     - Grid Mappings:   rotated_latitude_longitude: ['rotated_pole']
     """
     assert dedent(expected) in ds.cf.__repr__()
+    # assert dedent(expected) in ds.cf["temp"].cf.__repr__()
 
     # grid_mapping_name
     assert ds.cf["temp"].cf.grid_mapping_name == "rotated_latitude_longitude"
-
-    # DataArray
-    # propagation does not work yet properly
-    # actual = ds.cf["temp"].cf.__repr__()
-    # assert actual == expected
 
     # what if there are really 2 grid mappins?
     ds["temp2"] = ds.temp
@@ -1019,12 +1021,27 @@ def test_grid_mappings():
     """
     assert dedent(expected) in ds.cf.__repr__()
 
+    with pytest.raises(KeyError):
+        ds.cf["grid_mapping"]
+
+    assert "rotated_latitude_longitude" in ds.cf.keys()
+
+    with pytest.raises(KeyError):
+        ds.cf["grid_mapping"]
+    actual = ds.cf[["grid_mapping"]]
+    expected = ds[["rotated_pole", "rotated_pole2"]].reset_coords()
+    assert_identical(expected, actual)
+
     expected = ds.rotated_pole
-    actual = ds.cf["temp"].cf.grid_mapping
+    actual = ds.cf["temp"].cf["grid_mapping"]
     assert_identical(actual, expected)
     expected = ds.rotated_pole2
-    actual = ds.cf["temp2"].cf.grid_mapping
+    actual = ds.cf["temp2"].cf["grid_mapping"]
     assert_identical(actual, expected)
+
+    # test _get_all with grid_mapping_var mapper
+    ds = ds.cf.set_coords("grid_mapping")
+    assert "rotated_pole" in ds.coords
 
 
 def test_bad_grid_mapping_attribute():

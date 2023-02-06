@@ -435,7 +435,7 @@ def _get_all(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     all_mappers: tuple[Mapper] = (
         _get_custom_criteria,
         functools.partial(_get_custom_criteria, criteria=cf_role_criteria),  # type: ignore
-        functools.partial(_get_custom_criteria, criteria=grid_mapping_var_criteria),  # type: ignore
+        functools.partial(_get_custom_criteria, criteria=grid_mapping_var_criteria),
         _get_axis_coord,
         _get_measure,
         _get_grid_mapping_name,

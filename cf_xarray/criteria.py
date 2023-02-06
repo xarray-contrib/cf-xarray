@@ -12,7 +12,17 @@ except ImportError:
 from typing import Mapping, MutableMapping, Tuple
 
 cf_role_criteria: Mapping[str, Mapping[str, str]] = {
-    k: {"cf_role": k} for k in ("timeseries_id", "profile_id", "trajectory_id")
+    k: {"cf_role": k}
+    for k in (
+        # CF Discrete sampling geometry
+        "timeseries_id",
+        "profile_id",
+        "trajectory_id",
+        # SGRID
+        "grid_topology",
+        # UGRID
+        "mesh_topology",
+    )
 }
 
 # A grid mapping varibale is anything with a grid_mapping_name attribute

@@ -54,6 +54,7 @@ or using ``conda``
    grid_mappings
    coding
    dsg
+   sgrid_ugrid
    geometry
    plotting
    custom-criteria

@@ -1874,6 +1874,18 @@ def test_cf_role() -> None:
     dsg.foo.cf.plot(x="trajectory_id")
 
 
+def test_grid_topology() -> None:
+    ds = xr.Dataset(
+        data_vars={},
+        coords={
+            "mesh": (tuple(), 1, {"cf_role": "mesh_topology"}),
+            "grid": (tuple(), 1, {"cf_role": "grid_topology"}),
+        },
+    )
+    assert_identical(ds.cf["grid_topology"], ds.grid.reset_coords(drop=True))
+    assert_identical(ds.cf["mesh_topology"], ds.mesh.reset_coords(drop=True))
+
+
 @requires_scipy
 def test_curvefit() -> None:
     from cf_xarray.datasets import airds

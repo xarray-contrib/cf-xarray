@@ -394,18 +394,13 @@ def _get_grid_mapping(obj: DataArray | Dataset, key: str) -> list[str]:
         da = obj[var]
         attrs_or_encoding = ChainMap(da.attrs, da.encoding)
         if "grid_mapping" in attrs_or_encoding:
-            grid_mapping = attrs_or_encoding["grid_mapping"]
-            try:
-                da = obj[grid_mapping]
-            except ValueError as e:
+            grid_mapping_var_name = attrs_or_encoding["grid_mapping"]
+            if grid_mapping_var_name not in obj.variables:
                 raise ValueError(
-                    f"{var} defines non-existing grid_mapping variable {grid_mapping}."
-                ) from e
-            if key == da.grid_mapping_name:
-                results.update([grid_mapping])
-
-    if isinstance(results, str):
-        return [results]
+                    f"{var} defines non-existing grid_mapping variable {grid_mapping_var_name}."
+                )
+            if key == obj[grid_mapping_var_name].attrs["grid_mapping_name"]:
+                results.update([grid_mapping_var_name])
     return list(results)
 
 
@@ -2466,25 +2461,13 @@ class CFDatasetAccessor(CFAccessor):
         {'air_temperature': ['rotated_pole'], 'temp': ['rotated_pole']}
         """
 
-        #         obj = self._obj
-        #         keys = self.keys() | set(obj.variables)
-
-        #         vardict = {
-        #             key: self._drop_missing_variables(
-        #                 apply_mapper(_get_grid_mapping, obj, key, error=False)
-        #             )
-        #             for key in keys
-        #         }
-
-        #         return {k: sorted(v) for k, v in vardict.items() if v}
-
         obj = self._obj
         keys = set(obj.variables)
 
         vardict = {
-            key: obj[key].grid_mapping_name
+            key: obj.variables[key].attrs["grid_mapping_name"]
             for key in keys
-            if "grid_mapping_name" in obj[key].attrs
+            if "grid_mapping_name" in obj.variables[key].attrs
         }
 
         results = {}
@@ -2494,63 +2477,6 @@ class CFDatasetAccessor(CFAccessor):
             else:
                 results[v].append(k)
         return results
-        # for key, grid_mapping_name in vdeardict.items():
-
-        # return {k: sorted(v) for k, v in vardict.items() if v}
-
-    def get_grid_mapping(self, key: str) -> DataArray | Dataset:
-        """
-        Get grid_mapping variable corresponding to key.
-
-        Parameters
-        ----------
-        key : str
-            Name of variable whose grid_mapping is desired
-
-        Returns
-        -------
-        DataArray
-
-        See Also
-        --------
-        Dataset.cf.grid_mappings
-        Dataset.cf.get_grid_mapping_name
-
-        """
-
-        results = self.grid_mappings.get(key, [])
-        if not results:
-            raise KeyError(f"No results found for {key!r}.")
-
-        return self._obj[results[0] if len(results) == 1 else results]
-
-    def get_grid_mapping_name(self, key: str) -> str:
-        """
-        Get name of the grid_mapping for variable corresponding to key.
-
-        Parameters
-        ----------
-        key : str
-            Name of variable whose grid_mapping name is desired.
-
-        Returns
-        -------
-        str
-
-        See Also
-        --------
-        Dataset.cf.grid_mappings
-        Dataset.cf.get_grid_mapping
-
-        """
-        grid_mapping = self.get_grid_mapping(key)
-        grid_mapping_name = grid_mapping.attrs.get("grid_mapping_name", "")
-        if not grid_mapping_name:
-            raise KeyError(
-                f"Missing grid_mapping_name attribute for {grid_mapping.name!r}."
-            )
-
-        return grid_mapping_name
 
     def decode_vertical_coords(self, *, outnames=None, prefix=None):
         """

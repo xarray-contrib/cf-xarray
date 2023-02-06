@@ -401,7 +401,8 @@ def _get_grid_mapping(obj: DataArray | Dataset, key: str) -> list[str]:
                 raise ValueError(
                     f"{var} defines non-existing grid_mapping variable {grid_mapping}."
                 ) from e
-            results.update([grid_mapping])
+            if key == da.grid_mapping_name:
+                results.update([grid_mapping])
 
     if isinstance(results, str):
         return [results]

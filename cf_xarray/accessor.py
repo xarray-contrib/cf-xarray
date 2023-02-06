@@ -2125,6 +2125,8 @@ class CFDatasetAccessor(CFAccessor):
               - cell measures: "area", "volume", or other names present in the \
                              ``cell_measures`` attribute
               - standard names: names present in ``standard_name`` attribute
+              - cf roles: 'timeseries_id', 'profile_id', 'trajectory_id', 'mesh_topology', 'grid_topology'
+              - grid mappings: 'grid_mapping' or a grid_mapping_name like 'rotated_latitude_longitude'
 
         Returns
         -------
@@ -2714,6 +2716,8 @@ class CFDataArrayAccessor(CFAccessor):
                              ``cell_measures`` attribute
               - standard names: names present in ``standard_name`` attribute of \
                 coordinate variables
+              - cf roles: 'timeseries_id', 'profile_id', 'trajectory_id', 'mesh_topology', 'grid_topology'
+              - grid mappings: 'grid_mapping' or a grid_mapping_name like 'rotated_latitude_longitude'
 
         Returns
         -------

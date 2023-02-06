@@ -16,7 +16,7 @@ kernelspec:
 See
 
 1. {py:attr}`Dataset.cf.grid_mapping_names`,
-1. {py:func}`DataArray.cf.grid_mapping_name`
+1. {py:attr}`DataArray.cf.grid_mapping_name`
 
 `cf_xarray` understands the concept of coordinate projections using the [grid_mapping](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#grid-mappings-and-projections) attribute convention. For example, the dataset might contain two sets of coordinates:
 
@@ -24,6 +24,10 @@ See
 - projected coordinates which probably denote some "real" coordinates in [latitude and longitude](https://en.wikipedia.org/wiki/Geographic_coordinate_system#Latitude_and_longitude)
 
 Due to the projection, those real coordinates are probably 2D data variables. The `grid_mapping` attribute of a data variable makes a connection to another data variable defining the coordinate reference system (CRS) of those native coordinates. It should enable you to project the native coordinates into any other CRS, including the real 2D latitude and longitude coordinates. This is often useful for plotting, e.g., you can [tell cartopy how to correctly plot coastlines](https://scitools.org.uk/cartopy/docs/latest/tutorials/understanding_transform.html) for the CRS your data is defined in.
+
+## Extracting grid mapping info
+
+### Dataset
 
 To access `grid_mapping` attributes, consider this example:
 
@@ -33,10 +37,39 @@ from cf_xarray.datasets import rotds
 rotds
 ```
 
-The related grid mappings can be accessed using:
+The related grid mappings can be discovered using `Dataset.cf.grid_mapping_names` which maps a
+["grid mapping name"](http://cfconventions.org/cf-conventions/cf-conventions.html#appendix-grid-mappings) to the
+appropriate variable name:
 
 ```{code-cell}
 rotds.cf.grid_mapping_names
+```
+
+Access the `grid_mapping` variable as
+
+```{code-cell}
+rotds.cf["grid_mapping"]
+```
+
+### DataArrays
+
+Grid mapping variables are propagated when extracting DataArrays:
+
+```{code-cell}
+da = rotds.cf["temp"]
+da
+```
+
+To find the grid mapping name use the singular {py:attr}`DataArray.cf.grid_mapping_name`
+
+```{code-cell}
+da.cf.grid_mapping_name
+```
+
+And to get the grid mapping variable
+
+```{code-cell}
+da.cf["grid_mapping"]
 ```
 
 ## Use `grid_mapping` in projections

@@ -36,7 +36,6 @@ Attributes
     DataArray.cf.cf_roles
     DataArray.cf.coordinates
     DataArray.cf.formula_terms
-    DataArray.cf.grid_mapping
     DataArray.cf.grid_mapping_name
     DataArray.cf.is_flag_variable
     DataArray.cf.standard_names
@@ -96,7 +95,7 @@ Attributes
     Dataset.cf.cf_roles
     Dataset.cf.coordinates
     Dataset.cf.formula_terms
-    Dataset.cf.grid_mappings
+    Dataset.cf.grid_mapping_names
     Dataset.cf.standard_names
 
 .. _dsmeth:
@@ -117,8 +116,6 @@ Methods
     Dataset.cf.differentiate
     Dataset.cf.get_bounds
     Dataset.cf.get_bounds_dim_name
-    Dataset.cf.get_grid_mapping
-    Dataset.cf.get_grid_mapping_name
     Dataset.cf.guess_coord_axis
     Dataset.cf.keys
     Dataset.cf.rename_like

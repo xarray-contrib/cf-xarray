@@ -857,7 +857,7 @@ def test_add_bounds_nd_variable() -> None:
     # 2D rotated ds
     lon_bounds = (
         rotds.drop_vars(["lon_bounds"])
-        .assign(x=rotds["rlon"], y=rotds["rlat"])
+        .assign(x=rotds["x"], y=rotds["y"])
         .cf.add_bounds(["lon"])
         .lon_bounds
     )

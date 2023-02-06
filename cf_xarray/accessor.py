@@ -1471,8 +1471,8 @@ class CFAccessor:
         )
         text += make_text_section("Standard Names", "standard_names", coords)
         text += make_text_section("Bounds", "bounds", coords)
-        text += make_text_section("Grid Mappings", "grid_mapping_names", coords)
         if isinstance(self._obj, Dataset):
+            text += make_text_section("Grid Mappings", "grid_mapping_names", coords)
             data_vars = self._obj.data_vars
             text += "\nData Variables:"
             text += make_text_section(

@@ -120,8 +120,6 @@ def test_repr() -> None:
                       * time: ['time']
 
     - Bounds:   n/a
-
-    - Grid Mappings:   n/a
     """
     assert actual == dedent(expected)
 

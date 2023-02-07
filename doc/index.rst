@@ -53,6 +53,7 @@ or using ``conda``
    bounds
    coding
    dsg
+   sgrid_ugrid
    geometry
    plotting
    custom-criteria

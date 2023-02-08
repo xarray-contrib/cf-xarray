@@ -85,12 +85,17 @@ def test_repr() -> None:
 
                   Bounds:   n/a
 
+           Grid Mappings:   n/a
+
     Data Variables:
            Cell Measures:   area, volume: n/a
 
           Standard Names:   air_temperature: ['air']
 
-                  Bounds:   n/a"""
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
+
     assert actual == dedent(expected)
 
     # DataArray (Coordinates section same as Dataset)
@@ -115,7 +120,9 @@ def test_repr() -> None:
                           * longitude: ['lon']
                           * time: ['time']
 
-                  Bounds:   n/a"""
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
     assert actual == dedent(expected)
 
     # Empty Standard Names
@@ -136,13 +143,17 @@ def test_repr() -> None:
 
                   Bounds:   n/a
 
+           Grid Mappings:   n/a
+
     Data Variables:
            Cell Measures:   area, volume: n/a
 
           Standard Names:   sea_water_potential_temperature: ['TEMP']
                             sea_water_x_velocity: ['UVEL']
 
-                  Bounds:   n/a"""
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
     assert actual == dedent(expected)
 
     # Flag DataArray
@@ -171,12 +182,16 @@ def test_repr() -> None:
 
                   Bounds:   n/a
 
+           Grid Mappings:   n/a
+
     Data Variables:
            Cell Measures:   area, volume: n/a
 
           Standard Names:   air_temperature: [<this-array>]
 
-                  Bounds:   n/a"""
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
     assert actual == dedent(expected)
 
     # CF roles
@@ -197,12 +212,16 @@ def test_repr() -> None:
 
                   Bounds:   n/a
 
+           Grid Mappings:   n/a
+
     Data Variables:
            Cell Measures:   area, volume: n/a
 
           Standard Names:   n/a
 
-                  Bounds:   n/a"""
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
     assert actual == dedent(expected)
 
 
@@ -266,7 +285,9 @@ def test_cell_measures() -> None:
           Standard Names:   air_temperature: ['air']
                             foo_std_name: ['foo']
 
-                  Bounds:   n/a"""
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
     assert actual.endswith(dedent(expected_repr))
 
 
@@ -304,6 +325,7 @@ def test_accessor_getattr_and_describe() -> None:
     assert ds_verta.cf.formula_terms == ds_vertb.cf.formula_terms
     assert ds_verta.o3.cf.formula_terms == ds_vertb.o3.cf.formula_terms
     assert ds_verta.cf.bounds == ds_vertb.cf.bounds
+    assert ds_verta.cf.grid_mapping_names == ds_vertb.cf.grid_mapping_names
     assert str(ds_verta.cf) == str(ds_vertb.cf)
 
 
@@ -832,7 +854,7 @@ def test_add_bounds_nd_variable() -> None:
     # 2D rotated ds
     lon_bounds = (
         rotds.drop_vars(["lon_bounds"])
-        .assign(x=rotds["x"], y=rotds["y"])
+        .assign(x=rotds.cf["X"], y=rotds.cf["Y"])
         .cf.add_bounds(["lon"])
         .lon_bounds
     )
@@ -943,6 +965,93 @@ def test_get_bounds_dim_name() -> None:
 
     assert mollwds.cf.get_bounds_dim_name("longitude") == "bounds"
     assert mollwds.cf.get_bounds_dim_name("lon") == "bounds"
+
+
+def test_grid_mappings():
+    ds = rotds.copy(deep=False)
+
+    actual = ds.cf.grid_mapping_names
+    expected = {"rotated_latitude_longitude": ["rotated_pole"]}
+    assert actual == expected
+
+    expected = ds.rotated_pole
+    actual = ds.cf["rotated_latitude_longitude"]
+    assert_identical(actual, expected)
+
+    expected = ds.rotated_pole
+    actual = ds.cf["grid_mapping"]
+    assert_identical(actual, expected)
+
+    # Propagation
+    actual = ds.cf[["temp"]]
+    assert "rotated_pole" in actual.coords
+
+    actual = ds.cf["temp"]
+    assert "rotated_pole" in actual.coords
+
+    actual = ds.cf["temp"].cf["grid_mapping"]
+    assert_identical(actual, expected)
+
+    actual = ds.cf["temp"].coords["rotated_pole"].drop_vars("rotated_pole")
+    assert_identical(actual, expected)
+
+    actual = ds.cf["temp"].cf["rotated_latitude_longitude"]
+    assert_identical(actual, expected)
+
+    # Test repr
+    expected = """\
+           Grid Mappings:   rotated_latitude_longitude: ['rotated_pole']"""
+    assert dedent(expected) in ds.cf.__repr__()
+    # assert dedent(expected) in ds.cf["temp"].cf.__repr__()
+
+    # grid_mapping_name
+    assert ds.cf["temp"].cf.grid_mapping_name == "rotated_latitude_longitude"
+
+    # what if there are really 2 grid mappins?
+    ds["temp2"] = ds.temp
+    ds["temp2"].attrs["grid_mapping"] = "rotated_pole2"
+    ds["rotated_pole2"] = ds.rotated_pole
+    expected = """\
+           Grid Mappings:   rotated_latitude_longitude: ['rotated_pole', 'rotated_pole2']"""
+    assert dedent(expected) in ds.cf.__repr__()
+
+    with pytest.raises(KeyError):
+        ds.cf["grid_mapping"]
+
+    assert "rotated_latitude_longitude" in ds.cf.keys()
+
+    with pytest.raises(KeyError):
+        ds.cf["grid_mapping"]
+    actual = ds.cf[["grid_mapping"]]
+    expected = ds[["rotated_pole", "rotated_pole2"]].reset_coords()
+    assert_identical(expected, actual)
+
+    expected = ds.rotated_pole
+    actual = ds.cf["temp"].cf["grid_mapping"]
+    assert_identical(actual, expected)
+    expected = ds.rotated_pole2
+    actual = ds.cf["temp2"].cf["grid_mapping"]
+    assert_identical(actual, expected)
+
+    # test _get_all with grid_mapping_var mapper
+    ds = ds.cf.set_coords("grid_mapping")
+    assert "rotated_pole" in ds.coords
+
+
+def test_bad_grid_mapping_attribute():
+    ds = rotds.copy(deep=False)
+    ds.temp.attrs["grid_mapping"] = "foo"
+    # warning when extracting a Datarray and grid_mapping does not exist
+    with pytest.warns(UserWarning):
+        ds.cf["temp"]
+    # warning when extracting a Dataset and grid_mapping does not exist
+    with pytest.warns(UserWarning):
+        ds.cf[["temp"]]
+    # this should probably also raise a warning (like cell_measures)
+    # with pytest.warns(UserWarning):
+    #    assert ds.cf.grid_mappings == {}
+    with pytest.warns(UserWarning):
+        ds.cf.get_associated_variable_names("temp", error=False)
 
 
 def test_docstring() -> None:

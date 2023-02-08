@@ -168,6 +168,9 @@ def _format_coordinates(accessor, dims, coords, rich):
         accessor, "Standard Names", "standard_names", dims, coords, rich=rich
     )
     yield make_text_section(accessor, "Bounds", "bounds", dims, coords, rich=rich)
+    yield make_text_section(
+        accessor, "Grid Mappings", "grid_mapping_names", dims, coords, rich=rich
+    )
 
 
 def _format_data_vars(accessor, data_vars, rich):
@@ -186,3 +189,6 @@ def _format_data_vars(accessor, data_vars, rich):
         accessor, "Standard Names", "standard_names", None, data_vars, rich=rich
     )
     yield make_text_section(accessor, "Bounds", "bounds", None, data_vars, rich=rich)
+    yield make_text_section(
+        accessor, "Grid Mappings", "grid_mapping_names", None, data_vars, rich=rich
+    )

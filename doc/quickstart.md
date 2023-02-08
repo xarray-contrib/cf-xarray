@@ -107,7 +107,8 @@ Sometimes it is more useful to extract the actual variable names associated with
 - {py:attr}`Dataset.cf.cell_measures`,
 - {py:attr}`Dataset.cf.cf_roles`,
 - {py:attr}`Dataset.cf.coordinates`,
-- {py:attr}`Dataset.cf.formula_terms`, and
+- {py:attr}`Dataset.cf.formula_terms`,
+- {py:attr}`Dataset.cf.grid_mapping_names`, and
 - {py:attr}`Dataset.cf.standard_names`.
 
 These properties all return dictionaries mapping a standard key name to a list of matching variable names in the Dataset or DataArray.

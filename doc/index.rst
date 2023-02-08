@@ -51,6 +51,7 @@ or using ``conda``
    units
    parametricz
    bounds
+   grid_mappings
    coding
    dsg
    sgrid_ugrid

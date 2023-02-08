@@ -1826,3 +1826,7 @@ def test_sgrid():
     assert roms_.u.cf.axes == {"X": ["xi_u"], "Y": ["eta_u"]}
     assert_identical(roms_.u.cf["X"], roms_sgrid.xi_u)
     assert_identical(roms_.u.cf["Y"], roms_sgrid.eta_u)
+
+    for obj in [roms_, roms_.u]:
+        assert "xi_u" in obj.cf.__repr__()
+        assert "eta_u" in obj.cf.__repr__()

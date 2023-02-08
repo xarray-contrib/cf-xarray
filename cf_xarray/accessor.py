@@ -1413,7 +1413,9 @@ class CFAccessor:
             text += "\n"
 
         text += "Coordinates:"
-        text += make_text_section("CF Axes", "axes", coords, _AXIS_NAMES)
+        text += make_text_section(
+            "CF Axes", "axes", set(dims) | set(coords), _AXIS_NAMES
+        )
         text += make_text_section("CF Coordinates", "coordinates", coords, _COORD_NAMES)
         text += make_text_section(
             "Cell Measures", "cell_measures", coords, _CELL_MEASURES

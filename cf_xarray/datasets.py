@@ -623,7 +623,7 @@ sgrid_roms["grid"] = xr.DataArray(
         vertical_dimensions="s_rho: s_w (padding: none)",
     ),
 )
-sgrid_roms["u"] = (("xi_u", "eta_u"), np.ones((2, 2)))
+sgrid_roms["u"] = (("xi_u", "eta_u"), np.ones((2, 2)), {"grid": "grid"})
 
 sgrid_delft = xr.Dataset()
 sgrid_delft["grid"] = xr.DataArray(

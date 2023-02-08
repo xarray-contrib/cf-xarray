@@ -1624,9 +1624,9 @@ class CFAccessor:
         Returns
         -------
         names : dict
-            Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds".
+            Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds", "grid".
         """
-        keys = ["ancillary_variables", "cell_measures", "coordinates", "bounds"]
+        keys = ["ancillary_variables", "cell_measures", "coordinates", "bounds", "grid"]
         coords: dict[str, list[Hashable]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
 
@@ -1667,6 +1667,9 @@ class CFAccessor:
                 dbounds = self._obj[dim].attrs.get("bounds", None)
                 if dbounds:
                     coords["bounds"].append(dbounds)
+
+        if "grid" in attrs_or_encoding:
+            coords["grid"] = [attrs_or_encoding["grid"]]
 
         allvars = itertools.chain(*coords.values())
         missing = set(allvars) - set(self._maybe_to_dataset()._variables)

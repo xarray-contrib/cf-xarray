@@ -1816,6 +1816,9 @@ def test_sgrid():
     assert parse_axes(sgrid_roms) == expected
     assert sgrid_roms.cf.axes == {"X": ["xi_u"], "Y": ["eta_u"]}
 
+    assert "grid" in sgrid_roms.cf["u"].coords
+    assert sgrid_roms.cf.get_associated_variable_names("u")["grid"] == ["grid"]
+
     assert_identical(sgrid_roms.cf["X"], sgrid_roms.xi_u)
     assert_identical(sgrid_roms.cf["Y"], sgrid_roms.eta_u)
 

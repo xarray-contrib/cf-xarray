@@ -30,6 +30,7 @@ from xarray.core.resample import Resample
 from xarray.core.rolling import Coarsen, Rolling
 from xarray.core.weighted import Weighted
 
+from . import sgrid
 from .criteria import cf_role_criteria, coordinate_criteria, regex
 from .helpers import _guess_bounds_1d, _guess_bounds_2d, bounds_to_vertices
 from .options import OPTIONS
@@ -300,6 +301,11 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
                     units = getattr(var.data, "units", None)
                     if units in expected:
                         results.update((coord,))
+
+    if key in _AXIS_NAMES and "grid_topology" in obj.cf.cf_roles:
+        sgrid_axes = sgrid.parse_axes(obj)
+        results.update((search_in | set(obj.dims)) & sgrid_axes[key])
+
     return list(results)
 
 
@@ -424,7 +430,7 @@ def _get_coords(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names present in .coords
     """
-    return [k for k in _get_all(obj, key) if k in obj.coords]
+    return [k for k in _get_all(obj, key) if k in obj.coords or k in obj.dims]
 
 
 def _variables(func: F) -> F:

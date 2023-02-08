@@ -30,6 +30,7 @@ from ..datasets import (
     multiple,
     pomds,
     popds,
+    roms_sgrid,
     romsds,
     rotds,
     vert,
@@ -1799,3 +1800,29 @@ def test_curvefit() -> None:
         coords=["latitude", "longitude"], func=plane
     )
     assert_identical(expected, actual)
+
+
+def test_sgrid():
+    from ..sgrid import parse_axes
+
+    positions = ["psi", "u", "v", "rho"]
+    expected = {
+        "X": {f"xi_{pos}" for pos in positions},
+        "Y": {f"eta_{pos}" for pos in positions},
+        "Z": {"s_rho", "s_w"},
+    }
+    assert parse_axes(roms_sgrid) == expected
+    assert roms_sgrid.cf.axes == {"X": ["xi_u"], "Y": ["eta_u"]}
+
+    assert_identical(roms_sgrid.cf["X"], roms_sgrid.xi_u)
+    assert_identical(roms_sgrid.cf["Y"], roms_sgrid.eta_u)
+
+    with pytest.raises(KeyError):
+        roms_sgrid.u.cf["X"]
+    with pytest.raises(KeyError):
+        roms_sgrid.u.cf["Y"]
+
+    roms_ = roms_sgrid.set_coords("grid")
+    assert roms_.u.cf.axes == {"X": ["xi_u"], "Y": ["eta_u"]}
+    assert_identical(roms_.u.cf["X"], roms_sgrid.xi_u)
+    assert_identical(roms_.u.cf["Y"], roms_sgrid.eta_u)

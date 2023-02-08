@@ -604,3 +604,23 @@ dsg = xr.Dataset(
         "trajectory": ("trajectory", [0, 1], {"cf_role": "trajectory_id"}),
     },
 )
+
+
+roms_sgrid = xr.Dataset()
+roms_sgrid["grid"] = xr.DataArray(
+    0,
+    attrs=dict(
+        cf_role="grid_topology",
+        topology_dimension=2,
+        node_dimensions="xi_psi eta_psi",
+        face_dimensions="xi_rho: xi_psi (padding: both) eta_rho: eta_psi (padding: both)",
+        edge1_dimensions="xi_u: xi_psi eta_u: eta_psi (padding: both)",
+        edge2_dimensions="xi_v: xi_psi (padding: both) eta_v: eta_psi",
+        node_coordinates="lon_psi lat_psi",
+        face_coordinates="lon_rho lat_rho",
+        edge1_coordinates="lon_u lat_u",
+        edge2_coordinates="lon_v lat_v",
+        vertical_dimensions="s_rho: s_w (padding: none)",
+    ),
+)
+roms_sgrid["u"] = (("xi_u", "eta_u"), np.ones((2, 2)))

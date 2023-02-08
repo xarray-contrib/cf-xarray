@@ -12,7 +12,7 @@ def parse_axes(ds):
             ({k} for k in grid.attrs["node_dimensions"].split(" ")),
         )
     )
-    for attr in ["face_dimensions", "edge1_dimensions", "edge2_dimensions", "foo"]:
+    for attr in ["face_dimensions", "edge1_dimensions", "edge2_dimensions"]:
         if attr in grid.attrs:
             matches = re.findall(pattern, grid.attrs[attr] + "\n")
             assert len(matches) == ndim, matches

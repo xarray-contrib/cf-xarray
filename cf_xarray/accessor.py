@@ -36,6 +36,14 @@ from .criteria import (
     grid_mapping_var_criteria,
     regex,
 )
+from .formatting import (
+    _format_coordinates,
+    # _format_conventions,
+    _format_data_vars,
+    _format_flags,
+    _format_roles,
+    _maybe_panel,
+)
 from .helpers import _guess_bounds_1d, _guess_bounds_2d, bounds_to_vertices
 from .options import OPTIONS
 from .utils import (
@@ -602,6 +610,11 @@ def _getattr(
         An extra decorator, if necessary. This is used by _CFPlotMethods to set default
         kwargs based on CF attributes.
     """
+
+    # UGH. this seems unavoidable because I'm overriding getattr
+    if attr in ["_repr_html_", "__rich__", "__rich_console__"]:
+        raise AttributeError
+
     try:
         attribute: Mapping | Callable = getattr(obj, attr)
     except AttributeError:
@@ -669,7 +682,9 @@ def _getattr(
 
         return result
 
-    wrapper.__doc__ = _build_docstring(func) + wrapper.__doc__
+    # handle rich
+    if wrapper.__doc__:
+        wrapper.__doc__ = _build_docstring(func) + wrapper.__doc__
 
     return wrapper
 
@@ -1399,90 +1414,45 @@ class CFAccessor:
         print(repr(self))
 
     def __repr__(self):
+        return ("".join(self._generate_repr(rich=False))).rstrip()
 
-        coords = self._obj.coords
+    def __rich__(self):
+        from rich.console import Group
+
+        return Group(*self._generate_repr(rich=True))
+
+    def _generate_repr(self, rich=False):
         dims = self._obj.dims
+        coords = self._obj.coords
 
-        def make_text_section(subtitle, attr, valid_values=None, default_keys=None):
-
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                try:
-                    vardict = getattr(self, attr, {})
-                except ValueError:
-                    vardict = {}
-
-            star = " * "
-            tab = len(star) * " "
-            subtitle = f"- {subtitle}:"
-
-            # Sort keys if there aren't extra keys,
-            # preserve default keys order otherwise.
-            default_keys = [] if not default_keys else list(default_keys)
-            extra_keys = list(set(vardict) - set(default_keys))
-            ordered_keys = sorted(vardict) if extra_keys else default_keys
-            vardict = {key: vardict[key] for key in ordered_keys if key in vardict}
-
-            # Keep only valid values (e.g., coords or data_vars)
-            if valid_values is not None:
-                vardict = {
-                    key: set(value).intersection(valid_values)
-                    for key, value in vardict.items()
-                    if set(value).intersection(valid_values)
-                }
-
-            # Star for keys with dims only, tab otherwise
-            rows = [
-                f"{star if set(value) <= set(dims) else tab}{key}: {sorted(value)}"
-                for key, value in vardict.items()
-            ]
-
-            # Append missing default keys followed by n/a
-            if default_keys:
-                missing_keys = [key for key in default_keys if key not in vardict]
-                if missing_keys:
-                    rows += [tab + ", ".join(missing_keys) + ": n/a"]
-            elif not rows:
-                rows = [tab + "n/a"]
-
-            # Add subtitle to the first row, align other rows
-            rows = [
-                "\n" + subtitle + row if i == 0 else len(subtitle) * " " + row
-                for i, row in enumerate(rows)
-            ]
-
-            return "\n".join(rows) + "\n"
+        # if self._obj._attrs:
+        #     conventions = self._obj.attrs.pop("Conventions", None)
+        #     if conventions:
+        #         yield _format_conventions(conventions, rich)
 
         if isinstance(self._obj, DataArray) and self._obj.cf.is_flag_variable:
-            flag_dict = create_flag_dict(self._obj)
-            text = f"CF Flag variable with mapping:\n\t{flag_dict!r}\n\n"
-        else:
-            text = ""
+            yield _maybe_panel(
+                _format_flags(self, rich), title="Flag Variable", rich=rich
+            )
 
         if self.cf_roles:
-            text += make_text_section("CF Roles", "cf_roles")
-            text += "\n"
-
-        text += "Coordinates:"
-        text += make_text_section("CF Axes", "axes", coords, _AXIS_NAMES)
-        text += make_text_section("CF Coordinates", "coordinates", coords, _COORD_NAMES)
-        text += make_text_section(
-            "Cell Measures", "cell_measures", coords, _CELL_MEASURES
-        )
-        text += make_text_section("Standard Names", "standard_names", coords)
-        text += make_text_section("Bounds", "bounds", coords)
-        if isinstance(self._obj, Dataset):
-            text += make_text_section("Grid Mappings", "grid_mapping_names", coords)
-            data_vars = self._obj.data_vars
-            text += "\nData Variables:"
-            text += make_text_section(
-                "Cell Measures", "cell_measures", data_vars, _CELL_MEASURES
+            yield _maybe_panel(
+                _format_roles(self, dims, rich),
+                title="Discrete Sampling Geometry",
+                rich=rich,
             )
-            text += make_text_section("Standard Names", "standard_names", data_vars)
-            text += make_text_section("Bounds", "bounds", data_vars)
-            text += make_text_section("Grid Mappings", "grid_mapping_names", data_vars)
 
-        return text
+        yield _maybe_panel(
+            _format_coordinates(self, dims, coords, rich),
+            title="Coordinates",
+            rich=rich,
+        )
+        if isinstance(self._obj, Dataset):
+            yield _maybe_panel(
+                _format_data_vars(self, self._obj.data_vars, rich),
+                title="Data Variables",
+                rich=rich,
+            )
 
     def keys(self) -> set[Hashable]:
         """

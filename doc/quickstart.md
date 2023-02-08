@@ -33,15 +33,25 @@ ds = xr.tutorial.open_dataset("air_temperature")
 ds
 ```
 
-`cf_xarray` registers an "accessor" named `cf` on import. For a quick overview of attributes that `cf_xarray` can interpret use `.cf`
+## Finding CF information
+
+`cf_xarray` registers an "accessor" named `cf` on import. For a quick overview of attributes that `cf_xarray` can interpret use `.cf` This will display the "repr" or a representation of all detected CF information.
 
 ```{code-cell}
 ds.cf
 ```
 
-```{warning}
-For best results, we recommend you tell xarray to preserve attributes as much as possible using `xr.set_options(keep_attrs=True)` but be warned, this can preserve out-of-date metadata.
+The plain text repr can be a little hard to read. In a Jupyter environment simply install [`rich`](https://rich.readthedocs.io) and
+use the Jupyter extension with `%load_ext rich`. Then `ds.cf` will automatically use the `rich` representation.
+See [the rich docs](https://rich.readthedocs.io/en/stable/introduction.html#ipython-extension) for more.
+
+```python
+%load_ext rich
+
+ds.cf
 ```
+
+![rich repr](_static/rich-repr-example.png)
 
 ## Using attributes
 
@@ -57,14 +67,20 @@ This works because the attributes `standard_name: "latitude"` and `units: "degre
 ds.lat.attrs
 ```
 
+```{tip}
+For a list of criteria used to identify the "latitude" variable (for e.g.) see {ref}`coordinate-criteria`.
+```
+
 Similarly we could use `ds.cf.mean("Y")` because the attribute `axis: "Y"` is present.
 
 ```{tip}
-For a list of criteria used to identify the "longitude" variable (for e.g.) see Coordinate Criteria.
+For best results, we recommend you tell xarray to preserve attributes as much as possible using `xr.set_options(keep_attrs=True)`
+but be warned, this can preserve out-of-date metadata.
 ```
 
 ```{tip}
-Sometimes datasets don't have all the necessary attributes. Use {py:meth}`~xarray.Dataset.cf.guess_coord_axis` and {py:meth}`~xarray.Dataset.cf.add_canonical_attributes` to automatically add attributes to variables that match some heuristics.
+Sometimes datasets don't have all the necessary attributes. Use {py:meth}`~xarray.Dataset.cf.guess_coord_axis`
+and {py:meth}`~xarray.Dataset.cf.add_canonical_attributes` to automatically add attributes to variables that match some heuristics.
 ```
 
 ## Indexing

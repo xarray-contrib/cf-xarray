@@ -42,6 +42,7 @@ from . import (
     requires_cftime,
     requires_pint,
     requires_regex,
+    requires_rich,
     requires_scipy,
 )
 
@@ -61,39 +62,43 @@ def assert_dicts_identical(dict1, dict2):
 
 def test_repr() -> None:
 
-    repr(ds_with_tuple.cf)
+    assert "air_temperature: [(1, 2, 3)]" in ds_with_tuple.cf.__repr__()
 
     # Dataset.
     # Stars: axes, coords, and std names
     actual = airds.cf.__repr__()
     expected = """\
     Coordinates:
-    - CF Axes: * X: ['lon']
-               * Y: ['lat']
-               * T: ['time']
-                 Z: n/a
+                 CF Axes: * X: ['lon']
+                          * Y: ['lat']
+                          * T: ['time']
+                            Z: n/a
 
-    - CF Coordinates: * longitude: ['lon']
-                      * latitude: ['lat']
-                      * time: ['time']
-                        vertical: n/a
+          CF Coordinates: * longitude: ['lon']
+                          * latitude: ['lat']
+                          * time: ['time']
+                            vertical: n/a
 
-    - Cell Measures:   area: ['cell_area']
-                       volume: n/a
+           Cell Measures:   area: ['cell_area']
+                            volume: n/a
 
-    - Standard Names: * latitude: ['lat']
-                      * longitude: ['lon']
-                      * time: ['time']
+          Standard Names: * latitude: ['lat']
+                          * longitude: ['lon']
+                          * time: ['time']
 
-    - Bounds:   n/a
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a
 
     Data Variables:
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   air_temperature: ['air']
+          Standard Names:   air_temperature: ['air']
 
-    - Bounds:   n/a
-    """
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
+
     assert actual == dedent(expected)
 
     # DataArray (Coordinates section same as Dataset)
@@ -101,114 +106,125 @@ def test_repr() -> None:
     actual = airds["air"].cf.__repr__()
     expected = """\
     Coordinates:
-    - CF Axes: * X: ['lon']
-               * Y: ['lat']
-               * T: ['time']
-                 Z: n/a
+                 CF Axes: * X: ['lon']
+                          * Y: ['lat']
+                          * T: ['time']
+                            Z: n/a
 
-    - CF Coordinates: * longitude: ['lon']
-                      * latitude: ['lat']
-                      * time: ['time']
-                        vertical: n/a
+          CF Coordinates: * longitude: ['lon']
+                          * latitude: ['lat']
+                          * time: ['time']
+                            vertical: n/a
 
-    - Cell Measures:   area: ['cell_area']
-                       volume: n/a
+           Cell Measures:   area: ['cell_area']
+                            volume: n/a
 
-    - Standard Names: * latitude: ['lat']
-                      * longitude: ['lon']
-                      * time: ['time']
+          Standard Names: * latitude: ['lat']
+                          * longitude: ['lon']
+                          * time: ['time']
 
-    - Bounds:   n/a
-    """
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
     assert actual == dedent(expected)
 
     # Empty Standard Names
     actual = popds.cf.__repr__()
     expected = """\
     Coordinates:
-    - CF Axes: * X: ['nlon']
-               * Y: ['nlat']
-                 Z, T: n/a
+                 CF Axes: * X: ['nlon']
+                          * Y: ['nlat']
+                            Z, T: n/a
 
-    - CF Coordinates:   longitude: ['TLONG', 'ULONG']
-                        latitude: ['TLAT', 'ULAT']
-                        vertical, time: n/a
+          CF Coordinates:   longitude: ['TLONG', 'ULONG']
+                            latitude: ['TLAT', 'ULAT']
+                            vertical, time: n/a
 
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   n/a
+          Standard Names:   n/a
 
-    - Bounds:   n/a
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a
 
     Data Variables:
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   sea_water_potential_temperature: ['TEMP']
-                        sea_water_x_velocity: ['UVEL']
+          Standard Names:   sea_water_potential_temperature: ['TEMP']
+                            sea_water_x_velocity: ['UVEL']
 
-    - Bounds:   n/a
-    """
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
     assert actual == dedent(expected)
 
     # Flag DataArray
-    assert "CF Flag variable" in repr(basin.cf)
+    assert "Flag Variable" in repr(basin.cf)
 
     # "Temp" dataset
     actual = airds["air"]._to_temp_dataset().cf.__repr__()
     expected = """\
     Coordinates:
-    - CF Axes: * X: ['lon']
-               * Y: ['lat']
-               * T: ['time']
-                 Z: n/a
+                 CF Axes: * X: ['lon']
+                          * Y: ['lat']
+                          * T: ['time']
+                            Z: n/a
 
-    - CF Coordinates: * longitude: ['lon']
-                      * latitude: ['lat']
-                      * time: ['time']
-                        vertical: n/a
+          CF Coordinates: * longitude: ['lon']
+                          * latitude: ['lat']
+                          * time: ['time']
+                            vertical: n/a
 
-    - Cell Measures:   area: ['cell_area']
-                       volume: n/a
+           Cell Measures:   area: ['cell_area']
+                            volume: n/a
 
-    - Standard Names: * latitude: ['lat']
-                      * longitude: ['lon']
-                      * time: ['time']
+          Standard Names: * latitude: ['lat']
+                          * longitude: ['lon']
+                          * time: ['time']
 
-    - Bounds:   n/a
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a
 
     Data Variables:
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   air_temperature: [<this-array>]
+          Standard Names:   air_temperature: [<this-array>]
 
-    - Bounds:   n/a
-    """
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
     assert actual == dedent(expected)
 
     # CF roles
     actual = dsg.cf.__repr__()
-    expected = """
-    - CF Roles: * profile_id: ['profile']
-                * trajectory_id: ['trajectory']
+    expected = """\
+    Discrete Sampling Geometry:
+                CF Roles: * profile_id: ['profile']
+                          * trajectory_id: ['trajectory']
 
     Coordinates:
-    - CF Axes:   X, Y, Z, T: n/a
+                 CF Axes:   X, Y, Z, T: n/a
 
-    - CF Coordinates:   longitude, latitude, vertical, time: n/a
+          CF Coordinates:   longitude, latitude, vertical, time: n/a
 
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   n/a
+          Standard Names:   n/a
 
-    - Bounds:   n/a
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a
 
     Data Variables:
-    - Cell Measures:   area, volume: n/a
+           Cell Measures:   area, volume: n/a
 
-    - Standard Names:   n/a
+          Standard Names:   n/a
 
-    - Bounds:   n/a
-    """
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
     assert actual == dedent(expected)
 
 
@@ -265,15 +281,16 @@ def test_cell_measures() -> None:
     actual = ds.cf.__repr__()
     expected_repr = """\
     Data Variables:
-    - Cell Measures:   foo_measure: ['foo']
-                       volume: ['foo']
-                       area: n/a
+           Cell Measures:   foo_measure: ['foo']
+                            volume: ['foo']
+                            area: n/a
 
-    - Standard Names:   air_temperature: ['air']
-                        foo_std_name: ['foo']
+          Standard Names:   air_temperature: ['air']
+                            foo_std_name: ['foo']
 
-    - Bounds:   n/a
-    """
+                  Bounds:   n/a
+
+           Grid Mappings:   n/a"""
     assert actual.endswith(dedent(expected_repr))
 
 
@@ -311,6 +328,7 @@ def test_accessor_getattr_and_describe() -> None:
     assert ds_verta.cf.formula_terms == ds_vertb.cf.formula_terms
     assert ds_verta.o3.cf.formula_terms == ds_vertb.o3.cf.formula_terms
     assert ds_verta.cf.bounds == ds_vertb.cf.bounds
+    assert ds_verta.cf.grid_mapping_names == ds_vertb.cf.grid_mapping_names
     assert str(ds_verta.cf) == str(ds_vertb.cf)
 
 
@@ -839,7 +857,7 @@ def test_add_bounds_nd_variable() -> None:
     # 2D rotated ds
     lon_bounds = (
         rotds.drop_vars(["lon_bounds"])
-        .assign(x=rotds["x"], y=rotds["y"])
+        .assign(x=rotds.cf["X"], y=rotds.cf["Y"])
         .cf.add_bounds(["lon"])
         .lon_bounds
     )
@@ -902,11 +920,10 @@ def test_bounds() -> None:
 
     # Dataset has bounds
     expected_repr = """\
-    - Bounds:   Y: ['lat_bounds']
-                lat: ['lat_bounds']
-                latitude: ['lat_bounds']
-    """
-    assert dedent(expected_repr) in ds.cf.__repr__()
+              Bounds:   Y: ['lat_bounds']
+                        lat: ['lat_bounds']
+                        latitude: ['lat_bounds']"""
+    assert expected_repr in ds.cf.__repr__()
 
     # DataArray does not have bounds
     expected_repr = airds.cf["air"].cf.__repr__()
@@ -951,6 +968,93 @@ def test_get_bounds_dim_name() -> None:
 
     assert mollwds.cf.get_bounds_dim_name("longitude") == "bounds"
     assert mollwds.cf.get_bounds_dim_name("lon") == "bounds"
+
+
+def test_grid_mappings():
+    ds = rotds.copy(deep=False)
+
+    actual = ds.cf.grid_mapping_names
+    expected = {"rotated_latitude_longitude": ["rotated_pole"]}
+    assert actual == expected
+
+    expected = ds.rotated_pole
+    actual = ds.cf["rotated_latitude_longitude"]
+    assert_identical(actual, expected)
+
+    expected = ds.rotated_pole
+    actual = ds.cf["grid_mapping"]
+    assert_identical(actual, expected)
+
+    # Propagation
+    actual = ds.cf[["temp"]]
+    assert "rotated_pole" in actual.coords
+
+    actual = ds.cf["temp"]
+    assert "rotated_pole" in actual.coords
+
+    actual = ds.cf["temp"].cf["grid_mapping"]
+    assert_identical(actual, expected)
+
+    actual = ds.cf["temp"].coords["rotated_pole"].drop_vars("rotated_pole")
+    assert_identical(actual, expected)
+
+    actual = ds.cf["temp"].cf["rotated_latitude_longitude"]
+    assert_identical(actual, expected)
+
+    # Test repr
+    expected = """\
+           Grid Mappings:   rotated_latitude_longitude: ['rotated_pole']"""
+    assert dedent(expected) in ds.cf.__repr__()
+    # assert dedent(expected) in ds.cf["temp"].cf.__repr__()
+
+    # grid_mapping_name
+    assert ds.cf["temp"].cf.grid_mapping_name == "rotated_latitude_longitude"
+
+    # what if there are really 2 grid mappins?
+    ds["temp2"] = ds.temp
+    ds["temp2"].attrs["grid_mapping"] = "rotated_pole2"
+    ds["rotated_pole2"] = ds.rotated_pole
+    expected = """\
+           Grid Mappings:   rotated_latitude_longitude: ['rotated_pole', 'rotated_pole2']"""
+    assert dedent(expected) in ds.cf.__repr__()
+
+    with pytest.raises(KeyError):
+        ds.cf["grid_mapping"]
+
+    assert "rotated_latitude_longitude" in ds.cf.keys()
+
+    with pytest.raises(KeyError):
+        ds.cf["grid_mapping"]
+    actual = ds.cf[["grid_mapping"]]
+    expected = ds[["rotated_pole", "rotated_pole2"]].reset_coords()
+    assert_identical(expected, actual)
+
+    expected = ds.rotated_pole
+    actual = ds.cf["temp"].cf["grid_mapping"]
+    assert_identical(actual, expected)
+    expected = ds.rotated_pole2
+    actual = ds.cf["temp2"].cf["grid_mapping"]
+    assert_identical(actual, expected)
+
+    # test _get_all with grid_mapping_var mapper
+    ds = ds.cf.set_coords("grid_mapping")
+    assert "rotated_pole" in ds.coords
+
+
+def test_bad_grid_mapping_attribute():
+    ds = rotds.copy(deep=False)
+    ds.temp.attrs["grid_mapping"] = "foo"
+    # warning when extracting a Datarray and grid_mapping does not exist
+    with pytest.warns(UserWarning):
+        ds.cf["temp"]
+    # warning when extracting a Dataset and grid_mapping does not exist
+    with pytest.warns(UserWarning):
+        ds.cf[["temp"]]
+    # this should probably also raise a warning (like cell_measures)
+    # with pytest.warns(UserWarning):
+    #    assert ds.cf.grid_mappings == {}
+    with pytest.warns(UserWarning):
+        ds.cf.get_associated_variable_names("temp", error=False)
 
 
 def test_docstring() -> None:
@@ -1720,12 +1824,13 @@ def test_flag_errors() -> None:
     with pytest.raises(ValueError):
         ds.cf.isin(["atlantic_ocean"])
 
-    basin.attrs.pop("flag_values")
+    basin_ = basin.copy(deep=True)
+    basin_.attrs.pop("flag_values")
     with pytest.raises(ValueError):
-        basin.cf.isin(["pacific_ocean"])
+        basin_.cf.isin(["pacific_ocean"])
 
     with pytest.raises(ValueError):
-        basin.cf == "pacific_ocean"
+        basin_.cf == "pacific_ocean"
 
 
 def test_missing_variables() -> None:
@@ -1802,6 +1907,27 @@ def test_curvefit() -> None:
         coords=["latitude", "longitude"], func=plane
     )
     assert_identical(expected, actual)
+
+
+@requires_rich
+@pytest.mark.parametrize(
+    "obj, contains",
+    (
+        [airds.air, "Coordinates"],
+        [popds, "Data Variables"],
+        [basin, "Flag Variable"],
+        [dsg, "Discrete Sampling Geometry"],
+    ),
+)
+def test_rich_repr(obj, contains):
+    from rich.console import Console
+
+    console = Console()
+    console.begin_capture()
+    console.print(obj.cf)
+    printed = console.end_capture()
+
+    assert contains in printed
 
 
 def test_sgrid():

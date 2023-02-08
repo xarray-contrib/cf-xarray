@@ -31,7 +31,20 @@ from xarray.core.rolling import Coarsen, Rolling
 from xarray.core.weighted import Weighted
 
 from . import sgrid
-from .criteria import cf_role_criteria, coordinate_criteria, regex
+from .criteria import (
+    cf_role_criteria,
+    coordinate_criteria,
+    grid_mapping_var_criteria,
+    regex,
+)
+from .formatting import (
+    _format_coordinates,
+    # _format_conventions,
+    _format_data_vars,
+    _format_flags,
+    _format_roles,
+    _maybe_panel,
+)
 from .helpers import _guess_bounds_1d, _guess_bounds_2d, bounds_to_vertices
 from .options import OPTIONS
 from .utils import (
@@ -375,6 +388,41 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     return list(results)
 
 
+def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
+    """
+    Translate from grid mapping name attribute to appropriate variable name.
+    This function interprets the ``grid_mapping`` attribute on DataArrays.
+
+    Parameters
+    ----------
+    obj : DataArray, Dataset
+        DataArray belonging to the coordinate to be checked
+    key : str
+        key to check for.
+
+    Returns
+    -------
+    List[str], Variable name(s) in parent xarray object that matches grid_mapping_name `key`
+    """
+
+    if isinstance(obj, DataArray):
+        obj = obj._to_temp_dataset()
+
+    results = set()
+    for var in obj.variables:
+        da = obj[var]
+        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
+        if "grid_mapping" in attrs_or_encoding:
+            grid_mapping_var_name = attrs_or_encoding["grid_mapping"]
+            if grid_mapping_var_name not in obj.variables:
+                raise ValueError(
+                    f"{var} defines non-existing grid_mapping variable {grid_mapping_var_name}."
+                )
+            if key == obj[grid_mapping_var_name].attrs["grid_mapping_name"]:
+                results.update([grid_mapping_var_name])
+    return list(results)
+
+
 def _get_with_standard_name(
     obj: DataArray | Dataset, name: Hashable | Iterable[Hashable]
 ) -> list[Hashable]:
@@ -401,8 +449,10 @@ def _get_all(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     all_mappers: tuple[Mapper] = (
         _get_custom_criteria,
         functools.partial(_get_custom_criteria, criteria=cf_role_criteria),  # type: ignore
+        functools.partial(_get_custom_criteria, criteria=grid_mapping_var_criteria),
         _get_axis_coord,
         _get_measure,
+        _get_grid_mapping_name,
         _get_with_standard_name,
     )
     results = apply_mapper(all_mappers, obj, key, error=False, default=None)
@@ -566,6 +616,11 @@ def _getattr(
         An extra decorator, if necessary. This is used by _CFPlotMethods to set default
         kwargs based on CF attributes.
     """
+
+    # UGH. this seems unavoidable because I'm overriding getattr
+    if attr in ["_repr_html_", "__rich__", "__rich_console__"]:
+        raise AttributeError
+
     try:
         attribute: Mapping | Callable = getattr(obj, attr)
     except AttributeError:
@@ -633,7 +688,9 @@ def _getattr(
 
         return result
 
-    wrapper.__doc__ = _build_docstring(func) + wrapper.__doc__
+    # handle rich
+    if wrapper.__doc__:
+        wrapper.__doc__ = _build_docstring(func) + wrapper.__doc__
 
     return wrapper
 
@@ -712,6 +769,15 @@ def _getitem(
         measures = []
         warnings.warn("Ignoring bad cell_measures attribute.", UserWarning)
 
+    if isinstance(obj, Dataset):
+        grid_mapping_names = list(accessor.grid_mapping_names)
+    else:
+        try:
+            grid_mapping_names = [accessor.grid_mapping_name]
+        except ValueError:
+            grid_mapping_names = []
+    grid_mapping_names.append("grid_mapping")
+
     custom_criteria = ChainMap(*OPTIONS["custom_criteria"])
 
     varnames: list[Hashable] = []
@@ -730,6 +796,12 @@ def _getitem(
             successful[k] = bool(measure)
             if measure:
                 varnames.extend(measure)
+        elif "grid_mapping_names" not in skip and k in grid_mapping_names:
+            grid_mapping = _get_all(obj, k)
+            check_results(grid_mapping, k)
+            successful[k] = bool(grid_mapping)
+            if grid_mapping:
+                varnames.extend(grid_mapping)
         elif k in custom_criteria or k in cf_role_criteria:
             names = _get_all(obj, k)
             check_results(names, k)
@@ -1348,90 +1420,45 @@ class CFAccessor:
         print(repr(self))
 
     def __repr__(self):
+        return ("".join(self._generate_repr(rich=False))).rstrip()
 
-        coords = self._obj.coords
+    def __rich__(self):
+        from rich.console import Group
+
+        return Group(*self._generate_repr(rich=True))
+
+    def _generate_repr(self, rich=False):
         dims = self._obj.dims
+        coords = self._obj.coords
 
-        def make_text_section(subtitle, attr, valid_values=None, default_keys=None):
-
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                try:
-                    vardict = getattr(self, attr, {})
-                except ValueError:
-                    vardict = {}
-
-            star = " * "
-            tab = len(star) * " "
-            subtitle = f"- {subtitle}:"
-
-            # Sort keys if there aren't extra keys,
-            # preserve default keys order otherwise.
-            default_keys = [] if not default_keys else list(default_keys)
-            extra_keys = list(set(vardict) - set(default_keys))
-            ordered_keys = sorted(vardict) if extra_keys else default_keys
-            vardict = {key: vardict[key] for key in ordered_keys if key in vardict}
-
-            # Keep only valid values (e.g., coords or data_vars)
-            if valid_values is not None:
-                vardict = {
-                    key: set(value).intersection(valid_values)
-                    for key, value in vardict.items()
-                    if set(value).intersection(valid_values)
-                }
-
-            # Star for keys with dims only, tab otherwise
-            rows = [
-                f"{star if set(value) <= set(dims) else tab}{key}: {sorted(value)}"
-                for key, value in vardict.items()
-            ]
-
-            # Append missing default keys followed by n/a
-            if default_keys:
-                missing_keys = [key for key in default_keys if key not in vardict]
-                if missing_keys:
-                    rows += [tab + ", ".join(missing_keys) + ": n/a"]
-            elif not rows:
-                rows = [tab + "n/a"]
-
-            # Add subtitle to the first row, align other rows
-            rows = [
-                "\n" + subtitle + row if i == 0 else len(subtitle) * " " + row
-                for i, row in enumerate(rows)
-            ]
-
-            return "\n".join(rows) + "\n"
+        # if self._obj._attrs:
+        #     conventions = self._obj.attrs.pop("Conventions", None)
+        #     if conventions:
+        #         yield _format_conventions(conventions, rich)
 
         if isinstance(self._obj, DataArray) and self._obj.cf.is_flag_variable:
-            flag_dict = create_flag_dict(self._obj)
-            text = f"CF Flag variable with mapping:\n\t{flag_dict!r}\n\n"
-        else:
-            text = ""
+            yield _maybe_panel(
+                _format_flags(self, rich), title="Flag Variable", rich=rich
+            )
 
         if self.cf_roles:
-            text += make_text_section("CF Roles", "cf_roles")
-            text += "\n"
-
-        text += "Coordinates:"
-        text += make_text_section(
-            "CF Axes", "axes", set(dims) | set(coords), _AXIS_NAMES
-        )
-        text += make_text_section("CF Coordinates", "coordinates", coords, _COORD_NAMES)
-        text += make_text_section(
-            "Cell Measures", "cell_measures", coords, _CELL_MEASURES
-        )
-        text += make_text_section("Standard Names", "standard_names", coords)
-        text += make_text_section("Bounds", "bounds", coords)
-        if isinstance(self._obj, Dataset):
-            data_vars = self._obj.data_vars
-            text += "\nData Variables:"
-            text += make_text_section(
-                "Cell Measures", "cell_measures", data_vars, _CELL_MEASURES
+            yield _maybe_panel(
+                _format_roles(self, dims, rich),
+                title="Discrete Sampling Geometry",
+                rich=rich,
             )
-            text += make_text_section("Standard Names", "standard_names", data_vars)
-            text += make_text_section("Bounds", "bounds", data_vars)
 
-        return text
+        yield _maybe_panel(
+            _format_coordinates(self, dims, coords, rich),
+            title="Coordinates",
+            rich=rich,
+        )
+        if isinstance(self._obj, Dataset):
+            yield _maybe_panel(
+                _format_data_vars(self, self._obj.data_vars, rich),
+                title="Data Variables",
+                rich=rich,
+            )
 
     def keys(self) -> set[Hashable]:
         """
@@ -1450,6 +1477,14 @@ class CFAccessor:
         varnames.extend(list(self.cell_measures))
         varnames.extend(list(self.standard_names))
         varnames.extend(list(self.cf_roles))
+        if isinstance(self._obj, xr.Dataset):
+            varnames.extend(list(self.grid_mapping_names))
+        else:
+            try:
+                gmname = self.grid_mapping_name
+                varnames.extend(list(gmname))
+            except ValueError:
+                pass
 
         return set(varnames)
 
@@ -1612,6 +1647,8 @@ class CFAccessor:
             2. "bounds"
             3. "cell_measures"
             4. "coordinates"
+            5. "grid_mapping"
+            6. "grid"
         to a list of variable names referred to in the appropriate attribute
 
         Parameters
@@ -1624,9 +1661,18 @@ class CFAccessor:
         Returns
         -------
         names : dict
-            Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds", "grid".
+            Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds",
+            "grid_mapping", "grid".
         """
-        keys = ["ancillary_variables", "cell_measures", "coordinates", "bounds", "grid"]
+        keys = [
+            "ancillary_variables",
+            "cell_measures",
+            "coordinates",
+            "bounds",
+            "grid_mapping",
+            "grid",
+        ]
+
         coords: dict[str, list[Hashable]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
 
@@ -1670,6 +1716,9 @@ class CFAccessor:
 
         if "grid" in attrs_or_encoding:
             coords["grid"] = [attrs_or_encoding["grid"]]
+
+        if "grid_mapping" in attrs_or_encoding:
+            coords["grid_mapping"] = [attrs_or_encoding["grid_mapping"]]
 
         allvars = itertools.chain(*coords.values())
         missing = set(allvars) - set(self._maybe_to_dataset()._variables)
@@ -2059,6 +2108,8 @@ class CFDatasetAccessor(CFAccessor):
               - cell measures: "area", "volume", or other names present in the \
                              ``cell_measures`` attribute
               - standard names: names present in ``standard_name`` attribute
+              - cf roles: 'timeseries_id', 'profile_id', 'trajectory_id', 'mesh_topology', 'grid_topology'
+              - grid mappings: 'grid_mapping' or a grid_mapping_name like 'rotated_latitude_longitude'
 
         Returns
         -------
@@ -2383,6 +2434,51 @@ class CFDatasetAccessor(CFAccessor):
                 )
         return obj
 
+    @property
+    def grid_mapping_names(self) -> dict[str, list[str]]:
+        """
+        Property that returns a dictionary mapping the CF grid mapping name
+        to the variable name containing the grid mapping attributes.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping the CF grid mapping name to the grid mapping variable name.
+
+        See Also
+        --------
+        DataArray.cf.grid_mapping
+
+        References
+        ----------
+        Please refer to the CF conventions document : https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#grid-mappings-and-projections
+
+        For a list of valid grid_mapping names, refer to: https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#appendix-grid-mappings
+
+        Examples
+        --------
+        >>> from cf_xarray.datasets import rotds
+        >>> rotds.cf.grid_mapping_names
+        {'rotated_latitude_longitude': ['rotated_pole']}
+        """
+
+        obj = self._obj
+        keys = set(obj.variables)
+
+        vardict = {
+            key: obj.variables[key].attrs["grid_mapping_name"]
+            for key in keys
+            if "grid_mapping_name" in obj.variables[key].attrs
+        }
+
+        results = {}
+        for k, v in vardict.items():
+            if v not in results:
+                results[v] = [k]
+            else:
+                results[v].append(k)
+        return results
+
     def decode_vertical_coords(self, *, outnames=None, prefix=None):
         """
         Decode parameterized vertical coordinates in place.
@@ -2558,6 +2654,43 @@ class CFDataArrayAccessor(CFAccessor):
             terms[key] = value
         return terms
 
+    @property
+    def grid_mapping_name(self) -> str:
+        """
+        Get CF grid mapping name associated with this variable.
+
+        Parameters
+        ----------
+        key : str
+            Name of variable whose grid_mapping name is desired.
+
+        Returns
+        -------
+        str
+            CF Name of the associated grid mapping.
+
+        See Also
+        --------
+        Dataset.cf.grid_mapping_names
+
+        Examples
+        --------
+        >>> from cf_xarray.datasets import rotds
+        >>> rotds.cf["temp"].cf.grid_mapping_name
+        'rotated_latitude_longitude'
+
+        """
+
+        da = self._obj
+
+        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
+        grid_mapping = attrs_or_encoding.get("grid_mapping", None)
+        if not grid_mapping:
+            raise ValueError("No 'grid_mapping' attribute present.")
+
+        grid_mapping_var = da[grid_mapping]
+        return grid_mapping_var.attrs["grid_mapping_name"]
+
     def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray:
         """
         Index into a DataArray making use of CF attributes.
@@ -2572,6 +2705,8 @@ class CFDataArrayAccessor(CFAccessor):
                              ``cell_measures`` attribute
               - standard names: names present in ``standard_name`` attribute of \
                 coordinate variables
+              - cf roles: 'timeseries_id', 'profile_id', 'trajectory_id', 'mesh_topology', 'grid_topology'
+              - grid mappings: 'grid_mapping' or a grid_mapping_name like 'rotated_latitude_longitude'
 
         Returns
         -------

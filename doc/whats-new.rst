@@ -3,8 +3,15 @@
 What's New
 ----------
 
-v (unreleased)
-==============
+v0.8.0 (unreleased)
+===================
+
+- Add a `rich <https://rich.readthedocs.io>`_ repr. (:pr:`409`).
+  Use ``rich.print(ds.cf)`` or ``%load_ext rich`` in a Jupyter session to
+  view a much richer representation of the ``.cf`` accessor. By `Deepak Cherian`_.
+- Support interpreting the ``grid_mapping`` attribute: (:pr:`391`).
+  See :py:meth:`Dataset.cf.grid_mapping_names` and ``Dataset.cf["grid_mapping"]``,
+  ``DataArray.cf["grid_mapping"]``. By `Lars Buntemeyer`_ and `Deepak Cherian`_.
 
 
 v0.7.9 (Jan 31, 2023)

@@ -6,8 +6,8 @@ SGRID_DIM_ATTRS = [
     # "face1_dimensions",
     # "face2_dimensions",
     # "face3_dimensions",
-    # "edge1_dimensions",
-    # "edge2_dimensions",
+    "edge1_dimensions",
+    "edge2_dimensions",
     # "edge3_dimensions",
 ]
 

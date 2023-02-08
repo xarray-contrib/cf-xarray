@@ -30,9 +30,11 @@ from ..datasets import (
     multiple,
     pomds,
     popds,
-    roms_sgrid,
     romsds,
     rotds,
+    sgrid_delft,
+    sgrid_delft3,
+    sgrid_roms,
     vert,
 )
 from . import (
@@ -1811,22 +1813,29 @@ def test_sgrid():
         "Y": {f"eta_{pos}" for pos in positions},
         "Z": {"s_rho", "s_w"},
     }
-    assert parse_axes(roms_sgrid) == expected
-    assert roms_sgrid.cf.axes == {"X": ["xi_u"], "Y": ["eta_u"]}
+    assert parse_axes(sgrid_roms) == expected
+    assert sgrid_roms.cf.axes == {"X": ["xi_u"], "Y": ["eta_u"]}
 
-    assert_identical(roms_sgrid.cf["X"], roms_sgrid.xi_u)
-    assert_identical(roms_sgrid.cf["Y"], roms_sgrid.eta_u)
+    assert_identical(sgrid_roms.cf["X"], sgrid_roms.xi_u)
+    assert_identical(sgrid_roms.cf["Y"], sgrid_roms.eta_u)
 
     with pytest.raises(KeyError):
-        roms_sgrid.u.cf["X"]
+        sgrid_roms.u.cf["X"]
     with pytest.raises(KeyError):
-        roms_sgrid.u.cf["Y"]
+        sgrid_roms.u.cf["Y"]
 
-    roms_ = roms_sgrid.set_coords("grid")
+    roms_ = sgrid_roms.set_coords("grid")
     assert roms_.u.cf.axes == {"X": ["xi_u"], "Y": ["eta_u"]}
-    assert_identical(roms_.u.cf["X"], roms_sgrid.xi_u)
-    assert_identical(roms_.u.cf["Y"], roms_sgrid.eta_u)
+    assert_identical(roms_.u.cf["X"], sgrid_roms.xi_u)
+    assert_identical(roms_.u.cf["Y"], sgrid_roms.eta_u)
 
     for obj in [roms_, roms_.u]:
         assert "xi_u" in obj.cf.__repr__()
         assert "eta_u" in obj.cf.__repr__()
+
+    assert parse_axes(sgrid_delft) == {"X": {"icell", "inode"}, "Y": {"jcell", "jnode"}}
+    assert parse_axes(sgrid_delft3) == {
+        "X": {"iface", "inode"},
+        "Y": {"jface", "jnode"},
+        "Z": {"kface", "knode"},
+    }

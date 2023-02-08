@@ -1,3 +1,17 @@
+SGRID_DIM_ATTRS = [
+    "face_dimensions",
+    "volume_dimensions",
+    # the following are optional and should be redundant with the above
+    # at least for dimension names
+    # "face1_dimensions",
+    # "face2_dimensions",
+    # "face3_dimensions",
+    # "edge1_dimensions",
+    # "edge2_dimensions",
+    # "edge3_dimensions",
+]
+
+
 def parse_axes(ds):
     import re
 
@@ -12,7 +26,7 @@ def parse_axes(ds):
             ({k} for k in grid.attrs["node_dimensions"].split(" ")),
         )
     )
-    for attr in ["face_dimensions", "edge1_dimensions", "edge2_dimensions"]:
+    for attr in SGRID_DIM_ATTRS:
         if attr in grid.attrs:
             matches = re.findall(pattern, grid.attrs[attr] + "\n")
             assert len(matches) == ndim, matches

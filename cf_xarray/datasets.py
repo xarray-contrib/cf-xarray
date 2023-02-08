@@ -606,8 +606,8 @@ dsg = xr.Dataset(
 )
 
 
-roms_sgrid = xr.Dataset()
-roms_sgrid["grid"] = xr.DataArray(
+sgrid_roms = xr.Dataset()
+sgrid_roms["grid"] = xr.DataArray(
     0,
     attrs=dict(
         cf_role="grid_topology",
@@ -623,4 +623,29 @@ roms_sgrid["grid"] = xr.DataArray(
         vertical_dimensions="s_rho: s_w (padding: none)",
     ),
 )
-roms_sgrid["u"] = (("xi_u", "eta_u"), np.ones((2, 2)))
+sgrid_roms["u"] = (("xi_u", "eta_u"), np.ones((2, 2)))
+
+sgrid_delft = xr.Dataset()
+sgrid_delft["grid"] = xr.DataArray(
+    0,
+    attrs=dict(
+        cf_role="grid_topology",
+        topology_dimension=2,
+        node_dimensions="inode jnode",
+        face_dimensions="icell: inode (padding: none) jcell: jnode (padding: none)",
+        node_coordinates="node_lon node_lat",
+    ),
+)
+
+
+sgrid_delft3 = xr.Dataset()
+sgrid_delft3["grid"] = xr.DataArray(
+    0,
+    attrs=dict(
+        cf_role="grid_topology",
+        topology_dimension=3,
+        node_dimensions="inode jnode knode",
+        volume_dimensions="iface: inode (padding: none) jface: jnode (padding: none) kface: knode (padding: none)",
+        node_coordinates="node_lon node_lat node_elevation",
+    ),
+)

@@ -2454,13 +2454,13 @@ class CFDatasetAccessor(CFAccessor):
     @property
     def grid_mapping_names(self) -> dict[str, list[str]]:
         """
-        Property that returns a dictionary mapping variable names
-        to the variable names of their grid_mapping.
+        Property that returns a dictionary mapping the CF grid mapping name
+        to the variable name containing the grid mapping attributes.
 
         Returns
         -------
         dict
-            Dictionary mapping variable names to the variable names of their grid_mapping.
+            Dictionary mapping the CF grid mapping name to the grid mapping variable name.
 
         See Also
         --------
@@ -2476,7 +2476,7 @@ class CFDatasetAccessor(CFAccessor):
         --------
         >>> from cf_xarray.datasets import rotds
         >>> rotds.cf.grid_mapping_names
-        {'air_temperature': ['rotated_pole'], 'temp': ['rotated_pole']}
+        {'rotated_latitude_longitude': ['rotated_pole']}
         """
 
         obj = self._obj
@@ -2689,6 +2689,12 @@ class CFDataArrayAccessor(CFAccessor):
         See Also
         --------
         Dataset.cf.grid_mapping_names
+
+        Examples
+        --------
+        >>> from cf_xarray.datasets import rotds
+        >>> rotds.cf["temp"].cf.grid_mapping_name
+        'rotated_latitude_longitude'
 
         """
 

@@ -79,7 +79,7 @@ The grid mapping information use very useful in projections, e.g., for plotting.
 ```python
 from pyproj import CRS
 
-CRS.from_cf(rotds.cf.get_grid_mapping("temp").attrs)
+CRS.from_cf(rotds.cf["grid_mapping"].attrs)
 ```
 
 gives you more details on the projection:
@@ -105,7 +105,7 @@ For use in cartopy, there is some more overhead due to [this issue](https://gith
 ```python
 from cartopy import crs as ccrs
 
-grid_mapping = rotds.temp.cf["grid_mapping"]
+grid_mapping = rotds.cf["grid_mapping"]
 pole_latitude = grid_mapping.grid_north_pole_latitude
 pole_longitude = grid_mapping.grid_north_pole_longitude
 

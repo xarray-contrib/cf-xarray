@@ -1449,7 +1449,7 @@ class CFAccessor:
             )
 
         yield _maybe_panel(
-            _format_coordinates(self, dims, coords, rich),
+            _format_coordinates(self, dims, set(coords) | set(dims), rich),
             title="Coordinates",
             rich=rich,
         )

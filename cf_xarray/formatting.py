@@ -103,6 +103,17 @@ def _print_rows(subtitle: str, rows: List[str], rich: bool):
     return "\n".join(rows) + "\n\n"
 
 
+def _format_conventions(string: str, rich: bool):
+    row = _print_rows(
+        subtitle="Conventions",
+        rows=[_format_cf_name(TAB + string, rich=rich)],
+        rich=rich,
+    )
+    if rich:
+        row = row.rstrip()
+    return row
+
+
 def _maybe_panel(textgen, title: str, rich: bool):
     text = "".join(textgen)
     if rich:

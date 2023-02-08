@@ -33,6 +33,7 @@ from xarray.core.weighted import Weighted
 from .criteria import cf_role_criteria, coordinate_criteria, regex
 from .formatting import (
     _format_coordinates,
+    # _format_conventions,
     _format_data_vars,
     _format_flags,
     _format_roles,
@@ -1366,6 +1367,11 @@ class CFAccessor:
     def _generate_repr(self, rich=False):
         dims = self._obj.dims
         coords = self._obj.coords
+
+        # if self._obj._attrs:
+        #     conventions = self._obj.attrs.pop("Conventions", None)
+        #     if conventions:
+        #         yield _format_conventions(conventions, rich)
 
         if isinstance(self._obj, DataArray) and self._obj.cf.is_flag_variable:
             yield _maybe_panel(

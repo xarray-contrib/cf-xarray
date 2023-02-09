@@ -32,6 +32,7 @@ from xarray.core.weighted import Weighted
 
 from . import sgrid
 from .criteria import (
+    _DSG_ROLES,
     cf_role_criteria,
     coordinate_criteria,
     grid_mapping_var_criteria,
@@ -41,8 +42,9 @@ from .formatting import (
     _format_coordinates,
     # _format_conventions,
     _format_data_vars,
+    _format_dsg_roles,
     _format_flags,
-    _format_roles,
+    _format_sgrid,
     _maybe_panel,
 )
 from .helpers import _guess_bounds_1d, _guess_bounds_2d, bounds_to_vertices
@@ -1441,15 +1443,26 @@ class CFAccessor:
                 _format_flags(self, rich), title="Flag Variable", rich=rich
             )
 
-        if self.cf_roles:
-            yield _maybe_panel(
-                _format_roles(self, dims, rich),
-                title="Discrete Sampling Geometry",
-                rich=rich,
-            )
+        roles = self.cf_roles
+        if roles:
+            if any(role in roles for role in _DSG_ROLES):
+                yield _maybe_panel(
+                    _format_dsg_roles(self, dims, rich),
+                    title="Discrete Sampling Geometry",
+                    rich=rich,
+                )
+
+            if "grid_topology" in self.cf_roles:
+                grid = self[["grid_topology"]]
+                axes = sgrid.parse_axes(grid)
+                yield _maybe_panel(
+                    _format_sgrid(self, grid.variables, axes, rich),
+                    title="SGRID",
+                    rich=rich,
+                )
 
         yield _maybe_panel(
-            _format_coordinates(self, dims, set(coords) | set(dims), rich),
+            _format_coordinates(self, dims, coords, rich),
             title="Coordinates",
             rich=rich,
         )

@@ -46,10 +46,14 @@ def make_text_section(
         dims = []
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        try:
-            vardict: Dict[str, Iterable[Hashable]] = getattr(accessor, attr, {})
-        except ValueError:
-            vardict = {}
+        if isinstance(attr, str):
+            try:
+                vardict: Dict[str, Iterable[Hashable]] = getattr(accessor, attr, {})
+            except ValueError:
+                vardict = {}
+        else:
+            assert isinstance(attr, dict)
+            vardict = attr
 
     # Sort keys if there aren't extra keys,
     # preserve default keys order otherwise.
@@ -142,8 +146,17 @@ def _format_flags(accessor, rich):
     return _print_rows("Flag Meanings", rows, rich)
 
 
-def _format_roles(accessor, dims, rich):
-    yield make_text_section(accessor, "CF Roles", "cf_roles", dims=dims, rich=rich)
+def _format_dsg_roles(accessor, dims, rich):
+    from .criteria import _DSG_ROLES
+
+    yield make_text_section(
+        accessor,
+        "CF Roles",
+        "cf_roles",
+        dims=dims,
+        valid_values=_DSG_ROLES,
+        rich=rich,
+    )
 
 
 def _format_coordinates(accessor, dims, coords, rich):
@@ -191,4 +204,24 @@ def _format_data_vars(accessor, data_vars, rich):
     yield make_text_section(accessor, "Bounds", "bounds", None, data_vars, rich=rich)
     yield make_text_section(
         accessor, "Grid Mappings", "grid_mapping_names", None, data_vars, rich=rich
+    )
+
+
+def _format_sgrid(accessor, gridvars, axes, rich):
+    yield make_text_section(
+        accessor,
+        "CF role",
+        "cf_roles",
+        valid_values=gridvars,
+        rich=rich,
+    )
+
+    yield make_text_section(
+        accessor,
+        "Axes",
+        axes,
+        accessor._obj.dims,
+        valid_values=accessor._obj.dims,
+        default_keys=axes.keys(),
+        rich=rich,
     )

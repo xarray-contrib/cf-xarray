@@ -36,6 +36,7 @@ def make_text_section(
     subtitle: str,
     attr: str,
     dims=None,
+    valid_keys=None,
     valid_values=None,
     default_keys=None,
     rich: bool = False,
@@ -55,6 +56,8 @@ def make_text_section(
         else:
             assert isinstance(attr, dict)
             vardict = attr
+    if valid_keys:
+        vardict = {k: v for k, v in vardict.items() if k in valid_keys}
 
     # Sort keys if there aren't extra keys,
     # preserve default keys order otherwise.
@@ -155,7 +158,7 @@ def _format_dsg_roles(accessor, dims, rich):
         "CF Roles",
         "cf_roles",
         dims=dims,
-        valid_values=_DSG_ROLES,
+        valid_keys=_DSG_ROLES,
         rich=rich,
     )
 
@@ -198,12 +201,12 @@ def _format_data_vars(accessor, data_vars, rich):
     yield section(subtitle="Grid Mappings", attr="grid_mapping_names")
 
 
-def _format_sgrid(accessor, gridvars, axes, rich):
+def _format_sgrid(accessor, axes, rich):
     yield make_text_section(
         accessor,
         "CF role",
         "cf_roles",
-        valid_values=gridvars,
+        valid_keys=["grid_topology"],
         rich=rich,
     )
 

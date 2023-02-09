@@ -1453,10 +1453,9 @@ class CFAccessor:
                 )
 
             if "grid_topology" in self.cf_roles:
-                grid = self[["grid_topology"]]
-                axes = sgrid.parse_axes(grid)
+                axes = sgrid.parse_axes(self._obj)
                 yield _maybe_panel(
-                    _format_sgrid(self, grid.variables, axes, rich),
+                    _format_sgrid(self, axes, rich),
                     title="SGRID",
                     rich=rich,
                 )

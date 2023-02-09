@@ -32,6 +32,9 @@ from ..datasets import (
     popds,
     romsds,
     rotds,
+    sgrid_delft,
+    sgrid_delft3,
+    sgrid_roms,
     vert,
 )
 from . import (
@@ -1925,3 +1928,43 @@ def test_rich_repr(obj, contains):
     printed = console.end_capture()
 
     assert contains in printed
+
+
+def test_sgrid():
+    from ..sgrid import parse_axes
+
+    positions = ["psi", "u", "v", "rho"]
+    expected = {
+        "X": {f"xi_{pos}" for pos in positions},
+        "Y": {f"eta_{pos}" for pos in positions},
+        "Z": {"s_rho", "s_w"},
+    }
+    assert parse_axes(sgrid_roms) == expected
+    assert sgrid_roms.cf.axes == {"X": ["xi_u"], "Y": ["eta_u"]}
+
+    assert "grid" in sgrid_roms.cf["u"].coords
+    assert sgrid_roms.cf.get_associated_variable_names("u")["grid"] == ["grid"]
+
+    assert_identical(sgrid_roms.cf["X"], sgrid_roms.xi_u)
+    assert_identical(sgrid_roms.cf["Y"], sgrid_roms.eta_u)
+
+    with pytest.raises(KeyError):
+        sgrid_roms.u.cf["X"]
+    with pytest.raises(KeyError):
+        sgrid_roms.u.cf["Y"]
+
+    roms_ = sgrid_roms.set_coords("grid")
+    assert roms_.u.cf.axes == {"X": ["xi_u"], "Y": ["eta_u"]}
+    assert_identical(roms_.u.cf["X"], sgrid_roms.xi_u)
+    assert_identical(roms_.u.cf["Y"], sgrid_roms.eta_u)
+
+    for obj in [roms_, roms_.u]:
+        assert "xi_u" in obj.cf.__repr__()
+        assert "eta_u" in obj.cf.__repr__()
+
+    assert parse_axes(sgrid_delft) == {"X": {"icell", "inode"}, "Y": {"jcell", "jnode"}}
+    assert parse_axes(sgrid_delft3) == {
+        "X": {"iface", "inode"},
+        "Y": {"jface", "jnode"},
+        "Z": {"kface", "knode"},
+    }

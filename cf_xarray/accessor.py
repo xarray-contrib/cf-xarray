@@ -30,7 +30,9 @@ from xarray.core.resample import Resample
 from xarray.core.rolling import Coarsen, Rolling
 from xarray.core.weighted import Weighted
 
+from . import sgrid
 from .criteria import (
+    _DSG_ROLES,
     cf_role_criteria,
     coordinate_criteria,
     grid_mapping_var_criteria,
@@ -40,8 +42,9 @@ from .formatting import (
     _format_coordinates,
     # _format_conventions,
     _format_data_vars,
+    _format_dsg_roles,
     _format_flags,
-    _format_roles,
+    _format_sgrid,
     _maybe_panel,
 )
 from .helpers import _guess_bounds_1d, _guess_bounds_2d, bounds_to_vertices
@@ -313,6 +316,11 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
                     units = getattr(var.data, "units", None)
                     if units in expected:
                         results.update((coord,))
+
+    if key in _AXIS_NAMES and "grid_topology" in obj.cf.cf_roles:
+        sgrid_axes = sgrid.parse_axes(obj)
+        results.update((search_in | set(obj.dims)) & sgrid_axes[key])
+
     return list(results)
 
 
@@ -474,7 +482,7 @@ def _get_coords(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names present in .coords
     """
-    return [k for k in _get_all(obj, key) if k in obj.coords]
+    return [k for k in _get_all(obj, key) if k in obj.coords or k in obj.dims]
 
 
 def _variables(func: F) -> F:
@@ -1435,12 +1443,22 @@ class CFAccessor:
                 _format_flags(self, rich), title="Flag Variable", rich=rich
             )
 
-        if self.cf_roles:
-            yield _maybe_panel(
-                _format_roles(self, dims, rich),
-                title="Discrete Sampling Geometry",
-                rich=rich,
-            )
+        roles = self.cf_roles
+        if roles:
+            if any(role in roles for role in _DSG_ROLES):
+                yield _maybe_panel(
+                    _format_dsg_roles(self, dims, rich),
+                    title="Discrete Sampling Geometry",
+                    rich=rich,
+                )
+
+            if "grid_topology" in self.cf_roles:
+                axes = sgrid.parse_axes(self._obj)
+                yield _maybe_panel(
+                    _format_sgrid(self, axes, rich),
+                    title="SGRID",
+                    rich=rich,
+                )
 
         yield _maybe_panel(
             _format_coordinates(self, dims, coords, rich),
@@ -1642,6 +1660,7 @@ class CFAccessor:
             3. "cell_measures"
             4. "coordinates"
             5. "grid_mapping"
+            6. "grid"
         to a list of variable names referred to in the appropriate attribute
 
         Parameters
@@ -1654,7 +1673,8 @@ class CFAccessor:
         Returns
         -------
         names : dict
-            Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds".
+            Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds",
+            "grid_mapping", "grid".
         """
         keys = [
             "ancillary_variables",
@@ -1662,7 +1682,9 @@ class CFAccessor:
             "coordinates",
             "bounds",
             "grid_mapping",
+            "grid",
         ]
+
         coords: dict[str, list[Hashable]] = {k: [] for k in keys}
         attrs_or_encoding = ChainMap(self._obj[name].attrs, self._obj[name].encoding)
 
@@ -1703,6 +1725,9 @@ class CFAccessor:
                 dbounds = self._obj[dim].attrs.get("bounds", None)
                 if dbounds:
                     coords["bounds"].append(dbounds)
+
+        if "grid" in attrs_or_encoding:
+            coords["grid"] = [attrs_or_encoding["grid"]]
 
         if "grid_mapping" in attrs_or_encoding:
             coords["grid_mapping"] = [attrs_or_encoding["grid_mapping"]]

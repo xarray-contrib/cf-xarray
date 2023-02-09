@@ -6,6 +6,8 @@ What's New
 v0.8.0 (unreleased)
 ===================
 
+- Support interpreting `SGRID Conventions <https://sgrid.github.io/sgrid/>`_ to identify
+  X, Y, Z axes. By `Deepak Cherian`_.
 - Add a `rich <https://rich.readthedocs.io>`_ repr. (:pr:`409`).
   Use ``rich.print(ds.cf)`` or ``%load_ext rich`` in a Jupyter session to
   view a much richer representation of the ``.cf`` accessor. By `Deepak Cherian`_.

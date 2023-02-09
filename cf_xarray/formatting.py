@@ -1,4 +1,5 @@
 import warnings
+from functools import partial
 from typing import Dict, Hashable, Iterable, List
 
 STAR = " * "
@@ -35,6 +36,7 @@ def make_text_section(
     subtitle: str,
     attr: str,
     dims=None,
+    valid_keys=None,
     valid_values=None,
     default_keys=None,
     rich: bool = False,
@@ -46,10 +48,16 @@ def make_text_section(
         dims = []
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        try:
-            vardict: Dict[str, Iterable[Hashable]] = getattr(accessor, attr, {})
-        except ValueError:
-            vardict = {}
+        if isinstance(attr, str):
+            try:
+                vardict: Dict[str, Iterable[Hashable]] = getattr(accessor, attr, {})
+            except ValueError:
+                vardict = {}
+        else:
+            assert isinstance(attr, dict)
+            vardict = attr
+    if valid_keys:
+        vardict = {k: v for k, v in vardict.items() if k in valid_keys}
 
     # Sort keys if there aren't extra keys,
     # preserve default keys order otherwise.
@@ -142,53 +150,72 @@ def _format_flags(accessor, rich):
     return _print_rows("Flag Meanings", rows, rich)
 
 
-def _format_roles(accessor, dims, rich):
-    yield make_text_section(accessor, "CF Roles", "cf_roles", dims=dims, rich=rich)
+def _format_dsg_roles(accessor, dims, rich):
+    from .criteria import _DSG_ROLES
+
+    yield make_text_section(
+        accessor,
+        "CF Roles",
+        "cf_roles",
+        dims=dims,
+        valid_keys=_DSG_ROLES,
+        rich=rich,
+    )
 
 
 def _format_coordinates(accessor, dims, coords, rich):
     from .accessor import _AXIS_NAMES, _CELL_MEASURES, _COORD_NAMES
 
-    yield make_text_section(
-        accessor, "CF Axes", "axes", dims, coords, _AXIS_NAMES, rich=rich
+    section = partial(
+        make_text_section, accessor=accessor, dims=dims, valid_values=coords, rich=rich
     )
-    yield make_text_section(
-        accessor, "CF Coordinates", "coordinates", dims, coords, _COORD_NAMES, rich=rich
+
+    yield section(subtitle="CF Axes", attr="axes", default_keys=_AXIS_NAMES)
+    yield section(
+        subtitle="CF Coordinates", attr="coordinates", default_keys=_COORD_NAMES
     )
-    yield make_text_section(
-        accessor,
-        "Cell Measures",
-        "cell_measures",
-        dims,
-        coords,
-        _CELL_MEASURES,
-        rich=rich,
+    yield section(
+        subtitle="Cell Measures", attr="cell_measures", default_keys=_CELL_MEASURES
     )
-    yield make_text_section(
-        accessor, "Standard Names", "standard_names", dims, coords, rich=rich
-    )
-    yield make_text_section(accessor, "Bounds", "bounds", dims, coords, rich=rich)
-    yield make_text_section(
-        accessor, "Grid Mappings", "grid_mapping_names", dims, coords, rich=rich
-    )
+    yield section(subtitle="Standard Names", attr="standard_names")
+    yield section(subtitle="Bounds", attr="bounds")
+    yield section(subtitle="Grid Mappings", attr="grid_mapping_names")
 
 
 def _format_data_vars(accessor, data_vars, rich):
     from .accessor import _CELL_MEASURES
 
-    yield make_text_section(
-        accessor,
-        "Cell Measures",
-        "cell_measures",
-        None,
-        data_vars,
-        _CELL_MEASURES,
+    section = partial(
+        make_text_section,
+        accessor=accessor,
+        dims=None,
+        valid_values=data_vars,
         rich=rich,
     )
-    yield make_text_section(
-        accessor, "Standard Names", "standard_names", None, data_vars, rich=rich
+
+    yield section(
+        subtitle="Cell Measures", attr="cell_measures", default_keys=_CELL_MEASURES
     )
-    yield make_text_section(accessor, "Bounds", "bounds", None, data_vars, rich=rich)
+    yield section(subtitle="Standard Names", attr="standard_names")
+    yield section(subtitle="Bounds", attr="bounds")
+    yield section(subtitle="Grid Mappings", attr="grid_mapping_names")
+
+
+def _format_sgrid(accessor, axes, rich):
     yield make_text_section(
-        accessor, "Grid Mappings", "grid_mapping_names", None, data_vars, rich=rich
+        accessor,
+        "CF role",
+        "cf_roles",
+        valid_keys=["grid_topology"],
+        rich=rich,
+    )
+
+    yield make_text_section(
+        accessor,
+        "Axes",
+        axes,
+        accessor._obj.dims,
+        valid_values=accessor._obj.dims,
+        default_keys=axes.keys(),
+        rich=rich,
     )

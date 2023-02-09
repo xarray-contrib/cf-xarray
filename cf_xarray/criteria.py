@@ -11,13 +11,13 @@ except ImportError:
 
 from typing import Any, Mapping, MutableMapping, Tuple
 
+_DSG_ROLES = ["timeseries_id", "profile_id", "trajectory_id"]
+
 cf_role_criteria: Mapping[str, Mapping[str, str]] = {
     k: {"cf_role": k}
     for k in (
         # CF Discrete sampling geometry
-        "timeseries_id",
-        "profile_id",
-        "trajectory_id",
+        *_DSG_ROLES,
         # SGRID
         "grid_topology",
         # UGRID

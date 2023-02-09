@@ -9,10 +9,6 @@ kernelspec:
 
 # SGRID / UGRID
 
-## Topology variable
-
-`cf_xarray` support identifying either the `mesh_topology` (UGRID) or `grid_topology` (SGRID) variables using the `cf_role` attribute.
-
 ## SGRID
 
 `cf_xarray` can parse the attributes on the `grid_topology` variable to identify dimension names with axes names `X`, `Y`, `Z`.
@@ -25,18 +21,34 @@ from cf_xarray.datasets import sgrid_roms
 sgrid_roms
 ```
 
-Note that `xi_u`, `eta_u` are identified as `X`, `Y` axes below even though
-there is no data associated with them in the repr above.
+A new `SGRID` section is added to the repr:
 
 ```{code-cell}
 sgrid_roms.cf
 ```
 
-So now the following will return `xi_u`
+### Topology variable
+
+`cf_xarray` supports identifying `grid_topology` using the `cf_role` attribute.
+
+```{code-cell}
+sgrid_roms.cf["grid_topology"]
+```
+
+### Dimensions
+
+Note that `xi_u`, `eta_u` were identified as `X`, `Y` axes below even though
+there is no data associated with them. So now the following will return `xi_u`
 
 ```{code-cell}
 sgrid_roms.cf["X"]
 ```
+
+## UGRID
+
+### Topology variable
+
+`cf_xarray` supports identifying  the `mesh_topology` variable using the `cf_role` attribute.
 
 ## More?
 

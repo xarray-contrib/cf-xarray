@@ -1,4 +1,5 @@
 import warnings
+from functools import partial
 from typing import Dict, Hashable, Iterable, List
 
 STAR = " * "
@@ -162,49 +163,39 @@ def _format_dsg_roles(accessor, dims, rich):
 def _format_coordinates(accessor, dims, coords, rich):
     from .accessor import _AXIS_NAMES, _CELL_MEASURES, _COORD_NAMES
 
-    yield make_text_section(
-        accessor, "CF Axes", "axes", dims, coords, _AXIS_NAMES, rich=rich
+    section = partial(
+        make_text_section, accessor=accessor, dims=dims, valid_values=coords, rich=rich
     )
-    yield make_text_section(
-        accessor, "CF Coordinates", "coordinates", dims, coords, _COORD_NAMES, rich=rich
+
+    yield section(subtitle="CF Axes", attr="axes", default_keys=_AXIS_NAMES)
+    yield section(
+        subtitle="CF Coordinates", attr="coordinates", default_keys=_COORD_NAMES
     )
-    yield make_text_section(
-        accessor,
-        "Cell Measures",
-        "cell_measures",
-        dims,
-        coords,
-        _CELL_MEASURES,
-        rich=rich,
+    yield section(
+        subtitle="Cell Measures", attr="cell_measures", default_keys=_CELL_MEASURES
     )
-    yield make_text_section(
-        accessor, "Standard Names", "standard_names", dims, coords, rich=rich
-    )
-    yield make_text_section(accessor, "Bounds", "bounds", dims, coords, rich=rich)
-    yield make_text_section(
-        accessor, "Grid Mappings", "grid_mapping_names", dims, coords, rich=rich
-    )
+    yield section(subtitle="Standard Names", attr="standard_names")
+    yield section(subtitle="Bounds", attr="bounds")
+    yield section(subtitle="Grid Mappings", attr="grid_mapping_names")
 
 
 def _format_data_vars(accessor, data_vars, rich):
     from .accessor import _CELL_MEASURES
 
-    yield make_text_section(
-        accessor,
-        "Cell Measures",
-        "cell_measures",
-        None,
-        data_vars,
-        _CELL_MEASURES,
+    section = partial(
+        make_text_section,
+        accessor=accessor,
+        dims=None,
+        valid_values=data_vars,
         rich=rich,
     )
-    yield make_text_section(
-        accessor, "Standard Names", "standard_names", None, data_vars, rich=rich
+
+    yield section(
+        subtitle="Cell Measures", attr="cell_measures", default_keys=_CELL_MEASURES
     )
-    yield make_text_section(accessor, "Bounds", "bounds", None, data_vars, rich=rich)
-    yield make_text_section(
-        accessor, "Grid Mappings", "grid_mapping_names", None, data_vars, rich=rich
-    )
+    yield section(subtitle="Standard Names", attr="standard_names")
+    yield section(subtitle="Bounds", attr="bounds")
+    yield section(subtitle="Grid Mappings", attr="grid_mapping_names")
 
 
 def _format_sgrid(accessor, gridvars, axes, rich):

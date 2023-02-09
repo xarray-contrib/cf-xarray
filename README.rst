@@ -14,7 +14,7 @@
    :target: https://results.pre-commit.ci/latest/github/xarray-contrib/cf-xarray/main
    :alt: pre-commit.ci status
 
-.. image:: https://codecov.io/gh/xarray-contrib/cf-xarray/branch/main/graph/badge.svg?token=hR3x9559bZ 
+.. image:: https://codecov.io/gh/xarray-contrib/cf-xarray/branch/main/graph/badge.svg?token=hR3x9559bZ
    :target: https://codecov.io/gh/xarray-contrib/cf-xarray
    :alt: Code Coverage
 

@@ -3,8 +3,8 @@
 What's New
 ----------
 
-v0.8.0 (unreleased)
-===================
+v0.8.0 (Feb 8, 2023)
+====================
 
 - Support interpreting `SGRID Conventions <https://sgrid.github.io/sgrid/>`_ to identify
   X, Y, Z axes. By `Deepak Cherian`_.

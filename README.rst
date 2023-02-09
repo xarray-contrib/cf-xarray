@@ -14,9 +14,9 @@
    :target: https://results.pre-commit.ci/latest/github/xarray-contrib/cf-xarray/main
    :alt: pre-commit.ci status
 
-.. image:: https://img.shields.io/codecov/c/github/xarray-contrib/cf-xarray.svg?style=for-the-badge
-    :target: https://codecov.io/gh/xarray-contrib/cf-xarray
-    :alt: Code Coverage
+.. image:: https://codecov.io/gh/xarray-contrib/cf-xarray/branch/main/graph/badge.svg?token=hR3x9559bZ 
+   :target: https://codecov.io/gh/xarray-contrib/cf-xarray
+   :alt: Code Coverage
 
 .. image:: https://img.shields.io/pypi/v/cf-xarray.svg?style=for-the-badge
     :target: https://pypi.org/project/cf-xarray

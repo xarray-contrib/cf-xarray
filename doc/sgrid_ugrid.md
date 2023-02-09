@@ -37,11 +37,23 @@ sgrid_roms.cf["grid_topology"]
 
 ### Dimensions
 
-Note that `xi_u`, `eta_u` were identified as `X`, `Y` axes below even though
+Let's look at the repr again:
+
+```{code-cell}
+sgrid_roms.cf
+```
+
+Note that `xi_u`, `eta_u` were identified as `X`, `Y` axes even though
 there is no data associated with them. So now the following will return `xi_u`
 
 ```{code-cell}
 sgrid_roms.cf["X"]
+```
+
+```{tip}
+The repr only shows variable names that can be used as `object[variable_name]`. That is why
+only `xi_u`, `eta_u` are listed in the repr even though the attributes on the `grid_topology`
+variable `grid` list many more dimension names.
 ```
 
 ## UGRID

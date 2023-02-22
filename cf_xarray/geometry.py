@@ -1,4 +1,6 @@
-from typing import Sequence, Union
+from __future__ import annotations
+
+from typing import Sequence
 
 import numpy as np
 import pandas as pd
@@ -69,7 +71,7 @@ def reshape_unique_geometries(
     return out
 
 
-def shapely_to_cf(geometries: Union[xr.DataArray, Sequence], grid_mapping: str = None):
+def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None = None):
     """Convert a DataArray with shapely geometry objects into a CF-compliant dataset.
 
     .. warning::
@@ -171,7 +173,7 @@ def cf_to_shapely(ds: xr.Dataset):
     return geometries.rename("geometry")
 
 
-def points_to_cf(pts: Union[xr.DataArray, Sequence]):
+def points_to_cf(pts: xr.DataArray | Sequence):
     """Get a list of points (shapely.geometry.[Multi]Point) and return a CF-compliant geometry dataset.
 
     Parameters
@@ -185,17 +187,23 @@ def points_to_cf(pts: Union[xr.DataArray, Sequence]):
         A Dataset with variables 'x', 'y', 'crd_x', 'crd_y', 'node_count' and 'geometry_container'.
         The coordinates of MultiPoint instances are their first point.
     """
+    from shapely.geometry import MultiPoint
+
     if isinstance(pts, xr.DataArray):
         dim = pts.dims[0]
         coord = pts[dim] if dim in pts.coords else None
-        pts = pts.values
+        pts_ = pts.values.tolist()
     else:
         dim = "features"
         coord = None
+        pts_ = pts
 
     x, y, node_count, crdX, crdY = [], [], [], [], []
-    for pt in pts:
-        xy = np.atleast_2d(np.array(pt))
+    for pt in pts_:
+        if isinstance(pt, MultiPoint):
+            xy = np.concatenate([p.coords for p in pt.geoms])
+        else:
+            xy = np.atleast_2d(pt.coords)
         x.extend(xy[:, 0])
         y.extend(xy[:, 1])
         node_count.append(xy.shape[0])

@@ -16,6 +16,9 @@ for _variable in ds_no_attrs.variables:
     ds_no_attrs[_variable].attrs = {}
 
 
+ds_with_tuple = airds.copy(deep=False)
+ds_with_tuple = airds.rename({"air": (1, 2, 3)})
+
 # POM dataset
 pomds = xr.Dataset()
 pomds["sigma"] = (
@@ -225,6 +228,10 @@ mollwds = _create_mollw_ds()
 def _create_inexact_bounds():
     # Dataset that creates rotated pole curvilinear coordinates with CF bounds in
     # counterclockwise order that have precision issues.
+    # dataset created using: https://gist.github.com/larsbuntemeyer/105d83c1eb39b1462150d3fabca0b66b
+    rlon = np.array([17.935, 18.045, 18.155])
+    rlat = np.array([21.615, 21.725, 21.835])
+
     lon = np.array(
         [
             [64.21746363939087, 64.42305921561967, 64.62774455060337],
@@ -293,23 +300,70 @@ def _create_inexact_bounds():
 
     rotated = xr.Dataset(
         coords=dict(
+            rlon=xr.DataArray(
+                rlon,
+                dims="rlon",
+                attrs={
+                    "units": "degrees",
+                    "axis": "X",
+                    "standard_name": "grid_longitude",
+                },
+            ),
+            rlat=xr.DataArray(
+                rlat,
+                dims="rlat",
+                attrs={
+                    "units": "degrees",
+                    "axis": "Y",
+                    "standard_name": "grid_latitude",
+                },
+            ),
             lon=xr.DataArray(
                 lon,
-                dims=("x", "y"),
-                attrs={"units": "degrees_east", "bounds": "lon_bounds"},
+                dims=("rlon", "rlat"),
+                attrs={
+                    "units": "degrees_east",
+                    "bounds": "lon_bounds",
+                    "standard_name": "longitude",
+                },
             ),
             lat=xr.DataArray(
                 lat,
-                dims=("x", "y"),
-                attrs={"units": "degrees_north", "bounds": "lat_bounds"},
+                dims=("rlon", "rlat"),
+                attrs={
+                    "units": "degrees_north",
+                    "bounds": "lat_bounds",
+                    "standard_name": "latitude",
+                },
             ),
         ),
         data_vars=dict(
             lon_bounds=xr.DataArray(
-                lon_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_east"}
+                lon_bounds,
+                dims=("bounds", "rlon", "rlat"),
+                attrs={"units": "degrees_east"},
             ),
             lat_bounds=xr.DataArray(
-                lat_bounds, dims=("bounds", "x", "y"), attrs={"units": "degrees_north"}
+                lat_bounds,
+                dims=("bounds", "rlon", "rlat"),
+                attrs={"units": "degrees_north"},
+            ),
+            rotated_pole=xr.DataArray(
+                np.zeros((), dtype=np.int32),
+                dims=None,
+                attrs={
+                    "grid_mapping_name": "rotated_latitude_longitude",
+                    "grid_north_pole_latitude": 39.25,
+                    "grid_north_pole_longitude": -162.0,
+                },
+            ),
+            temp=xr.DataArray(
+                np.random.rand(3, 3),
+                dims=("rlat", "rlon"),
+                attrs={
+                    "standard_name": "air_temperature",
+                    "grid_mapping": "rotated_pole",
+                },
             ),
         ),
     )
@@ -426,7 +480,7 @@ basin = xr.DataArray(
 
 
 flag_excl = xr.DataArray(
-    [1, 1, 2, 1, 2, 3, 3, 2],
+    np.array([1, 1, 2, 1, 2, 3, 3, 2], np.uint8),
     dims=("time",),
     coords={"time": [0, 1, 2, 3, 4, 5, 6, 7]},
     attrs={
@@ -439,7 +493,7 @@ flag_excl = xr.DataArray(
 
 
 flag_indep = xr.DataArray(
-    [0, 1, 2, 3, 4, 5, 6, 7],
+    np.array([0, 1, 2, 3, 4, 5, 6, 7], dtype=np.uint8),
     dims=("time",),
     attrs={
         "flag_masks": [1, 2, 4],
@@ -451,7 +505,7 @@ flag_indep = xr.DataArray(
 
 
 flag_mix = xr.DataArray(
-    [4, 8, 13, 5, 10, 14, 7, 3],
+    np.array([4, 8, 13, 5, 10, 14, 7, 3], np.uint8),
     dims=("time",),
     attrs={
         "flag_values": [1, 2, 4, 8, 12],
@@ -638,4 +692,49 @@ dsg = xr.Dataset(
         "profile": ("profile", [0, 1, 2], {"cf_role": "profile_id"}),
         "trajectory": ("trajectory", [0, 1], {"cf_role": "trajectory_id"}),
     },
+)
+
+
+sgrid_roms = xr.Dataset()
+sgrid_roms["grid"] = xr.DataArray(
+    0,
+    attrs=dict(
+        cf_role="grid_topology",
+        topology_dimension=2,
+        node_dimensions="xi_psi eta_psi",
+        face_dimensions="xi_rho: xi_psi (padding: both) eta_rho: eta_psi (padding: both)",
+        edge1_dimensions="xi_u: xi_psi eta_u: eta_psi (padding: both)",
+        edge2_dimensions="xi_v: xi_psi (padding: both) eta_v: eta_psi",
+        node_coordinates="lon_psi lat_psi",
+        face_coordinates="lon_rho lat_rho",
+        edge1_coordinates="lon_u lat_u",
+        edge2_coordinates="lon_v lat_v",
+        vertical_dimensions="s_rho: s_w (padding: none)",
+    ),
+)
+sgrid_roms["u"] = (("xi_u", "eta_u"), np.ones((2, 2)), {"grid": "grid"})
+
+sgrid_delft = xr.Dataset()
+sgrid_delft["grid"] = xr.DataArray(
+    0,
+    attrs=dict(
+        cf_role="grid_topology",
+        topology_dimension=2,
+        node_dimensions="inode jnode",
+        face_dimensions="icell: inode (padding: none) jcell: jnode (padding: none)",
+        node_coordinates="node_lon node_lat",
+    ),
+)
+
+
+sgrid_delft3 = xr.Dataset()
+sgrid_delft3["grid"] = xr.DataArray(
+    0,
+    attrs=dict(
+        cf_role="grid_topology",
+        topology_dimension=3,
+        node_dimensions="inode jnode knode",
+        volume_dimensions="iface: inode (padding: none) jface: jnode (padding: none) kface: knode (padding: none)",
+        node_coordinates="node_lon node_lat node_elevation",
+    ),
 )

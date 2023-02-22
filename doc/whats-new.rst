@@ -3,10 +3,44 @@
 What's New
 ----------
 
-v0.7.6 (unreleased)
-===================
+v0.8.0 (Feb 8, 2023)
+====================
 
+- Support interpreting `SGRID Conventions <https://sgrid.github.io/sgrid/>`_ to identify
+  X, Y, Z axes. By `Deepak Cherian`_.
+- Add a `rich <https://rich.readthedocs.io>`_ repr. (:pr:`409`).
+  Use ``rich.print(ds.cf)`` or ``%load_ext rich`` in a Jupyter session to
+  view a much richer representation of the ``.cf`` accessor. By `Deepak Cherian`_.
+- Support interpreting the ``grid_mapping`` attribute: (:pr:`391`).
+  See :py:meth:`Dataset.cf.grid_mapping_names` and ``Dataset.cf["grid_mapping"]``,
+  ``DataArray.cf["grid_mapping"]``. By `Lars Buntemeyer`_ and `Deepak Cherian`_.
+
+
+v0.7.9 (Jan 31, 2023)
+=====================
+
+- Fix packaging of v0.7.8. That release was yanked off PyPI.
+
+v0.7.8 (Jan 31, 2023)
+=====================
+
+- Optionally use the `regex` package to continue supporting global flags in regular expressions that are not at start of pattern (:pr:`408`). By `Kristen Thyng`_
+- Added link to docs for a new example "COSIMA ocean-sea ice model demo" (:pr:`397`). By `Aidan Heerdegen`_
+
+v0.7.7 (Jan 14, 2023)
+=====================
+
+- Fix to ``geometry.points_to_cf`` to support shapely 2.0. (:pr:`386`).
+  By `Pascal Bourgault`_
+
+v0.7.6 (Dec 07, 2022)
+=====================
+
+- Fix to ``cf.add_bounds`` to support all types of curved grids (:pr:`376`).
+  By `Pascal Bourgault`_
 - Allow custom criteria to match the variable name of DataArray objects (:pr:`379`). By `Mathias Hauser`_
+- Support new Xarray indexes API when creating MultiIndex for "compression by gathering" datasets.
+  (:pr:`381`). By `Deepak Cherian`_
 
 v0.7.5 (Nov 15, 2022)
 =====================
@@ -15,7 +49,7 @@ v0.7.5 (Nov 15, 2022)
   By `Pascal Bourgault`_.
 - Improve detection of bounds order by rellaxing check a bit (:pr:`361`).
   By `Lars Buntemeyer`_.
-- Performance improvements. (:pr:`358`). By `Luke Davis`
+- Performance improvements. (:pr:`358`). By `Luke Davis`_
 - Fix coordinate/axis detection (:pr:`359`). By `Martin Schupfner`_
 
 v0.7.4 (July 14, 2022)
@@ -184,11 +218,11 @@ v0.1.3
 .. _`Julia Kent`: https://github.com/jukent
 .. _`Kristen Thyng`: https://github.com/kthyng
 .. _`Julius Busecke`: https://github.com/jbusecke
-.. _`Filipe Fernandes`: https://github.com/ocefpaf
 .. _`Tom Vo`: https://github.com/tomvothecoder
 .. _`Romain Caneill`: https://github.com/rcaneill
 .. _`Lars Buntemeyer`: https://github.com/larsbuntemeyer
 .. _`Luke Davis`: https://github.com/lukelbd
 .. _`Martin Schupfner`: https://github.com/sol1105
 .. _`Mathias Hauser`: https://github.com/mathause
+.. _`Aidan Heerdegen`: https://github.com/aidanheerdegen
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

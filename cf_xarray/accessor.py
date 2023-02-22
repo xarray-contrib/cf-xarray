@@ -1101,29 +1101,12 @@ class CFAccessor:
             raise ValueError(
                 f"Did not find flag value meaning [{other}] in known flag meanings: [{flag_dict.keys()!r}]"
             )
+        if flag_dict[other][0] is not None:
+            raise NotImplementedError(
+                "Rich comparisons with flag masks is not supported yet."
+                "Please open an issue."
+            )
         return flag_dict
-
-    def __eq__(self, other):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
-        compared.
-        """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj == flag_dict[other]
-
-    def __ne__(self, other):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
-        compared.
-        """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj != flag_dict[other]
 
     def __lt__(self, other):
         """
@@ -1134,7 +1117,7 @@ class CFAccessor:
         compared.
         """
         flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj < flag_dict[other]
+        return self._obj < flag_dict[other][1]
 
     def __le__(self, other):
         """
@@ -1145,7 +1128,7 @@ class CFAccessor:
         compared.
         """
         flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj <= flag_dict[other]
+        return self._obj <= flag_dict[other][1]
 
     def __gt__(self, other):
         """
@@ -1156,7 +1139,7 @@ class CFAccessor:
         compared.
         """
         flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj > flag_dict[other]
+        return self._obj > flag_dict[other][1]
 
     def __ge__(self, other):
         """
@@ -1167,7 +1150,7 @@ class CFAccessor:
         compared.
         """
         flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj >= flag_dict[other]
+        return self._obj >= flag_dict[other][1]
 
     def isin(self, test_elements):
         """Test each value in the array for whether it is in test_elements.
@@ -1196,7 +1179,7 @@ class CFAccessor:
                 raise ValueError(
                     f"Did not find flag value meaning [{elem}] in known flag meanings: [{flag_dict.keys()!r}]"
                 )
-            mapped_test_elements.append(flag_dict[elem])
+            mapped_test_elements.append(flag_dict[elem][1])
         return self._obj.isin(mapped_test_elements)
 
     def _drop_missing_variables(self, variables: list[Hashable]) -> list[Hashable]:
@@ -2769,11 +2752,11 @@ class CFDataArrayAccessor(CFAccessor):
         `other` must be in the 'flag_meanings' attribute.
         """
         if other not in self.flags.data_vars:
-            raise KeyError(
+            raise ValueError(
                 f"Flag meaning {other!r} not in known meanings "
                 f"{list(self.flags.data_vars)!r}"
             )
-        return self.flags[other]
+        return self.flags[other].rename(self._obj.name)
 
     def __ne__(self, other: object):
         """
@@ -2782,11 +2765,11 @@ class CFDataArrayAccessor(CFAccessor):
         `other` must be in the 'flag_meanings' attribute.
         """
         if other not in self.flags.data_vars:
-            raise KeyError(
+            raise ValueError(
                 f"Flag meaning {other!r} not in known meanings "
                 f"{list(self.flags.data_vars)!r}"
             )
-        return ~self.flags[other]
+        return ~self.flags[other].rename(self._obj.name)
 
     @property
     def flags(self) -> Dataset:

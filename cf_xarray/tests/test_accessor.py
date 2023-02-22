@@ -163,9 +163,9 @@ def test_repr() -> None:
     assert actual == dedent(expected)
 
     # Flag DataArray
-    assert "Flag variable" in repr(flag_excl.cf)
-    assert "Flag variable" in repr(flag_indep.cf)
-    assert "Flag variable" in repr(flag_mix.cf)
+    assert "Flag Variable" in repr(flag_excl.cf)
+    assert "Flag Variable" in repr(flag_indep.cf)
+    assert "Flag Variable" in repr(flag_mix.cf)
     assert "Flag Variable" in repr(basin.cf)
 
     # "Temp" dataset
@@ -1806,90 +1806,87 @@ def test_add_canonical_attributes(override, skip, verbose, capsys):
     _check_unchanged(original, ds)
 
 
-@pytest.mark.parametrize("op", ["ge", "gt", "eq", "ne", "le", "lt"])
-def test_flag_rich_comp(op) -> None:
-    actual = getattr(basin.cf, f"__{op}__")("atlantic_ocean")
-    expected = getattr(basin, f"__{op}__")(1)
-    assert_identical(actual, expected)
-
-
-def test_flag_excl() -> None:
-    for i in range(3):
-        name = f"flag_{i + 1}"
-        expected = (flag_excl == i + 1).rename(name)
-        actual = flag_excl.cf.flags[name]
+class TestFlags:
+    @pytest.mark.parametrize("op", ["ge", "gt", "eq", "ne", "le", "lt"])
+    def test_flag_rich_comp(self, op) -> None:
+        actual = getattr(basin.cf, f"__{op}__")("atlantic_ocean")
+        expected = getattr(basin, f"__{op}__")(1)
         assert_identical(actual, expected)
 
+    def test_flag_excl(self) -> None:
+        for i in range(3):
+            name = f"flag_{i + 1}"
+            expected = (flag_excl == i + 1).rename(name)
+            actual = flag_excl.cf.flags[name]
+            assert_identical(actual, expected)
 
-def test_flag_indep() -> None:
-    expected = [
-        [False, True, False, True, False, True, False, True],  # bit 1
-        [False, False, True, True, False, False, True, True],  # bit 2
-        [False, False, False, False, True, True, True, True],  # bit 3
-    ]
-    for i in range(3):
-        name = f"flag_{2**i}"
-        res = flag_indep.cf.flags[name]
-        np.testing.assert_equal(res.to_numpy(), expected[i])
+    def test_flag_indep(self) -> None:
+        expected = [
+            [False, True, False, True, False, True, False, True],  # bit 1
+            [False, False, True, True, False, False, True, True],  # bit 2
+            [False, False, False, False, True, True, True, True],  # bit 3
+        ]
+        for i in range(3):
+            name = f"flag_{2**i}"
+            res = flag_indep.cf.flags[name]
+            np.testing.assert_equal(res.to_numpy(), expected[i])
 
+    def test_flag_mix(self) -> None:
+        expected = [
+            [False, False, True, True, False, False, True, True],  # flag 1
+            [False, False, False, False, True, True, True, True],  # flag 2
+            [True, False, False, True, False, False, True, False],  # flag 3
+            [False, True, False, False, True, False, False, False],  # flag 4
+            [False, False, True, False, False, True, False, False],  # flag 5
+        ]
+        for i in range(5):
+            name = f"flag_{i + 1}"
+            res = flag_mix.cf.flags[name]
+            np.testing.assert_equal(res.to_numpy(), expected[i])
 
-def test_flag_mix() -> None:
-    expected = [
-        [False, False, True, True, False, False, True, True],  # flag 1
-        [False, False, False, False, True, True, True, True],  # flag 2
-        [True, False, False, True, False, False, True, False],  # flag 3
-        [False, True, False, False, True, False, False, False],  # flag 4
-        [False, False, True, False, False, True, False, False],  # flag 5
-    ]
-    for i in range(5):
-        name = f"flag_{i + 1}"
-        res = flag_mix.cf.flags[name]
-        np.testing.assert_equal(res.to_numpy(), expected[i])
+    @pytest.mark.parametrize(
+        "da, key", ((flag_indep, "flag_1"), (flag_mix, "flag_4"), (flag_excl, "flag_3"))
+    )
+    def test_flag_eq_ne(self, da, key) -> None:
+        assert_identical(da.cf.flags[key], (da.cf == key).rename(key))
+        assert_identical(~da.cf.flags[key], (da.cf != key).rename(key))
 
+    def test_flag_isin(self) -> None:
+        actual = flag_excl.cf.isin(["flag_1", "flag_3"])
+        expected = flag_excl.isin([1, 3])
 
-def test_flag_feature() -> None:
-    assert_identical(flag_indep.cf.flags.flag_1, flag_indep.cf == "flag_1")
-    assert_identical(flag_mix.cf.flags.flag_4, flag_mix.cf == "flag_4")
-    assert_identical(~flag_excl.cf.flags.flag_3, flag_excl.cf != "flag_3")
+        actual = basin.cf.isin(["atlantic_ocean", "pacific_ocean"])
+        expected = basin.isin([1, 2])
+        assert_identical(actual, expected)
 
+        actual = flag_excl.cf.isin(["flag_ERR"])
+        assert not actual.any()
 
-def test_flag_isin() -> None:
-    actual = flag_excl.cf.isin(["flag_1", "flag_3"])
-    expected = flag_excl.isin([1, 3])
+    def test_flag_errors(self) -> None:
+        with pytest.raises(ValueError):
+            flag_mix.cf == "ERR"
 
-    actual = basin.cf.isin(["atlantic_ocean", "pacific_ocean"])
-    expected = basin.isin([1, 2])
-    assert_identical(actual, expected)
+        flag_excl.attrs.pop("flag_values")
+        with pytest.raises(ValueError):
+            flag_excl.cf.isin(["flag_1"])
 
-    actual = flag_excl.cf.isin(["flag_ERR"])
-    assert not actual.any()
+        with pytest.raises(ValueError):
+            flag_excl.cf == "flag_1"
 
+        with pytest.raises(ValueError):
+            basin.cf == "arctic_ocean"
 
-def test_flag_errors() -> None:
-    with pytest.raises(KeyError):
-        flag_mix.cf == "ERR"
+        ds = xr.Dataset({"basin": basin})
+        with pytest.raises(ValueError):
+            ds.cf.isin(["atlantic_ocean"])
 
-    flag_excl.attrs.pop("flag_values")
-    with pytest.raises(ValueError):
-        flag_excl.cf.isin(["flag_1"])
+        basin_ = basin.copy(deep=True)
+        basin_.attrs.pop("flag_values")
+        with pytest.raises(ValueError):
+            basin_.cf.isin(["pacific_ocean"])
 
-    with pytest.raises(ValueError):
-        flag_excl.cf == "flag_1"
-
-    with pytest.raises(ValueError):
-        basin.cf == "arctic_ocean"
-
-    ds = xr.Dataset({"basin": basin})
-    with pytest.raises(ValueError):
-        ds.cf.isin(["atlantic_ocean"])
-
-    basin_ = basin.copy(deep=True)
-    basin_.attrs.pop("flag_values")
-    with pytest.raises(ValueError):
-        basin_.cf.isin(["pacific_ocean"])
-
-    with pytest.raises(ValueError):
-        basin_.cf == "pacific_ocean"
+        with pytest.raises(ValueError):
+            basin_.cf == "pacific_ocean"
 
 
 def test_missing_variables() -> None:

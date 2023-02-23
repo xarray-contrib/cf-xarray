@@ -1119,6 +1119,28 @@ class CFAccessor:
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj < flag_dict[other][1]
 
+    def __eq__(self, other):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        compared.
+        """
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj == flag_dict[other]
+
+    def __ne__(self, other):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        compared.
+        """
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj != flag_dict[other]
+
     def __le__(self, other):
         """
         Compare flag values against `other`.
@@ -2744,32 +2766,6 @@ class CFDataArrayAccessor(CFAccessor):
             )
 
         return _getitem(self, key)
-
-    def __eq__(self, other: object):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        """
-        if other not in self.flags.data_vars:
-            raise ValueError(
-                f"Flag meaning {other!r} not in known meanings "
-                f"{list(self.flags.data_vars)!r}"
-            )
-        return self.flags[other].rename(self._obj.name)
-
-    def __ne__(self, other: object):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        """
-        if other not in self.flags.data_vars:
-            raise ValueError(
-                f"Flag meaning {other!r} not in known meanings "
-                f"{list(self.flags.data_vars)!r}"
-            )
-        return ~self.flags[other].rename(self._obj.name)
 
     @property
     def flags(self) -> Dataset:

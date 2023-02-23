@@ -1108,17 +1108,6 @@ class CFAccessor:
             )
         return flag_dict
 
-    def __lt__(self, other):
-        """
-        Compare flag values against `other`.
-
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
-        compared.
-        """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj < flag_dict[other][1]
-
     def __eq__(self, other):
         """
         Compare flag values against `other`.
@@ -1140,6 +1129,17 @@ class CFAccessor:
         """
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj != flag_dict[other]
+
+    def __lt__(self, other):
+        """
+        Compare flag values against `other`.
+
+        `other` must be in the 'flag_meanings' attribute.
+        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        compared.
+        """
+        flag_dict = self._assert_valid_other_comparison(other)
+        return self._obj < flag_dict[other][1]
 
     def __le__(self, other):
         """

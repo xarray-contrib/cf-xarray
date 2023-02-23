@@ -1117,7 +1117,7 @@ class CFAccessor:
         compared.
         """
         flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj == flag_dict[other]
+        return self._obj == flag_dict[other][1]
 
     def __ne__(self, other):
         """
@@ -1128,7 +1128,7 @@ class CFAccessor:
         compared.
         """
         flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj != flag_dict[other]
+        return self._obj != flag_dict[other][1]
 
     def __lt__(self, other):
         """

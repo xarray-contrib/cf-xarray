@@ -1103,12 +1103,12 @@ class CFAccessor:
             )
         if flag_dict[other][0] is not None:
             raise NotImplementedError(
-                "Rich comparisons with flag masks is not supported yet."
-                "Please open an issue."
+                "Only equals and not-equals comparisons with flag masks are supported."
+                " Please open an issue."
             )
         return flag_dict
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> DataArray:
         """
         Compare flag values against `other`.
 
@@ -1116,10 +1116,9 @@ class CFAccessor:
         `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
         """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj == flag_dict[other][1]
+        return self._extract_flags([other])[other].rename(self._obj.name)
 
-    def __ne__(self, other):
+    def __ne__(self, other) -> DataArray:
         """
         Compare flag values against `other`.
 
@@ -1127,10 +1126,9 @@ class CFAccessor:
         `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
         """
-        flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj != flag_dict[other][1]
+        return ~self._extract_flags([other])[other].rename(self._obj.name)
 
-    def __lt__(self, other):
+    def __lt__(self, other) -> DataArray:
         """
         Compare flag values against `other`.
 
@@ -1141,7 +1139,7 @@ class CFAccessor:
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj < flag_dict[other][1]
 
-    def __le__(self, other):
+    def __le__(self, other) -> DataArray:
         """
         Compare flag values against `other`.
 
@@ -1152,7 +1150,7 @@ class CFAccessor:
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj <= flag_dict[other][1]
 
-    def __gt__(self, other):
+    def __gt__(self, other) -> DataArray:
         """
         Compare flag values against `other`.
 
@@ -1163,7 +1161,7 @@ class CFAccessor:
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj > flag_dict[other][1]
 
-    def __ge__(self, other):
+    def __ge__(self, other) -> DataArray:
         """
         Compare flag values against `other`.
 
@@ -1174,7 +1172,7 @@ class CFAccessor:
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj >= flag_dict[other][1]
 
-    def isin(self, test_elements):
+    def isin(self, test_elements) -> DataArray:
         """Test each value in the array for whether it is in test_elements.
 
         Parameters
@@ -2797,7 +2795,8 @@ class CFDataArrayAccessor(CFAccessor):
         for flag in flags:
             if flag not in flag_dict:
                 raise ValueError(
-                    f"Flag meaning {flag!r} is not in known meanings {list(flag_dict.keys())!r}"
+                    f"Did not find flag value meaning [{flag}] in known flag meanings:"
+                    f" [{flag_dict.keys()!r}]"
                 )
             mask, value = flag_dict[flag]
             if mask is None:

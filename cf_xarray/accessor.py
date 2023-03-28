@@ -304,7 +304,8 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
         search_in = crd_names
 
     # maybe only do this for key in _AXIS_NAMES?
-    search_in.update(obj._indexes)
+    if obj._indexes:
+        search_in.update(obj._indexes)
 
     search_in = search_in & crd_names
     results: set = set()

@@ -82,7 +82,7 @@ authors:
     affiliation: Lawrence Livermore National Laboratory
 identifiers:
   - type: doi
-    value: 10.5281/zenodo.7538737
+    value: 10.5281/zenodo.4749735
     description: Zenodo DOI
 repository-code: 'https://github.com/xarray-contrib/cf-xarray'
 url: 'https://cf-xarray.readthedocs.io'
@@ -97,5 +97,5 @@ keywords:
   - metadata
 license: Apache-2.0
 commit: 1b373a21b558423da8f22c3ec79f58737871719b
-version: 0.7.7
-date-released: '2023-01-14'
+version: 0.8.0
+date-released: '2023-02-08'

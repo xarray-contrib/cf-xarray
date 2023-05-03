@@ -61,7 +61,6 @@ def assert_dicts_identical(dict1, dict2):
 
 
 def test_repr() -> None:
-
     assert "air_temperature: [(1, 2, 3)]" in ds_with_tuple.cf.__repr__()
 
     # Dataset.
@@ -454,7 +453,6 @@ def test_rename_like() -> None:
     ),
 )
 def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
-
     if attr in ("rolling", "coarsen"):
         # TODO: xarray bug, rolling and coarsen don't accept ellipsis
         args = ()
@@ -522,7 +520,6 @@ def test_pos_args_methods() -> None:
 
 
 def test_preserve_unused_keys() -> None:
-
     ds = airds.copy(deep=False)
     ds.time.attrs.clear()
     actual = ds.cf.sel(X=260, Y=40, time=airds.time[:2], method="nearest")
@@ -531,7 +528,6 @@ def test_preserve_unused_keys() -> None:
 
 
 def test_kwargs_expand_key_to_multiple_keys() -> None:
-
     actual = multiple.cf.isel(X=5, Y=3)
     expected = multiple.isel(x1=5, y1=3, x2=5, y2=3)
     assert_identical(actual, expected)
@@ -571,7 +567,6 @@ def test_args_methods(obj):
 
 
 def test_dataarray_getitem() -> None:
-
     air = airds.air.copy(deep=False)
     air.name = None
 
@@ -586,7 +581,6 @@ def test_dataarray_getitem() -> None:
 
 
 def test_dataarray_plot() -> None:
-
     obj = airds.air.copy(deep=False)
 
     rv = obj.isel(time=1).transpose("lon", "lat").cf.plot()
@@ -1375,7 +1369,6 @@ def test_standard_name_mapper() -> None:
 @pytest.mark.parametrize("obj", objects)
 @pytest.mark.parametrize("attr", ["drop_vars", "set_coords"])
 def test_drop_vars_and_set_coords(obj, attr):
-
     # DataArray object has no attribute set_coords
     if not isinstance(obj, Dataset) and attr == "set_coords":
         return
@@ -1398,7 +1391,6 @@ def test_drop_vars_and_set_coords(obj, attr):
 
 @pytest.mark.parametrize("obj", objects)
 def test_drop_sel_and_reset_coords(obj):
-
     # Axis
     assert_identical(obj.drop_sel(lat=75), obj.cf.drop_sel(Y=75))
     # Coordinate
@@ -1415,7 +1407,6 @@ def test_drop_sel_and_reset_coords(obj):
 
 @pytest.mark.parametrize("ds", datasets)
 def test_drop_dims(ds):
-
     # Add data_var and coord to test _get_dims
     ds["lon_var"] = ds["lon"]
     ds = ds.assign_coords(lon_coord=ds["lon"])
@@ -1427,7 +1418,6 @@ def test_drop_dims(ds):
 
 @pytest.mark.parametrize("obj", objects)
 def test_rename(obj):
-
     cf_dict = {
         "air_temperature" if isinstance(obj, Dataset) else "longitude": "renamed"
     }
@@ -1450,7 +1440,6 @@ def test_rename_tuple():
 
 @pytest.mark.parametrize("ds", datasets)
 def test_differentiate(ds):
-
     # Add data_var and coord to test _get_coords
     ds["lon_var"] = ds["lon"]
     ds = ds.assign_coords(lon_coord=ds["lon"])
@@ -1710,7 +1699,6 @@ def test_regex_match():
 
 
 def test_cf_standard_name_table_version() -> None:
-
     url = (
         "https://raw.githubusercontent.com/cf-convention/cf-convention.github.io/"
         "master/Data/cf-standard-names/current/src/cf-standard-name-table.xml"
@@ -1748,7 +1736,6 @@ def test_datetime_like(reshape):
 @pytest.mark.parametrize("skip", ["units", None])
 @pytest.mark.parametrize("verbose", [True, False])
 def test_add_canonical_attributes(override, skip, verbose, capsys):
-
     ds = airds
     original = ds.copy(deep=True)
     cf_ds = ds.cf.add_canonical_attributes(
@@ -1834,7 +1821,6 @@ def test_flag_errors() -> None:
 
 
 def test_missing_variables() -> None:
-
     # Bounds
     ds = mollwds.copy(deep=False)
     ds = ds.drop_vars("lon_bounds")

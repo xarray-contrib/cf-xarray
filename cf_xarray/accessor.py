@@ -119,7 +119,6 @@ def apply_mapper(
     default = [] if default is None else list(always_iterable(default))
 
     def _apply_single_mapper(mapper):
-
         try:
             results = mapper(obj, key)
         except (KeyError, ValueError) as e:
@@ -1218,7 +1217,6 @@ class CFAccessor:
         param_names: Sequence[str] | None = None,
         kwargs: dict[str, Any] | None = None,
     ):
-
         if coords is not None:
             if isinstance(coords, (Hashable, DataArray)):
                 coords_iter: Iterable[Hashable | DataArray] = [coords]
@@ -2053,7 +2051,6 @@ class CFAccessor:
         ds = self._maybe_to_dataset().copy(deep=False)
         attrs_to_print: dict = {}
         for std_name, var_names in ds.cf.standard_names.items():
-
             # Loop over variable names
             for var_name in var_names:
                 old_attrs = ds[var_name].attrs
@@ -2067,7 +2064,6 @@ class CFAccessor:
                         and key not in skip_
                         and (override or key not in old_attrs)
                     ):
-
                         # Don't add units to time variables (e.g., datetime64, ...)
                         if key == "units" and _is_datetime_like(ds[var_name]):
                             continue

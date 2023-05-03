@@ -323,7 +323,8 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
 
     if key in _AXIS_NAMES and "grid_topology" in obj.cf.cf_roles:
         sgrid_axes = sgrid.parse_axes(obj)
-        results.update((search_in | set(obj.dims)) & sgrid_axes[key])
+        if key in sgrid_axes:
+            results.update((search_in | set(obj.dims)) & sgrid_axes[key])
 
     return list(results)
 

@@ -1878,12 +1878,14 @@ def test_grid_topology() -> None:
     ds = xr.Dataset(
         data_vars={},
         coords={
+            "time": ("time", [1, 2, 3], {"standard_name": "time"}),
             "mesh": (tuple(), 1, {"cf_role": "mesh_topology"}),
             "grid": (tuple(), 1, {"cf_role": "grid_topology"}),
         },
     )
     assert_identical(ds.cf["grid_topology"], ds.grid.reset_coords(drop=True))
     assert_identical(ds.cf["mesh_topology"], ds.mesh.reset_coords(drop=True))
+    assert "T" in ds.cf.axes
 
 
 @requires_scipy

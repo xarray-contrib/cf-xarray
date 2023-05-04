@@ -129,6 +129,7 @@ warn_unused_ignores = true
 module=[
     "cftime",
     "pandas",
+    "pooch",
     "matplotlib",
     "pytest",
     "shapely.geometry",

@@ -2023,7 +2023,7 @@ class CFAccessor:
             Print added attributes to screen.
         source : optional
             Path of `cf-standard-name-table.xml` or file object containing XML data.
-            If ``None``, use the default version associated with ``cf-xarray``.
+            If ``None``, use the latest CF standard name table (requires ``pooch``).
 
         Returns
         -------

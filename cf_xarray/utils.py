@@ -86,7 +86,8 @@ def parse_cf_standard_name_table(source=None):
     if not source:
         source = pooch.retrieve(
             "https://raw.githubusercontent.com/cf-convention/cf-convention.github.io/"
-            "master/Data/cf-standard-names/current/src/cf-standard-name-table.xml"
+            "master/Data/cf-standard-names/current/src/cf-standard-name-table.xml",
+            known_hash=None,
         )
     root = ElementTree.parse(source).getroot()
 

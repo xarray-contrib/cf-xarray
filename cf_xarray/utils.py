@@ -81,9 +81,9 @@ def always_iterable(obj: Any, allowed=(tuple, list, set, dict)) -> Iterable:
 def parse_cf_standard_name_table(source=None):
     """"""
 
-    import pooch
-
     if not source:
+        import pooch
+
         source = pooch.retrieve(
             "https://raw.githubusercontent.com/cf-convention/cf-convention.github.io/"
             "master/Data/cf-standard-names/current/src/cf-standard-name-table.xml",

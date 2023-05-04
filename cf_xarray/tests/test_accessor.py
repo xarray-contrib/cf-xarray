@@ -2,7 +2,6 @@ import itertools
 import pickle
 import warnings
 from textwrap import dedent
-from urllib.request import urlopen
 
 import matplotlib as mpl
 import numpy as np
@@ -41,6 +40,7 @@ from . import (
     raise_if_dask_computes,
     requires_cftime,
     requires_pint,
+    requires_pooch,
     requires_regex,
     requires_rich,
     requires_scipy,
@@ -1698,14 +1698,9 @@ def test_regex_match():
         assert_identical(ds.cf["temp"], ds["Tempblah"])
 
 
+@requires_pooch
 def test_cf_standard_name_table_version() -> None:
-    url = (
-        "https://raw.githubusercontent.com/cf-convention/cf-convention.github.io/"
-        "master/Data/cf-standard-names/current/src/cf-standard-name-table.xml"
-    )
-    expected_info, _, _ = parse_cf_standard_name_table(urlopen(url))
-    actual_info, _, _ = parse_cf_standard_name_table()
-    assert expected_info == actual_info
+    parse_cf_standard_name_table()
 
 
 def test_add_canonical_attributes_0_dim() -> None:

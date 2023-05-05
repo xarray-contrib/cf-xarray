@@ -83,6 +83,13 @@ jobs:
     needs: test-built-dist
     if: github.event_name == 'release'
     runs-on: ubuntu-latest
+
+    environment:
+      name: pypi
+      url: https://pypi.org/p/cf-xarray
+    permissions:
+      id-token: write
+
     steps:
       - uses: actions/download-artifact@v3
         with:
@@ -90,6 +97,3 @@ jobs:
           path: dist
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@v1.8.5
-        with:
-          password: ${{ secrets.PYPI_PASSWORD }}
-          verbose: true

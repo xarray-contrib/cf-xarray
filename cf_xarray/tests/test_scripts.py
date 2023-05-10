@@ -5,7 +5,6 @@ from cf_xarray.scripts import make_doc
 
 
 def test_make_doc():
-
     names = [
         "axes_criteria",
         "coords_criteria",

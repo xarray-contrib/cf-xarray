@@ -2,7 +2,6 @@ import itertools
 import pickle
 import warnings
 from textwrap import dedent
-from urllib.request import urlopen
 
 import matplotlib as mpl
 import numpy as np
@@ -44,6 +43,7 @@ from . import (
     raise_if_dask_computes,
     requires_cftime,
     requires_pint,
+    requires_pooch,
     requires_regex,
     requires_rich,
     requires_scipy,
@@ -64,7 +64,6 @@ def assert_dicts_identical(dict1, dict2):
 
 
 def test_repr() -> None:
-
     assert "air_temperature: [(1, 2, 3)]" in ds_with_tuple.cf.__repr__()
 
     # Dataset.
@@ -460,7 +459,6 @@ def test_rename_like() -> None:
     ),
 )
 def test_wrapped_classes(obj, attr, xrkwargs, cfkwargs):
-
     if attr in ("rolling", "coarsen"):
         # TODO: xarray bug, rolling and coarsen don't accept ellipsis
         args = ()
@@ -528,7 +526,6 @@ def test_pos_args_methods() -> None:
 
 
 def test_preserve_unused_keys() -> None:
-
     ds = airds.copy(deep=False)
     ds.time.attrs.clear()
     actual = ds.cf.sel(X=260, Y=40, time=airds.time[:2], method="nearest")
@@ -537,7 +534,6 @@ def test_preserve_unused_keys() -> None:
 
 
 def test_kwargs_expand_key_to_multiple_keys() -> None:
-
     actual = multiple.cf.isel(X=5, Y=3)
     expected = multiple.isel(x1=5, y1=3, x2=5, y2=3)
     assert_identical(actual, expected)
@@ -577,7 +573,6 @@ def test_args_methods(obj):
 
 
 def test_dataarray_getitem() -> None:
-
     air = airds.air.copy(deep=False)
     air.name = None
 
@@ -592,7 +587,6 @@ def test_dataarray_getitem() -> None:
 
 
 def test_dataarray_plot() -> None:
-
     obj = airds.air.copy(deep=False)
 
     rv = obj.isel(time=1).transpose("lon", "lat").cf.plot()
@@ -1148,8 +1142,8 @@ _VERTICAL_NAMES = _make_names(
         "nav_lev",
     ]
 )
-_X_NAMES = _make_names(["x", "nlon", "i", "ni"])
-_Y_NAMES = _make_names(["y", "nlat", "j", "nj"])
+_X_NAMES = _make_names(["x", "nlon", "i", "ni", "rlon"])
+_Y_NAMES = _make_names(["y", "nlat", "j", "nj", "rlat"])
 _Z_NAMES = _VERTICAL_NAMES + ["olevel", "level", "zlevel"]
 _LATITUDE_NAMES = _make_names(["lat", "latitude", "gphi", "nav_lat"])
 _LONGITUDE_NAMES = _make_names(["lon", "longitude", "glam", "nav_lon"])
@@ -1381,7 +1375,6 @@ def test_standard_name_mapper() -> None:
 @pytest.mark.parametrize("obj", objects)
 @pytest.mark.parametrize("attr", ["drop_vars", "set_coords"])
 def test_drop_vars_and_set_coords(obj, attr):
-
     # DataArray object has no attribute set_coords
     if not isinstance(obj, Dataset) and attr == "set_coords":
         return
@@ -1404,7 +1397,6 @@ def test_drop_vars_and_set_coords(obj, attr):
 
 @pytest.mark.parametrize("obj", objects)
 def test_drop_sel_and_reset_coords(obj):
-
     # Axis
     assert_identical(obj.drop_sel(lat=75), obj.cf.drop_sel(Y=75))
     # Coordinate
@@ -1421,7 +1413,6 @@ def test_drop_sel_and_reset_coords(obj):
 
 @pytest.mark.parametrize("ds", datasets)
 def test_drop_dims(ds):
-
     # Add data_var and coord to test _get_dims
     ds["lon_var"] = ds["lon"]
     ds = ds.assign_coords(lon_coord=ds["lon"])
@@ -1433,7 +1424,6 @@ def test_drop_dims(ds):
 
 @pytest.mark.parametrize("obj", objects)
 def test_rename(obj):
-
     cf_dict = {
         "air_temperature" if isinstance(obj, Dataset) else "longitude": "renamed"
     }
@@ -1456,7 +1446,6 @@ def test_rename_tuple():
 
 @pytest.mark.parametrize("ds", datasets)
 def test_differentiate(ds):
-
     # Add data_var and coord to test _get_coords
     ds["lon_var"] = ds["lon"]
     ds = ds.assign_coords(lon_coord=ds["lon"])
@@ -1715,15 +1704,9 @@ def test_regex_match():
         assert_identical(ds.cf["temp"], ds["Tempblah"])
 
 
+@requires_pooch
 def test_cf_standard_name_table_version() -> None:
-
-    url = (
-        "https://raw.githubusercontent.com/cf-convention/cf-convention.github.io/"
-        "master/Data/cf-standard-names/current/src/cf-standard-name-table.xml"
-    )
-    expected_info, _, _ = parse_cf_standard_name_table(urlopen(url))
-    actual_info, _, _ = parse_cf_standard_name_table()
-    assert expected_info == actual_info
+    parse_cf_standard_name_table()
 
 
 def test_add_canonical_attributes_0_dim() -> None:
@@ -1754,7 +1737,6 @@ def test_datetime_like(reshape):
 @pytest.mark.parametrize("skip", ["units", None])
 @pytest.mark.parametrize("verbose", [True, False])
 def test_add_canonical_attributes(override, skip, verbose, capsys):
-
     ds = airds
     original = ds.copy(deep=True)
     cf_ds = ds.cf.add_canonical_attributes(
@@ -1890,7 +1872,6 @@ class TestFlags:
 
 
 def test_missing_variables() -> None:
-
     # Bounds
     ds = mollwds.copy(deep=False)
     ds = ds.drop_vars("lon_bounds")
@@ -1934,12 +1915,14 @@ def test_grid_topology() -> None:
     ds = xr.Dataset(
         data_vars={},
         coords={
+            "time": ("time", [1, 2, 3], {"standard_name": "time"}),
             "mesh": (tuple(), 1, {"cf_role": "mesh_topology"}),
             "grid": (tuple(), 1, {"cf_role": "grid_topology"}),
         },
     )
     assert_identical(ds.cf["grid_topology"], ds.grid.reset_coords(drop=True))
     assert_identical(ds.cf["mesh_topology"], ds.mesh.reset_coords(drop=True))
+    assert "T" in ds.cf.axes
 
 
 @requires_scipy

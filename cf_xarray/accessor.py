@@ -119,7 +119,6 @@ def apply_mapper(
     default = [] if default is None else list(always_iterable(default))
 
     def _apply_single_mapper(mapper):
-
         try:
             results = mapper(obj, key)
         except (KeyError, ValueError) as e:
@@ -230,6 +229,7 @@ def _get_custom_criteria(
 
     if isinstance(obj, DataArray):
         obj = obj._to_temp_dataset()
+    variables = obj._variables
 
     if criteria is None:
         if not OPTIONS["custom_criteria"]:
@@ -243,8 +243,8 @@ def _get_custom_criteria(
     results: set = set()
     if key in criteria_map:
         for criterion, patterns in criteria_map[key].items():
-            for var in obj.variables:
-                if regex_match(patterns, obj[var].attrs.get(criterion, "")):
+            for var in variables:
+                if regex_match(patterns, variables[var].attrs.get(criterion, "")):
                     results.update((var,))
                 # also check name specifically since not in attributes
                 elif (
@@ -290,6 +290,8 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
             f"cf_xarray did not understand key {key!r}. Expected one of {valid_keys!r}"
         )
 
+    crds = obj.coords
+    crd_names = set(crds)
     search_in = set()
     attrs_or_encoding = ChainMap(obj.attrs, obj.encoding)
     coordinates = attrs_or_encoding.get("coordinates", None)
@@ -298,15 +300,16 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
     if coordinates:
         search_in.update(coordinates.split(" "))
     if not search_in:
-        search_in = set(obj.coords)
+        search_in = crd_names
 
     # maybe only do this for key in _AXIS_NAMES?
-    search_in.update(obj.indexes)
+    if obj._indexes:
+        search_in.update(obj._indexes)
 
-    search_in = search_in & set(obj.coords)
+    search_in = search_in & crd_names
     results: set = set()
     for coord in search_in:
-        var = obj.coords[coord]
+        var = crds[coord]
         if key in coordinate_criteria:
             for criterion, expected in coordinate_criteria[key].items():
                 if var.attrs.get(criterion, None) in expected:
@@ -317,7 +320,7 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
                     if units in expected:
                         results.update((coord,))
 
-    if key in _AXIS_NAMES and "grid_topology" in obj.cf.cf_roles:
+    if key in ["X", "Y", "Z"] and "grid_topology" in obj.cf.cf_roles:
         sgrid_axes = sgrid.parse_axes(obj)
         results.update((search_in | set(obj.dims)) & sgrid_axes[key])
 
@@ -345,9 +348,8 @@ def _get_measure(obj: DataArray | Dataset, key: str) -> list[str]:
         obj = obj._to_temp_dataset()
 
     results = set()
-    for var in obj.variables:
-        da = obj[var]
-        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
+    for var in obj._variables.values():
+        attrs_or_encoding = ChainMap(var.attrs, var.encoding)
         if "cell_measures" in attrs_or_encoding:
             attr = attrs_or_encoding["cell_measures"]
             try:
@@ -381,9 +383,13 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     List[str], Variable name(s) in parent xarray object that are bounds of `key`
     """
 
+    if isinstance(obj, DataArray):
+        obj = obj._to_temp_dataset()
+    variables = obj._variables
+
     results = set()
     for var in apply_mapper(_get_all, obj, key, error=False, default=[key]):
-        attrs_or_encoding = ChainMap(obj[var].attrs, obj[var].encoding)
+        attrs_or_encoding = ChainMap(variables[var].attrs, variables[var].encoding)
         if "bounds" in attrs_or_encoding:
             results |= {attrs_or_encoding["bounds"]}
 
@@ -410,17 +416,17 @@ def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
     if isinstance(obj, DataArray):
         obj = obj._to_temp_dataset()
 
+    variables = obj._variables
     results = set()
-    for var in obj.variables:
-        da = obj[var]
-        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
+    for var in variables.values():
+        attrs_or_encoding = ChainMap(var.attrs, var.encoding)
         if "grid_mapping" in attrs_or_encoding:
             grid_mapping_var_name = attrs_or_encoding["grid_mapping"]
-            if grid_mapping_var_name not in obj.variables:
+            if grid_mapping_var_name not in variables:
                 raise ValueError(
                     f"{var} defines non-existing grid_mapping variable {grid_mapping_var_name}."
                 )
-            if key == obj[grid_mapping_var_name].attrs["grid_mapping_name"]:
+            if key == variables[grid_mapping_var_name].attrs["grid_mapping_name"]:
                 results.update([grid_mapping_var_name])
     return list(results)
 
@@ -474,7 +480,7 @@ def _get_indexes(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     One or more of ('X', 'Y', 'Z', 'T', 'longitude', 'latitude', 'vertical', 'time',
     'area', 'volume'), or arbitrary measures, or standard names present in .indexes
     """
-    return [k for k in _get_all(obj, key) if k in obj.indexes]
+    return [k for k in _get_all(obj, key) if k in obj._indexes]
 
 
 def _get_coords(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
@@ -1232,7 +1238,6 @@ class CFAccessor:
         param_names: Sequence[str] | None = None,
         kwargs: dict[str, Any] | None = None,
     ):
-
         if coords is not None:
             if isinstance(coords, (Hashable, DataArray)):
                 coords_iter: Iterable[Hashable | DataArray] = [coords]
@@ -2039,7 +2044,7 @@ class CFAccessor:
             Print added attributes to screen.
         source : optional
             Path of `cf-standard-name-table.xml` or file object containing XML data.
-            If ``None``, use the default version associated with ``cf-xarray``.
+            If ``None``, use the latest CF standard name table (requires ``pooch``).
 
         Returns
         -------
@@ -2067,7 +2072,6 @@ class CFAccessor:
         ds = self._maybe_to_dataset().copy(deep=False)
         attrs_to_print: dict = {}
         for std_name, var_names in ds.cf.standard_names.items():
-
             # Loop over variable names
             for var_name in var_names:
                 old_attrs = ds[var_name].attrs
@@ -2081,7 +2085,6 @@ class CFAccessor:
                         and key not in skip_
                         and (override or key not in old_attrs)
                     ):
-
                         # Don't add units to time variables (e.g., datetime64, ...)
                         if key == "units" and _is_datetime_like(ds[var_name]):
                             continue
@@ -2272,7 +2275,7 @@ class CFDatasetAccessor(CFAccessor):
         DataArray
         """
 
-        results = self.bounds.get(key, [])
+        results = self[[key]].cf.bounds.get(key, [])
         if not results:
             raise KeyError(f"No results found for {key!r}.")
 
@@ -2291,12 +2294,18 @@ class CFDatasetAccessor(CFAccessor):
         -------
         str
         """
-        crd = self[key]
-        bounds = self.get_bounds(key)
+        (crd_name,) = apply_mapper(_get_all, self._obj, key, error=False, default=[key])
+        variables = self._obj._variables
+        crd = variables[crd_name]
+        crd_attrs = crd._attrs
+        if crd_attrs is None or "bounds" not in crd_attrs:
+            raise KeyError(f"No bounds variable found for {key!r}")
+
+        bounds = variables[crd_attrs["bounds"].strip()]
         bounds_dims = set(bounds.dims) - set(crd.dims)
         assert len(bounds_dims) == 1
         bounds_dim = bounds_dims.pop()
-        assert self._obj.sizes[bounds_dim] in [2, 4]
+        assert bounds.sizes[bounds_dim] in [2, 4]
         return bounds_dim
 
     def add_bounds(

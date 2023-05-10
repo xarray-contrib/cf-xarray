@@ -15,6 +15,7 @@ dependencies:
   - pooch
   - regex
   - rich
+  - pooch
   - scipy
   - shapely
   - xarray

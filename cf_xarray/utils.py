@@ -1,4 +1,3 @@
-import os
 from collections import defaultdict
 from typing import Any, Dict, Iterable
 from xml.etree import ElementTree
@@ -83,8 +82,12 @@ def parse_cf_standard_name_table(source=None):
     """"""
 
     if not source:
-        source = os.path.join(
-            os.path.dirname(__file__), "data", "cf-standard-name-table.xml"
+        import pooch
+
+        source = pooch.retrieve(
+            "https://raw.githubusercontent.com/cf-convention/cf-convention.github.io/"
+            "master/Data/cf-standard-names/current/src/cf-standard-name-table.xml",
+            known_hash=None,
         )
     root = ElementTree.parse(source).getroot()
 

@@ -94,14 +94,22 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
         "positive": ("up", "down"),
     },
     "X": {
-        "standard_name": ("projection_x_coordinate",),
+        "standard_name": (
+            "projection_x_coordinate",
+            "grid_longitude",
+            "projection_x_angular_coordinate",
+        ),
         "_CoordinateAxisType": ("GeoX",),
         "axis": ("X",),
         "cartesian_axis": ("X",),
         "grads_dim": ("x",),
     },
     "Y": {
-        "standard_name": ("projection_y_coordinate",),
+        "standard_name": (
+            "projection_y_coordinate",
+            "grid_latitude",
+            "projection_y_angular_coordinate",
+        ),
         "_CoordinateAxisType": ("GeoY",),
         "axis": ("Y",),
         "cartesian_axis": ("Y",),
@@ -134,9 +142,9 @@ regex = {
         "(z|nav_lev|gdep|lv_|[o]*lev|bottom_top|sigma|h(ei)?ght|altitude|depth|"
         "isobaric|pres|isotherm)[a-z_]*[0-9]*"
     ),
-    "Y": re.compile("y|j|nlat|nj"),
+    "Y": re.compile("y|j|nlat|rlat|nj"),
     "latitude": re.compile("y?(nav_lat|lat|gphi)[a-z0-9]*"),
-    "X": re.compile("x|i|nlon|ni"),
+    "X": re.compile("x|i|nlon|rlon|ni"),
     "longitude": re.compile("x?(nav_lon|lon|glam)[a-z0-9]*"),
 }
 regex["T"] = regex["time"]

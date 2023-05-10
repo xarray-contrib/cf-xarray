@@ -46,7 +46,6 @@ def make_text_section(
     default_keys=None,
     rich: bool = False,
 ):
-
     from .accessor import sort_maybe_hashable
 
     if dims is None:

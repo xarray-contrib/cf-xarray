@@ -22,7 +22,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-all = ["matplotlib", "pint", "shapely", "regex", "rich"]
+all = ["matplotlib", "pint", "shapely", "regex", "rich", "pooch"]
 
 [project.urls]
 homepage = "https://cf-xarray.readthedocs.io"
@@ -41,7 +41,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-packages = ["cf_xarray", "cf_xarray.data", "cf_xarray.scripts"]
+packages = ["cf_xarray", "cf_xarray.scripts"]
 
 [tool.setuptools.exclude-package-data]
 cf_xarray = ["tests/*"]
@@ -129,6 +129,7 @@ warn_unused_ignores = true
 module=[
     "cftime",
     "pandas",
+    "pooch",
     "matplotlib",
     "pytest",
     "shapely.geometry",

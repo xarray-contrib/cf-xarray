@@ -127,7 +127,6 @@ def _format_conventions(string: str, rich: bool):
 
 
 def _maybe_panel(textgen, title: str, rich: bool):
-
     if rich:
         from rich.panel import Panel
 

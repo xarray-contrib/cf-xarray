@@ -3,6 +3,16 @@
 What's New
 ----------
 
+v0.8.1 (May 9, 2023)
+====================
+- Stop bundling the standard name table and use ``pooch`` (new optional dependency) to download when needed.
+  By `Deepak Cherian`_.
+- Major performance improvements.  By `Deepak Cherian`_.
+- Fix bug where code was looking for ``T`` axis in SGRID info.
+  By `Kristen Thyng`_.
+- Support ``X``, ``Y`` for rotated pole grids.  By `Lars Buntemeyer`_.
+
+
 v0.8.0 (Feb 8, 2023)
 ====================
 

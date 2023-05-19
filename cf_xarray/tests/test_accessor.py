@@ -878,6 +878,40 @@ def test_add_bounds_nd_variable() -> None:
         ds.cf.add_bounds("z").cf.add_bounds("x")
 
 
+def test_add_bounds_cftime() -> None:
+    ds = airds.copy(deep=False)
+    # Switch to cftime objects
+    time, time_units, time_calendar = xr.coding.times.encode_cf_datetime(ds["time"])
+    time_cftime = xr.coding.times.decode_cf_datetime(
+        time,
+        units=time_units,
+        calendar=time_calendar,
+        use_cftime=True,
+    )
+
+    ds["time"] = ("time", time_cftime)
+
+    da_time = ds["time"]
+    # Resorting to loop as something casts things to numpy types which causes explosions
+    time_diffs = np.array(
+        [da_time.values[i + 1] - da_time.values[i] for i in range(len(da_time) - 1)]
+    )
+
+    # `1:` indexing to mimic xarray's diff behaviour which drops the first value
+    lower = da_time.values[1:] - time_diffs / 2
+    lower = np.concatenate([[lower[0] - time_diffs[0]], lower])
+    upper = da_time.values[1:] + time_diffs / 2
+    upper = np.concatenate([[upper[0] - time_diffs[0]], upper])
+
+    lower = xr.DataArray(lower, dims=["time"], coords=da_time.coords)
+    upper = xr.DataArray(upper, dims=["time"], coords=da_time.coords)
+    expected = xr.concat([lower, upper], dim="bounds").transpose(..., "bounds")
+
+    ds.cf.add_bounds("time")
+    actual = ds.cf.add_bounds("time").time_bounds.reset_coords(drop=True)
+    xr.testing.assert_identical(actual, expected)
+
+
 def test_bounds() -> None:
     ds = airds.copy(deep=False).cf.add_bounds("lat")
 
@@ -947,7 +981,7 @@ def test_bounds_to_vertices() -> None:
     with pytest.raises(ValueError):
         dsv = dsb.cf.bounds_to_vertices("T")
 
-    # Words on datetime arrays to
+    # Works on datetime arrays to
     dsb = dsb.cf.add_bounds("time")
     dsv = dsb.cf.bounds_to_vertices()
     assert "time_bounds" in dsv

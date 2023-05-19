@@ -981,7 +981,7 @@ def test_bounds_to_vertices() -> None:
     with pytest.raises(ValueError):
         dsv = dsb.cf.bounds_to_vertices("T")
 
-    # Works on datetime arrays to
+    # Works on datetime arrays too
     dsb = dsb.cf.add_bounds("time")
     dsv = dsb.cf.bounds_to_vertices()
     assert "time_bounds" in dsv

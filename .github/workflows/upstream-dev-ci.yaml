@@ -38,7 +38,7 @@ jobs:
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
       - name: Set up conda environment
-        uses: mamba-org/provision-with-micromamba@v15
+        uses: mamba-org/provision-with-micromamba@v16
         with:
           environment-file: ci/upstream-dev-env.yml
           environment-name: cf_xarray_test

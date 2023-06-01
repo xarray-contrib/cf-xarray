@@ -16,7 +16,7 @@ The xarray ecosystem supports unit-aware arrays using  [pint](https://pint.readt
 
 ## Formatting units
 
-For now, only the short format using [symbols](https://www.unidata.ucar.edu/software/udunits/udunits-2.2.28/udunits2lib.html#Syntax) is supported:
+For now, only the short format using [symbols](https://docs.unidata.ucar.edu/udunits/current/udunits2lib.html#Syntax) is supported:
 
 ```{code-cell}
 from pint import application_registry as ureg

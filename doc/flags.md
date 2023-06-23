@@ -73,6 +73,10 @@ flag_indep
 ```
 
 ```{code-cell}
+flag_indep.cf.is_flag_variable
+```
+
+```{code-cell}
 flag_indep.cf == "flag_1"
 ```
 
@@ -96,6 +100,10 @@ Load an example dataset:
 from cf_xarray.datasets import flag_mix
 
 flag_mix
+```
+
+```{code-cell}
+flag_mix.cf.is_flag_variable
 ```
 
 ```{code-cell}

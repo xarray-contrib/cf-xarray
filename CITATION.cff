@@ -80,6 +80,9 @@ authors:
     given-names: Tom
     orcid: 'https://orcid.org/0000-0002-2461-0191'
     affiliation: Lawrence Livermore National Laboratory
+  - family-names: Haëck
+    given-names: Clément
+    affiliation: Laboratoire d'Océanographie et du Climat (LOCEAN), Paris
 identifiers:
   - type: doi
     value: 10.5281/zenodo.4749735
@@ -96,6 +99,6 @@ keywords:
   - xarray
   - metadata
 license: Apache-2.0
-commit: 1b373a21b558423da8f22c3ec79f58737871719b
-version: 0.8.1
-date-released: '2023-05-09'
+# commit: 1b373a21b558423da8f22c3ec79f58737871719b
+version: 0.8.2
+date-released: '2023-06-23'

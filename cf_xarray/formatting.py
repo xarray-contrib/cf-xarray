@@ -8,7 +8,7 @@ TAB = len(STAR) * " "
 try:
     from rich.table import Table
 except ImportError:
-    Table = None
+    Table = None  # type: ignore
 
 
 def _format_missing_row(row: str, rich: bool) -> str:
@@ -138,10 +138,10 @@ def _maybe_panel(textgen, title: str, rich: bool):
             width=100,
         )
         if isinstance(textgen, Table):
-            return Panel(textgen, padding=(0, 20), **kwargs)
+            return Panel(textgen, padding=(0, 20), **kwargs)  # type: ignore
         else:
             text = "".join(textgen)
-            return Panel(f"[color(241)]{text.rstrip()}[/color(241)]", **kwargs)
+            return Panel(f"[color(241)]{text.rstrip()}[/color(241)]", **kwargs)  # type: ignore
     else:
         text = "".join(textgen)
         return title + ":\n" + text

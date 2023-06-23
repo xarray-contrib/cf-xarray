@@ -1114,7 +1114,7 @@ class CFAccessor:
             )
         return flag_dict
 
-    def __eq__(self, other) -> DataArray:
+    def __eq__(self, other) -> DataArray:  # type: ignore
         """
         Compare flag values against `other`.
 
@@ -1124,7 +1124,7 @@ class CFAccessor:
         """
         return self._extract_flags([other])[other].rename(self._obj.name)
 
-    def __ne__(self, other) -> DataArray:
+    def __ne__(self, other) -> DataArray:  # type: ignore
         """
         Compare flag values against `other`.
 

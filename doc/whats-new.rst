@@ -3,6 +3,10 @@
 What's New
 ----------
 
+v0.8.2 (June 23, 2023)
+======================
+- Support for flag masks. By `Clément Haëck`_ and `Deepak Cherian`_.
+
 v0.8.1 (May 9, 2023)
 ====================
 - Stop bundling the standard name table and use ``pooch`` (new optional dependency) to download when needed.
@@ -235,4 +239,5 @@ v0.1.3
 .. _`Martin Schupfner`: https://github.com/sol1105
 .. _`Mathias Hauser`: https://github.com/mathause
 .. _`Aidan Heerdegen`: https://github.com/aidanheerdegen
+.. _`Clément Haëck`: https://github.com/Descanonge
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

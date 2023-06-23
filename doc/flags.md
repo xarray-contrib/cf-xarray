@@ -83,7 +83,7 @@ flag_indep.cf == "flag_1"
 And `isin`
 
 ```{code-cell}
-flag_excl.cf.isin(["flag_1", "flag_3"])
+flag_indep.cf.isin(["flag_1", "flag_3"])
 ```
 
 ## Combined masks and values

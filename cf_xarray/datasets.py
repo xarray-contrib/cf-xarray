@@ -498,7 +498,7 @@ flag_indep = xr.DataArray(
     attrs={
         "flag_masks": [1, 2, 4],
         "flag_meanings": "flag_1 flag_2 flag_4",
-        "standard_name": "flag_independant",
+        "standard_name": "flag_independent",
     },
     name="flag_var",
 )

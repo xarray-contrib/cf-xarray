@@ -5,6 +5,11 @@ from typing import Dict, Hashable, Iterable, List
 STAR = " * "
 TAB = len(STAR) * " "
 
+try:
+    from rich.table import Table
+except ImportError:
+    Table = None  # type: ignore
+
 
 def _format_missing_row(row: str, rich: bool) -> str:
     if rich:
@@ -122,31 +127,82 @@ def _format_conventions(string: str, rich: bool):
 
 
 def _maybe_panel(textgen, title: str, rich: bool):
-    text = "".join(textgen)
     if rich:
         from rich.panel import Panel
 
-        return Panel(
-            f"[color(241)]{text.rstrip()}[/color(241)]",
+        kwargs = dict(
             expand=True,
             title_align="left",
             title=f"[bold][color(244)]{title}[/bold][/color(244)]",
             highlight=True,
             width=100,
         )
+        if isinstance(textgen, Table):
+            return Panel(textgen, padding=(0, 20), **kwargs)  # type: ignore
+        else:
+            text = "".join(textgen)
+            return Panel(f"[color(241)]{text.rstrip()}[/color(241)]", **kwargs)  # type: ignore
     else:
+        text = "".join(textgen)
         return title + ":\n" + text
 
 
 def _format_flags(accessor, rich):
     from .accessor import create_flag_dict
 
-    flag_dict = create_flag_dict(accessor._obj)
-    rows = [
-        f"{TAB}{_format_varname(v, rich)}: {_format_cf_name(k, rich)}"
-        for k, v in flag_dict.items()
-    ]
-    return _print_rows("Flag Meanings", rows, rich)
+    try:
+        flag_dict = create_flag_dict(accessor._obj)
+    except ValueError:
+        return _print_rows(
+            "Flag Meanings", ["Invalid Mapping. Check attributes."], rich
+        )
+
+    masks = [m for m, _ in flag_dict.values()]
+    repeated_masks = {m for m in masks if masks.count(m) > 1}
+    excl_flags = [f for f, (m, v) in flag_dict.items() if m in repeated_masks]
+    # indep_flags = [
+    #     f
+    #     for f, (m, _) in flag_dict.items()
+    #     if m is not None and m not in repeated_masks
+    # ]
+    if rich:
+        from rich import box
+        from rich.table import Table
+
+        table = Table(
+            box=box.SIMPLE,
+            width=None,
+            title_justify="left",
+            padding=(0, 2),
+            header_style="bold color(244)",
+        )
+
+        table.add_column("Meaning", justify="left")
+        table.add_column("Value", justify="right")
+        table.add_column("Bit?", justify="center")
+
+        for key, (mask, value) in flag_dict.items():
+            table.add_row(
+                _format_cf_name(key, rich),
+                str(value) if key in excl_flags else str(mask),
+                "✗" if key in excl_flags else "✓",
+            )
+
+        return table
+
+    else:
+        rows = [
+            f"{TAB}{_format_cf_name(key, rich)}: " f"{_format_varname(value, rich)}"
+            for key, (mask, value) in flag_dict.items()
+            if key in excl_flags
+        ]
+
+        rows += [
+            f"{TAB}{_format_cf_name(key, rich)}: " f"Bit {_format_varname(mask, rich)}"
+            for key, (mask, value) in flag_dict.items()
+            if key not in excl_flags
+        ]
+        return _print_rows("Flag Meanings", rows, rich)
 
 
 def _format_dsg_roles(accessor, dims, rich):

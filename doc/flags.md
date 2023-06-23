@@ -15,7 +15,9 @@ kernelspec:
 
 # Flag Variables
 
-`cf_xarray` has some support for [flag variables](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags).
+`cf_xarray` has some support for [flag variables](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags), including flag masks.
+
+## Flag Values
 
 ```{code-cell}
 import cf_xarray
@@ -54,6 +56,56 @@ You can also check whether a DataArray has the appropriate attributes to be reco
 da.cf.is_flag_variable
 ```
 
-```{tip}
-`cf_xarray` does not support [flag masks](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags) yet but a Pull Request to add this functionality is very welcome!
+## Flag Masks
+
+```{warning}
+Interpreting flag masks is very lightly tested.
+Please double-check the results and open an issue
+or pull request to suggest improvements.
+```
+
+Load an example dataset:
+
+```{code-cell}
+from cf_xarray.datasets import flag_indep
+
+flag_indep
+```
+
+```{code-cell}
+flag_indep.cf.is_flag_variable
+```
+
+```{code-cell}
+flag_indep.cf == "flag_1"
+```
+
+And `isin`
+
+```{code-cell}
+flag_indep.cf.isin(["flag_1", "flag_3"])
+```
+
+## Combined masks and values
+
+```{warning}
+Interpreting a mix of flag masks and flag values
+is very lightly tested. Please double-check the results
+and open an issue or pull request to suggest improvements.
+```
+
+Load an example dataset:
+
+```{code-cell}
+from cf_xarray.datasets import flag_mix
+
+flag_mix
+```
+
+```{code-cell}
+flag_mix.cf.is_flag_variable
+```
+
+```{code-cell}
+flag_mix.cf == 'flag_4'
 ```

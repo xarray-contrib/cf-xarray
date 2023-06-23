@@ -58,7 +58,7 @@ from .utils import (
     parse_cf_standard_name_table,
 )
 
-FlagParam = namedtuple("flag_params", ["flag_mask", "flag_value"])
+FlagParam = namedtuple("FlagParam", ["flag_mask", "flag_value"])
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (Resample, GroupBy, Rolling, Coarsen, Weighted)

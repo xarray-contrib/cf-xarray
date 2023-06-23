@@ -1107,6 +1107,7 @@ class CFAccessor:
         self.__dict__ = d
 
     def _assert_valid_other_comparison(self, other):
+        # TODO cache this property
         flag_dict = create_flag_dict(self._obj)
         if other not in flag_dict:
             raise ValueError(
@@ -1203,6 +1204,7 @@ class CFAccessor:
             raise ValueError(
                 ".cf.isin is only supported on DataArrays that contain CF flag attributes."
             )
+        # TODO cache this property
         flag_dict = create_flag_dict(self._obj)
         mapped_test_elements = []
         for elem in test_elements:
@@ -2796,6 +2798,7 @@ class CFDataArrayAccessor(CFAccessor):
             Flags to extract. If empty (string or list), return all flags in
             `flag_meanings`.
         """
+        # TODO cache this property
         flag_dict = create_flag_dict(self._obj)
 
         if flags is None:

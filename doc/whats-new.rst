@@ -5,12 +5,7 @@ What's New
 
 v0.8.2 (June 23, 2023)
 ======================
-- Support for flag masks.
-  By `Clément Haëck`_ and `Deepak Cherian`_.
-- Major performance improvements.  By `Deepak Cherian`_.
-- Fix bug where code was looking for ``T`` axis in SGRID info.
-  By `Kristen Thyng`_.
-- Support ``X``, ``Y`` for rotated pole grids.  By `Lars Buntemeyer`_.
+- Support for flag masks. By `Clément Haëck`_ and `Deepak Cherian`_.
 
 v0.8.1 (May 9, 2023)
 ====================

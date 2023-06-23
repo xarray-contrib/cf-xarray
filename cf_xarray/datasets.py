@@ -466,7 +466,7 @@ forecast = xr.decode_cf(
     )
 )
 
-
+# Same as flags_excl but easier to read
 basin = xr.DataArray(
     [1, 2, 1, 1, 2, 2, 3, 3, 3, 3],
     dims=("time",),
@@ -476,6 +476,44 @@ basin = xr.DataArray(
         "standard_name": "region",
     },
     name="basin",
+)
+
+
+flag_excl = xr.DataArray(
+    np.array([1, 1, 2, 1, 2, 3, 3, 2], np.uint8),
+    dims=("time",),
+    coords={"time": [0, 1, 2, 3, 4, 5, 6, 7]},
+    attrs={
+        "flag_values": [1, 2, 3],
+        "flag_meanings": "flag_1 flag_2 flag_3",
+        "standard_name": "flag_mutual_exclusive",
+    },
+    name="flag_var",
+)
+
+
+flag_indep = xr.DataArray(
+    np.array([0, 1, 2, 3, 4, 5, 6, 7], dtype=np.uint8),
+    dims=("time",),
+    attrs={
+        "flag_masks": [1, 2, 4],
+        "flag_meanings": "flag_1 flag_2 flag_4",
+        "standard_name": "flag_independent",
+    },
+    name="flag_var",
+)
+
+
+flag_mix = xr.DataArray(
+    np.array([4, 8, 13, 5, 10, 14, 7, 3], np.uint8),
+    dims=("time",),
+    attrs={
+        "flag_values": [1, 2, 4, 8, 12],
+        "flag_masks": [1, 2, 12, 12, 12],
+        "flag_meanings": "flag_1 flag_2 flag_3 flag_4 flag_5",
+        "standard_name": "flag_mix",
+    },
+    name="flag_var",
 )
 
 

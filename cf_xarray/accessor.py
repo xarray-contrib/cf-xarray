@@ -5,7 +5,7 @@ import inspect
 import itertools
 import re
 import warnings
-from collections import ChainMap
+from collections import ChainMap, namedtuple
 from datetime import datetime
 from typing import (
     Any,
@@ -57,6 +57,8 @@ from .utils import (
     parse_cell_methods_attr,
     parse_cf_standard_name_table,
 )
+
+FlagParam = namedtuple("flag_params", ["flag_mask", "flag_value"])
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (Resample, GroupBy, Rolling, Coarsen, Weighted)
@@ -1057,7 +1059,7 @@ class _CFWrappedPlotMethods:
         )
 
 
-def create_flag_dict(da) -> Mapping[Hashable, Sequence]:
+def create_flag_dict(da) -> Mapping[Hashable, FlagParam]:
     """
     Return possible flag meanings and associated bitmask/values.
 
@@ -1086,7 +1088,10 @@ def create_flag_dict(da) -> Mapping[Hashable, Sequence]:
             "Please check the flag_meanings, flag_values, flag_masks attributes "
         )
 
-    return dict(zip(flag_meanings, zip(flag_masks, flag_values)))
+    flag_params = tuple(
+        FlagParam(mask, value) for mask, value in zip(flag_masks, flag_values)
+    )
+    return dict(zip(flag_meanings, flag_params))
 
 
 class CFAccessor:
@@ -1107,7 +1112,7 @@ class CFAccessor:
             raise ValueError(
                 f"Did not find flag value meaning [{other}] in known flag meanings: [{flag_dict.keys()!r}]"
             )
-        if flag_dict[other][0] is not None:
+        if flag_dict[other].flag_mask is not None:
             raise NotImplementedError(
                 "Only equals and not-equals comparisons with flag masks are supported."
                 " Please open an issue."
@@ -1143,7 +1148,7 @@ class CFAccessor:
         compared.
         """
         flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj < flag_dict[other][1]
+        return self._obj < flag_dict[other].flag_value
 
     def __le__(self, other) -> DataArray:
         """
@@ -1154,7 +1159,7 @@ class CFAccessor:
         compared.
         """
         flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj <= flag_dict[other][1]
+        return self._obj <= flag_dict[other].flag_value
 
     def __gt__(self, other) -> DataArray:
         """
@@ -1165,7 +1170,7 @@ class CFAccessor:
         compared.
         """
         flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj > flag_dict[other][1]
+        return self._obj > flag_dict[other].flag_value
 
     def __ge__(self, other) -> DataArray:
         """
@@ -1176,7 +1181,7 @@ class CFAccessor:
         compared.
         """
         flag_dict = self._assert_valid_other_comparison(other)
-        return self._obj >= flag_dict[other][1]
+        return self._obj >= flag_dict[other].flag_value
 
     def isin(self, test_elements) -> DataArray:
         """Test each value in the array for whether it is in test_elements.
@@ -1205,7 +1210,7 @@ class CFAccessor:
                 raise ValueError(
                     f"Did not find flag value meaning [{elem}] in known flag meanings: [{flag_dict.keys()!r}]"
                 )
-            mapped_test_elements.append(flag_dict[elem][1])
+            mapped_test_elements.append(flag_dict[elem].flag_value)
         return self._obj.isin(mapped_test_elements)
 
     def _drop_missing_variables(self, variables: list[Hashable]) -> list[Hashable]:

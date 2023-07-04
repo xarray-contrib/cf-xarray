@@ -2,9 +2,9 @@ ci:
     autoupdate_schedule: quarterly
 
 repos:
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
+  - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.0.260'
+    rev: 'v0.0.276'
     hooks:
       - id: ruff
         args: ["--fix"]
@@ -61,6 +61,6 @@ repos:
     - id: validate-cff
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.12.2
+    rev: v0.13
     hooks:
       - id: validate-pyproject

@@ -1955,6 +1955,9 @@ def test_curvefit() -> None:
         [airds.air, "Coordinates"],
         [popds, "Data Variables"],
         [basin, "Flag Variable"],
+        [flag_mix, "Flag Variable"],
+        [flag_indep, "Flag Variable"],
+        [flag_excl, "Flag Variable"],
         [dsg, "Discrete Sampling Geometry"],
     ),
 )

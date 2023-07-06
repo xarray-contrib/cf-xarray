@@ -3,6 +3,10 @@
 What's New
 ----------
 
+v0.8.2 (July 05, 2023)
+======================
+- Better reprs for flag masks. By `Deepak Cherian`_.
+
 v0.8.2 (June 23, 2023)
 ======================
 - Support for flag masks. By `Clément Haëck`_ and `Deepak Cherian`_.

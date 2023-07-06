@@ -73,7 +73,7 @@ flag_indep
 ```
 
 ```{code-cell}
-flag_indep.cf.is_flag_variable
+flag_indep.cf
 ```
 
 ```{code-cell}
@@ -103,7 +103,7 @@ flag_mix
 ```
 
 ```{code-cell}
-flag_mix.cf.is_flag_variable
+flag_mix.cf
 ```
 
 ```{code-cell}

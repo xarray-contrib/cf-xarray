@@ -2,6 +2,8 @@ import warnings
 from functools import partial
 from typing import Dict, Hashable, Iterable, List
 
+import numpy as np
+
 STAR = " * "
 TAB = len(STAR) * " "
 
@@ -147,6 +149,21 @@ def _maybe_panel(textgen, title: str, rich: bool):
         return title + ":\n" + text
 
 
+def find_set_bits(mask, value, repeated_masks):
+    bitpos = np.arange(8)[::-1]
+    if mask not in repeated_masks:
+        if value == 0:
+            return [-1]
+        elif value is not None:
+            return [int(np.log2(value))]
+        else:
+            return [int(np.log2(mask))]
+    else:
+        allset = bitpos[np.unpackbits(np.uint8(mask)) == 1]
+        setbits = bitpos[np.unpackbits(np.uint8(mask & value)) == 1]
+        return [b if abs(b) in setbits else -b for b in allset]
+
+
 def _format_flags(accessor, rich):
     from .accessor import create_flag_dict
 
@@ -165,6 +182,28 @@ def _format_flags(accessor, rich):
     #     for f, (m, _) in flag_dict.items()
     #     if m is not None and m not in repeated_masks
     # ]
+    bit_text = []
+    value_text = []
+    for key, (mask, value) in flag_dict.items():
+        if mask is None:
+            bit_text.append("✗" if rich else "")
+            value_text.append(str(value))
+            continue
+        bits = find_set_bits(mask, value, repeated_masks)
+        bitstring = ["."] * 8
+        if bits == [-1]:
+            continue
+        else:
+            for b in bits:
+                bitstring[abs(b)] = _format_cf_name("1" if b >= 0 else "0", rich)
+        text = "".join(bitstring[::-1])
+        value_text.append(
+            f"{mask} & {value}"
+            if key in excl_flags and value is not None
+            else str(mask)
+        )
+        bit_text.append(text if rich else f" / Bit: {text}")
+
     if rich:
         from rich import box
         from rich.table import Table
@@ -179,29 +218,25 @@ def _format_flags(accessor, rich):
 
         table.add_column("Meaning", justify="left")
         table.add_column("Value", justify="right")
-        table.add_column("Bit?", justify="center")
+        table.add_column("Bits", justify="center")
 
-        for key, (mask, value) in flag_dict.items():
+        for val, bit, (key, (mask, value)) in zip(
+            value_text, bit_text, flag_dict.items()
+        ):
             table.add_row(
                 _format_cf_name(key, rich),
-                str(value) if key in excl_flags else str(mask),
-                "✗" if key in excl_flags else "✓",
+                val,
+                bit,
             )
 
         return table
 
     else:
-        rows = [
-            f"{TAB}{_format_cf_name(key, rich)}: " f"{_format_varname(value, rich)}"
-            for key, (mask, value) in flag_dict.items()
-            if key in excl_flags
-        ]
-
-        rows += [
-            f"{TAB}{_format_cf_name(key, rich)}: " f"Bit {_format_varname(mask, rich)}"
-            for key, (mask, value) in flag_dict.items()
-            if key not in excl_flags
-        ]
+        rows = []
+        for val, bit, (key, (mask, value)) in zip(
+            value_text, bit_text, flag_dict.items()
+        ):
+            rows.append(f"{TAB}{_format_cf_name(key, rich)}: {TAB} {val} {bit}")
         return _print_rows("Flag Meanings", rows, rich)
 
 

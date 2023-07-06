@@ -1848,12 +1848,13 @@ class TestFlags:
         with pytest.raises(ValueError):
             flag_mix.cf == "ERR"
 
-        flag_excl.attrs.pop("flag_values")
+        flag_ex = flag_excl.copy()
+        flag_ex.attrs.pop("flag_values")
         with pytest.raises(ValueError):
-            flag_excl.cf.isin(["flag_1"])
+            flag_ex.cf.isin(["flag_1"])
 
         with pytest.raises(ValueError):
-            flag_excl.cf == "flag_1"
+            flag_ex.cf == "flag_1"
 
         with pytest.raises(ValueError):
             basin.cf == "arctic_ocean"
@@ -1955,6 +1956,9 @@ def test_curvefit() -> None:
         [airds.air, "Coordinates"],
         [popds, "Data Variables"],
         [basin, "Flag Variable"],
+        [flag_mix, "Flag Variable"],
+        [flag_indep, "Flag Variable"],
+        [flag_excl, "Flag Variable"],
         [dsg, "Discrete Sampling Geometry"],
     ),
 )

@@ -1848,6 +1848,7 @@ class TestFlags:
         with pytest.raises(ValueError):
             flag_mix.cf == "ERR"
 
+        flag_excl = flag_excl.copy()  # noqa
         flag_excl.attrs.pop("flag_values")
         with pytest.raises(ValueError):
             flag_excl.cf.isin(["flag_1"])

@@ -1001,6 +1001,17 @@ def test_grid_mappings():
     actual = ds.cf["temp"].cf["rotated_latitude_longitude"]
     assert_identical(actual, expected)
 
+    # not properly propagated if grid mapping variable not in coords
+    with pytest.raises(
+        ValueError, match="Grid Mapping variable rotated_pole not present."
+    ):
+        ds.temp.cf.grid_mapping_name
+
+    # check for https://github.com/xarray-contrib/cf-xarray/issues/448
+    expected = ds.rlon
+    actual = rotds.temp.cf["X"]
+    assert_identical(expected, actual)
+
     # Test repr
     expected = """\
            Grid Mappings:   rotated_latitude_longitude: ['rotated_pole']"""

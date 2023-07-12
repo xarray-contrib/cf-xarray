@@ -2737,7 +2737,11 @@ class CFDataArrayAccessor(CFAccessor):
         if not grid_mapping:
             raise ValueError("No 'grid_mapping' attribute present.")
 
+        if grid_mapping not in da._coords:
+            raise ValueError(f"Grid Mapping variable {grid_mapping} not present.")
+
         grid_mapping_var = da[grid_mapping]
+
         return grid_mapping_var.attrs["grid_mapping_name"]
 
     def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray:

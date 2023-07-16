@@ -164,7 +164,7 @@ def cf_to_shapely(ds: xr.Dataset):
     if geom_type == "point":
         geometries = cf_to_points(ds)
     elif geom_type in ["line", "polygon"]:
-        raise NotImplementedError("Only point geometries conversion is implemented.")
+        geometries = cf_to_lines(ds)
     else:
         raise ValueError(
             f"Valid CF geometry types are 'point', 'line' and 'polygon'. Got {geom_type}"
@@ -293,3 +293,68 @@ def cf_to_points(ds: xr.Dataset):
         j += n
 
     return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
+
+
+def cf_to_lines(ds: xr.Dataset):
+    """Convert line geometries stored in a CF-compliant way to shapely lines stored in a single variable.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        A dataset with CF-compliant line geometries.
+        Must have a "geometry_container" variable with at least a 'node_coordinates' attribute.
+        Must also have the two 1D variables listed by this attribute.
+
+    Returns
+    -------
+    geometry : xr.DataArray
+        A 1D array of shapely.geometry.[Multi]Point objects.
+        It has the same dimension as the ``node_count`` or the coordinates variables, or
+        ``'features'`` if those were not present in ``ds``.
+    """
+    from shapely.geometry import LineString, MultiLineString
+
+    # Shorthand for convenience
+    geo = ds.geometry_container.attrs
+
+    # The features dimension name, defaults to the one of 'node_count' or the dimension of the coordinates, if present.
+    feat_dim = None
+    if "coordinates" in geo and feat_dim is None:
+        xcoord_name, _ = geo["coordinates"].split(" ")
+        (feat_dim,) = ds[xcoord_name].dims
+
+    x_name, y_name = geo["node_coordinates"].split(" ")
+    xy = np.stack([ds[x_name].values, ds[y_name].values], axis=-1)
+
+    node_count_name = geo.get("node_count")
+    part_node_count_name = geo.get("part_node_count")
+    if node_count_name is None:
+        raise ValueError("'node_count' must be provided for line geometries")
+    else:
+        node_count = ds[node_count_name]
+
+    if part_node_count_name is None:
+        # No part_node_count means there is only one line
+        # And if we had no coordinates, then the dimension defaults to "features"
+        feat_dim = feat_dim or "features"
+        part_node_count = xr.DataArray([1] * xy.shape[0], dims=(feat_dim,))
+        if feat_dim in ds.coords:
+            part_node_count = part_node_count.assign_coords({feat_dim: ds[feat_dim]})
+    else:
+        part_node_count = ds[part_node_count_name]
+
+    j = 0  # The index of the first node.
+    geoms = np.empty(part_node_count.shape, dtype=object)
+    node_count_cumsum = np.insert(np.cumsum(node_count), 0, 0)
+
+    # i is the feature index, n its number of nodes
+    for i, n in enumerate(part_node_count.values):
+        subset = node_count_cumsum[(j <= node_count_cumsum) & (node_count_cumsum <= n)]
+        indexes = np.stack([subset[:-1], np.roll(subset, 2)[:-1]]).transpose()
+        if indexes.shape == (0, 2):
+            geoms[i] = LineString(xy[j : j + n, :])
+        else:
+            geoms[i] = MultiLineString([xy[ii[0]: ii[1], :] for ii in indexes])
+        j += n
+
+    return xr.DataArray(geoms, dims=part_node_count.dims, coords=part_node_count.coords)

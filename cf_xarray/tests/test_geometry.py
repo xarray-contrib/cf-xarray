@@ -51,7 +51,7 @@ def geometry_ds():
 
 @pytest.fixture
 def geometry_line_ds():
-    from shapely.geometry import MultiLineString, LineString
+    from shapely.geometry import LineString, MultiLineString
 
     # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
     geoms = np.empty(3, dtype=object)
@@ -70,8 +70,12 @@ def geometry_line_ds():
     shp_ds = ds.assign(geometry=xr.DataArray(geoms, dims=("index",)))
 
     cf_ds = ds.assign(
-        x=xr.DataArray([0, 1, 4, 5, 0, 1, 1, 1.0, 2.0, 1.7], dims=("node",), attrs={"axis": "X"}),
-        y=xr.DataArray([0, 2, 4, 6, 0, 0, 1, 1.0, 2.0, 9.5], dims=("node",), attrs={"axis": "Y"}),
+        x=xr.DataArray(
+            [0, 1, 4, 5, 0, 1, 1, 1.0, 2.0, 1.7], dims=("node",), attrs={"axis": "X"}
+        ),
+        y=xr.DataArray(
+            [0, 2, 4, 6, 0, 0, 1, 1.0, 2.0, 9.5], dims=("node",), attrs={"axis": "Y"}
+        ),
         part_node_count=xr.DataArray([4, 3, 3], dims=("index",)),
         node_count=xr.DataArray([2, 2, 3, 3], dims=("counter",)),
         crd_x=xr.DataArray([1.0, 3.0, 4.0], dims=("index",), attrs={"nodes": "x"}),

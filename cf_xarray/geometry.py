@@ -357,7 +357,7 @@ def cf_to_lines(ds: xr.Dataset):
         if indexes.shape == (0, 2):
             geoms[i] = LineString(xy[j : j + n, :])
         else:
-            geoms[i] = MultiLineString([xy[ii[0]: ii[1], :] for ii in indexes])
+            geoms[i] = MultiLineString([xy[ii[0] : ii[1], :] for ii in indexes])
         j += n
 
     return xr.DataArray(geoms, dims=part_node_count.dims, coords=part_node_count.coords)

@@ -163,8 +163,10 @@ def cf_to_shapely(ds: xr.Dataset):
     geom_type = ds.geometry_container.attrs["geometry_type"]
     if geom_type == "point":
         geometries = cf_to_points(ds)
-    elif geom_type in ["line", "polygon"]:
+    elif geom_type == "line":
         geometries = cf_to_lines(ds)
+    elif geom_type == "polygon":
+        raise NotImplementedError("Polygon geometry conversion is not implemented.")
     else:
         raise ValueError(
             f"Valid CF geometry types are 'point', 'line' and 'polygon'. Got {geom_type}"
@@ -317,7 +319,8 @@ def cf_to_lines(ds: xr.Dataset):
     # Shorthand for convenience
     geo = ds.geometry_container.attrs
 
-    # The features dimension name, defaults to the one of 'node_count' or the dimension of the coordinates, if present.
+    # The features dimension name, defaults to the one of 'part_node_count'
+    # or the dimension of the coordinates, if present.
     feat_dim = None
     if "coordinates" in geo and feat_dim is None:
         xcoord_name, _ = geo["coordinates"].split(" ")

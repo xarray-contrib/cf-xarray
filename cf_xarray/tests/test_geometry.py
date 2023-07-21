@@ -180,9 +180,9 @@ def test_cf_to_shapely_for_line(geometry_line_ds):
 
 @requires_shapely
 def test_cf_to_shapely_errors(geometry_ds):
-    in_ds, expected = geometry_ds
-    in_ds.geometry_container.attrs["geometry_type"] = "line"
-    with pytest.raises(NotImplementedError, match="Only point geometries conversion"):
+    in_ds, _ = geometry_ds
+    in_ds.geometry_container.attrs["geometry_type"] = "polygon"
+    with pytest.raises(NotImplementedError, match="Polygon geometry"):
         cfxr.cf_to_shapely(in_ds)
 
     in_ds.geometry_container.attrs["geometry_type"] = "punkt"

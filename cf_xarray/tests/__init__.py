@@ -1,7 +1,6 @@
 import importlib
 import re
 from contextlib import contextmanager
-from distutils import version
 
 import dask
 import pytest

@@ -4,6 +4,7 @@ from contextlib import contextmanager
 
 import dask
 import pytest
+from packaging import version
 
 
 @contextmanager
@@ -59,7 +60,7 @@ def LooseVersion(vstring):
     # Our development version is something like '0.10.9+aac7bfc'
     # This function just ignored the git commit id.
     vstring = vstring.split("+")[0]
-    return version.LooseVersion(vstring)
+    return version.parse(vstring)
 
 
 has_cftime, requires_cftime = _importorskip("cftime")

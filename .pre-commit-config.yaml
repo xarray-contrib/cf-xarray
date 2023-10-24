@@ -2,6 +2,12 @@ ci:
     autoupdate_schedule: quarterly
 
 repos:
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v3.15.0
+    hooks:
+      - id: pyupgrade
+        args: ["--py39-plus"]
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
     rev: 'v0.1.1'

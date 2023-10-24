@@ -1,6 +1,6 @@
 import warnings
+from collections.abc import Hashable, Iterable
 from functools import partial
-from typing import Dict, Hashable, Iterable, List
 
 import numpy as np
 
@@ -56,7 +56,7 @@ def make_text_section(
         warnings.simplefilter("ignore")
         if isinstance(attr, str):
             try:
-                vardict: Dict[str, Iterable[Hashable]] = getattr(accessor, attr, {})
+                vardict: dict[str, Iterable[Hashable]] = getattr(accessor, attr, {})
             except ValueError:
                 vardict = {}
         else:
@@ -103,7 +103,7 @@ def make_text_section(
     return _print_rows(subtitle, rows, rich)
 
 
-def _print_rows(subtitle: str, rows: List[str], rich: bool):
+def _print_rows(subtitle: str, rows: list[str], rich: bool):
     subtitle = f"{subtitle.rjust(20)}:"
 
     # Add subtitle to the first row, align other rows

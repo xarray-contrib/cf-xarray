@@ -6,16 +6,11 @@ import itertools
 import re
 import warnings
 from collections import ChainMap, namedtuple
+from collections.abc import Hashable, Iterable, Mapping, MutableMapping, Sequence
 from datetime import datetime
 from typing import (
     Any,
     Callable,
-    Hashable,
-    Iterable,
-    List,
-    Mapping,
-    MutableMapping,
-    Sequence,
     TypeVar,
     Union,
     cast,
@@ -84,7 +79,7 @@ ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
 
 # Type for Mapper functions
-Mapper = Callable[[Union[DataArray, Dataset], Hashable], List[Hashable]]
+Mapper = Callable[[Union[DataArray, Dataset], Hashable], list[Hashable]]
 
 # Type for decorators
 F = TypeVar("F", bound=Callable[..., Any])
@@ -496,7 +491,7 @@ def _get_coords(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
 def _variables(func: F) -> F:
     @functools.wraps(func)
     def wrapper(obj: DataArray | Dataset, key: Hashable) -> list[DataArray]:
-        return [obj[k] for k in func(obj, key)]  # type: ignore
+        return [obj[k] for k in func(obj, key)]  # type: ignore[misc]
 
     return cast(F, wrapper)
 
@@ -1293,7 +1288,7 @@ class CFAccessor:
            This uses ``key_mappers``
         3. Unpacks arguments if necessary before returning them.
         """
-        sig = inspect.signature(func, follow_wrapped=False)
+        sig = inspect.signature(func, follow_wrapped=True)
 
         # Catch things like .isel(T=5).
         # This assigns indexers_kwargs=dict(T=5).

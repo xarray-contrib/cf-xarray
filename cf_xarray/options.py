@@ -3,7 +3,8 @@ Started from xarray options.py
 """
 
 import copy
-from typing import Any, MutableMapping
+from collections.abc import MutableMapping
+from typing import Any
 
 from .utils import always_iterable
 

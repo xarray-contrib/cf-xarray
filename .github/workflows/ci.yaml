@@ -38,7 +38,7 @@ jobs:
       - name: Set up conda environment
         uses: mamba-org/setup-micromamba@v1
         with:
-          environment-file: ci/environment-no-optional-deps.yml
+          environment-file: ci/environment.yml
           environment-name: cf_xarray_test
           cache-environment: true
           create-args: >-

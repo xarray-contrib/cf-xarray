@@ -215,7 +215,7 @@ def _bounds_helper(values, n_core_dims, nbounds, order):
 
 
 def vertices_to_bounds(
-    vertices: np.ndarray | DataArray, out_dims: Sequence[str] = ("bounds", "x", "y")
+    vertices: DataArray, out_dims: Sequence[str] = ("bounds", "x", "y")
 ) -> DataArray:
     """
     Convert vertices to CF-compliant bounds. There are 2 covered cases:

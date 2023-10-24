@@ -33,7 +33,7 @@ changelog = "https://cf-xarray.readthedocs.io/en/latest/whats-new.html"
 [build-system]
 requires = [
     # xarray is need for dynamic version string
-    "xarray",
+    "xarray>=2022.03.0",
     "setuptools>=45",
     "setuptools_scm[toml]>=6.2",
 ]

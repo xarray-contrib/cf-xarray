@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Any, Dict, Iterable
+from collections.abc import Iterable
+from typing import Any
 from xml.etree import ElementTree
 
 import numpy as np
@@ -42,7 +43,7 @@ def _is_datetime_like(da: DataArray) -> bool:
     return False
 
 
-def parse_cell_methods_attr(attr: str) -> Dict[str, str]:
+def parse_cell_methods_attr(attr: str) -> dict[str, str]:
     """
     Parse cell_methods attributes (format is 'measure: name').
 

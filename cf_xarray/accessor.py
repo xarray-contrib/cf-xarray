@@ -6,16 +6,11 @@ import itertools
 import re
 import warnings
 from collections import ChainMap, namedtuple
+from collections.abc import Hashable, Iterable, Mapping, MutableMapping, Sequence
 from datetime import datetime
 from typing import (
     Any,
     Callable,
-    Hashable,
-    Iterable,
-    List,
-    Mapping,
-    MutableMapping,
-    Sequence,
     TypeVar,
     Union,
     cast,
@@ -84,7 +79,7 @@ ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
 
 # Type for Mapper functions
-Mapper = Callable[[Union[DataArray, Dataset], Hashable], List[Hashable]]
+Mapper = Callable[[Union[DataArray, Dataset], Hashable], list[Hashable]]
 
 # Type for decorators
 F = TypeVar("F", bound=Callable[..., Any])

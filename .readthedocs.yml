@@ -8,7 +8,8 @@ build:
     post_checkout:
       - (git --no-pager log --pretty="tformat:%s" -1 | grep -vqF "[skip-rtd]") || exit 183
     pre_install:
-      - git update-index --assume-unchanged doc/conf.py ci/doc.yml
+      - conda list sphinx
+      - conda list cf_xarray
 
 conda:
   environment: ci/doc.yml

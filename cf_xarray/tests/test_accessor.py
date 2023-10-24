@@ -326,7 +326,7 @@ def test_accessor_getattr_and_describe() -> None:
             "areacella",
         )
     )
-    ds_vertb = xr.decode_cf(vert, decode_coords="all")  # type: ignore
+    ds_vertb = xr.decode_cf(vert, decode_coords="all")
 
     assert ds_verta.cf.cell_measures == ds_vertb.cf.cell_measures
     assert ds_verta.o3.cf.cell_measures == ds_vertb.o3.cf.cell_measures
@@ -591,6 +591,7 @@ def test_dataarray_plot() -> None:
 
     rv = obj.isel(time=1).transpose("lon", "lat").cf.plot()
     assert isinstance(rv, mpl.collections.QuadMesh)
+    assert rv.axes is not None
     assert all(v > 180 for v in rv.axes.get_xlim())
     assert all(v < 200 for v in rv.axes.get_ylim())
     plt.close()
@@ -846,7 +847,7 @@ def test_add_bounds_nd_variable() -> None:
     # 2D
     expected = (
         vertices_to_bounds(
-            np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)  # type: ignore
+            np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)
         )
         .rename("z_bounds")
         .assign_coords(**ds.coords)

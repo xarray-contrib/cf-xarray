@@ -29,7 +29,7 @@ def make_criteria_csv():
     # Criteria tables
     df = DataFrame.from_dict(coordinate_criteria)
     df = df.dropna(axis=1, how="all")
-    df = df.applymap(lambda x: ", ".join(sorted(x)) if isinstance(x, tuple) else x)
+    df = df.map(lambda x: ", ".join(sorted(x)) if isinstance(x, tuple) else x)
     df = df.sort_index(axis=0).sort_index(axis=1)
 
     # All criteria

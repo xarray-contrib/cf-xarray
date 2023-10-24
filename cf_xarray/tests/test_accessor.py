@@ -1890,7 +1890,8 @@ def test_missing_variables() -> None:
     assert ds.cf.bounds == {"lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
 
     with pytest.raises(KeyError, match=r"No results found for 'longitude'."):
-        ds.cf.get_bounds("longitude")
+        with pytest.warns(UserWarning, match="not found in object"):
+            ds.cf.get_bounds("longitude")
 
     # Cell measures
     ds = airds.copy(deep=False)

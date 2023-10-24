@@ -19,7 +19,8 @@ dependencies:
   - pooch
   - pint
   - regex
-  - furo
+  # - furo
   - pip:
       - -e ../
       - myst_nb
+      - furo

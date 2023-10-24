@@ -13,8 +13,4 @@ build:
 conda:
   environment: ci/doc.yml
 
-python:
-  install:
-    - method: pip
-
 formats: []

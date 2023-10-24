@@ -3,7 +3,7 @@
 What's New
 ----------
 
-v0.8.3 (Oct 24, 2023)
+v0.8.5 (Oct 24, 2023)
 ======================
 - Fix for ``get_bounds_dim_name``. By `Deepak Cherian`_.
 

@@ -11,10 +11,10 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
     "xarray",
@@ -33,9 +33,8 @@ changelog = "https://cf-xarray.readthedocs.io/en/latest/whats-new.html"
 [build-system]
 requires = [
     # xarray is need for dynamic version string
-    "xarray",
+    "xarray>=2022.03.0",
     "setuptools>=45",
-    "wheel",
     "setuptools_scm[toml]>=6.2",
 ]
 build-backend = "setuptools.build_meta"
@@ -56,10 +55,10 @@ write_to_template= '__version__ = "{version}"'
 tag_regex= "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
 
 [tool.black]
-target-version = ["py38"]
+target-version = ["py39"]
 
 [tool.ruff]
-target-version = "py38"
+target-version = "py39"
 builtins = ["ellipsis"]
 exclude = [
     ".eggs",

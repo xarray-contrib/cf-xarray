@@ -9,7 +9,8 @@ try:
 except ImportError:
     import re  # type: ignore
 
-from typing import Any, Mapping, MutableMapping, Tuple
+from collections.abc import Mapping, MutableMapping
+from typing import Any
 
 _DSG_ROLES = ["timeseries_id", "profile_id", "trajectory_id"]
 
@@ -30,7 +31,7 @@ grid_mapping_var_criteria: Mapping[str, Mapping[str, Any]] = {
     "grid_mapping": {"grid_mapping_name": re.compile(".")}
 }
 
-coordinate_criteria: MutableMapping[str, MutableMapping[str, Tuple]] = {
+coordinate_criteria: MutableMapping[str, MutableMapping[str, tuple]] = {
     "latitude": {
         "standard_name": ("latitude",),
         "units": (

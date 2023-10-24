@@ -326,7 +326,7 @@ def test_accessor_getattr_and_describe() -> None:
             "areacella",
         )
     )
-    ds_vertb = xr.decode_cf(vert, decode_coords="all")  # type: ignore
+    ds_vertb = xr.decode_cf(vert, decode_coords="all")
 
     assert ds_verta.cf.cell_measures == ds_vertb.cf.cell_measures
     assert ds_verta.o3.cf.cell_measures == ds_vertb.o3.cf.cell_measures
@@ -591,6 +591,7 @@ def test_dataarray_plot() -> None:
 
     rv = obj.isel(time=1).transpose("lon", "lat").cf.plot()
     assert isinstance(rv, mpl.collections.QuadMesh)
+    assert rv.axes is not None
     assert all(v > 180 for v in rv.axes.get_xlim())
     assert all(v < 200 for v in rv.axes.get_ylim())
     plt.close()
@@ -845,8 +846,12 @@ def test_add_bounds_nd_variable() -> None:
 
     # 2D
     expected = (
-        vertices_to_bounds(
-            np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4)  # type: ignore
+        vertices_to_bounds(  # type: ignore
+            xr.DataArray(
+                np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4),
+                dims=("x", "y"),
+            ),
+            out_dims=("bounds", "x", "y"),
         )
         .rename("z_bounds")
         .assign_coords(**ds.coords)
@@ -1898,7 +1903,8 @@ def test_missing_variables() -> None:
     assert ds.cf.bounds == {"lat": ["lat_bounds"], "latitude": ["lat_bounds"]}
 
     with pytest.raises(KeyError, match=r"No results found for 'longitude'."):
-        ds.cf.get_bounds("longitude")
+        with pytest.warns(UserWarning, match="not found in object"):
+            ds.cf.get_bounds("longitude")
 
     # Cell measures
     ds = airds.copy(deep=False)
@@ -1953,18 +1959,18 @@ def test_curvefit() -> None:
         t = (time - time[0]).astype(float)
         return slope * t
 
-    actual = airds.air.cf.isel(lat=4, lon=5).curvefit(coords=("time",), func=line)
-    expected = airds.air.cf.isel(lat=4, lon=5).cf.curvefit(coords="T", func=line)
+    da = airds.air.cf.isel(lat=3, lon=3)
+    expected = da.curvefit(coords=("time",), func=line)
+    actual = da.cf.curvefit(coords="T", func=line)
     assert_identical(expected, actual)
 
     def plane(coords, slopex, slopey):
         x, y = coords
         return slopex * (x - x.mean()) + slopey * (y - y.mean())
 
-    actual = airds.air.isel(time=0).curvefit(coords=("lat", "lon"), func=plane)
-    expected = airds.air.isel(time=0).cf.curvefit(
-        coords=["latitude", "longitude"], func=plane
-    )
+    da = airds.air.cf.isel(time=0)
+    actual = da.curvefit(coords=("lat", "lon"), func=plane)
+    expected = da.cf.curvefit(coords=["latitude", "longitude"], func=plane)
     assert_identical(expected, actual)
 
 

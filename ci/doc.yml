@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - pip
-  - python=3.11
+  - python=3.10
   - matplotlib-base
   - netcdf4
   - pooch
@@ -20,6 +20,6 @@ dependencies:
   - pint
   - regex
   - furo
+  - myst-nb
   - pip:
-      - git+https://github.com/xarray-contrib/cf-xarray
-      - myst_nb
+      - -e ../

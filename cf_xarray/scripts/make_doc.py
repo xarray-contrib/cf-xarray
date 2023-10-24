@@ -51,7 +51,7 @@ def make_regex_csv():
     csv_dir = "_build/csv"
     os.makedirs(csv_dir, exist_ok=True)
     df = DataFrame(regex, index=[0])
-    df = df.applymap(lambda x: f"``{str(x)[11:-1]}``")
+    df = df.map(lambda x: f"``{str(x)[11:-1]}``")
     df = df.sort_index(axis=1).transpose()
     df.to_csv(os.path.join(csv_dir, "all_regex.csv"), header=False)
 

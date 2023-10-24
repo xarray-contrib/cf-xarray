@@ -1945,18 +1945,18 @@ def test_curvefit() -> None:
         t = (time - time[0]).astype(float)
         return slope * t
 
-    actual = airds.air.cf.isel(lat=4, lon=5).curvefit(coords=("time",), func=line)
-    expected = airds.air.cf.isel(lat=4, lon=5).cf.curvefit(coords="T", func=line)
+    da = airds.air.cf.isel(lat=3, lon=3)
+    expected = da.curvefit(coords=("time",), func=line)
+    actual = da.cf.curvefit(coords="T", func=line)
     assert_identical(expected, actual)
 
     def plane(coords, slopex, slopey):
         x, y = coords
         return slopex * (x - x.mean()) + slopey * (y - y.mean())
 
-    actual = airds.air.isel(time=0).curvefit(coords=("lat", "lon"), func=plane)
-    expected = airds.air.isel(time=0).cf.curvefit(
-        coords=["latitude", "longitude"], func=plane
-    )
+    da = airds.air.cf.isel(time=0)
+    actual = da.curvefit(coords=("lat", "lon"), func=plane)
+    expected = da.cf.curvefit(coords=["latitude", "longitude"], func=plane)
     assert_identical(expected, actual)
 
 

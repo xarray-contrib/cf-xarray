@@ -20,6 +20,6 @@ dependencies:
   - pint
   - regex
   - furo
-  - myst_nb
+  - myst-nb
   - pip:
       - -e ../

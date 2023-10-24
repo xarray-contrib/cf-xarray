@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - pip
-  - python=3.11
+  - python=3.10
   - matplotlib-base
   - netcdf4
   - pooch

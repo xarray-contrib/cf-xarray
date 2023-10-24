@@ -4,25 +4,25 @@ ci:
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.0.276'
+    rev: 'v0.0.292'
     hooks:
       - id: ruff
         args: ["--fix"]
 
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 23.9.1
     hooks:
       - id: black
 
   - repo: https://github.com/rstcheck/rstcheck
-    rev: v6.1.2
+    rev: v6.2.0
     hooks:
         - id: rstcheck
           additional_dependencies: [sphinx, tomli]
           args: ['--config', 'pyproject.toml']
 
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.16
+    rev: 0.7.17
     hooks:
     - id: mdformat
       additional_dependencies:
@@ -61,6 +61,6 @@ repos:
     - id: validate-cff
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.13
+    rev: v0.14
     hooks:
       - id: validate-pyproject

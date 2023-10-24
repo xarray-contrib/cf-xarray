@@ -2296,8 +2296,20 @@ class CFDatasetAccessor(CFAccessor):
         -------
         str
         """
-        (crd_name,) = apply_mapper(_get_all, self._obj, key, error=False, default=[key])
+        # In many cases, the bounds variable has the same attrs as the coordinate variable
+        # So multiple matches are possible.
+        crd_names = apply_mapper(_get_all, self._obj, key, error=False, default=[key])
+
         variables = self._obj._variables
+        filtered = [
+            crd_name for crd_name in crd_names if "bounds" in variables[crd_name].attrs
+        ]
+        if len(filtered) > 1:
+            raise KeyError(
+                f"Received multiple matches for {key!r} that have a bounds attribute: {filtered!r} "
+            )
+
+        (crd_name,) = filtered
         crd = variables[crd_name]
         crd_attrs = crd._attrs
         if crd_attrs is None or "bounds" not in crd_attrs:

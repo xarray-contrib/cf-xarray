@@ -974,6 +974,14 @@ def test_get_bounds_dim_name() -> None:
     assert mollwds.cf.get_bounds_dim_name("longitude") == "bounds"
     assert mollwds.cf.get_bounds_dim_name("lon") == "bounds"
 
+    # Be OK with bounds and coordinates having same attributes
+    # GH442
+    assert vert.cf.get_bounds_dim_name("longitude") == "bnds"
+    ds = vert.copy(deep=True)
+    ds.lat.attrs["standard_name"] = "longitude"
+    with pytest.raises(KeyError):
+        ds.cf.get_bounds_dim_name("longitude")
+
 
 def test_grid_mappings():
     ds = rotds.copy(deep=False)

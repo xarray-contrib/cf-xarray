@@ -42,7 +42,7 @@ v0.7.9 (Jan 31, 2023)
 v0.7.8 (Jan 31, 2023)
 =====================
 
-- Optionally use the `regex` package to continue supporting global flags in regular expressions that are not at start of pattern (:pr:`408`). By `Kristen Thyng`_
+- Optionally use the ``regex`` package to continue supporting global flags in regular expressions that are not at start of pattern (:pr:`408`). By `Kristen Thyng`_
 - Added link to docs for a new example "COSIMA ocean-sea ice model demo" (:pr:`397`). By `Aidan Heerdegen`_
 
 v0.7.7 (Jan 14, 2023)
@@ -82,7 +82,7 @@ v0.7.4 (July 14, 2022)
 v0.7.3 (June 30, 2022)
 ======================
 - :py:meth:`Dataset.cf.guess_coord_axis` now skips known axes/coordinates and only returns a single guess per variable.
-  Additional attributes such as `units` must be added to known axes/coordinates using :py:meth:`Dataset.cf.add_canonical_attributes`.
+  Additional attributes such as ``units`` must be added to known axes/coordinates using :py:meth:`Dataset.cf.add_canonical_attributes`.
   By `Mattia Almansi`_.
 - Increased support for ``cf_role`` variables. Added :py:attr:`Dataset.cf.cf_roles` By `Deepak Cherian`_.
 
@@ -126,7 +126,7 @@ v0.6.0 (June 29, 2021)
 - Begin adding support for units with a unit registry for pint arrays. :pr:`197`.
   By `Jon Thielen`_ and `Justus Magin`_.
 - :py:meth:`Dataset.cf.rename_like` also updates the ``bounds`` and ``cell_measures`` attributes. By `Mattia Almansi`_.
-- Support of custom vocabularies/criteria: user can input criteria for identifying variables by their name and attributes to be able to refer to them by custom names like `ds.cf["ssh"]`. :pr:`234`. By `Kristen Thyng`_ and `Deepak Cherian`_.
+- Support of custom vocabularies/criteria: user can input criteria for identifying variables by their name and attributes to be able to refer to them by custom names like ``ds.cf["ssh"]``. :pr:`234`. By `Kristen Thyng`_ and `Deepak Cherian`_.
 
 v0.5.2 (May 11, 2021)
 =====================

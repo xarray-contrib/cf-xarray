@@ -1288,7 +1288,7 @@ class CFAccessor:
            This uses ``key_mappers``
         3. Unpacks arguments if necessary before returning them.
         """
-        sig = inspect.signature(func, follow_wrapped=False)
+        sig = inspect.signature(func, follow_wrapped=True)
 
         # Catch things like .isel(T=5).
         # This assigns indexers_kwargs=dict(T=5).

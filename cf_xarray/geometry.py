@@ -315,15 +315,22 @@ def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:
     """
     import shapely
 
-    grid = ds.cf[["latitude", "longitude"]].load().reset_coords()
-    bounds = ds.cf.bounds
+    grid = ds.cf[["latitude", "longitude"]].load()
+    bounds = grid.cf.bounds
+    dims = grid.cf.dims
+
+    if "latitude" in dims or "longitude" in dims:
+        # for 1D lat, lon, this allows them to be
+        # broadcast against each other
+        grid = grid.reset_coords()
 
     assert "latitude" in bounds
     assert "longitude" in bounds
     (lon_bounds,) = bounds["longitude"]
     (lat_bounds,) = bounds["latitude"]
 
-    (points,) = xr.broadcast(grid)
+    with xr.set_options(keep_attrs=True):
+        (points,) = xr.broadcast(grid)
 
     bounds_dim = grid.cf.get_bounds_dim_name("latitude")
     points = points.transpose(..., bounds_dim)
@@ -337,14 +344,14 @@ def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:
         lonbnd[mask, :] = lonbnd[mask, :] - 360
         latbnd = latbnd[..., [0, 1, 1, 0]]
 
-    elif points.sizes[bounds_dim] == 4:
-        raise NotImplementedError
-    else:
+    elif points.sizes[bounds_dim] != 4:
         raise ValueError(
             f"The size of the detected bounds or vertex dimension {bounds_dim} is not 2 or 4."
         )
 
     polyarray = shapely.polygons(shapely.linearrings(lonbnd, latbnd))
-    boxes = points[lon_bounds][..., 0].copy(data=polyarray)
+
+    # 'geometry' is a blessed name in geopandas.
+    boxes = points[lon_bounds][..., 0].copy(data=polyarray).rename("geometry")
 
     return boxes

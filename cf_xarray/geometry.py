@@ -295,7 +295,7 @@ def cf_to_points(ds: xr.Dataset):
     return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
 
 
-def grid_bounds_to_polygons(ds: xr.Dataset) -> xr.DataArray:
+def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:
     """
     Converts a regular 2D lat/lon grid to a 2D array of shapely polygons.
 
@@ -313,7 +313,7 @@ def grid_bounds_to_polygons(ds: xr.Dataset) -> xr.DataArray:
     DataArray
         DataArray with shapely polygon per grid cell.
     """
-    from shapely import Polygon
+    import shapely
 
     grid = ds.cf[["latitude", "longitude"]].load().reset_coords()
     bounds = ds.cf.bounds
@@ -327,30 +327,24 @@ def grid_bounds_to_polygons(ds: xr.Dataset) -> xr.DataArray:
 
     bounds_dim = grid.cf.get_bounds_dim_name("latitude")
     points = points.transpose(..., bounds_dim)
-    assert points.sizes[bounds_dim] == 2
-
     lonbnd = points[lon_bounds].data
     latbnd = points[lat_bounds].data
 
-    # geopandas needs this
-    expanded_lon = lonbnd[..., [0, 0, 1, 1]]
-    mask = expanded_lon[..., 0] >= 180
-    expanded_lon[mask, :] = expanded_lon[mask, :] - 360
+    if points.sizes[bounds_dim] == 2:
+        # geopandas needs this
+        lonbnd = lonbnd[..., [0, 0, 1, 1]]
+        mask = lonbnd[..., 0] >= 180
+        lonbnd[mask, :] = lonbnd[mask, :] - 360
+        latbnd = latbnd[..., [0, 1, 1, 0]]
 
-    # these magic numbers are OK :
-    # - 4 corners to a polygon, and
-    # - 2 from stacking lat, lon along the last axis
-    # flatten here to make iteration easier. It would be nice to avoid that.
-    # potentially with just np.vectorize. The polygon creation is the real slow bit.
-    # Shapely's MultiPolygon also iterates over a list in Python...
-    blocked = np.stack([expanded_lon, latbnd[..., [0, 1, 1, 0]]], axis=-1).reshape(
-        -1, 4, 2
-    )
-    polyarray = np.array(
-        [Polygon(blocked[i, ...]) for i in range(blocked.shape[0])], dtype="O"
-    )
-    newshape = latbnd.shape[:-1]
-    polyarray = polyarray.reshape(newshape)
+    elif points.sizes[bounds_dim] == 4:
+        raise NotImplementedError
+    else:
+        raise ValueError(
+            f"The size of the detected bounds or vertex dimension {bounds_dim} is not 2 or 4."
+        )
+
+    polyarray = shapely.polygons(shapely.linearrings(lonbnd, latbnd))
     boxes = points[lon_bounds][..., 0].copy(data=polyarray)
 
     return boxes

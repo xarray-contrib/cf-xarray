@@ -338,16 +338,17 @@ def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:
     latbnd = points[lat_bounds].data
 
     if points.sizes[bounds_dim] == 2:
-        # geopandas needs this
         lonbnd = lonbnd[..., [0, 0, 1, 1]]
-        mask = lonbnd[..., 0] >= 180
-        lonbnd[mask, :] = lonbnd[mask, :] - 360
         latbnd = latbnd[..., [0, 1, 1, 0]]
 
     elif points.sizes[bounds_dim] != 4:
         raise ValueError(
             f"The size of the detected bounds or vertex dimension {bounds_dim} is not 2 or 4."
         )
+
+    # geopandas needs this
+    mask = lonbnd[..., 0] >= 180
+    lonbnd[mask, :] = lonbnd[mask, :] - 360
 
     polyarray = shapely.polygons(shapely.linearrings(lonbnd, latbnd))
 

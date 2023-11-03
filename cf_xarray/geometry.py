@@ -355,11 +355,14 @@ def cf_to_lines(ds: xr.Dataset):
     # be included in that object.
     maxes = np.cumsum(part_node_count)
     mins = np.insert(maxes[:-1], 0, 0)
-    dummy = np.broadcast_to(np.cumsum(node_count), (len(part_node_count), len(node_count)))
+    dummy = np.broadcast_to(
+        np.cumsum(node_count), (len(part_node_count), len(node_count))
+    )
     is_multi = np.where(
-        (dummy <= np.expand_dims(maxes, axis=1)) & (dummy > np.expand_dims(mins, axis=1)),
+        (dummy <= np.expand_dims(maxes, axis=1))
+        & (dummy > np.expand_dims(mins, axis=1)),
         np.ones_like(dummy),
-        np.zeros_like(dummy)
+        np.zeros_like(dummy),
     )
 
     # create multilinestrings for each set of lines. Note that we create multiline strings
@@ -369,7 +372,9 @@ def cf_to_lines(ds: xr.Dataset):
 
     # construct the final geometry by pulling items from the lines or multilines based on
     # the number of lines that are mapped to each object.
-    _, index, counts = np.unique(multiline_indices, return_counts=True, return_index=True)
+    _, index, counts = np.unique(
+        multiline_indices, return_counts=True, return_index=True
+    )
     geoms = np.where(counts == 1, np.array(lines[index]), multilines)
 
     return xr.DataArray(geoms, dims=part_node_count.dims, coords=part_node_count.coords)

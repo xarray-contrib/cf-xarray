@@ -322,7 +322,7 @@ def lines_to_cf(lines: xr.DataArray | Sequence):
         coord = None
         lines_ = np.array(lines)
 
-    _, arr, offsets  = to_ragged_array(lines_)
+    _, arr, offsets = to_ragged_array(lines_)
     x = arr[:, 0]
     y = arr[:, 1]
 

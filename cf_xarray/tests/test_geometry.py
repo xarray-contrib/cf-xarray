@@ -131,10 +131,15 @@ def test_shapely_to_cf(geometry_ds):
 
 @requires_shapely
 def test_shapely_to_cf_errors():
-    from shapely.geometry import Polygon, Point
+    from shapely.geometry import Point, Polygon
 
-    geoms = [Polygon([[1, 1], [1, 3], [3, 3], [1, 1]]), Polygon([[1, 1, 4], [1, 3, 4], [3, 3, 3], [1, 1, 4]])]
-    with pytest.raises(NotImplementedError, match="Polygon geometry conversion is not implemented"):
+    geoms = [
+        Polygon([[1, 1], [1, 3], [3, 3], [1, 1]]),
+        Polygon([[1, 1, 4], [1, 3, 4], [3, 3, 3], [1, 1, 4]]),
+    ]
+    with pytest.raises(
+        NotImplementedError, match="Polygon geometry conversion is not implemented"
+    ):
         cfxr.shapely_to_cf(geoms)
 
     geoms.append(Point(1, 2))

@@ -387,7 +387,7 @@ def cf_to_lines(ds: xr.Dataset):
         It has the same dimension as the ``part_node_count`` or the coordinates variables, or
         ``'features'`` if those were not present in ``ds``.
     """
-    from shapely import from_ragged_array, GeometryType
+    from shapely import GeometryType, from_ragged_array
 
     # Shorthand for convenience
     geo = ds.geometry_container.attrs
@@ -419,15 +419,19 @@ def cf_to_lines(ds: xr.Dataset):
         part_node_count = xr.DataArray([1] * xy.shape[0], dims=(feat_dim,))
         if feat_dim in ds.coords:
             part_node_count = part_node_count.assign_coords({feat_dim: ds[feat_dim]})
-        
+
         geoms = lines
     else:
         part_node_count = ds[part_node_count_name]
 
         # get index of offset1 values that are edges for part_node_count
-        offset2 = np.nonzero(np.isin(offset1, np.insert(np.cumsum(part_node_count), 0, 0)))[0]
-        multilines = from_ragged_array(GeometryType.MULTILINESTRING, xy, offsets=(offset1, offset2))
-        
+        offset2 = np.nonzero(
+            np.isin(offset1, np.insert(np.cumsum(part_node_count), 0, 0))
+        )[0]
+        multilines = from_ragged_array(
+            GeometryType.MULTILINESTRING, xy, offsets=(offset1, offset2)
+        )
+
         # get items from lines or multilines depending on number of segments
         geoms = np.where(np.diff(offset2) == 1, lines[offset2[:-1]], multilines)
 

@@ -111,10 +111,10 @@ def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None 
     }
     if types.issubset({"Point", "MultiPoint"}):
         ds = points_to_cf(geometries)
-    elif types.issubset({"Polygon", "MultiPolygon"}) or types.issubset(
-        {"LineString", "MultiLineString"}
-    ):
-        raise NotImplementedError("Only point geometries conversion is implemented.")
+    elif types.issubset({"LineString", "MultiLineString"}):
+        ds = lines_to_cf(geometries)
+    elif types.issubset({"Polygon", "MultiPolygon"}):
+        raise NotImplementedError("Polygon geometry conversion is not implemented.")
     else:
         raise ValueError(
             f"Mixed geometry types are not supported in CF-compliant datasets. Got {types}"
@@ -297,6 +297,79 @@ def cf_to_points(ds: xr.Dataset):
     return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
 
 
+def lines_to_cf(lines: xr.DataArray | Sequence):
+    """Convert an iterable of lines (shapely.geometry.[Multi]Line) into a CF-compliant geometry dataset.
+
+    Parameters
+    ----------
+    lines : sequence of shapely.geometry.Line or MultiLine
+        The sequence of [multi]lines to translate to a CF dataset.
+
+    Returns
+    -------
+    xr.Dataset
+        A Dataset with variables 'x', 'y', 'crd_x', 'crd_y', 'node_count' and 'geometry_container'
+        and optionally 'part_node_count'.
+    """
+    from shapely import to_ragged_array
+
+    if isinstance(lines, xr.DataArray):
+        dim = lines.dims[0]
+        coord = lines[dim] if dim in lines.coords else None
+        lines_ = lines.values
+    else:
+        dim = "index"
+        coord = None
+        lines_ = np.array(lines)
+
+    _, arr, offsets  = to_ragged_array(lines_)
+    x = arr[:, 0]
+    y = arr[:, 1]
+
+    node_count = np.diff(offsets[0])
+    if len(offsets) == 1:
+        indices = offsets[0]
+        part_node_count = node_count
+    else:
+        indices = np.take(offsets[0], offsets[1])
+        part_node_count = np.diff(indices)
+
+    geom_coords = arr.take(indices[:-1], 0)
+    crdX = geom_coords[:, 0]
+    crdY = geom_coords[:, 1]
+
+    ds = xr.Dataset(
+        data_vars={
+            "node_count": xr.DataArray(node_count, dims=("segment",)),
+            "part_node_count": xr.DataArray(part_node_count, dims=(dim,)),
+            "geometry_container": xr.DataArray(
+                attrs={
+                    "geometry_type": "line",
+                    "node_count": "node_count",
+                    "part_node_count": "part_node_count",
+                    "node_coordinates": "x y",
+                    "coordinates": "crd_x crd_y",
+                }
+            ),
+        },
+        coords={
+            "x": xr.DataArray(x, dims=("node",), attrs={"axis": "X"}),
+            "y": xr.DataArray(y, dims=("node",), attrs={"axis": "Y"}),
+            "crd_x": xr.DataArray(crdX, dims=(dim,), attrs={"nodes": "x"}),
+            "crd_y": xr.DataArray(crdY, dims=(dim,), attrs={"nodes": "y"}),
+        },
+    )
+
+    if coord is not None:
+        ds = ds.assign_coords({dim: coord})
+
+    # Special case when we have no MultiLines
+    if len(ds.part_node_count) == len(ds.node_count):
+        ds = ds.drop_vars("part_node_count")
+        del ds.geometry_container.attrs["part_node_count"]
+    return ds
+
+
 def cf_to_lines(ds: xr.Dataset):
     """Convert line geometries stored in a CF-compliant way to shapely lines stored in a single variable.
 
@@ -310,8 +383,8 @@ def cf_to_lines(ds: xr.Dataset):
     Returns
     -------
     geometry : xr.DataArray
-        A 1D array of shapely.geometry.[Multi]Point objects.
-        It has the same dimension as the ``node_count`` or the coordinates variables, or
+        A 1D array of shapely.geometry.[Multi]Line objects.
+        It has the same dimension as the ``part_node_count`` or the coordinates variables, or
         ``'features'`` if those were not present in ``ds``.
     """
     from shapely import linestrings, multilinestrings
@@ -350,10 +423,10 @@ def cf_to_lines(ds: xr.Dataset):
     line_indices = np.repeat(np.arange(len(node_count)), node_count)
     lines = linestrings(xy, indices=line_indices)
 
-    # contruct an array where every row corresponds to a geometry object
+    # construct an array where every row corresponds to a geometry object
     # and each value indicates whether the line at that index should
     # be included in that object.
-    maxes = np.cumsum(part_node_count)
+    maxes = np.cumsum(part_node_count.values)
     mins = np.insert(maxes[:-1], 0, 0)
     dummy = np.broadcast_to(
         np.cumsum(node_count), (len(part_node_count), len(node_count))

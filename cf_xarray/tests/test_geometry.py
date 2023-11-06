@@ -61,13 +61,8 @@ def geometry_line_ds():
         LineString([[1.0, 1.0], [2.0, 2.0], [1.7, 9.5]]),
     ]
 
-    ds = xr.Dataset(
-        {
-            "data": xr.DataArray(range(len(geoms)), dims=("index",)),
-            "time": xr.DataArray([0, 1, 2], dims=("index",)),
-        }
-    )
-    shp_ds = ds.assign(geometry=xr.DataArray(geoms, dims=("index",)))
+    ds = xr.Dataset()
+    shp_da = xr.DataArray(geoms, dims=("index",), name="geometry")
 
     cf_ds = ds.assign(
         x=xr.DataArray(
@@ -77,9 +72,9 @@ def geometry_line_ds():
             [0, 2, 4, 6, 0, 0, 1, 1.0, 2.0, 9.5], dims=("node",), attrs={"axis": "Y"}
         ),
         part_node_count=xr.DataArray([4, 3, 3], dims=("index",)),
-        node_count=xr.DataArray([2, 2, 3, 3], dims=("counter",)),
-        crd_x=xr.DataArray([1.0, 3.0, 4.0], dims=("index",), attrs={"nodes": "x"}),
-        crd_y=xr.DataArray([2.0, 4.0, 5.0], dims=("index",), attrs={"nodes": "y"}),
+        node_count=xr.DataArray([2, 2, 3, 3], dims=("segment",)),
+        crd_x=xr.DataArray([0.0, 0.0, 1.0], dims=("index",), attrs={"nodes": "x"}),
+        crd_y=xr.DataArray([0.0, 0.0, 1.0], dims=("index",), attrs={"nodes": "y"}),
         geometry_container=xr.DataArray(
             attrs={
                 "geometry_type": "line",
@@ -93,7 +88,7 @@ def geometry_line_ds():
 
     cf_ds = cf_ds.set_coords(["x", "y", "crd_x", "crd_y"])
 
-    return cf_ds, shp_ds
+    return cf_ds, shp_da
 
 
 @requires_shapely
@@ -136,10 +131,10 @@ def test_shapely_to_cf(geometry_ds):
 
 @requires_shapely
 def test_shapely_to_cf_errors():
-    from shapely.geometry import LineString, Point
+    from shapely.geometry import Polygon, Point
 
-    geoms = [LineString([[1, 2], [2, 3]]), LineString([[2, 3, 4], [4, 3, 2]])]
-    with pytest.raises(NotImplementedError, match="Only point geometries conversion"):
+    geoms = [Polygon([[1, 1], [1, 3], [3, 3], [1, 1]]), Polygon([[1, 1, 4], [1, 3, 4], [3, 3, 3], [1, 1, 4]])]
+    with pytest.raises(NotImplementedError, match="Polygon geometry conversion is not implemented"):
         cfxr.shapely_to_cf(geoms)
 
     geoms.append(Point(1, 2))
@@ -175,7 +170,16 @@ def test_cf_to_shapely_for_line(geometry_line_ds):
     actual = cfxr.cf_to_shapely(in_ds)
     assert actual.dims == ("index",)
 
-    xr.testing.assert_identical(actual.drop_vars(["crd_x", "crd_y"]), expected.geometry)
+    xr.testing.assert_identical(actual.drop_vars(["crd_x", "crd_y"]), expected)
+
+
+@requires_shapely
+def test_shapely_to_cf_for_line(geometry_line_ds):
+    expected, in_da = geometry_line_ds
+
+    actual = cfxr.shapely_to_cf(in_da)
+
+    xr.testing.assert_identical(actual, expected)
 
 
 @requires_shapely

@@ -387,7 +387,7 @@ def cf_to_lines(ds: xr.Dataset):
         It has the same dimension as the ``part_node_count`` or the coordinates variables, or
         ``'features'`` if those were not present in ``ds``.
     """
-    from shapely import linestrings, multilinestrings
+    from shapely import from_ragged_array, GeometryType
 
     # Shorthand for convenience
     geo = ds.geometry_container.attrs
@@ -409,45 +409,26 @@ def cf_to_lines(ds: xr.Dataset):
     else:
         node_count = ds[node_count_name]
 
+    offset1 = np.insert(np.cumsum(node_count.values), 0, 0)
+    lines = from_ragged_array(GeometryType.LINESTRING, xy, offsets=(offset1,))
+
     if part_node_count_name is None:
-        # No part_node_count means there is only one line
-        # And if we had no coordinates, then the dimension defaults to "features"
-        feat_dim = feat_dim or "features"
+        # No part_node_count means there are no multilines
+        # And if we had no coordinates, then the dimension defaults to "index"
+        feat_dim = feat_dim or "index"
         part_node_count = xr.DataArray([1] * xy.shape[0], dims=(feat_dim,))
         if feat_dim in ds.coords:
             part_node_count = part_node_count.assign_coords({feat_dim: ds[feat_dim]})
+        
+        geoms = lines
     else:
         part_node_count = ds[part_node_count_name]
 
-    # create all the line segments
-    line_indices = np.repeat(np.arange(len(node_count)), node_count)
-    lines = linestrings(xy, indices=line_indices)
-
-    # construct an array where every row corresponds to a geometry object
-    # and each value indicates whether the line at that index should
-    # be included in that object.
-    maxes = np.cumsum(part_node_count.values)
-    mins = np.insert(maxes[:-1], 0, 0)
-    dummy = np.broadcast_to(
-        np.cumsum(node_count), (len(part_node_count), len(node_count))
-    )
-    is_multi = np.where(
-        (dummy <= np.expand_dims(maxes, axis=1))
-        & (dummy > np.expand_dims(mins, axis=1)),
-        np.ones_like(dummy),
-        np.zeros_like(dummy),
-    )
-
-    # create multilinestrings for each set of lines. Note that we create multiline strings
-    # even for cases where there is only one line. We will pick which ones we need later on
-    multiline_indices = np.where(is_multi == 1)[0]
-    multilines = multilinestrings(lines, indices=multiline_indices)
-
-    # construct the final geometry by pulling items from the lines or multilines based on
-    # the number of lines that are mapped to each object.
-    _, index, counts = np.unique(
-        multiline_indices, return_counts=True, return_index=True
-    )
-    geoms = np.where(counts == 1, np.array(lines[index]), multilines)
+        # get index of offset1 values that are edges for part_node_count
+        offset2 = np.nonzero(np.isin(offset1, np.insert(np.cumsum(part_node_count), 0, 0)))[0]
+        multilines = from_ragged_array(GeometryType.MULTILINESTRING, xy, offsets=(offset1, offset2))
+        
+        # get items from lines or multilines depending on number of segments
+        geoms = np.where(np.diff(offset2) == 1, lines[offset2[:-1]], multilines)
 
     return xr.DataArray(geoms, dims=part_node_count.dims, coords=part_node_count.coords)

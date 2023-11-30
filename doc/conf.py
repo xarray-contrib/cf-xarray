@@ -52,8 +52,8 @@ extensions = [
 ]
 
 extlinks = {
-    "issue": ("https://github.com/xarray-contrib/cf-xarray/issues/%s", "GH#"),
-    "pr": ("https://github.com/xarray-contrib/cf-xarray/pull/%s", "GH#"),
+    "issue": ("https://github.com/xarray-contrib/cf-xarray/issues/%s", "GH#%s"),
+    "pr": ("https://github.com/xarray-contrib/cf-xarray/pull/%s", "GH#%s"),
 }
 
 # Add any paths that contain templates here, relative to this directory.

@@ -48,6 +48,7 @@ def geometry_ds():
 
     return cf_ds, shp_ds
 
+
 @pytest.fixture
 def geometry_line_ds():
     from shapely.geometry import LineString, MultiLineString
@@ -89,6 +90,7 @@ def geometry_line_ds():
 
     return cf_ds, shp_da
 
+
 @pytest.fixture
 def geometry_line_without_multilines_ds():
     from shapely.geometry import LineString
@@ -104,12 +106,8 @@ def geometry_line_without_multilines_ds():
     shp_da = xr.DataArray(geoms, dims=("index",), name="geometry")
 
     cf_ds = ds.assign(
-        x=xr.DataArray(
-            [0, 1, 1, 1.0, 2.0, 1.7], dims=("node",), attrs={"axis": "X"}
-        ),
-        y=xr.DataArray(
-            [0, 0, 1, 1.0, 2.0, 9.5], dims=("node",), attrs={"axis": "Y"}
-        ),
+        x=xr.DataArray([0, 1, 1, 1.0, 2.0, 1.7], dims=("node",), attrs={"axis": "X"}),
+        y=xr.DataArray([0, 0, 1, 1.0, 2.0, 9.5], dims=("node",), attrs={"axis": "Y"}),
         node_count=xr.DataArray([3, 3], dims=("segment",)),
         crd_x=xr.DataArray([0.0, 1.0], dims=("index",), attrs={"nodes": "x"}),
         crd_y=xr.DataArray([0.0, 1.0], dims=("index",), attrs={"nodes": "y"}),
@@ -126,7 +124,6 @@ def geometry_line_without_multilines_ds():
     cf_ds = cf_ds.set_coords(["x", "y", "crd_x", "crd_y"])
 
     return cf_ds, shp_da
-
 
 
 @requires_shapely
@@ -187,7 +184,9 @@ def test_shapely_to_cf_for_lines_as_sequence(geometry_line_ds):
 
 
 @requires_shapely
-def test_shapely_to_cf_for_lines_without_multilines(geometry_line_without_multilines_ds):
+def test_shapely_to_cf_for_lines_without_multilines(
+    geometry_line_without_multilines_ds,
+):
     expected, in_da = geometry_line_without_multilines_ds
     actual = cfxr.shapely_to_cf(in_da)
     xr.testing.assert_identical(actual, expected)
@@ -242,7 +241,9 @@ def test_cf_to_shapely_for_lines(geometry_line_ds):
 
 
 @requires_shapely
-def test_cf_to_shapely_for_lines_without_multilines(geometry_line_without_multilines_ds):
+def test_cf_to_shapely_for_lines_without_multilines(
+    geometry_line_without_multilines_ds,
+):
     in_ds, expected = geometry_line_without_multilines_ds
     actual = cfxr.cf_to_shapely(in_ds)
     assert actual.dims == ("index",)
@@ -251,7 +252,9 @@ def test_cf_to_shapely_for_lines_without_multilines(geometry_line_without_multil
     in_ds = in_ds.assign_coords(index=["b", "c"])
     actual = cfxr.cf_to_shapely(in_ds)
     assert actual.dims == ("index",)
-    xr.testing.assert_identical(actual.drop_vars(["crd_x", "crd_y"]), expected.assign_coords(index=["b", "c"]))
+    xr.testing.assert_identical(
+        actual.drop_vars(["crd_x", "crd_y"]), expected.assign_coords(index=["b", "c"])
+    )
 
 
 @requires_shapely

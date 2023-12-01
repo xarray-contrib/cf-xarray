@@ -397,7 +397,7 @@ def cf_to_lines(ds: xr.Dataset):
     # The features dimension name, defaults to the one of 'part_node_count'
     # or the dimension of the coordinates, if present.
     feat_dim = None
-    if "coordinates" in geo and feat_dim is None:
+    if "coordinates" in geo:
         xcoord_name, _ = geo["coordinates"].split(" ")
         (feat_dim,) = ds[xcoord_name].dims
 
@@ -418,7 +418,7 @@ def cf_to_lines(ds: xr.Dataset):
         # No part_node_count means there are no multilines
         # And if we had no coordinates, then the dimension defaults to "index"
         feat_dim = feat_dim or "index"
-        part_node_count = xr.DataArray([1] * xy.shape[0], dims=(feat_dim,))
+        part_node_count = xr.DataArray(node_count.values, dims=(feat_dim,))
         if feat_dim in ds.coords:
             part_node_count = part_node_count.assign_coords({feat_dim: ds[feat_dim]})
 

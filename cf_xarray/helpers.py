@@ -116,7 +116,9 @@ def bounds_to_vertices(
     order: str | None = "counterclockwise",
 ) -> DataArray:
     """
-    Convert bounds variable to vertices. There are 2 covered cases:
+    Convert bounds variable to vertices.
+
+    There are 2 covered cases:
      - 1D coordinates, with bounds of shape (N, 2),
        converted to vertices of shape (N+1,)
      - 2D coordinates, with bounds of shape (N, M, 4).
@@ -128,15 +130,15 @@ def bounds_to_vertices(
         The bounds to convert.
     bounds_dim : str
         The name of the bounds dimension of `bounds` (the one of length 2 or 4).
+    core_dims : list, optional
+        List of core dimensions for apply_ufunc. This must not include bounds_dims.
+        The shape of ``(*core_dims, bounds_dim)`` must be (N, 2) or (N, M, 4).
     order : {'counterclockwise', 'clockwise', None}
         Valid for 2D coordinates only (i.e. bounds of shape (..., N, M, 4), ignored otherwise.
         Order the bounds are given in, assuming that ax0-ax1-upward is a right handed
         coordinate system, where ax0 and ax1 are the two first dimensions of `bounds`.
         If None, the counterclockwise version is computed and then verified. If the
         check fails the clockwise version is returned. See Notes for more details.
-    core_dims : list, optional
-        List of core dimensions for apply_ufunc. This must not include bounds_dims.
-        The shape of (*core_dims, bounds_dim) must be (N, 2) or (N, M, 4).
 
     Returns
     -------
@@ -218,7 +220,9 @@ def vertices_to_bounds(
     vertices: DataArray, out_dims: Sequence[str] = ("bounds", "x", "y")
 ) -> DataArray:
     """
-    Convert vertices to CF-compliant bounds. There are 2 covered cases:
+    Convert vertices to CF-compliant bounds.
+
+    There are 2 covered cases:
      - 1D coordinates, with vertices of shape (N+1,),
        converted to bounds of shape (N, 2)
      - 2D coordinates, with vertices of shape (N+1, M+1).

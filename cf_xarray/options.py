@@ -14,8 +14,9 @@ OPTIONS: MutableMapping[str, Any] = {
 }
 
 
-class set_options:
-    """Set options for cf-xarray in a controlled context.
+class set_options:  # numpydoc ignore=PR01,PR02
+    """
+    Set options for cf-xarray in a controlled context.
 
     Parameters
     ----------
@@ -44,7 +45,6 @@ class set_options:
     >>> cf_xarray.set_options(custom_criteria=my_custom_criteria)
     >>> xr.testing.assert_identical(ds["elev"], ds.cf["ssh"])
     """
-
     def __init__(self, **kwargs):
         self.old = {}
         for k, v in kwargs.items():

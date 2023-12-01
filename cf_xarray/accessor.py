@@ -2630,7 +2630,7 @@ class CFDatasetAccessor(CFAccessor):
                 results[v].append(k)
         return results
 
-    def decode_vertical_coords(self, *, outnames=None, prefix=None) -> None:
+    def decode_vertical_coords(self, *, outnames=None, prefix=None):
         """
         Decode parameterized vertical coordinates in place.
 
@@ -2642,6 +2642,11 @@ class CFDatasetAccessor(CFAccessor):
         prefix : str, optional
             Prefix for newly created z variables.
             E.g. ``s_rho`` becomes ``z_rho``.
+
+        Returns
+        -------
+        None
+            Modifies self inplace.
 
         See Also
         --------

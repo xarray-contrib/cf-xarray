@@ -45,6 +45,7 @@ class set_options:  # numpydoc ignore=PR01,PR02
     >>> cf_xarray.set_options(custom_criteria=my_custom_criteria)
     >>> xr.testing.assert_identical(ds["elev"], ds.cf["ssh"])
     """
+
     def __init__(self, **kwargs):
         self.old = {}
         for k, v in kwargs.items():

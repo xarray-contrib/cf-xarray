@@ -201,7 +201,7 @@ def _get_custom_criteria(
 ) -> list[Hashable]:
     """
     Translate from axis, coord, or custom name to variable name.
-     
+
     Optionally use ``custom_criteria``.
 
     Parameters
@@ -371,7 +371,7 @@ def _get_measure(obj: DataArray | Dataset, key: str) -> list[str]:
 def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     """
     Translate from key (either CF key or variable name) to its bounds' variable names.
-    
+
     This function interprets the ``bounds`` attribute on DataArrays.
 
     Parameters
@@ -1516,7 +1516,7 @@ class CFAccessor:
     def plot(self):
         """
         Extended version of regular ``.plot``.
-        
+
         See Also
         --------
         Dataset.plot

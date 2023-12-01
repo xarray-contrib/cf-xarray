@@ -14,8 +14,9 @@ OPTIONS: MutableMapping[str, Any] = {
 }
 
 
-class set_options:
-    """Set options for cf-xarray in a controlled context.
+class set_options:  # numpydoc ignore=PR01,PR02
+    """
+    Set options for cf-xarray in a controlled context.
 
     Parameters
     ----------

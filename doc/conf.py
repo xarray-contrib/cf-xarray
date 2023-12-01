@@ -52,8 +52,8 @@ extensions = [
 ]
 
 extlinks = {
-    "issue": ("https://github.com/xarray-contrib/cf-xarray/issues/%s", "GH#"),
-    "pr": ("https://github.com/xarray-contrib/cf-xarray/pull/%s", "GH#"),
+    "issue": ("https://github.com/xarray-contrib/cf-xarray/issues/%s", "GH#%s"),
+    "pr": ("https://github.com/xarray-contrib/cf-xarray/pull/%s", "GH#%s"),
 }
 
 # Add any paths that contain templates here, relative to this directory.
@@ -265,4 +265,11 @@ napoleon_use_param = True
 napoleon_use_rtype = True
 
 numpydoc_show_class_members = False
-numpydoc_validation_checks = {"all"}
+# Report warnings for all validation checks except the ones listed after "all"
+numpydoc_validation_checks = {"all", "ES01", "EX01", "SA01", "SA04"}
+# don't report on objects that match any of these regex
+numpydoc_validation_exclude = {
+    "cf_xarray.accessor.",
+    r"\.__repr__$",
+    "cf_xarray.set_options.",
+}

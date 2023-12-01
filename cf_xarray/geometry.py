@@ -72,7 +72,8 @@ def reshape_unique_geometries(
 
 
 def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None = None):
-    """Convert a DataArray with shapely geometry objects into a CF-compliant dataset.
+    """
+    Convert a DataArray with shapely geometry objects into a CF-compliant dataset.
 
     .. warning::
         Only point geometries are currently implemented.
@@ -138,7 +139,8 @@ def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None 
 
 
 def cf_to_shapely(ds: xr.Dataset):
-    """Convert geometries stored in a CF-compliant way to shapely objects stored in a single variable.
+    """
+    Convert geometries stored in a CF-compliant way to shapely objects stored in a single variable.
 
     .. warning::
         Only point geometries are currently implemented.

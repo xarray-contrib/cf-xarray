@@ -1,7 +1,6 @@
 """Module to provide unit support via pint approximating UDUNITS/CF."""
 import functools
 import re
-import warnings
 
 import pint
 from pint import (  # noqa: F401
@@ -9,6 +8,8 @@ from pint import (  # noqa: F401
     UndefinedUnitError,
     UnitStrippedWarning,
 )
+
+from .utils import emit_user_level_warning
 
 # from `xclim`'s unit support module with permission of the maintainers
 try:
@@ -111,9 +112,10 @@ units.define("practical_salinity_unit = [] = psu = PSU")
 try:
     units.setup_matplotlib()
 except ImportError:
-    warnings.warn(
+    emit_user_level_warning(
         "Import(s) unavailable to set up matplotlib support...skipping this portion "
-        "of the setup."
+        "of the setup.",
+        UserWarning,
     )
 # end of vendored code from MetPy
 

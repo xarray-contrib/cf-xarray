@@ -128,7 +128,7 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, tuple]] = {
 coordinate_criteria["time"] = coordinate_criteria["T"]
 
 # "long_name" and "standard_name" criteria are the same. For convenience.
-for coord, attrs in coordinate_criteria.items():
+for coord in coordinate_criteria:
     coordinate_criteria[coord]["long_name"] = coordinate_criteria[coord][
         "standard_name"
     ]

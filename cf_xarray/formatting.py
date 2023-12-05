@@ -10,7 +10,7 @@ TAB = len(STAR) * " "
 try:
     from rich.table import Table
 except ImportError:
-    Table = None  # type: ignore
+    Table = None  # type: ignore[assignment, misc]
 
 
 def _format_missing_row(row: str, rich: bool) -> str:
@@ -41,7 +41,7 @@ def _format_cf_name(name: str, rich: bool) -> str:
 def make_text_section(
     accessor,
     subtitle: str,
-    attr: str,
+    attr: str | dict,
     dims=None,
     valid_keys=None,
     valid_values=None,
@@ -140,10 +140,10 @@ def _maybe_panel(textgen, title: str, rich: bool):
             width=100,
         )
         if isinstance(textgen, Table):
-            return Panel(textgen, padding=(0, 20), **kwargs)  # type: ignore
+            return Panel(textgen, padding=(0, 20), **kwargs)  # type: ignore[arg-type]
         else:
             text = "".join(textgen)
-            return Panel(f"[color(241)]{text.rstrip()}[/color(241)]", **kwargs)  # type: ignore
+            return Panel(f"[color(241)]{text.rstrip()}[/color(241)]", **kwargs)  # type: ignore[arg-type]
     else:
         text = "".join(textgen)
         return title + ":\n" + text
@@ -220,22 +220,14 @@ def _format_flags(accessor, rich):
         table.add_column("Value", justify="right")
         table.add_column("Bits", justify="center")
 
-        for val, bit, (key, (mask, value)) in zip(
-            value_text, bit_text, flag_dict.items()
-        ):
-            table.add_row(
-                _format_cf_name(key, rich),
-                val,
-                bit,
-            )
+        for val, bit, key in zip(value_text, bit_text, flag_dict):
+            table.add_row(_format_cf_name(key, rich), val, bit)
 
         return table
 
     else:
         rows = []
-        for val, bit, (key, (mask, value)) in zip(
-            value_text, bit_text, flag_dict.items()
-        ):
+        for val, bit, key in zip(value_text, bit_text, flag_dict):
             rows.append(f"{TAB}{_format_cf_name(key, rich)}: {TAB} {val} {bit}")
         return _print_rows("Flag Meanings", rows, rich)
 

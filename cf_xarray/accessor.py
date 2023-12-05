@@ -58,10 +58,10 @@ FlagParam = namedtuple("FlagParam", ["flag_mask", "flag_value"])
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (Resample, GroupBy, Rolling, Coarsen, Weighted)
 
-#:  `axis` names understood by cf_xarray
+#:  ``axis`` names understood by cf_xarray
 _AXIS_NAMES = ("X", "Y", "Z", "T")
 
-#:  `coordinate` types understood by cf_xarray.
+#:  ``coordinate`` types understood by cf_xarray.
 _COORD_NAMES = ("longitude", "latitude", "vertical", "time")
 
 #:  Cell measures understood by cf_xarray.
@@ -200,8 +200,9 @@ def _get_custom_criteria(
     obj: DataArray | Dataset, key: Hashable, criteria: Mapping | None = None
 ) -> list[Hashable]:
     """
-    Translate from axis, coord, or custom name to variable name optionally
-    using ``custom_criteria``
+    Translate from axis, coord, or custom name to variable name.
+
+    Optionally use ``custom_criteria``.
 
     Parameters
     ----------
@@ -216,7 +217,8 @@ def _get_custom_criteria(
 
     Returns
     -------
-    List[str], Variable name(s) in parent xarray object that matches axis, coordinate, or custom `key`
+    List[str]
+        Variable name(s) in parent xarray object that matches axis, coordinate, or custom ``key``
     """
 
     try:
@@ -255,7 +257,7 @@ def _get_custom_criteria(
 
 def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
     """
-    Translate from axis or coord name to variable name
+    Translate from axis or coord name to variable name.
 
     Parameters
     ----------
@@ -266,7 +268,8 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
 
     Returns
     -------
-    List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
+    List[str]
+        Variable name(s) in parent xarray object that matches axis or coordinate ``key``.
 
     Notes
     -----
@@ -327,6 +330,7 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
 def _get_measure(obj: DataArray | Dataset, key: str) -> list[str]:
     """
     Translate from cell measures to appropriate variable name.
+
     This function interprets the ``cell_measures`` attribute on DataArrays.
 
     Parameters
@@ -338,7 +342,8 @@ def _get_measure(obj: DataArray | Dataset, key: str) -> list[str]:
 
     Returns
     -------
-    List[str], Variable name(s) in parent xarray object that matches axis or coordinate `key`
+    List[str]
+        Variable name(s) in parent xarray object that matches axis or coordinate `key`
     """
 
     if isinstance(obj, DataArray):
@@ -366,6 +371,7 @@ def _get_measure(obj: DataArray | Dataset, key: str) -> list[str]:
 def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     """
     Translate from key (either CF key or variable name) to its bounds' variable names.
+
     This function interprets the ``bounds`` attribute on DataArrays.
 
     Parameters
@@ -377,7 +383,8 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
 
     Returns
     -------
-    List[str], Variable name(s) in parent xarray object that are bounds of `key`
+    List[str]
+        Variable name(s) in parent xarray object that are bounds of `key`
     """
 
     if isinstance(obj, DataArray):
@@ -396,18 +403,20 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
 def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
     """
     Translate from grid mapping name attribute to appropriate variable name.
+
     This function interprets the ``grid_mapping`` attribute on DataArrays.
 
     Parameters
     ----------
     obj : DataArray, Dataset
-        DataArray belonging to the coordinate to be checked
+        DataArray belonging to the coordinate to be checked.
     key : str
         key to check for.
 
     Returns
     -------
-    List[str], Variable name(s) in parent xarray object that matches grid_mapping_name `key`
+    List[str]
+        Variable name(s) in parent xarray object that matches grid_mapping_name `key`
     """
 
     if isinstance(obj, DataArray):
@@ -429,9 +438,18 @@ def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
 
 
 def _get_with_standard_name(
-    obj: DataArray | Dataset, name: Hashable | Iterable[Hashable]
+    obj: DataArray | Dataset, name: None | Hashable | Iterable[Hashable]
 ) -> list[Hashable]:
-    """returns a list of variable names with standard name == name."""
+    """
+    Get list of variable names with standard name == name.
+
+    Parameters
+    ----------
+    obj : DataArray, Dataset
+        Object to check
+    name : Hashable, Iterable[Hashable], optional
+        Standard name
+    """
     if name is None:
         return []
 
@@ -546,6 +564,7 @@ _DEFAULT_KEY_MAPPERS: Mapping[str, tuple[Mapper, ...]] = {
 def _guess_bounds(da, dim=None, out_dim="bounds"):
     """
     Guess bounds values given a 1D or 2D coordinate variable.
+
     Assumes equal spacing on either side of the coordinate label.
     This is a coarse approximation, especially for 2D bounds on curvilinear grids.
     """
@@ -571,10 +590,8 @@ def _guess_bounds(da, dim=None, out_dim="bounds"):
 
 def _build_docstring(func):
     """
-    Builds a nice docstring for wrapped functions, stating what key words
-    can be used for arguments.
+    Build a nice docstring for wrapped functions stating all valid kwargs.
     """
-
     sig = inspect.signature(func)
     string = ""
     for k in set(sig.parameters.keys()) & set(_DEFAULT_KEY_MAPPERS):
@@ -731,7 +748,7 @@ def _getitem(
     accessor : CFAccessor
     key : str, List[str]
     skip : str, optional
-        One of ["coords", "measures"], avoid clashes with special coord names
+        One of ["coords", "measures"], avoid clashes with special coord names.
     """
 
     obj = accessor._obj
@@ -1120,82 +1137,143 @@ class CFAccessor:
 
     def __eq__(self, other) -> DataArray:  # type: ignore
         """
-        Compare flag values against `other`.
+        Compare flag values against ``other``.
 
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        ``other`` must be in the 'flag_meanings' attribute.
+        ``other`` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
+
+        Parameters
+        ----------
+        other : DataArray
+            DataArray to compare to.
+
+        Returns
+        -------
+        bool
+            True if the two DataArrays are equal.
         """
         return self._extract_flags([other])[other].rename(self._obj.name)
 
     def __ne__(self, other) -> DataArray:  # type: ignore
         """
-        Compare flag values against `other`.
+        Compare flag values against ``other``.
 
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        ``other`` must be in the 'flag_meanings' attribute.
+        ``other`` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
+
+        Parameters
+        ----------
+        other : DataArray
+            DataArray to compare to.
+
+        Returns
+        -------
+        bool
+            True if the two DataArrays are not equal.
         """
         return ~self._extract_flags([other])[other].rename(self._obj.name)
 
     def __lt__(self, other) -> DataArray:
         """
-        Compare flag values against `other`.
+        Compare flag values against ``other``.
 
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        ``other`` must be in the 'flag_meanings' attribute.
+        ``other`` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
+
+        Parameters
+        ----------
+        other : DataArray
+            DataArray to compare to.
+
+        Returns
+        -------
+        bool
+            True if self is less than other.
         """
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj < flag_dict[other].flag_value
 
     def __le__(self, other) -> DataArray:
         """
-        Compare flag values against `other`.
+        Compare flag values against ``other``.
 
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        ``other`` must be in the 'flag_meanings' attribute.
+        ``other`` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
+
+        Parameters
+        ----------
+        other : DataArray
+            DataArray to compare to.
+
+        Returns
+        -------
+        bool
+            True if self is less than or equal to other.
         """
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj <= flag_dict[other].flag_value
 
     def __gt__(self, other) -> DataArray:
         """
-        Compare flag values against `other`.
+        Compare flag values against ``other``.
 
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        ``other`` must be in the 'flag_meanings' attribute.
+        ``other`` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
+
+        Parameters
+        ----------
+        other : DataArray
+            DataArray to compare to.
+
+        Returns
+        -------
+        bool
+            True if self is greater than other.
         """
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj > flag_dict[other].flag_value
 
     def __ge__(self, other) -> DataArray:
         """
-        Compare flag values against `other`.
+        Compare flag values against ``other``.
 
-        `other` must be in the 'flag_meanings' attribute.
-        `other` is mapped to the corresponding value in the 'flag_values' attribute, and then
+        ``other`` must be in the 'flag_meanings' attribute.
+        ``other`` is mapped to the corresponding value in the 'flag_values' attribute, and then
         compared.
+
+        Parameters
+        ----------
+        other : DataArray
+            DataArray to compare to.
+
+        Returns
+        -------
+        bool
+            True if self is greater than or equal to other.
         """
         flag_dict = self._assert_valid_other_comparison(other)
         return self._obj >= flag_dict[other].flag_value
 
     def isin(self, test_elements) -> DataArray:
-        """Test each value in the array for whether it is in test_elements.
+        """
+        Test each value in the array for whether it is in test_elements.
 
         Parameters
         ----------
         test_elements : array_like, 1D
-            The values against which to test each value of `element`.
+            The values against which to test each value of ``element``.
             These must be in "flag_meanings" attribute, and are mapped
             to the corresponding value in "flag_values" before passing
-            that on to DataArray.isin.
+            that on to `DataArray.isin`.
 
         Returns
         -------
-        isin : DataArray
+        DataArray
             Has the same type and shape as this object, but with a bool dtype.
         """
         if not isinstance(self._obj, DataArray):
@@ -1285,10 +1363,11 @@ class CFAccessor:
         key_mappers: MutableMapping[str, tuple[Mapper, ...]],
     ):
         """
-        Processes a function's signature, args, kwargs:
+        Processes a function's signature args, kwargs.
+
         1. Binds ``*args`` so that everything is a Mapping from kwarg name to values
         2. Calls ``_rewrite_values`` to rewrite any special CF names to normal xarray names.
-           This uses ``key_mappers``
+           This uses ``key_mappers``.
         3. Unpacks arguments if necessary before returning them.
         """
         sig = inspect.signature(func, follow_wrapped=True)
@@ -1346,7 +1425,7 @@ class CFAccessor:
             given CF "special" name to an xarray name.
         var_kws : List[str]
             List of variable kwargs that need special treatment.
-            e.g. **indexers_kwargs in isel
+            e.g. ``**indexers_kwargs`` in isel
 
         Returns
         -------
@@ -1438,6 +1517,13 @@ class CFAccessor:
 
     @property
     def plot(self):
+        """
+        Extended version of regular ``.plot``.
+
+        See Also
+        --------
+        Dataset.plot
+        """
         return _CFWrappedPlotMethods(self._obj, self)
 
     def describe(self):
@@ -1534,8 +1620,7 @@ class CFAccessor:
     @property
     def axes(self) -> dict[str, list[Hashable]]:
         """
-        Property that returns a dictionary mapping valid Axis standard names for ``.cf[]``
-        to variable names.
+        Mapping valid Axis standard names for ``.cf[]`` to variable names.
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
@@ -1556,8 +1641,7 @@ class CFAccessor:
     @property
     def coordinates(self) -> dict[str, list[Hashable]]:
         """
-        Property that returns a dictionary mapping valid Coordinate standard names for ``.cf[]``
-        to variable names.
+        Mapping valid Coordinate standard names for ``.cf[]`` to variable names.
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
@@ -1570,7 +1654,6 @@ class CFAccessor:
             Dictionary of valid Coordinate names that can be used with ``__getitem__`` or ``.cf[key]``.
             Keys will be the appropriate subset of ``("latitude", "longitude", "vertical", "time")``.
             Values are lists of variable names that match that particular key.
-
         """
         vardict = {key: _get_coords(self._obj, key) for key in _COORD_NAMES}
 
@@ -1579,8 +1662,7 @@ class CFAccessor:
     @property
     def cell_measures(self) -> dict[str, list[Hashable]]:
         """
-        Property that returns a dictionary mapping valid cell measure standard names for ``.cf[]``
-        to variable names.
+        Mapping valid cell measure standard names for ``.cf[]`` to variable names.
 
         This is useful for checking whether a key is valid for indexing, i.e.
         that the attributes necessary to allow indexing by that key exist.
@@ -1627,7 +1709,7 @@ class CFAccessor:
     @property
     def standard_names(self) -> dict[str, list[Hashable]]:
         """
-        Returns a dictionary mapping standard names to variable names.
+        Mapping standard names to variable names.
 
         Returns
         -------
@@ -1650,7 +1732,7 @@ class CFAccessor:
     @property
     def cf_roles(self) -> dict[str, list[Hashable]]:
         """
-        Returns a dictionary mapping cf_role names to variable names.
+        Mapping cf_role names to variable names.
 
         Returns
         -------
@@ -1685,14 +1767,15 @@ class CFAccessor:
         self, name: Hashable, skip_bounds: bool = False, error: bool = True
     ) -> dict[str, list[Hashable]]:
         """
-        Returns a dict mapping
+        Mapping a list of variable names referred to in the appropriate attribute.
+
+        Includes:
             1. "ancillary_variables"
             2. "bounds"
             3. "cell_measures"
             4. "coordinates"
             5. "grid_mapping"
             6. "grid"
-        to a list of variable names referred to in the appropriate attribute
 
         Parameters
         ----------
@@ -1801,7 +1884,7 @@ class CFAccessor:
         skip: str | Iterable[str] | None = None,
     ) -> DataArray | Dataset:
         """
-        Renames variables in object to match names of like-variables in ``other``.
+        Rename variables in object to match names of like-variables in ``other``.
 
         "Likeness" is determined by variables sharing similar attributes. If
         cf_xarray can identify a single "longitude" variable in both this object and
@@ -1813,7 +1896,7 @@ class CFAccessor:
         Parameters
         ----------
         other : DataArray, Dataset
-            Variables will be renamed to match variable names in this xarray object
+            Variables will be renamed to match variable names in this xarray object.
         skip : str, Iterable[str], optional
             Limit the renaming excluding
             ("axes", "bounds", cell_measures", "coordinates", "standard_names")
@@ -1822,7 +1905,7 @@ class CFAccessor:
         Returns
         -------
         DataArray or Dataset
-            with renamed variables
+            With renamed variables.
         """
         if skip is None:
             skip_iter = []
@@ -1918,21 +2001,21 @@ class CFAccessor:
 
     def guess_coord_axis(self, verbose: bool = False) -> DataArray | Dataset:
         """
-        Automagically guesses X, Y, Z, T, latitude, longitude, and adds
-        appropriate attributes. Uses regexes from Metpy and inspired by Iris
-        function of same name.
+        Automagically guesses X, Y, Z, T, latitude, longitude, and adds appropriate attributes.
+
+        Uses regexes from Metpy and inspired by Iris function of same name.
 
         Existing attributes will not be modified.
 
         Parameters
         ----------
         verbose : bool
-            Print extra info to screen
+            Print extra info to screen.
 
         Returns
         -------
         DataArray or Dataset
-            with appropriate attributes added
+            With appropriate attributes added.
         """
         obj = self._obj.copy(deep=False)
         for var in obj.coords.variables:
@@ -1986,27 +2069,34 @@ class CFAccessor:
 
     def differentiate(
         self, coord, *xr_args, positive_upward: bool = False, **xr_kwargs
-    ):
+    ):  # numpydoc ignore=PR01
         """
         Differentiate an xarray object.
 
         Parameters
         ----------
+        coord : Hashable
+            The coordinate used to compute the gradient.
         positive_upward : optional, bool
             Change sign of the derivative based on the ``"positive"`` attribute of ``coord``
             so that positive values indicate increasing upward.
             If ``positive=="down"``, then multiplied by -1.
 
-        Notes
-        -----
-        ``xr_args``, ``xr_kwargs`` are passed directly to the underlying xarray function.
+        Returns
+        -------
+        DataArray or Dataset
+            Differentiated object.
 
         See Also
         --------
         DataArray.cf.differentiate
         Dataset.cf.differentiate
-        xarray.DataArray.differentiate : underlying xarray function
-        xarray.Dataset.differentiate : underlying xarray function
+        xarray.DataArray.differentiate : Underlying xarray function.
+        xarray.Dataset.differentiate : Underlying xarray function.
+
+        Notes
+        -----
+        ``xr_args``, ``xr_kwargs`` are passed directly to the underlying xarray function.
         """
         coord = apply_mapper(
             (_single(_get_coords),), self._obj, coord, error=False, default=[coord]
@@ -2036,6 +2126,7 @@ class CFAccessor:
     ) -> Dataset | DataArray:
         """
         Add canonical CF attributes to variables with standard names.
+
         Attributes are parsed from the official CF standard name table [1]_.
         This function adds an entry to the "history" attribute.
 
@@ -2053,7 +2144,8 @@ class CFAccessor:
 
         Returns
         -------
-        DataArray or Dataset with attributes added.
+        DataArray or Dataset
+            With attributes added.
 
         Notes
         -----
@@ -2142,7 +2234,7 @@ class CFDatasetAccessor(CFAccessor):
 
         Parameters
         ----------
-        key: str, Iterable[str], optional
+        key : str, Iterable[str], optional
             One of
               - axes names: "X", "Y", "Z", "T"
               - coordinate names: "longitude", "latitude", "vertical", "time"
@@ -2171,10 +2263,10 @@ class CFDatasetAccessor(CFAccessor):
         return _getitem(self, key)
 
     @property
-    def formula_terms(self) -> dict[Hashable, dict[str, str]]:
+    def formula_terms(self) -> dict[Hashable, dict[str, str]]:  # numpydoc ignore=SS06
         """
-        Property that returns a dictionary mapping the parametric coordinate's name
-        to a dictionary that maps "standard term names" to actual variable names.
+        Mapping the parametric coordinate's name to a dictionary that maps "standard term names"
+        to actual variable names.
 
         Returns
         -------
@@ -2235,8 +2327,7 @@ class CFDatasetAccessor(CFAccessor):
     @property
     def bounds(self) -> dict[Hashable, list[Hashable]]:
         """
-        Property that returns a dictionary mapping keys
-        to the variable names of their bounds.
+        Mapping keys to the variable names of their bounds.
 
         Returns
         -------
@@ -2273,11 +2364,12 @@ class CFDatasetAccessor(CFAccessor):
         Parameters
         ----------
         key : str
-            Name of variable whose bounds are desired
+            Name of variable whose bounds are desired.
 
         Returns
         -------
         DataArray
+            Representing bounds.
         """
 
         results = self[[key]].cf.bounds.get(key, [])
@@ -2298,6 +2390,7 @@ class CFDatasetAccessor(CFAccessor):
         Returns
         -------
         str
+            Name of dim.
         """
         # In many cases, the bounds variable has the same attrs as the coordinate variable
         # So multiple matches are possible.
@@ -2333,10 +2426,12 @@ class CFDatasetAccessor(CFAccessor):
         output_dim: str = "bounds",
     ):
         """
-        Returns a new object with bounds variables. The bounds values are guessed assuming
-        equal spacing on either side of a coordinate label. The linear estimation is only a
-        coarse approximation, especially 2D bounds on curvilinear grids. It is always better to use
-        bounds generated as part of the grid creation process. This method is purely for convenience.
+        Create a new object with bounds variables.
+
+        The bounds values are guessed assuming equal spacing on either side of a coordinate label.
+        The linear estimation is only a coarse approximation, especially 2D bounds on curvilinear
+        grids. It is always better to use bounds generated as part of the grid creation process.
+        This method is purely for convenience.
 
         Parameters
         ----------
@@ -2351,7 +2446,7 @@ class CFDatasetAccessor(CFAccessor):
         Returns
         -------
         DataArray or Dataset
-            with bounds variables added and appropriate "bounds" attribute set.
+            With bounds variables added and appropriate "bounds" attribute set.
 
         Raises
         ------
@@ -2496,13 +2591,13 @@ class CFDatasetAccessor(CFAccessor):
     @property
     def grid_mapping_names(self) -> dict[str, list[str]]:
         """
-        Property that returns a dictionary mapping the CF grid mapping name
-        to the variable name containing the grid mapping attributes.
+        Mapping the CF grid mapping name to the grid mapping variable name.
 
         Returns
         -------
         dict
-            Dictionary mapping the CF grid mapping name to the grid mapping variable name.
+            Dictionary mapping the CF grid mapping name to the variable name containing
+            the grid mapping attributes.
 
         See Also
         --------
@@ -2549,11 +2644,16 @@ class CFDatasetAccessor(CFAccessor):
             the values are the name to use for the associated vertical coordinate.
         prefix : str, optional
             Prefix for newly created z variables.
-            E.g. ``s_rho`` becomes ``z_rho``
+            E.g. ``s_rho`` becomes ``z_rho``.
 
         Returns
         -------
         None
+            Modifies self inplace.
+
+        See Also
+        --------
+        Dataset.cf.formula_terms
 
         Notes
         -----
@@ -2565,10 +2665,6 @@ class CFDatasetAccessor(CFAccessor):
 
         .. warning::
            Very lightly tested. Please double check the results.
-
-        See Also
-        --------
-        Dataset.cf.formula_terms
         """
         ds = self._obj
 
@@ -2651,10 +2747,10 @@ class CFDatasetAccessor(CFAccessor):
 @xr.register_dataarray_accessor("cf")
 class CFDataArrayAccessor(CFAccessor):
     @property
-    def formula_terms(self) -> dict[str, str]:
+    def formula_terms(self) -> dict[str, str]:  # numpydoc ignore=SS06
         """
-        Property that returns a dictionary mapping the parametric coordinate's name
-        to a dictionary that maps "standard term names" to actual variable names.
+        Mapping the parametric coordinate's name to a dictionary that maps "standard term names"
+        to actual variable names.
 
         Returns
         -------
@@ -2716,12 +2812,7 @@ class CFDataArrayAccessor(CFAccessor):
     @property
     def grid_mapping_name(self) -> str:
         """
-        Get CF grid mapping name associated with this variable.
-
-        Parameters
-        ----------
-        key : str
-            Name of variable whose grid_mapping name is desired.
+        CF grid mapping name associated with this variable.
 
         Returns
         -------
@@ -2737,7 +2828,6 @@ class CFDataArrayAccessor(CFAccessor):
         >>> from cf_xarray.datasets import rotds
         >>> rotds.cf["temp"].cf.grid_mapping_name
         'rotated_latitude_longitude'
-
         """
 
         da = self._obj
@@ -2760,7 +2850,7 @@ class CFDataArrayAccessor(CFAccessor):
 
         Parameters
         ----------
-        key: str, Iterable[str], optional
+        key : str, Iterable[str], optional
             One of
               - axes names: "X", "Y", "Z", "T"
               - coordinate names: "longitude", "latitude", "vertical", "time"
@@ -2774,6 +2864,7 @@ class CFDataArrayAccessor(CFAccessor):
         Returns
         -------
         DataArray
+            At index key.
 
         Raises
         ------
@@ -2865,7 +2956,7 @@ class CFDataArrayAccessor(CFAccessor):
 
         Returns
         -------
-        isin : DataArray
+        DataArray
             Has the same type and shape as this object, but with a bool dtype.
         """
         flags_masks = self.flags.drop_vars(

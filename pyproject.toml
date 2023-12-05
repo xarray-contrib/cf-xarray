@@ -2,7 +2,7 @@
 name = "cf_xarray"
 description = "A convenience wrapper for using CF attributes on xarray objects"
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {file = "LICENSE"}
 keywords = ["xarray", "metadata", "CF conventions"]
 classifiers = [
@@ -136,3 +136,6 @@ module=[
     "xarray.core.pycompat",
 ]
 ignore_missing_imports = true
+
+[tool.coverage.run]
+omit = ["*/tests/*"]

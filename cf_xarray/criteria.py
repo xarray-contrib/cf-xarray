@@ -7,7 +7,7 @@ Copyright (c) 2017 MetPy Developers.
 try:
     import regex as re
 except ImportError:
-    import re  # type: ignore
+    import re  # type: ignore[no-redef]
 
 from collections.abc import Mapping, MutableMapping
 from typing import Any

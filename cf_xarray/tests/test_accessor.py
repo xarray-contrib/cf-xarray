@@ -1489,7 +1489,7 @@ def test_new_standard_name_mappers() -> None:
     )
     assert_identical(forecast.cf.chunk({"realization": 1}), forecast.chunk({"M": 1}))
     assert_identical(forecast.cf.isel({"realization": 1}), forecast.isel({"M": 1}))
-    assert_identical(forecast.cf.isel(**{"realization": 1}), forecast.isel(**{"M": 1}))
+    assert_identical(forecast.cf.isel(realization=1), forecast.isel(M=1))
     assert_identical(
         forecast.cf.groupby("forecast_reference_time.month").mean(),
         forecast.groupby("S.month").mean(),

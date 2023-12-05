@@ -108,7 +108,7 @@ def apply_mapper(
     """
 
     if not isinstance(key, Hashable):
-        if default is None:
+        if default is None:  # type: ignore[unreachable]
             raise ValueError(
                 "`default` must be provided when `key` is not not a valid DataArray name (of hashable type)."
             )
@@ -858,7 +858,7 @@ def _getitem(
         ds = ds.reset_coords()[varnames + coords]
         if isinstance(obj, DataArray):
             if scalar_key:
-                if len(ds.variables) == 1:
+                if len(ds.variables) == 1:  # type: ignore[unreachable]
                     # single dimension coordinates
                     assert coords
                     assert not varnames

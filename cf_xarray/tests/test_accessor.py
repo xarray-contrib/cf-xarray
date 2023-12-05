@@ -2036,3 +2036,16 @@ def test_sgrid():
         "Y": {"jface", "jnode"},
         "Z": {"kface", "knode"},
     }
+
+
+def test_ancillary_variables_extra_dim():
+    ds = xr.Dataset(
+        {
+            "x": (
+                "x",
+                range(10),
+                {"axis": "X", "ancillary_variables": "position_flag"},
+            ),
+        }
+    )
+    assert_identical(ds.cf["X"], ds["x"])

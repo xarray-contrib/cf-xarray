@@ -859,11 +859,14 @@ def _getitem(
 
         if scalar_key:
             if len(allnames) == 1:
-                da: DataArray = ds.reset_coords()[allnames[0]]
-                if allnames[0] in coords:
-                    coords.remove(allnames[0])
+                (name,) = allnames
+                da: DataArray = ds.reset_coords()[name]
+                if name in coords:
+                    coords.remove(name)
                 for k1 in coords:
-                    da.coords[k1] = ds.variables[k1]
+                    var = ds.variables[k1]
+                    if set(var.dims) <= set(da.dims):
+                        da.coords[k1] = ds.variables[k1]
                 return da
             else:
                 raise KeyError(

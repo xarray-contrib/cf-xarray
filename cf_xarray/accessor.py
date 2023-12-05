@@ -490,7 +490,7 @@ def _get_coords(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
 def _variables(func: F) -> F:
     @functools.wraps(func)
     def wrapper(obj: DataArray | Dataset, key: Hashable) -> list[DataArray]:
-        return [obj[k] for k in func(obj, key)]
+        return [obj[k] for k in func(obj, key)]  # type: ignore[misc]
 
     return cast(F, wrapper)
 
@@ -1116,7 +1116,7 @@ class CFAccessor:
             )
         return flag_dict
 
-    def __eq__(self, other) -> DataArray:
+    def __eq__(self, other) -> DataArray:  # type: ignore[override]
         """
         Compare flag values against `other`.
 
@@ -1126,7 +1126,7 @@ class CFAccessor:
         """
         return self._extract_flags([other])[other].rename(self._obj.name)
 
-    def __ne__(self, other) -> DataArray:
+    def __ne__(self, other) -> DataArray:  # type: ignore[override]
         """
         Compare flag values against `other`.
 

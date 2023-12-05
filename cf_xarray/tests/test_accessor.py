@@ -846,7 +846,7 @@ def test_add_bounds_nd_variable() -> None:
 
     # 2D
     expected = (
-        vertices_to_bounds(
+        vertices_to_bounds(  # type: ignore[misc]
             xr.DataArray(
                 np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4),
                 dims=("x", "y"),

@@ -8,7 +8,7 @@ from ..datasets import airds, mollwds, rotds
 try:
     from dask.array import Array as DaskArray
 except ImportError:
-    DaskArray = None  # type: ignore
+    DaskArray = None  # type: ignore[assignment, misc]
 
 
 def test_bounds_to_vertices() -> None:

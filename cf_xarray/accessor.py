@@ -4,13 +4,13 @@ import functools
 import inspect
 import itertools
 import re
-import warnings
 from collections import ChainMap, namedtuple
 from collections.abc import Hashable, Iterable, Mapping, MutableMapping, Sequence
 from datetime import datetime
 from typing import (
     Any,
     Callable,
+    Literal,
     TypeVar,
     Union,
     cast,
@@ -48,6 +48,7 @@ from .utils import (
     _get_version,
     _is_datetime_like,
     always_iterable,
+    emit_user_level_warning,
     invert_mappings,
     parse_cell_methods_attr,
     parse_cf_standard_name_table,
@@ -107,7 +108,7 @@ def apply_mapper(
     """
 
     if not isinstance(key, Hashable):
-        if default is None:
+        if default is None:  # type: ignore[unreachable]
             raise ValueError(
                 "`default` must be provided when `key` is not not a valid DataArray name (of hashable type)."
             )
@@ -224,7 +225,7 @@ def _get_custom_criteria(
     try:
         from regex import match as regex_match
     except ImportError:
-        from re import match as regex_match  # type: ignore
+        from re import match as regex_match  # type: ignore[no-redef]
 
     if isinstance(obj, DataArray):
         obj = obj._to_temp_dataset()
@@ -363,8 +364,6 @@ def _get_measure(obj: DataArray | Dataset, key: str) -> list[str]:
             if key in measures:
                 results.update([measures[key]])
 
-    if isinstance(results, str):
-        return [results]
     return list(results)
 
 
@@ -471,7 +470,7 @@ def _get_all(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     """
     all_mappers: tuple[Mapper] = (
         _get_custom_criteria,
-        functools.partial(_get_custom_criteria, criteria=cf_role_criteria),  # type: ignore
+        functools.partial(_get_custom_criteria, criteria=cf_role_criteria),  # type: ignore[assignment]
         functools.partial(_get_custom_criteria, criteria=grid_mapping_var_criteria),
         _get_axis_coord,
         _get_measure,
@@ -653,10 +652,10 @@ def _getattr(
         ):
             raise AttributeError(
                 f"{obj.__class__.__name__+'.cf'!r} object has no attribute {attr!r}"
-            )
+            ) from None
         raise AttributeError(
             f"{attr!r} is not a valid attribute on the underlying xarray object."
-        )
+        ) from None
 
     if isinstance(attribute, Mapping):
         if not attribute:
@@ -680,7 +679,7 @@ def _getattr(
             newmap.update(dict.fromkeys(inverted[key], value))
         newmap.update({key: attribute[key] for key in unused_keys})
 
-        skip: dict[str, list[Hashable] | None] = {
+        skip: dict[str, list[Literal["coords", "measures"]] | None] = {
             "data_vars": ["coords"],
             "coords": None,
         }
@@ -689,7 +688,7 @@ def _getattr(
                 newmap[key] = _getitem(accessor, key, skip=skip[attr])
         return newmap
 
-    elif isinstance(attribute, Callable):  # type: ignore
+    elif isinstance(attribute, Callable):  # type: ignore[arg-type]
         func: Callable = attribute
 
     else:
@@ -721,7 +720,7 @@ def _getattr(
 def _getitem(
     accessor: CFAccessor,
     key: Hashable,
-    skip: list[Hashable] | None = None,
+    skip: list[Literal["coords", "measures"]] | None = None,
 ) -> DataArray:
     ...
 
@@ -730,15 +729,15 @@ def _getitem(
 def _getitem(
     accessor: CFAccessor,
     key: Iterable[Hashable],
-    skip: list[Hashable] | None = None,
+    skip: list[Literal["coords", "measures"]] | None = None,
 ) -> Dataset:
     ...
 
 
 def _getitem(
-    accessor,
-    key,
-    skip=None,
+    accessor: CFAccessor,
+    key: Hashable | Iterable[Hashable],
+    skip: list[Literal["coords", "measures"]] | None = None,
 ):
     """
     Index into obj using key. Attaches CF associated variables.
@@ -789,7 +788,7 @@ def _getitem(
         measures = accessor._get_all_cell_measures()
     except ValueError:
         measures = []
-        warnings.warn("Ignoring bad cell_measures attribute.", UserWarning)
+        emit_user_level_warning("Ignoring bad cell_measures attribute.", UserWarning)
 
     if isinstance(obj, Dataset):
         grid_mapping_names = list(accessor.grid_mapping_names)
@@ -852,6 +851,7 @@ def _getitem(
             )
             coords.extend(itertools.chain(*extravars.values()))
 
+        ds: Dataset
         if isinstance(obj, DataArray):
             ds = obj._to_temp_dataset()
         else:
@@ -860,7 +860,7 @@ def _getitem(
         if scalar_key:
             if len(allnames) == 1:
                 (name,) = allnames
-                da: DataArray = ds.reset_coords()[name]  # type: ignore
+                da: DataArray = ds.reset_coords()[name]
                 if name in coords:
                     coords.remove(name)
                 for k1 in coords:
@@ -877,18 +877,19 @@ def _getitem(
 
         ds = ds.reset_coords()[varnames + coords]
         if isinstance(obj, DataArray):
-            if scalar_key and len(ds.variables) == 1:
-                # single dimension coordinates
-                assert coords
-                assert not varnames
+            if scalar_key:
+                if len(ds.variables) == 1:  # type: ignore[unreachable]
+                    # single dimension coordinates
+                    assert coords
+                    assert not varnames
 
-                return ds[coords[0]]
+                    return ds[coords[0]]
 
-            elif scalar_key and len(ds.variables) > 1:
-                raise NotImplementedError(
-                    "Not sure what to return when given scalar key for DataArray and it has multiple values. "
-                    "Please open an issue."
-                )
+                else:
+                    raise NotImplementedError(
+                        "Not sure what to return when given scalar key for DataArray and it has multiple values. "
+                        "Please open an issue."
+                    )
 
         return ds.set_coords(coords)
 
@@ -896,7 +897,7 @@ def _getitem(
         raise KeyError(
             f"{kind}.cf does not understand the key {k!r}. "
             f"Use 'repr({kind}.cf)' (or '{kind}.cf' in a Jupyter environment) to see a list of key names that can be interpreted."
-        )
+        ) from None
 
 
 def _possible_x_y_plot(obj, key, skip=None):
@@ -1135,7 +1136,7 @@ class CFAccessor:
             )
         return flag_dict
 
-    def __eq__(self, other) -> DataArray:  # type: ignore
+    def __eq__(self, other) -> DataArray:  # type: ignore[override]
         """
         Compare flag values against ``other``.
 
@@ -1155,7 +1156,7 @@ class CFAccessor:
         """
         return self._extract_flags([other])[other].rename(self._obj.name)
 
-    def __ne__(self, other) -> DataArray:  # type: ignore
+    def __ne__(self, other) -> DataArray:  # type: ignore[override]
         """
         Compare flag values against ``other``.
 
@@ -1328,7 +1329,7 @@ class CFAccessor:
                 coords_iter = coords
             coords = [
                 apply_mapper(
-                    [_single(_get_coords)], self._obj, v, error=False, default=[v]  # type: ignore
+                    [_single(_get_coords)], self._obj, v, error=False, default=[v]  # type: ignore[arg-type]
                 )[0]
                 for v in coords_iter
             ]
@@ -1339,7 +1340,7 @@ class CFAccessor:
                 reduce_dims_iter = list(reduce_dims)
             reduce_dims = [
                 apply_mapper(
-                    [_single(_get_dims)], self._obj, v, error=False, default=[v]  # type: ignore
+                    [_single(_get_dims)], self._obj, v, error=False, default=[v]  # type: ignore[arg-type]
                 )[0]
                 for v in reduce_dims_iter
             ]
@@ -1435,7 +1436,7 @@ class CFAccessor:
 
         # allow multiple return values here.
         # these are valid for .sel, .isel, .coarsen
-        all_mappers = ChainMap(  # type: ignore
+        all_mappers = ChainMap(  # type: ignore[misc]
             key_mappers,
             dict.fromkeys(var_kws, (_get_all,)),
         )
@@ -1531,7 +1532,7 @@ class CFAccessor:
         Print a string repr to screen.
         """
 
-        warnings.warn(
+        emit_user_level_warning(
             "'obj.cf.describe()' will be removed in a future version. "
             "Use instead 'repr(obj.cf)' or 'obj.cf' in a Jupyter environment.",
             DeprecationWarning,
@@ -1695,10 +1696,9 @@ class CFAccessor:
                 bad_vars = list(
                     as_dataset.filter_by_attrs(cell_measures=attr).data_vars.keys()
                 )
-                warnings.warn(
+                emit_user_level_warning(
                     f"Ignoring bad cell_measures attribute: {attr} on {bad_vars}.",
                     UserWarning,
-                    stacklevel=2,
                 )
         measures = {
             key: self._drop_missing_variables(_get_all(self._obj, key)) for key in keys
@@ -1816,9 +1816,9 @@ class CFAccessor:
             except ValueError as e:
                 if error:
                     msg = e.args[0] + " Ignore this error by passing 'error=False'"
-                    raise ValueError(msg)
+                    raise ValueError(msg) from None
                 else:
-                    warnings.warn(
+                    emit_user_level_warning(
                         f"Ignoring bad cell_measures attribute: {attrs_or_encoding['cell_measures']}",
                         UserWarning,
                     )
@@ -1850,7 +1850,7 @@ class CFAccessor:
         missing = set(allvars) - set(self._maybe_to_dataset()._variables)
         if missing:
             if OPTIONS["warn_on_missing_variables"]:
-                warnings.warn(
+                emit_user_level_warning(
                     f"Variables {missing!r} not found in object but are referred to in the CF attributes.",
                     UserWarning,
                 )
@@ -1963,7 +1963,7 @@ class CFAccessor:
 
         # Rename and warn
         if conflicts:
-            warnings.warn(
+            emit_user_level_warning(
                 "Conflicting variables skipped:\n"
                 + "\n".join(
                     [
@@ -2684,10 +2684,12 @@ class CFDatasetAccessor(CFAccessor):
                 try:
                     zname = outnames[dim]
                 except KeyError:
-                    raise KeyError("Your `outnames` need to include a key of `dim`.")
+                    raise KeyError(
+                        "Your `outnames` need to include a key of `dim`."
+                    ) from None
 
             else:
-                warnings.warn(
+                emit_user_level_warning(
                     "`prefix` is being deprecated; use `outnames` instead.",
                     DeprecationWarning,
                 )

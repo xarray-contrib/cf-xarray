@@ -14,8 +14,9 @@ OPTIONS: MutableMapping[str, Any] = {
 }
 
 
-class set_options:
-    """Set options for cf-xarray in a controlled context.
+class set_options:  # numpydoc ignore=PR01,PR02
+    """
+    Set options for cf-xarray in a controlled context.
 
     Parameters
     ----------
@@ -47,7 +48,7 @@ class set_options:
 
     def __init__(self, **kwargs):
         self.old = {}
-        for k, v in kwargs.items():
+        for k in kwargs:
             if k not in OPTIONS:
                 raise ValueError(
                     f"argument name {k!r} is not in the set of valid options {set(OPTIONS)!r}"
@@ -57,7 +58,7 @@ class set_options:
 
     def _apply_update(self, options_dict):
         options_dict = copy.deepcopy(options_dict)
-        for k, v in options_dict.items():
+        for k in options_dict:
             if k == "custom_criteria":
                 options_dict["custom_criteria"] = always_iterable(
                     options_dict["custom_criteria"], allowed=(tuple, list)

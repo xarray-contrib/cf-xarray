@@ -13,7 +13,7 @@ def encode_multi_index_as_compress(ds, idxnames=None):
     Parameters
     ----------
     ds : xarray.Dataset
-        Dataset with at least one MultiIndexed dimension
+        Dataset with at least one MultiIndexed dimension.
     idxnames : hashable or iterable of hashable, optional
         Dimensions that are MultiIndex-ed. If None, will detect all MultiIndex-ed dimensions.
 
@@ -71,7 +71,7 @@ def decode_compress_to_multi_index(encoded, idxnames=None):
     Parameters
     ----------
     encoded : xarray.Dataset
-        Encoded Dataset with variables that use "compression by gathering".capitalize
+        Encoded Dataset with variables that use "compression by gathering".capitalize.
     idxnames : hashable or iterable of hashable, optional
         Variable names that represents a compressed dimension. These variables must have
         the attribute ``"compress"``. If None, will detect all indexes with a ``"compress"``

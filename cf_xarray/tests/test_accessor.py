@@ -846,7 +846,7 @@ def test_add_bounds_nd_variable() -> None:
 
     # 2D
     expected = (
-        vertices_to_bounds(  # type: ignore
+        vertices_to_bounds(  # type: ignore[misc]
             xr.DataArray(
                 np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4),
                 dims=("x", "y"),
@@ -1090,7 +1090,7 @@ def test_docstring() -> None:
     assert "present in .indexes" in airds.cf.resample.__doc__
 
     # Make sure docs are up to date
-    get_all_doc: str = cf_xarray.accessor._get_all.__doc__  # type: ignore
+    get_all_doc: str = cf_xarray.accessor._get_all.__doc__  # type: ignore[assignment]
     all_keys = (
         cf_xarray.accessor._AXIS_NAMES
         + cf_xarray.accessor._COORD_NAMES
@@ -1489,7 +1489,7 @@ def test_new_standard_name_mappers() -> None:
     )
     assert_identical(forecast.cf.chunk({"realization": 1}), forecast.chunk({"M": 1}))
     assert_identical(forecast.cf.isel({"realization": 1}), forecast.isel({"M": 1}))
-    assert_identical(forecast.cf.isel(**{"realization": 1}), forecast.isel(**{"M": 1}))  # type: ignore
+    assert_identical(forecast.cf.isel(realization=1), forecast.isel(M=1))
     assert_identical(
         forecast.cf.groupby("forecast_reference_time.month").mean(),
         forecast.groupby("S.month").mean(),
@@ -1770,7 +1770,7 @@ def test_add_canonical_attributes(override, skip, verbose, capsys):
     # Catch print
     captured = capsys.readouterr()
     if not verbose:
-        captured.out == ""
+        assert captured.out == ""
 
     # Attributes have been added
     for var in sum(ds.cf.standard_names.values(), []):
@@ -2036,3 +2036,16 @@ def test_sgrid():
         "Y": {"jface", "jnode"},
         "Z": {"kface", "knode"},
     }
+
+
+def test_ancillary_variables_extra_dim():
+    ds = xr.Dataset(
+        {
+            "x": (
+                "x",
+                range(10),
+                {"axis": "X", "ancillary_variables": "position_flag"},
+            ),
+        }
+    )
+    assert_identical(ds.cf["X"], ds["x"])

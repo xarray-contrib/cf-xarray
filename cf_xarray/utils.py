@@ -1,3 +1,6 @@
+import inspect
+import os
+import warnings
 from collections import defaultdict
 from collections.abc import Iterable
 from typing import Any
@@ -94,7 +97,7 @@ def parse_cf_standard_name_table(source=None):
 
     # Build dictionaries
     info = {}
-    table: dict = {}
+    table = {}
     aliases = {}
     for child in root:
         if child.tag == "entry":
@@ -121,3 +124,46 @@ def _get_version():
     except ImportError:
         pass
     return __version__
+
+
+def find_stack_level(test_mode=False) -> int:
+    """Find the first place in the stack that is not inside xarray.
+
+    This is unless the code emanates from a test, in which case we would prefer
+    to see the xarray source.
+
+    This function is taken from pandas.
+
+    Parameters
+    ----------
+    test_mode : bool
+        Flag used for testing purposes to switch off the detection of test
+        directories in the stack trace.
+
+    Returns
+    -------
+    stacklevel : int
+        First level in the stack that is not part of xarray.
+    """
+    import cf_xarray as cfxr
+
+    pkg_dir = os.path.dirname(cfxr.__file__)
+    test_dir = os.path.join(pkg_dir, "tests")
+
+    # https://stackoverflow.com/questions/17407119/python-inspect-stack-is-slow
+    frame = inspect.currentframe()
+    n = 0
+    while frame:
+        fname = inspect.getfile(frame)
+        if fname.startswith(pkg_dir) and (not fname.startswith(test_dir) or test_mode):
+            frame = frame.f_back
+            n += 1
+        else:
+            break
+    return n
+
+
+def emit_user_level_warning(message, category=None):
+    """Emit a warning at the user level by inspecting the stack trace."""
+    stacklevel = find_stack_level()
+    warnings.warn(message, category=category, stacklevel=stacklevel)

@@ -7,7 +7,7 @@ Copyright (c) 2017 MetPy Developers.
 try:
     import regex as re
 except ImportError:
-    import re  # type: ignore
+    import re  # type: ignore[no-redef]
 
 from collections.abc import Mapping, MutableMapping
 from typing import Any
@@ -128,7 +128,7 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, tuple]] = {
 coordinate_criteria["time"] = coordinate_criteria["T"]
 
 # "long_name" and "standard_name" criteria are the same. For convenience.
-for coord, attrs in coordinate_criteria.items():
+for coord in coordinate_criteria:
     coordinate_criteria[coord]["long_name"] = coordinate_criteria[coord][
         "standard_name"
     ]

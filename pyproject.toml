@@ -2,7 +2,7 @@
 name = "cf_xarray"
 description = "A convenience wrapper for using CF attributes on xarray objects"
 readme = "README.rst"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = {file = "LICENSE"}
 keywords = ["xarray", "metadata", "CF conventions"]
 classifiers = [
@@ -65,13 +65,14 @@ exclude = [
     "doc",
 ]
 # E402: module level import not at top of file
-# E501: line too long - let black worry about that
-# E731: do not assign a lambda expression, use a def
+# E501: line too long - let ruff worry about that
 ignore = [
     "E402",
     "E501",
-    "E731",
+    "B018",
+    "B015",
 ]
+[tool.ruff.lint]
 select = [
     # Pyflakes
     "F",
@@ -83,8 +84,11 @@ select = [
     # Pyupgrade
     "UP",
 ]
+extend-select = [
+  "B",  # flake8-bugbear
+]
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 known-first-party = ["cf_xarray"]
 known-third-party = [
     "dask",
@@ -98,6 +102,7 @@ known-third-party = [
     "sphinx_autosummary_accessors",
     "xarray"
 ]
+
 
 [tool.pytest]
 python_files = "test_*.py"
@@ -123,6 +128,9 @@ exclude = "doc|flycheck"
 files = "cf_xarray/"
 show_error_codes = true
 warn_unused_ignores = true
+warn_unreachable = true
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+
 
 [[tool.mypy.overrides]]
 module=[
@@ -136,3 +144,6 @@ module=[
     "xarray.core.pycompat",
 ]
 ignore_missing_imports = true
+
+[tool.coverage.run]
+omit = ["*/tests/*"]

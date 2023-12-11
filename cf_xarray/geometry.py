@@ -438,8 +438,8 @@ def cf_to_lines(ds: xr.Dataset):
         geoms = np.where(np.diff(offset2) == 1, lines[offset2[:-1]], multilines)
 
     return xr.DataArray(geoms, dims=part_node_count.dims, coords=part_node_count.coords)
-  
-  
+
+
   def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:
     """
     Converts a regular 2D lat/lon grid to a 2D array of shapely polygons.

@@ -49,6 +49,83 @@ def geometry_ds():
     return cf_ds, shp_ds
 
 
+@pytest.fixture
+def geometry_line_ds():
+    from shapely.geometry import LineString, MultiLineString
+
+    # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
+    geoms = np.empty(3, dtype=object)
+    geoms[:] = [
+        MultiLineString([[[0, 0], [1, 2]], [[4, 4], [5, 6]]]),
+        LineString([[0, 0], [1, 0], [1, 1]]),
+        LineString([[1.0, 1.0], [2.0, 2.0], [1.7, 9.5]]),
+    ]
+
+    ds = xr.Dataset()
+    shp_da = xr.DataArray(geoms, dims=("index",), name="geometry")
+
+    cf_ds = ds.assign(
+        x=xr.DataArray(
+            [0, 1, 4, 5, 0, 1, 1, 1.0, 2.0, 1.7], dims=("node",), attrs={"axis": "X"}
+        ),
+        y=xr.DataArray(
+            [0, 2, 4, 6, 0, 0, 1, 1.0, 2.0, 9.5], dims=("node",), attrs={"axis": "Y"}
+        ),
+        part_node_count=xr.DataArray([4, 3, 3], dims=("index",)),
+        node_count=xr.DataArray([2, 2, 3, 3], dims=("segment",)),
+        crd_x=xr.DataArray([0.0, 0.0, 1.0], dims=("index",), attrs={"nodes": "x"}),
+        crd_y=xr.DataArray([0.0, 0.0, 1.0], dims=("index",), attrs={"nodes": "y"}),
+        geometry_container=xr.DataArray(
+            attrs={
+                "geometry_type": "line",
+                "node_count": "node_count",
+                "part_node_count": "part_node_count",
+                "node_coordinates": "x y",
+                "coordinates": "crd_x crd_y",
+            }
+        ),
+    )
+
+    cf_ds = cf_ds.set_coords(["x", "y", "crd_x", "crd_y"])
+
+    return cf_ds, shp_da
+
+
+@pytest.fixture
+def geometry_line_without_multilines_ds():
+    from shapely.geometry import LineString
+
+    # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
+    geoms = np.empty(2, dtype=object)
+    geoms[:] = [
+        LineString([[0, 0], [1, 0], [1, 1]]),
+        LineString([[1.0, 1.0], [2.0, 2.0], [1.7, 9.5]]),
+    ]
+
+    ds = xr.Dataset()
+    shp_da = xr.DataArray(geoms, dims=("index",), name="geometry")
+
+    cf_ds = ds.assign(
+        x=xr.DataArray([0, 1, 1, 1.0, 2.0, 1.7], dims=("node",), attrs={"axis": "X"}),
+        y=xr.DataArray([0, 0, 1, 1.0, 2.0, 9.5], dims=("node",), attrs={"axis": "Y"}),
+        node_count=xr.DataArray([3, 3], dims=("segment",)),
+        crd_x=xr.DataArray([0.0, 1.0], dims=("index",), attrs={"nodes": "x"}),
+        crd_y=xr.DataArray([0.0, 1.0], dims=("index",), attrs={"nodes": "y"}),
+        geometry_container=xr.DataArray(
+            attrs={
+                "geometry_type": "line",
+                "node_count": "node_count",
+                "node_coordinates": "x y",
+                "coordinates": "crd_x crd_y",
+            }
+        ),
+    )
+
+    cf_ds = cf_ds.set_coords(["x", "y", "crd_x", "crd_y"])
+
+    return cf_ds, shp_da
+
+
 @requires_shapely
 def test_shapely_to_cf(geometry_ds):
     from shapely.geometry import Point
@@ -88,11 +165,44 @@ def test_shapely_to_cf(geometry_ds):
 
 
 @requires_shapely
-def test_shapely_to_cf_errors():
-    from shapely.geometry import LineString, Point
+def test_shapely_to_cf_for_lines_as_da(geometry_line_ds):
+    expected, in_da = geometry_line_ds
 
-    geoms = [LineString([[1, 2], [2, 3]]), LineString([[2, 3, 4], [4, 3, 2]])]
-    with pytest.raises(NotImplementedError, match="Only point geometries conversion"):
+    actual = cfxr.shapely_to_cf(in_da)
+    xr.testing.assert_identical(actual, expected)
+
+    in_da = in_da.assign_coords(index=["a", "b", "c"])
+    actual = cfxr.shapely_to_cf(in_da)
+    xr.testing.assert_identical(actual, expected.assign_coords(index=["a", "b", "c"]))
+
+
+@requires_shapely
+def test_shapely_to_cf_for_lines_as_sequence(geometry_line_ds):
+    expected, in_da = geometry_line_ds
+    actual = cfxr.shapely_to_cf(in_da.values)
+    xr.testing.assert_identical(actual, expected)
+
+
+@requires_shapely
+def test_shapely_to_cf_for_lines_without_multilines(
+    geometry_line_without_multilines_ds,
+):
+    expected, in_da = geometry_line_without_multilines_ds
+    actual = cfxr.shapely_to_cf(in_da)
+    xr.testing.assert_identical(actual, expected)
+
+
+@requires_shapely
+def test_shapely_to_cf_errors():
+    from shapely.geometry import Point, Polygon
+
+    geoms = [
+        Polygon([[1, 1], [1, 3], [3, 3], [1, 1]]),
+        Polygon([[1, 1, 4], [1, 3, 4], [3, 3, 3], [1, 1, 4]]),
+    ]
+    with pytest.raises(
+        NotImplementedError, match="Polygon geometry conversion is not implemented"
+    ):
         cfxr.shapely_to_cf(geoms)
 
     geoms.append(Point(1, 2))
@@ -122,14 +232,45 @@ def test_cf_to_shapely(geometry_ds):
 
 
 @requires_shapely
-def test_cf_to_shapely_errors(geometry_ds):
-    in_ds, expected = geometry_ds
-    in_ds.geometry_container.attrs["geometry_type"] = "line"
-    with pytest.raises(NotImplementedError, match="Only point geometries conversion"):
+def test_cf_to_shapely_for_lines(geometry_line_ds):
+    in_ds, expected = geometry_line_ds
+
+    actual = cfxr.cf_to_shapely(in_ds)
+    assert actual.dims == ("index",)
+    xr.testing.assert_identical(actual.drop_vars(["crd_x", "crd_y"]), expected)
+
+
+@requires_shapely
+def test_cf_to_shapely_for_lines_without_multilines(
+    geometry_line_without_multilines_ds,
+):
+    in_ds, expected = geometry_line_without_multilines_ds
+    actual = cfxr.cf_to_shapely(in_ds)
+    assert actual.dims == ("index",)
+    xr.testing.assert_identical(actual, expected)
+
+    in_ds = in_ds.assign_coords(index=["b", "c"])
+    actual = cfxr.cf_to_shapely(in_ds)
+    assert actual.dims == ("index",)
+    xr.testing.assert_identical(
+        actual.drop_vars(["crd_x", "crd_y"]), expected.assign_coords(index=["b", "c"])
+    )
+
+
+@requires_shapely
+def test_cf_to_shapely_errors(geometry_ds, geometry_line_ds):
+    in_ds, _ = geometry_ds
+    in_ds.geometry_container.attrs["geometry_type"] = "polygon"
+    with pytest.raises(NotImplementedError, match="Polygon geometry"):
         cfxr.cf_to_shapely(in_ds)
 
     in_ds.geometry_container.attrs["geometry_type"] = "punkt"
     with pytest.raises(ValueError, match="Valid CF geometry types are "):
+        cfxr.cf_to_shapely(in_ds)
+
+    in_ds, _ = geometry_line_ds
+    del in_ds.geometry_container.attrs["node_count"]
+    with pytest.raises(ValueError, match="'node_count' must be provided"):
         cfxr.cf_to_shapely(in_ds)
 
 

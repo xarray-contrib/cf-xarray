@@ -140,6 +140,7 @@ module=[
     "pint",
     "matplotlib",
     "pytest",
+    "shapely",
     "shapely.geometry",
     "xarray.core.pycompat",
 ]

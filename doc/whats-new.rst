@@ -3,6 +3,10 @@
 What's New
 ----------
 
+v0.8.7 (Dec 19, 2023)
+=====================
+- Add conversion between CF geometries and Shapely objects for lines. By `Julia Signell`_.
+
 v0.8.5 (Oct 24, 2023)
 =====================
 - Fix for ``get_bounds_dim_name``. By `Deepak Cherian`_.
@@ -248,4 +252,5 @@ v0.1.3
 .. _`Mathias Hauser`: https://github.com/mathause
 .. _`Aidan Heerdegen`: https://github.com/aidanheerdegen
 .. _`Clément Haëck`: https://github.com/Descanonge
+.. _`Julia Signell`: https://github.com/jsignell
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

@@ -149,7 +149,8 @@ def _maybe_panel(textgen, title: str, rich: bool):
     else:
         text = "".join(textgen)
         return title + ":\n" + text
-    
+
+
 def _get_bit_length(dtype):
     # Check if dtype is a numpy dtype, if not, convert it
     if not isinstance(dtype, np.dtype):
@@ -159,6 +160,7 @@ def _get_bit_length(dtype):
     bit_length = 8 * dtype.itemsize
 
     return bit_length
+
 
 def _unpackbits(mask, bit_length):
     # Ensure the array is a numpy array
@@ -173,6 +175,7 @@ def _unpackbits(mask, bit_length):
         output[..., i] = (arr >> i) & 1
 
     return output[..., ::-1]
+
 
 def _max_chars_for_bit_length(bit_length):
     """
@@ -201,6 +204,7 @@ def find_set_bits(mask, value, repeated_masks, bit_length):
         setbits = bitpos[_unpackbits(mask & value, bit_length) == 1]
         return [b if abs(b) in setbits else -b for b in allset]
 
+
 def _format_flags(accessor, rich):
     from .accessor import create_flag_dict
 
@@ -219,7 +223,7 @@ def _format_flags(accessor, rich):
     #     for f, (m, _) in flag_dict.items()
     #     if m is not None and m not in repeated_masks
     # ]
-    
+
     bit_length = _get_bit_length(accessor._obj.dtype)
     mask_width = _max_chars_for_bit_length(bit_length)
     key_width = max(len(key) for key in flag_dict)
@@ -270,7 +274,9 @@ def _format_flags(accessor, rich):
     else:
         rows = []
         for val, bit, key in zip(value_text, bit_text, flag_dict):
-            rows.append(f"{TAB}{_format_cf_name(key, rich):>{key_width}}: {TAB} {val} {bit}")
+            rows.append(
+                f"{TAB}{_format_cf_name(key, rich):>{key_width}}: {TAB} {val} {bit}"
+            )
         return _print_rows("Flag Meanings", rows, rich)
 
 

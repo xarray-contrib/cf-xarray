@@ -1838,23 +1838,23 @@ class TestFlags:
             name = f"flag_{2**i}"
             res = flag_indep.cf.flags[name]
             np.testing.assert_equal(res.to_numpy(), expected[i])
-    
+
     def test_flag_indep_uint16(self) -> None:
         expected = [
-            [ True, False, False, False, False, True],  # bit     1
-            [False,  True, False, False, False, True],  # bit     2
-            [False, False,  True, False, False, True],  # bit     4
-            [False,  True, False,  True, False, True],  # bit     8
-            [False, False, False, False,  True, True],  # bit    16
-            [False, False,  True,  True, False, True],  # bit    32
-            [False, False,  True,  True, False, True],  # bit    64
-            [False, False, False,  True, False, True],  # bit   128
-            [False, False, False,  True,  True, True],  # bit   256
-            [False, False, False,  True,  True, True],  # bit   512
-            [False, False, False, False,  True, True],  # bit  1024
+            [True, False, False, False, False, True],  # bit     1
+            [False, True, False, False, False, True],  # bit     2
+            [False, False, True, False, False, True],  # bit     4
+            [False, True, False, True, False, True],  # bit     8
+            [False, False, False, False, True, True],  # bit    16
+            [False, False, True, True, False, True],  # bit    32
+            [False, False, True, True, False, True],  # bit    64
+            [False, False, False, True, False, True],  # bit   128
+            [False, False, False, True, True, True],  # bit   256
+            [False, False, False, True, True, True],  # bit   512
+            [False, False, False, False, True, True],  # bit  1024
             [False, False, False, False, False, True],  # bit  2048
             [False, False, False, False, False, True],  # bit  4096
-            [False, False, False, False,  True, True],  # bit  8192
+            [False, False, False, False, True, True],  # bit  8192
             [False, False, False, False, False, True],  # bit 16384
             [False, False, False, False, False, True],  # bit 32768
         ]

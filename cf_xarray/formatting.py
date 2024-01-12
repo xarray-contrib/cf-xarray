@@ -164,12 +164,9 @@ def _get_bit_length_and_check_unsigned(dtype):
 
     return bit_length
 
-def _unpackbits(mask):
+def _unpackbits(mask, bit_length):
     # Ensure the array is a numpy array
     arr = np.asarray(mask)
-
-    # Determine the bit length from the dtype
-    bit_length = arr.itemsize * 8
 
     # Create an output array of the appropriate shape
     output_shape = arr.shape + (bit_length,)
@@ -204,10 +201,9 @@ def find_set_bits(mask, value, repeated_masks, bit_length):
         else:
             return [int(np.log2(mask))]
     else:
-        allset = bitpos[_unpackbits(mask) == 1]
-        setbits = bitpos[_unpackbits(mask & value) == 1]
+        allset = bitpos[_unpackbits(mask, bit_length) == 1]
+        setbits = bitpos[_unpackbits(mask & value, bit_length) == 1]
         return [b if abs(b) in setbits else -b for b in allset]
-
 
 def _format_flags(accessor, rich):
     from .accessor import create_flag_dict
@@ -227,7 +223,7 @@ def _format_flags(accessor, rich):
     #     for f, (m, _) in flag_dict.items()
     #     if m is not None and m not in repeated_masks
     # ]
-
+    
     bit_length = _get_bit_length_and_check_unsigned(accessor._obj.dtype)
     mask_width = _max_chars_for_bit_length(bit_length)
     key_width = max(len(key) for key in flag_dict)

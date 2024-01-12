@@ -181,6 +181,18 @@ def _unpackbits(mask):
 
     return output[..., ::-1]
 
+def _max_chars_for_bit_length(bit_length):
+    """
+    Find the maximum characters needed for a fixed-width display
+    for integer values of a certain bit_length. Use calculation
+    for signed integers, since it conservatively will always have
+    enough characters for signed or unsigned.
+    """
+    # Maximum value for signed integers of this bit length
+    max_val = 2 ** (bit_length - 1) - 1
+    # Add 1 for the negative sign
+    return len(str(max_val)) + 1
+
 
 def find_set_bits(mask, value, repeated_masks, bit_length):
     bitpos = np.arange(bit_length)[::-1]
@@ -217,6 +229,8 @@ def _format_flags(accessor, rich):
     # ]
 
     bit_length = _get_bit_length_and_check_unsigned(accessor._obj.dtype)
+    mask_width = _max_chars_for_bit_length(bit_length)
+    key_width = max(len(key) for key in flag_dict)
 
     bit_text = []
     value_text = []
@@ -234,9 +248,9 @@ def _format_flags(accessor, rich):
                 bitstring[abs(b)] = _format_cf_name("1" if b >= 0 else "0", rich)
         text = "".join(bitstring[::-1])
         value_text.append(
-            f"{mask} & {value}"
+            f"{mask:{mask_width}} & {value}"
             if key in excl_flags and value is not None
-            else str(mask)
+            else f"{mask:{mask_width}}"
         )
         bit_text.append(text if rich else f" / Bit: {text}")
 
@@ -264,7 +278,7 @@ def _format_flags(accessor, rich):
     else:
         rows = []
         for val, bit, key in zip(value_text, bit_text, flag_dict):
-            rows.append(f"{TAB}{_format_cf_name(key, rich)}: {TAB} {val} {bit}")
+            rows.append(f"{TAB}{_format_cf_name(key, rich):>{key_width}}: {TAB} {val} {bit}")
         return _print_rows("Flag Meanings", rows, rich)
 
 

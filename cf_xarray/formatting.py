@@ -149,10 +149,41 @@ def _maybe_panel(textgen, title: str, rich: bool):
     else:
         text = "".join(textgen)
         return title + ":\n" + text
+    
+def _get_bit_length_and_check_unsigned(dtype):
+    # Check if dtype is a numpy dtype, if not, convert it
+    if not isinstance(dtype, np.dtype):
+        dtype = np.dtype(dtype)
+
+    # Check if the dtype is an unsigned integer
+    if dtype.kind != 'u':
+        raise TypeError("Data type must be an unsigned integer")
+
+    # Calculate the bit length
+    bit_length = 8 * dtype.itemsize
+
+    return bit_length
+
+def _unpackbits(mask):
+    # Ensure the array is a numpy array
+    arr = np.asarray(mask)
+
+    # Determine the bit length from the dtype
+    bit_length = arr.itemsize * 8
+
+    # Create an output array of the appropriate shape
+    output_shape = arr.shape + (bit_length,)
+    output = np.zeros(output_shape, dtype=np.uint8)
+
+    # Unpack bits
+    for i in range(bit_length):
+        output[..., i] = (arr >> i) & 1
+
+    return output[..., ::-1]
 
 
-def find_set_bits(mask, value, repeated_masks):
-    bitpos = np.arange(8)[::-1]
+def find_set_bits(mask, value, repeated_masks, bit_length):
+    bitpos = np.arange(bit_length)[::-1]
     if mask not in repeated_masks:
         if value == 0:
             return [-1]
@@ -161,8 +192,8 @@ def find_set_bits(mask, value, repeated_masks):
         else:
             return [int(np.log2(mask))]
     else:
-        allset = bitpos[np.unpackbits(np.uint8(mask)) == 1]
-        setbits = bitpos[np.unpackbits(np.uint8(mask & value)) == 1]
+        allset = bitpos[_unpackbits(mask) == 1]
+        setbits = bitpos[_unpackbits(mask & value) == 1]
         return [b if abs(b) in setbits else -b for b in allset]
 
 
@@ -184,6 +215,9 @@ def _format_flags(accessor, rich):
     #     for f, (m, _) in flag_dict.items()
     #     if m is not None and m not in repeated_masks
     # ]
+
+    bit_length = _get_bit_length_and_check_unsigned(accessor._obj.dtype)
+
     bit_text = []
     value_text = []
     for key, (mask, value) in flag_dict.items():
@@ -191,8 +225,8 @@ def _format_flags(accessor, rich):
             bit_text.append("✗" if rich else "")
             value_text.append(str(value))
             continue
-        bits = find_set_bits(mask, value, repeated_masks)
-        bitstring = ["."] * 8
+        bits = find_set_bits(mask, value, repeated_masks, bit_length)
+        bitstring = ["."] * bit_length
         if bits == [-1]:
             continue
         else:

@@ -462,7 +462,9 @@ def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:
 
     grid = ds.cf[["latitude", "longitude"]].load()
     bounds = grid.cf.bounds
+    coordinates = grid.cf.coordinates
     dims = grid.cf.dims
+    bounds_dim = grid.cf.get_bounds_dim_name("latitude")
 
     if "latitude" in dims or "longitude" in dims:
         # for 1D lat, lon, this allows them to be
@@ -471,13 +473,23 @@ def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:
 
     assert "latitude" in bounds
     assert "longitude" in bounds
+    (lon,) = coordinates["longitude"]
     (lon_bounds,) = bounds["longitude"]
+    (lat,) = coordinates["latitude"]
     (lat_bounds,) = bounds["latitude"]
 
     with xr.set_options(keep_attrs=True):
-        (points,) = xr.broadcast(grid)
+        broadcasted = xr.broadcast(
+            grid[lon],
+            grid[lat],
+            grid[lon_bounds],
+            grid[lat_bounds],
+            exclude=bounds_dim,
+        )
+        asdict = dict(zip([lon, lat, lon_bounds, lat_bounds], broadcasted))
+        # display(asdict)
+        points = xr.Dataset(asdict)
 
-    bounds_dim = grid.cf.get_bounds_dim_name("latitude")
     points = points.transpose(..., bounds_dim)
     lonbnd = points[lon_bounds].data
     latbnd = points[lat_bounds].data

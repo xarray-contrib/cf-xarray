@@ -2009,6 +2009,7 @@ def test_curvefit() -> None:
         [basin, "Flag Variable"],
         [flag_mix, "Flag Variable"],
         [flag_indep, "Flag Variable"],
+        [flag_indep_uint16, "Flag Variable"],
         [flag_excl, "Flag Variable"],
         [dsg, "Discrete Sampling Geometry"],
     ),

@@ -328,13 +328,13 @@ def lines_to_cf(lines: xr.DataArray | Sequence):
     x = arr[:, 0]
     y = arr[:, 1]
 
-    node_count = np.diff(offsets[0])
+    part_node_count = np.diff(offsets[0])
     if len(offsets) == 1:
         indices = offsets[0]
-        part_node_count = node_count
+        node_count = part_node_count
     else:
         indices = np.take(offsets[0], offsets[1])
-        part_node_count = np.diff(indices)
+        node_count = np.diff(indices)
 
     geom_coords = arr.take(indices[:-1], 0)
     crdX = geom_coords[:, 0]
@@ -342,8 +342,8 @@ def lines_to_cf(lines: xr.DataArray | Sequence):
 
     ds = xr.Dataset(
         data_vars={
-            "node_count": xr.DataArray(node_count, dims=("segment",)),
-            "part_node_count": xr.DataArray(part_node_count, dims=(dim,)),
+            "node_count": xr.DataArray(node_count, dims=(dim,)),
+            "part_node_count": xr.DataArray(part_node_count, dims=("part",)),
             "geometry_container": xr.DataArray(
                 attrs={
                     "geometry_type": "line",
@@ -394,7 +394,7 @@ def cf_to_lines(ds: xr.Dataset):
     # Shorthand for convenience
     geo = ds.geometry_container.attrs
 
-    # The features dimension name, defaults to the one of 'part_node_count'
+    # The features dimension name, defaults to the one of 'node_count'
     # or the dimension of the coordinates, if present.
     feat_dim = None
     if "coordinates" in geo:
@@ -405,36 +405,30 @@ def cf_to_lines(ds: xr.Dataset):
     xy = np.stack([ds[x_name].values, ds[y_name].values], axis=-1)
 
     node_count_name = geo.get("node_count")
-    part_node_count_name = geo.get("part_node_count")
+    part_node_count_name = geo.get("part_node_count", node_count_name)
     if node_count_name is None:
         raise ValueError("'node_count' must be provided for line geometries")
     else:
         node_count = ds[node_count_name]
+        feat_dim = feat_dim or "index"
+        if feat_dim in ds.coords:
+            node_count = node_count.assign_coords({feat_dim: ds[feat_dim]})
 
-    offset1 = np.insert(np.cumsum(node_count.values), 0, 0)
+    # first get geometries for all the parts
+    part_node_count = ds[part_node_count_name]
+    offset1 = np.insert(np.cumsum(part_node_count.values), 0, 0)
     lines = from_ragged_array(GeometryType.LINESTRING, xy, offsets=(offset1,))
 
-    if part_node_count_name is None:
-        # No part_node_count means there are no multilines
-        # And if we had no coordinates, then the dimension defaults to "index"
-        feat_dim = feat_dim or "index"
-        part_node_count = xr.DataArray(node_count.values, dims=(feat_dim,))
-        if feat_dim in ds.coords:
-            part_node_count = part_node_count.assign_coords({feat_dim: ds[feat_dim]})
+    # get index of offset2 values that are edges for part_node_count
+    offset2 = np.nonzero(
+        np.isin(offset1, np.insert(np.cumsum(node_count), 0, 0))
+    )[0]
 
-        geoms = lines
-    else:
-        part_node_count = ds[part_node_count_name]
+    multilines = from_ragged_array(
+        GeometryType.MULTILINESTRING, xy, offsets=(offset1, offset2)
+    )
 
-        # get index of offset1 values that are edges for part_node_count
-        offset2 = np.nonzero(
-            np.isin(offset1, np.insert(np.cumsum(part_node_count), 0, 0))
-        )[0]
-        multilines = from_ragged_array(
-            GeometryType.MULTILINESTRING, xy, offsets=(offset1, offset2)
-        )
+    # get items from lines or multilines depending on number of parts
+    geoms = np.where(np.diff(offset2) == 1, lines[offset2[:-1]], multilines)
 
-        # get items from lines or multilines depending on number of segments
-        geoms = np.where(np.diff(offset2) == 1, lines[offset2[:-1]], multilines)
-
-    return xr.DataArray(geoms, dims=part_node_count.dims, coords=part_node_count.coords)
+    return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)

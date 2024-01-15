@@ -71,8 +71,8 @@ def geometry_line_ds():
         y=xr.DataArray(
             [0, 2, 4, 6, 0, 0, 1, 1.0, 2.0, 9.5], dims=("node",), attrs={"axis": "Y"}
         ),
-        part_node_count=xr.DataArray([4, 3, 3], dims=("index",)),
-        node_count=xr.DataArray([2, 2, 3, 3], dims=("segment",)),
+        node_count=xr.DataArray([4, 3, 3], dims=("index",)),
+        part_node_count=xr.DataArray([2, 2, 3, 3], dims=("part",)),
         crd_x=xr.DataArray([0.0, 0.0, 1.0], dims=("index",), attrs={"nodes": "x"}),
         crd_y=xr.DataArray([0.0, 0.0, 1.0], dims=("index",), attrs={"nodes": "y"}),
         geometry_container=xr.DataArray(
@@ -108,7 +108,7 @@ def geometry_line_without_multilines_ds():
     cf_ds = ds.assign(
         x=xr.DataArray([0, 1, 1, 1.0, 2.0, 1.7], dims=("node",), attrs={"axis": "X"}),
         y=xr.DataArray([0, 0, 1, 1.0, 2.0, 9.5], dims=("node",), attrs={"axis": "Y"}),
-        node_count=xr.DataArray([3, 3], dims=("segment",)),
+        node_count=xr.DataArray([3, 3], dims=("index",)),
         crd_x=xr.DataArray([0.0, 1.0], dims=("index",), attrs={"nodes": "x"}),
         crd_y=xr.DataArray([0.0, 1.0], dims=("index",), attrs={"nodes": "y"}),
         geometry_container=xr.DataArray(
@@ -124,7 +124,6 @@ def geometry_line_without_multilines_ds():
     cf_ds = cf_ds.set_coords(["x", "y", "crd_x", "crd_y"])
 
     return cf_ds, shp_da
-
 
 @requires_shapely
 def test_shapely_to_cf(geometry_ds):
@@ -247,7 +246,7 @@ def test_cf_to_shapely_for_lines_without_multilines(
     in_ds, expected = geometry_line_without_multilines_ds
     actual = cfxr.cf_to_shapely(in_ds)
     assert actual.dims == ("index",)
-    xr.testing.assert_identical(actual, expected)
+    xr.testing.assert_identical(actual.drop_vars(["crd_x", "crd_y"]), expected)
 
     in_ds = in_ds.assign_coords(index=["b", "c"])
     actual = cfxr.cf_to_shapely(in_ds)

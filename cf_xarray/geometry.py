@@ -420,9 +420,7 @@ def cf_to_lines(ds: xr.Dataset):
     lines = from_ragged_array(GeometryType.LINESTRING, xy, offsets=(offset1,))
 
     # get index of offset2 values that are edges for part_node_count
-    offset2 = np.nonzero(
-        np.isin(offset1, np.insert(np.cumsum(node_count), 0, 0))
-    )[0]
+    offset2 = np.nonzero(np.isin(offset1, np.insert(np.cumsum(node_count), 0, 0)))[0]
 
     multilines = from_ragged_array(
         GeometryType.MULTILINESTRING, xy, offsets=(offset1, offset2)

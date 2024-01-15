@@ -125,6 +125,7 @@ def geometry_line_without_multilines_ds():
 
     return cf_ds, shp_da
 
+
 @requires_shapely
 def test_shapely_to_cf(geometry_ds):
     from shapely.geometry import Point

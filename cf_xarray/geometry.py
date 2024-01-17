@@ -76,7 +76,7 @@ def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None 
     Convert a DataArray with shapely geometry objects into a CF-compliant dataset.
 
     .. warning::
-        Only point geometries are currently implemented.
+        Only point and line geometries are currently implemented.
 
     Parameters
     ----------
@@ -143,7 +143,7 @@ def cf_to_shapely(ds: xr.Dataset):
     Convert geometries stored in a CF-compliant way to shapely objects stored in a single variable.
 
     .. warning::
-        Only point geometries are currently implemented.
+        Only point and line geometries are currently implemented.
 
     Parameters
     ----------

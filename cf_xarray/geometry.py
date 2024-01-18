@@ -462,10 +462,10 @@ def polygons_to_cf(polygons: xr.DataArray | Sequence):
     elif len(offsets) >= 2:
         indices = np.take(offsets[0], offsets[1])
         interior_ring = np.isin(offsets[0], indices, invert=True)[:-1].astype(int)
-    
+
         if len(offsets) == 3:
             indices = np.take(indices, offsets[2])
-        
+
         node_count = np.diff(indices)
 
     geom_coords = arr.take(indices[:-1], 0)
@@ -572,10 +572,8 @@ def cf_to_polygons(ds: xr.Dataset):
     # get index of offset2 values that are edges for node_count
     offset3 = np.nonzero(
         np.isin(
-            offset2, 
-            np.nonzero(
-                np.isin(offset1, np.insert(np.cumsum(node_count), 0, 0))
-            )[0]
+            offset2,
+            np.nonzero(np.isin(offset1, np.insert(np.cumsum(node_count), 0, 0)))[0],
         )
     )[0]
     multipolygons = from_ragged_array(

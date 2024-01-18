@@ -173,11 +173,12 @@ def geometry_polygon_without_multipolygons_ds():
     geoms = np.empty(2, dtype=object)
     geoms[:] = [
         Polygon(([50, 0], [40, 15], [30, 0])),
-        Polygon(([70, 50], [60, 65], [50, 50]),
+        Polygon(
+            ([70, 50], [60, 65], [50, 50]),
             [
                 ([55, 55], [60, 60], [75, 55]),
-            ]
-        )
+            ],
+        ),
     ]
 
     ds = xr.Dataset()
@@ -185,10 +186,14 @@ def geometry_polygon_without_multipolygons_ds():
 
     cf_ds = ds.assign(
         x=xr.DataArray(
-            [50, 40, 30, 50, 70, 60, 50, 70, 55, 60, 75, 55], dims=("node",), attrs={"axis": "X"}
+            [50, 40, 30, 50, 70, 60, 50, 70, 55, 60, 75, 55],
+            dims=("node",),
+            attrs={"axis": "X"},
         ),
         y=xr.DataArray(
-            [0, 15, 0, 0, 50, 65, 50, 50, 55, 60, 55, 55], dims=("node",), attrs={"axis": "Y"}
+            [0, 15, 0, 0, 50, 65, 50, 50, 55, 60, 55, 55],
+            dims=("node",),
+            attrs={"axis": "Y"},
         ),
         node_count=xr.DataArray([4, 8], dims=("index",)),
         part_node_count=xr.DataArray([4, 4, 4], dims=("part",)),
@@ -214,19 +219,22 @@ def geometry_polygon_without_multipolygons_ds():
 
 @pytest.fixture
 def geometry_polygon_ds():
-    from shapely.geometry import Polygon, MultiPolygon
+    from shapely.geometry import MultiPolygon, Polygon
 
     # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
     geoms = np.empty(2, dtype=object)
     geoms[:] = [
-        MultiPolygon([
-            (
-                ([20, 0], [10, 15], [0, 0]),
-                [
-                    ([5, 5], [10, 10], [15, 5]),
-                ]
-            ), (([20, 20], [10, 35], [0, 20]),),
-        ]),
+        MultiPolygon(
+            [
+                (
+                    ([20, 0], [10, 15], [0, 0]),
+                    [
+                        ([5, 5], [10, 10], [15, 5]),
+                    ],
+                ),
+                (([20, 20], [10, 35], [0, 20]),),
+            ]
+        ),
         Polygon(([50, 0], [40, 15], [30, 0])),
     ]
 
@@ -235,10 +243,14 @@ def geometry_polygon_ds():
 
     cf_ds = ds.assign(
         x=xr.DataArray(
-            [20, 10, 0, 20, 5, 10, 15, 5, 20, 10, 0, 20, 50, 40, 30, 50], dims=("node",), attrs={"axis": "X"}
+            [20, 10, 0, 20, 5, 10, 15, 5, 20, 10, 0, 20, 50, 40, 30, 50],
+            dims=("node",),
+            attrs={"axis": "X"},
         ),
         y=xr.DataArray(
-            [0, 15, 0, 0, 5, 10, 5, 5, 20, 35, 20, 20, 0, 15, 0, 0], dims=("node",), attrs={"axis": "Y"}
+            [0, 15, 0, 0, 5, 10, 5, 5, 20, 35, 20, 20, 0, 15, 0, 0],
+            dims=("node",),
+            attrs={"axis": "Y"},
         ),
         node_count=xr.DataArray([12, 4], dims=("index",)),
         part_node_count=xr.DataArray([4, 4, 4, 4], dims=("part",)),
@@ -450,6 +462,7 @@ def test_cf_to_shapely_for_polygons_without_multipolygons(
         actual.drop_vars(["crd_x", "crd_y"]), expected.assign_coords(index=["b", "c"])
     )
 
+
 @requires_shapely
 def test_cf_to_shapely_for_polygons_without_holes(
     geometry_polygon_without_holes_ds,
@@ -466,6 +479,7 @@ def test_cf_to_shapely_for_polygons_without_holes(
         actual.drop_vars(["crd_x", "crd_y"]), expected.assign_coords(index=["b", "c"])
     )
 
+
 @requires_shapely
 def test_cf_to_shapely_errors(geometry_ds, geometry_line_ds, geometry_polygon_ds):
     in_ds, _ = geometry_ds
@@ -477,7 +491,7 @@ def test_cf_to_shapely_errors(geometry_ds, geometry_line_ds, geometry_polygon_ds
     del in_ds.geometry_container.attrs["node_count"]
     with pytest.raises(ValueError, match="'node_count' must be provided"):
         cfxr.cf_to_shapely(in_ds)
-    
+
     in_ds, _ = geometry_polygon_ds
     del in_ds.geometry_container.attrs["node_count"]
     with pytest.raises(ValueError, match="'node_count' must be provided"):

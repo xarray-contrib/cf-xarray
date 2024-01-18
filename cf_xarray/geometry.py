@@ -560,14 +560,12 @@ def cf_to_polygons(ds: xr.Dataset):
     offset1 = np.insert(np.cumsum(part_node_count.values), 0, 0)
 
     if interior_ring_name is None:
-        offset2 = list(range(len(offset1)))
+        offset2 = np.array(list(range(len(offset1))))
     else:
         interior_ring = ds[interior_ring_name]
         if not interior_ring[0] == 0:
             raise ValueError("coordinate array must start with an exterior ring")
-        offset2 = np.append(
-            np.where(interior_ring == 0)[0], np.array([len(part_node_count)])
-        )
+        offset2 = np.append(np.where(interior_ring == 0)[0], [len(part_node_count)])
 
     polygons = from_ragged_array(GeometryType.POLYGON, xy, offsets=(offset1, offset2))
 

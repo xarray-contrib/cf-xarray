@@ -126,6 +126,142 @@ def geometry_line_without_multilines_ds():
     return cf_ds, shp_da
 
 
+@pytest.fixture
+def geometry_polygon_without_holes_ds():
+    from shapely.geometry import Polygon
+
+    # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
+    geoms = np.empty(2, dtype=object)
+    geoms[:] = [
+        Polygon(([50, 0], [40, 15], [30, 0])),
+        Polygon(([70, 50], [60, 65], [50, 50])),
+    ]
+
+    ds = xr.Dataset()
+    shp_da = xr.DataArray(geoms, dims=("index",), name="geometry")
+
+    cf_ds = ds.assign(
+        x=xr.DataArray(
+            [50, 40, 30, 50, 70, 60, 50, 70], dims=("node",), attrs={"axis": "X"}
+        ),
+        y=xr.DataArray(
+            [0, 15, 0, 0, 50, 65, 50, 50], dims=("node",), attrs={"axis": "Y"}
+        ),
+        node_count=xr.DataArray([4, 4], dims=("index",)),
+        crd_x=xr.DataArray([50, 70], dims=("index",), attrs={"nodes": "x"}),
+        crd_y=xr.DataArray([0, 50], dims=("index",), attrs={"nodes": "y"}),
+        geometry_container=xr.DataArray(
+            attrs={
+                "geometry_type": "polygon",
+                "node_count": "node_count",
+                "node_coordinates": "x y",
+                "coordinates": "crd_x crd_y",
+            }
+        ),
+    )
+
+    cf_ds = cf_ds.set_coords(["x", "y", "crd_x", "crd_y"])
+
+    return cf_ds, shp_da
+
+
+@pytest.fixture
+def geometry_polygon_without_multipolygons_ds():
+    from shapely.geometry import Polygon
+
+    # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
+    geoms = np.empty(2, dtype=object)
+    geoms[:] = [
+        Polygon(([50, 0], [40, 15], [30, 0])),
+        Polygon(([70, 50], [60, 65], [50, 50]),
+            [
+                ([55, 55], [60, 60], [75, 55]),
+            ]
+        )
+    ]
+
+    ds = xr.Dataset()
+    shp_da = xr.DataArray(geoms, dims=("index",), name="geometry")
+
+    cf_ds = ds.assign(
+        x=xr.DataArray(
+            [50, 40, 30, 50, 70, 60, 50, 70, 55, 60, 75, 55], dims=("node",), attrs={"axis": "X"}
+        ),
+        y=xr.DataArray(
+            [0, 15, 0, 0, 50, 65, 50, 50, 55, 60, 55, 55], dims=("node",), attrs={"axis": "Y"}
+        ),
+        node_count=xr.DataArray([4, 8], dims=("index",)),
+        part_node_count=xr.DataArray([4, 4, 4], dims=("part",)),
+        interior_ring=xr.DataArray([0, 0, 1], dims=("part",)),
+        crd_x=xr.DataArray([50, 70], dims=("index",), attrs={"nodes": "x"}),
+        crd_y=xr.DataArray([0, 50], dims=("index",), attrs={"nodes": "y"}),
+        geometry_container=xr.DataArray(
+            attrs={
+                "geometry_type": "polygon",
+                "node_count": "node_count",
+                "part_node_count": "part_node_count",
+                "interior_ring": "interior_ring",
+                "node_coordinates": "x y",
+                "coordinates": "crd_x crd_y",
+            }
+        ),
+    )
+
+    cf_ds = cf_ds.set_coords(["x", "y", "crd_x", "crd_y"])
+
+    return cf_ds, shp_da
+
+
+@pytest.fixture
+def geometry_polygon_ds():
+    from shapely.geometry import Polygon, MultiPolygon
+
+    # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
+    geoms = np.empty(2, dtype=object)
+    geoms[:] = [
+        MultiPolygon([
+            (
+                ([20, 0], [10, 15], [0, 0]),
+                [
+                    ([5, 5], [10, 10], [15, 5]),
+                ]
+            ), (([20, 20], [10, 35], [0, 20]),),
+        ]),
+        Polygon(([50, 0], [40, 15], [30, 0])),
+    ]
+
+    ds = xr.Dataset()
+    shp_da = xr.DataArray(geoms, dims=("index",), name="geometry")
+
+    cf_ds = ds.assign(
+        x=xr.DataArray(
+            [20, 10, 0, 20, 5, 10, 15, 5, 20, 10, 0, 20, 50, 40, 30, 50], dims=("node",), attrs={"axis": "X"}
+        ),
+        y=xr.DataArray(
+            [0, 15, 0, 0, 5, 10, 5, 5, 20, 35, 20, 20, 0, 15, 0, 0], dims=("node",), attrs={"axis": "Y"}
+        ),
+        node_count=xr.DataArray([12, 4], dims=("index",)),
+        part_node_count=xr.DataArray([4, 4, 4, 4], dims=("part",)),
+        interior_ring=xr.DataArray([0, 1, 0, 0], dims=("part",)),
+        crd_x=xr.DataArray([20, 50], dims=("index",), attrs={"nodes": "x"}),
+        crd_y=xr.DataArray([0, 0], dims=("index",), attrs={"nodes": "y"}),
+        geometry_container=xr.DataArray(
+            attrs={
+                "geometry_type": "polygon",
+                "node_count": "node_count",
+                "part_node_count": "part_node_count",
+                "interior_ring": "interior_ring",
+                "node_coordinates": "x y",
+                "coordinates": "crd_x crd_y",
+            }
+        ),
+    )
+
+    cf_ds = cf_ds.set_coords(["x", "y", "crd_x", "crd_y"])
+
+    return cf_ds, shp_da
+
+
 @requires_shapely
 def test_shapely_to_cf(geometry_ds):
     from shapely.geometry import Point
@@ -193,19 +329,51 @@ def test_shapely_to_cf_for_lines_without_multilines(
 
 
 @requires_shapely
+def test_shapely_to_cf_for_polygons_as_da(geometry_polygon_ds):
+    expected, in_da = geometry_polygon_ds
+
+    actual = cfxr.shapely_to_cf(in_da)
+    xr.testing.assert_identical(actual, expected)
+
+    in_da = in_da.assign_coords(index=["a", "b"])
+    actual = cfxr.shapely_to_cf(in_da)
+    xr.testing.assert_identical(actual, expected.assign_coords(index=["a", "b"]))
+
+
+@requires_shapely
+def test_shapely_to_cf_for_polygons_as_sequence(geometry_polygon_ds):
+    expected, in_da = geometry_polygon_ds
+    actual = cfxr.shapely_to_cf(in_da.values)
+    xr.testing.assert_identical(actual, expected)
+
+
+@requires_shapely
+def test_shapely_to_cf_for_polygons_without_multipolygons(
+    geometry_polygon_without_multipolygons_ds,
+):
+    expected, in_da = geometry_polygon_without_multipolygons_ds
+    actual = cfxr.shapely_to_cf(in_da)
+    xr.testing.assert_identical(actual, expected)
+
+
+@requires_shapely
+def test_shapely_to_cf_for_polygons_without_holes(
+    geometry_polygon_without_holes_ds,
+):
+    expected, in_da = geometry_polygon_without_holes_ds
+    actual = cfxr.shapely_to_cf(in_da)
+    xr.testing.assert_identical(actual, expected)
+
+
+@requires_shapely
 def test_shapely_to_cf_errors():
     from shapely.geometry import Point, Polygon
 
     geoms = [
         Polygon([[1, 1], [1, 3], [3, 3], [1, 1]]),
         Polygon([[1, 1, 4], [1, 3, 4], [3, 3, 3], [1, 1, 4]]),
+        Point(1, 2),
     ]
-    with pytest.raises(
-        NotImplementedError, match="Polygon geometry conversion is not implemented"
-    ):
-        cfxr.shapely_to_cf(geoms)
-
-    geoms.append(Point(1, 2))
     with pytest.raises(ValueError, match="Mixed geometry types are not supported"):
         cfxr.shapely_to_cf(geoms)
 
@@ -258,17 +426,59 @@ def test_cf_to_shapely_for_lines_without_multilines(
 
 
 @requires_shapely
-def test_cf_to_shapely_errors(geometry_ds, geometry_line_ds):
-    in_ds, _ = geometry_ds
-    in_ds.geometry_container.attrs["geometry_type"] = "polygon"
-    with pytest.raises(NotImplementedError, match="Polygon geometry"):
-        cfxr.cf_to_shapely(in_ds)
+def test_cf_to_shapely_for_polygons(geometry_polygon_ds):
+    in_ds, expected = geometry_polygon_ds
 
+    actual = cfxr.cf_to_shapely(in_ds)
+    assert actual.dims == ("index",)
+    xr.testing.assert_identical(actual.drop_vars(["crd_x", "crd_y"]), expected)
+
+
+@requires_shapely
+def test_cf_to_shapely_for_polygons_without_multipolygons(
+    geometry_polygon_without_multipolygons_ds,
+):
+    in_ds, expected = geometry_polygon_without_multipolygons_ds
+    actual = cfxr.cf_to_shapely(in_ds)
+    assert actual.dims == ("index",)
+    xr.testing.assert_identical(actual.drop_vars(["crd_x", "crd_y"]), expected)
+
+    in_ds = in_ds.assign_coords(index=["b", "c"])
+    actual = cfxr.cf_to_shapely(in_ds)
+    assert actual.dims == ("index",)
+    xr.testing.assert_identical(
+        actual.drop_vars(["crd_x", "crd_y"]), expected.assign_coords(index=["b", "c"])
+    )
+
+@requires_shapely
+def test_cf_to_shapely_for_polygons_without_holes(
+    geometry_polygon_without_holes_ds,
+):
+    in_ds, expected = geometry_polygon_without_holes_ds
+    actual = cfxr.cf_to_shapely(in_ds)
+    assert actual.dims == ("index",)
+    xr.testing.assert_identical(actual.drop_vars(["crd_x", "crd_y"]), expected)
+
+    in_ds = in_ds.assign_coords(index=["b", "c"])
+    actual = cfxr.cf_to_shapely(in_ds)
+    assert actual.dims == ("index",)
+    xr.testing.assert_identical(
+        actual.drop_vars(["crd_x", "crd_y"]), expected.assign_coords(index=["b", "c"])
+    )
+
+@requires_shapely
+def test_cf_to_shapely_errors(geometry_ds, geometry_line_ds, geometry_polygon_ds):
+    in_ds, _ = geometry_ds
     in_ds.geometry_container.attrs["geometry_type"] = "punkt"
     with pytest.raises(ValueError, match="Valid CF geometry types are "):
         cfxr.cf_to_shapely(in_ds)
 
     in_ds, _ = geometry_line_ds
+    del in_ds.geometry_container.attrs["node_count"]
+    with pytest.raises(ValueError, match="'node_count' must be provided"):
+        cfxr.cf_to_shapely(in_ds)
+    
+    in_ds, _ = geometry_polygon_ds
     del in_ds.geometry_container.attrs["node_count"]
     with pytest.raises(ValueError, match="'node_count' must be provided"):
         cfxr.cf_to_shapely(in_ds)

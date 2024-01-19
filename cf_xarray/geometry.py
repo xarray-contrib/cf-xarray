@@ -499,12 +499,12 @@ def polygons_to_cf(polygons: xr.DataArray | Sequence):
     if coord is not None:
         ds = ds.assign_coords({dim: coord})
 
-    # Special case when we have no MultiPolygons
+    # Special case when we have no MultiPolygons and no holes
     if len(ds.part_node_count) == len(ds.node_count):
         ds = ds.drop_vars("part_node_count")
         del ds.geometry_container.attrs["part_node_count"]
 
-    # Special case when we have not holes
+    # Special case when we have no holes
     if (ds.interior_ring == 0).all():
         ds = ds.drop_vars("interior_ring")
         del ds.geometry_container.attrs["interior_ring"]

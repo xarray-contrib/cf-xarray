@@ -3,6 +3,11 @@
 What's New
 ----------
 
+v0.8.8 (Jan 19, 2023)
+=====================
+- Add conversion between CF geometries and Shapely objects for polygons. By `Julia Signell`_.
+- Support 32bit wide bit masks. By `Michael St Laurent`_.
+
 v0.8.7 (Dec 19, 2023)
 =====================
 - Add conversion between CF geometries and Shapely objects for lines. By `Julia Signell`_.
@@ -253,4 +258,5 @@ v0.1.3
 .. _`Aidan Heerdegen`: https://github.com/aidanheerdegen
 .. _`Clément Haëck`: https://github.com/Descanonge
 .. _`Julia Signell`: https://github.com/jsignell
+.. _`Michael St Laurent`: https://github.com/mps010160
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

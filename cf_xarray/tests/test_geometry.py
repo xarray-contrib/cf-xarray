@@ -186,7 +186,7 @@ def geometry_polygon_without_multipolygons_ds():
 
     cf_ds = ds.assign(
         x=xr.DataArray(
-            [50, 40, 30, 50, 70, 60, 50, 70, 55, 60, 75, 55],
+            [50, 40, 30, 50, 70, 60, 50, 70, 55, 60, 65, 55],
             dims=("node",),
             attrs={"axis": "X"},
         ),

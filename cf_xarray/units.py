@@ -80,6 +80,7 @@ units = pint.UnitRegistry(
 # ----- end block copied from metpy
 
 # need to insert to make sure this is the first preprocessor
+# This ensures we convert integer `1` to string `"1"`, as needed by pint.
 units.preprocessors.insert(0, str)
 
 # -----

@@ -58,7 +58,6 @@ def test_integer_units():
     assert str(ureg.parse_units(1)) == "dimensionless"
 
 
-@pytest.mark.xfail(reason="not supported by pint, yet: hgrecco/pint#1295")
 def test_udunits_power_syntax():
     """Test that UDUNITS style powers are properly parsed and interpreted."""
     assert ureg("m2 s-2").units == ureg.m**2 / ureg.s**2

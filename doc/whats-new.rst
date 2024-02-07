@@ -3,6 +3,10 @@
 What's New
 ----------
 
+v0.8.9 (Feb 06, 2023)
+=====================
+- Convert integer (e.g. ``1``) units to string (e.g. ``"1"``) for pint. By `Justus Magin`_.
+
 v0.8.8 (Jan 19, 2023)
 =====================
 - Add conversion between CF geometries and Shapely objects for polygons. By `Julia Signell`_.

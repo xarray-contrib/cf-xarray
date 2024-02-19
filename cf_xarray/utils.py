@@ -15,17 +15,35 @@ except ImportError:
     cftime = None
 
 
+def _is_duck_dask_array(x):
+    """Return True if the input is a dask array."""
+    # Code copied and simplified from xarray < 2024.02 (xr.core.pycompat.is_duck_dask_array)
+    try:
+        from dask.base import is_dask_collection
+    except ImportError:
+        return False
+
+    return (
+        is_dask_collection(x)
+        and hasattr(x, "ndim")
+        and hasattr(x, "shape")
+        and hasattr(x, "dtype")
+        and (
+            (hasattr(x, "__array_function__") and hasattr(x, "__array_ufunc__"))
+            or hasattr(x, "__array_namespace__")
+        )
+    )
+
+
 def _contains_cftime_datetimes(array) -> bool:
     """Check if an array contains cftime.datetime objects"""
     # Copied / adapted from xarray.core.common
-    from xarray.core.pycompat import is_duck_dask_array
-
     if cftime is None:
         return False
     else:
         if array.dtype == np.dtype("O") and array.size > 0:
             sample = array.ravel()[0]
-            if is_duck_dask_array(sample):
+            if _is_duck_dask_array(sample):
                 sample = sample.compute()
                 if isinstance(sample, np.ndarray):
                     sample = sample.item()

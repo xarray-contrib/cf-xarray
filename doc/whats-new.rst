@@ -3,6 +3,10 @@
 What's New
 ----------
 
+v0.8.10 (unreleased)
+====================
+- Fix methods in ``utils`` to work with xarray >= 2024.02.0. By `Pascal Bourgault`_.
+
 v0.8.9 (Feb 06, 2023)
 =====================
 - Convert integer (e.g. ``1``) units to string (e.g. ``"1"``) for pint. By `Justus Magin`_.

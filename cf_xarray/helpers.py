@@ -48,7 +48,7 @@ def _guess_bounds_2d(da, dims):
     # At this point, we might have different corners for adjacent cells, we average them together to have a nice grid
     # To make this vectorized and keep the edges, we'll pad with NaNs and ignore them in the averages
     daXYp = (
-        daXY.pad({d: (1, 1) for d in dims}, mode="constant", constant_values=np.NaN)
+        daXY.pad({d: (1, 1) for d in dims}, mode="constant", constant_values=np.nan)
         .transpose(*dims, "Xbnds", "Ybnds")
         .values
     )  # Tranpose for an easier notation

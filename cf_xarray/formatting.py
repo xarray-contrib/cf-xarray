@@ -110,9 +110,11 @@ def _print_rows(subtitle: str, rows: list[str], rich: bool):
 
     # Add subtitle to the first row, align other rows
     rows = [
-        _format_subtitle(subtitle, rich=rich) + row
-        if i == 0
-        else len(subtitle) * " " + row
+        (
+            _format_subtitle(subtitle, rich=rich) + row
+            if i == 0
+            else len(subtitle) * " " + row
+        )
         for i, row in enumerate(rows)
     ]
 

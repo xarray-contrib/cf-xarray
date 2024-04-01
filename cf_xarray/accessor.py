@@ -721,8 +721,7 @@ def _getitem(
     accessor: CFAccessor,
     key: Hashable,
     skip: list[Literal["coords", "measures"]] | None = None,
-) -> DataArray:
-    ...
+) -> DataArray: ...
 
 
 @overload
@@ -730,8 +729,7 @@ def _getitem(
     accessor: CFAccessor,
     key: Iterable[Hashable],
     skip: list[Literal["coords", "measures"]] | None = None,
-) -> Dataset:
-    ...
+) -> Dataset: ...
 
 
 def _getitem(

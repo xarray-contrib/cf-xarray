@@ -13,10 +13,10 @@ kernelspec:
 
 # Geometries
 
-See 
+See
 
-1.  {py:func}`cf_xarray.shapely_to_cf`
-1.  {py:func}`cf_xarray.cf_to_shapely`
+1. {py:func}`cf_xarray.shapely_to_cf`
+1. {py:func}`cf_xarray.cf_to_shapely`
 
 In order to support vectors as well as arrays `cf_xarray` can convert between shapely objects
 and CF-compliant representations of those geometries.
@@ -37,7 +37,7 @@ da = xr.DataArray(
         Point(3.0, 4.0),
         Point(4.0, 5.0),
         Point(3.0, 4.0),
-    ], 
+    ],
     dims=("index",),
     name="geometry"
 )
@@ -49,7 +49,7 @@ da = xr.DataArray(
 geometries of the same type.
 ```
 
-Now we can take that `xr.DataArray` containing shapely geometries and convert it to cf: 
+Now we can take that `xr.DataArray` containing shapely geometries and convert it to cf:
 
 ```{code-cell}
 ds_cf = cfxr.shapely_to_cf(da)
@@ -61,12 +61,12 @@ geometries. In particular there are:
 
 - 'x', 'y' : the node coordinates
 - 'crd_x', 'crd_y' : the feature coordinates (might have different names if `grid_mapping` is available).
-- 'node_count' : The number of nodes per feature. Always present for Lines and Polygons. For 
-Points: only present if there are multipart geometries.
-- part_node_count : The number of nodes per individual geometry. Only for Lines with multipart 
-geometries and for Polygons with multipart geometries or holes.
+- 'node_count' : The number of nodes per feature. Always present for Lines and Polygons. For
+  Points: only present if there are multipart geometries.
+- part_node_count : The number of nodes per individual geometry. Only for Lines with multipart
+  geometries and for Polygons with multipart geometries or holes.
 - interior_ring : Integer boolean indicating whether ring is interior or exterior. Only for
-Polygons with holes.
+  Polygons with holes.
 - 'geometry_container' : Empty variable with attributes describing the geometry type.
 
 Here are the attributes on `geometry_container`. This pattern mimics the convention of
@@ -93,6 +93,6 @@ By default these are called `crd_x` and `crd_y` unless `grid_mapping` is specifi
 
 For MultiPolygons with holes the CF notation is slightly ambiguous on which hole is associated
 with which polygon. This is problematic because shapely stores holes within the polygon
-object that they are associated with. `cf_xarray` assumes that the the shapes are interleaved 
-such that the holes (interior rings) are associated with the exteriors (exterior rings) that 
+object that they are associated with. `cf_xarray` assumes that the the shapes are interleaved
+such that the holes (interior rings) are associated with the exteriors (exterior rings) that
 immediately precede them.

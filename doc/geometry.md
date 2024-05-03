@@ -13,7 +13,7 @@ kernelspec:
 
 # Geometries
 
-```seealso
+```{seealso}
 1. [The CF conventions on Geometries](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#geometries)
 1. {py:func}`cf_xarray.shapely_to_cf`
 1. {py:func}`cf_xarray.cf_to_shapely`

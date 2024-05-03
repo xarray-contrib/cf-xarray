@@ -94,9 +94,10 @@ def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None 
         A dataset with shapely geometry objects translated into CF-compliant variables :
          - 'x', 'y' : the node coordinates
          - 'crd_x', 'crd_y' : the feature coordinates (might have different names if `grid_mapping` is available).
-         - 'node_count' : The number of nodes per feature. Absent if all instances are Points.
+         - 'node_count' : The number of nodes per feature. Always present for Lines and Polygons. For Points: only present if there are multipart geometries.
+         - 'part_node_count' : The number of nodes per individual geometry. Only for Lines with multipart geometries and for Polygons with multipart geometries or holes.
+         - 'interior_ring' : Integer boolean indicating whether rings are interior or exterior. Only for Polygons with holes.
          - 'geometry_container' : Empty variable with attributes describing the geometry type.
-         - Other variables are not implemented as only Points are currently understood.
 
     References
     ----------

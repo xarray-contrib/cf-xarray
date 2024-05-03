@@ -19,8 +19,8 @@ kernelspec:
 1. {py:func}`cf_xarray.cf_to_shapely`
 ```
 
-In order to support vectors as well as arrays `cf_xarray` can convert between shapely objects
-and CF-compliant representations of those geometries.
+`cf_xarray` can convert between vector geometries represented as shapely objects
+and CF-compliant array representations of those geometries.
 
 Let's start by creating an xarray object containing some shapely geometries. This example uses
 a `xr.DataArray` but these functions also work with a `xr.Dataset` where one of the data variables

@@ -13,10 +13,11 @@ kernelspec:
 
 # Geometries
 
-See
-
+```seealso
+1. [The CF conventions on Geometries](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#geometries)
 1. {py:func}`cf_xarray.shapely_to_cf`
 1. {py:func}`cf_xarray.cf_to_shapely`
+```
 
 In order to support vectors as well as arrays `cf_xarray` can convert between shapely objects
 and CF-compliant representations of those geometries.
@@ -59,15 +60,15 @@ ds_cf
 This function returns a `xr.Dataset` containing the CF fields needed to reconstruct the
 geometries. In particular there are:
 
-- 'x', 'y' : the node coordinates
-- 'crd_x', 'crd_y' : the feature coordinates (might have different names if `grid_mapping` is available).
-- 'node_count' : The number of nodes per feature. Always present for Lines and Polygons. For
+- `'x'`, `'y'` : the node coordinates
+- `'crd_x'`, `'crd_y'` : the feature coordinates (might have different names if `grid_mapping` is available).
+- `'node_count'` : The number of nodes per feature. Always present for Lines and Polygons. For
   Points: only present if there are multipart geometries.
-- part_node_count : The number of nodes per individual geometry. Only for Lines with multipart
+- `'part_node_count'` : The number of nodes per individual geometry. Only for Lines with multipart
   geometries and for Polygons with multipart geometries or holes.
-- interior_ring : Integer boolean indicating whether ring is interior or exterior. Only for
+- `'interior_ring'` : Integer boolean indicating whether ring is interior or exterior. Only for
   Polygons with holes.
-- 'geometry_container' : Empty variable with attributes describing the geometry type.
+- `'geometry_container`' : Empty variable with attributes describing the geometry type.
 
 Here are the attributes on `geometry_container`. This pattern mimics the convention of
 specifying spatial reference information in the attrs of the empty array `spatial_ref`.

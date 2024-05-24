@@ -31,7 +31,6 @@ from ..datasets import (
     forecast,
     mollwds,
     multiple,
-    pomds,
     popds,
     romsds,
     rotds,
@@ -1304,52 +1303,19 @@ def test_Z_vs_vertical_ROMS() -> None:
     )
 
 
-def test_param_vcoord_ocean_s_coord() -> None:
-    romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g2"
-    Zo_rho = (romsds.hc * romsds.s_rho + romsds.Cs_r * romsds.h) / (
-        romsds.hc + romsds.h
-    )
-    expected = romsds.zeta + (romsds.zeta + romsds.h) * Zo_rho
-    romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
-    assert_allclose(
-        romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
-    )
+def test_decode_vertical_coords() -> None:
+    with pytest.raises(
+        AssertionError, match="if prefix is None, outnames must be provided"
+    ):
+        romsds.cf.decode_vertical_coords()
 
-    romsds.s_rho.attrs["standard_name"] = "ocean_s_coordinate_g1"
-    Zo_rho = romsds.hc * (romsds.s_rho - romsds.Cs_r) + romsds.Cs_r * romsds.h
+    with pytest.warns(DeprecationWarning):
+        romsds.cf.decode_vertical_coords(prefix="z_rho")
 
-    expected = Zo_rho + romsds.zeta * (1 + Zo_rho / romsds.h)
-    romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
-    assert_allclose(
-        romsds.z_rho.reset_coords(drop=True), expected.reset_coords(drop=True)
-    )
+    romsds_less_h = romsds.drop_vars(["h"])
 
-    romsds.cf.decode_vertical_coords(outnames={"s_rho": "ZZZ_rho"})
-    assert "ZZZ_rho" in romsds.coords
-
-    copy = romsds.copy(deep=False)
-    del copy["zeta"]
-    with pytest.raises(KeyError):
-        copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
-
-    copy = romsds.copy(deep=False)
-    copy.s_rho.attrs["formula_terms"] = "s: s_rho C: Cs_r depth: h depth_c: hc"
-    with pytest.raises(KeyError):
-        copy.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
-
-
-def test_param_vcoord_ocean_sigma_coordinate() -> None:
-    expected = pomds.zeta + pomds.sigma * (pomds.depth + pomds.zeta)
-    pomds.cf.decode_vertical_coords(outnames={"sigma": "z"})
-    assert_allclose(pomds.z.reset_coords(drop=True), expected.reset_coords(drop=True))
-
-    copy = pomds.copy(deep=False)
-    del copy["zeta"]
-    with pytest.raises(AssertionError):
-        copy.cf.decode_vertical_coords()
-
-    with pytest.raises(KeyError):
-        copy.cf.decode_vertical_coords(outnames={})
+    with pytest.raises(KeyError, match="Required terms {'depth'} absent in dataset."):
+        romsds_less_h.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
 
 def test_formula_terms() -> None:

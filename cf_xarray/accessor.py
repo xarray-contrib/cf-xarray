@@ -2707,12 +2707,16 @@ class CFDatasetAccessor(CFAccessor):
                     )
                 terms[key] = ds[value]
 
-            func = parametric.get_parametric_func(stdname)
+            try:
+                func = parametric.func_from_stdname(stdname)
+            except AttributeError:
+                # Should occur since stdname is check before
+                raise NotImplementedError(
+                    f"Coordinate function for {stdname!r} not implmented yet. Contributions welcome!"
+                ) from None
 
-            absent_terms = func._requirements - set(terms)
-
-            if absent_terms:
-                raise KeyError(f"Required terms {absent_terms} absent in dataset.")
+            # let KeyError propagate
+            parametric.check_requirements(func, terms)
 
             ds.coords[zname] = func(**terms)
 

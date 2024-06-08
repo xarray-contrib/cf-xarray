@@ -2102,6 +2102,26 @@ class CFAccessor:
             (_single(_get_coords),), self._obj, coord, error=False, default=[coord]
         )[0]
         result = self._obj.differentiate(coord, *xr_args, **xr_kwargs)
+        if isinstance(self._obj, DataArray):
+            try:
+                result.attrs["units"] = "{:s} / ({:s})".format(
+                    self._obj.attrs["units"], self._obj[coord].attrs["units"]
+                )
+            except KeyError:
+                pass
+        else:
+            try:
+                coord_units = self._obj[coord].attrs["units"]
+            except KeyError:
+                pass
+            else:
+                for name in result.data_vars:
+                    try:
+                        result[name].attrs["units"] = "{:s} / ({:s})".format(
+                            self._obj[name].attrs["units"], coord_units
+                        )
+                    except KeyError:
+                        pass
         if positive_upward:
             coord = self._obj[coord]
             attrs = coord.attrs

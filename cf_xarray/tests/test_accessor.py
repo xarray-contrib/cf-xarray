@@ -1472,12 +1472,22 @@ def test_rename_tuple():
 
 @pytest.mark.parametrize("ds", datasets)
 def test_differentiate(ds):
+    from ..units import units
     # Add data_var and coord to test _get_coords
     ds["lon_var"] = ds["lon"]
     ds = ds.assign_coords(lon_coord=ds["lon"])
 
+    result = ds.cf.differentiate("lon")
+    lon_units = units.Unit(ds["lon"].attrs["units"])
+    for name in ds.data_vars:
+        expected_units = (
+            units.Unit(ds[name].attrs["units"]) / lon_units
+        )
+        assert units.Unit(result[name].attrs["units"]) == expected_units
+        del result[name].attrs["units"]
+
     # Coordinate
-    assert_identical(ds.differentiate("lon"), ds.cf.differentiate("lon"))
+    assert_identical(ds.differentiate("lon"), result)
 
     # Multiple coords (test error raised by _single)
     with pytest.raises(KeyError, match=".*I expected only one."):

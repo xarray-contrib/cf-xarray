@@ -959,6 +959,30 @@ def _update_data_units(
         coord_name: str,
         new_unit_template: str
 ) -> DataArray | Dataset:
+    """Update units in result according to template.
+
+    Intended to update units after differentiation or integration, as
+    the quotient or product of the units in source and the units of
+    the coordinate of integration, respectively.
+
+    Parameters
+    ----------
+    result : DataArray | Dataset
+        The data to update
+    source : DataArray | Dataset
+        The data with the units
+    coord_name : str
+        The coordinate with the second unit.  Usually the coordinate
+        of differentiation or integration
+    new_unit_template : str
+        Template for how to combine the units.  Must have two
+        {}-sequences for a format call.
+
+    Returns
+    -------
+    DataArray | Dataset
+        The data with updated units
+    """
     try:
         coord_units = source[coord_name].attrs["units"]
     except KeyError:

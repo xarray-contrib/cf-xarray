@@ -954,10 +954,10 @@ def _possible_x_y_plot(obj, key, skip=None):
 
 
 def _update_data_units(
-        result: DataArray | Dataset,
-        source: DataArray | Dataset,
-        coord_name: str,
-        new_unit_template: str
+    result: DataArray | Dataset,
+    source: DataArray | Dataset,
+    coord_name: str,
+    new_unit_template: str,
 ) -> DataArray | Dataset:
     try:
         coord_units = source[coord_name].attrs["units"]

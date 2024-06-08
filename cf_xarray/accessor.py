@@ -953,6 +953,35 @@ def _possible_x_y_plot(obj, key, skip=None):
         return _get_possible(obj.cf, y_criteria)
 
 
+def _update_data_units(
+        result: DataArray | Dataset,
+        source: DataArray | Dataset,
+        coord_name: str,
+        new_unit_template: str
+) -> DataArray | Dataset:
+    try:
+        coord_units = source[coord_name].attrs["units"]
+    except KeyError:
+        return result
+
+    if isinstance(source, DataArray):
+        try:
+            result.attrs["units"] = new_unit_template.format(
+                source.attrs["units"], source[coord_name].attrs["units"]
+            )
+        except KeyError:
+            pass
+    else:
+        for name in result.data_vars:
+            try:
+                result[name].attrs["units"] = new_unit_template.format(
+                    source[name].attrs["units"], coord_units
+                )
+            except KeyError:
+                pass
+    return result
+
+
 class _CFWrappedClass(SupportsArithmetic):
     """
     This class is used to wrap any class in _WRAPPED_CLASSES.
@@ -2102,26 +2131,7 @@ class CFAccessor:
             (_single(_get_coords),), self._obj, coord, error=False, default=[coord]
         )[0]
         result = self._obj.differentiate(coord, *xr_args, **xr_kwargs)
-        if isinstance(self._obj, DataArray):
-            try:
-                result.attrs["units"] = "{:s} / ({:s})".format(
-                    self._obj.attrs["units"], self._obj[coord].attrs["units"]
-                )
-            except KeyError:
-                pass
-        else:
-            try:
-                coord_units = self._obj[coord].attrs["units"]
-            except KeyError:
-                pass
-            else:
-                for name in result.data_vars:
-                    try:
-                        result[name].attrs["units"] = "{:s} / ({:s})".format(
-                            self._obj[name].attrs["units"], coord_units
-                        )
-                    except KeyError:
-                        pass
+        result = _update_data_units(result, self._obj, coord, "{:s} / ({:s})")
         if positive_upward:
             coord = self._obj[coord]
             attrs = coord.attrs

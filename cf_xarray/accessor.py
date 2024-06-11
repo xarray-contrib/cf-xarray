@@ -2633,6 +2633,54 @@ class CFDatasetAccessor(CFAccessor):
                 results[v].append(k)
         return results
 
+    def assign(self, **standard_variables: Any) -> Dataset:
+        """Assign new variables by standard_name.
+
+        Parameters
+        ----------
+        standard_variables : mapping
+            A mapping from netCDF Climate and Forecast compliant standard names
+            (http://cfconventions.org/standard-names.html), to the new values.
+            The new values are passed to ``:meth:Dataset.assign``.
+
+        Returns
+        -------
+        dataset : Dataset
+            A new dataset with the new variables added, replacing any existing
+            variable with the same standard name. New variables are labelled
+            according to their input (short) names, or standard names if short
+            names are missing, with added trailing underscores in the event of
+            duplicates.
+
+        See Also
+        --------
+        DataSet.assign
+        """
+
+        # initalize dictionary mapping short names to the new variables
+        variables = {}
+
+        # for each standard name and value pair
+        for standard_name, values in standard_variables.items():
+
+            # default to using existing short name or standard name
+            name = getattr(values, "name", standard_name)
+
+            # add trailing underscores until we find a free slot
+            while name in self._obj.data_vars or name in variables:
+                emit_user_level_warning(
+                    f"found existing variable {name}, using {name}_ instead",
+                    UserWarning)
+                name += '_'
+
+            # map name to values (without coords, see #513, xarray#6447)
+            values = xr.as_variable(values)
+            values.attrs.update(standard_name=standard_name)
+            variables[name] = values
+
+        # assign new variables and return a new dataset
+        return self._obj.assign(variables)
+
     def decode_vertical_coords(self, *, outnames=None, prefix=None):
         """
         Decode parameterized vertical coordinates in place.

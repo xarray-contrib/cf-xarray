@@ -2662,7 +2662,6 @@ class CFDatasetAccessor(CFAccessor):
 
         # for each standard name and value pair
         for standard_name, values in standard_variables.items():
-
             # default to using existing short name or standard name
             name = getattr(values, "name", standard_name)
 
@@ -2670,8 +2669,9 @@ class CFDatasetAccessor(CFAccessor):
             while name in self._obj.data_vars or name in variables:
                 emit_user_level_warning(
                     f"found existing variable {name}, using {name}_ instead",
-                    UserWarning)
-                name += '_'
+                    UserWarning,
+                )
+                name += "_"
 
             # map name to values (without coords, see #513, xarray#6447)
             values = xr.as_variable(values)

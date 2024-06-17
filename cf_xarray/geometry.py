@@ -442,7 +442,7 @@ def cf_to_lines(ds: xr.Dataset):
 
 def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:
     """
-    Converts a regular 2D lat/lon grid to a 2D array of shapely polygons.
+    Converts the bounds of a regular 2D lat/lon grid to a 2D array of shapely polygons.
 
     Modified from https://notebooksharing.space/view/c6c1f3a7d0c260724115eaa2bf78f3738b275f7f633c1558639e7bbd75b31456.
 

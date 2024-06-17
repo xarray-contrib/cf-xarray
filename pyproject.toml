@@ -64,6 +64,8 @@ exclude = [
     ".eggs",
     "doc",
 ]
+
+[tool.ruff.lint]
 # E402: module level import not at top of file
 # E501: line too long - let ruff worry about that
 ignore = [
@@ -72,7 +74,6 @@ ignore = [
     "B018",
     "B015",
 ]
-[tool.ruff.lint]
 select = [
     # Pyflakes
     "F",

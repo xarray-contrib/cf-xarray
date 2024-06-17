@@ -75,9 +75,6 @@ def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None 
     """
     Convert a DataArray with shapely geometry objects into a CF-compliant dataset.
 
-    .. warning::
-        Only point geometries are currently implemented.
-
     Parameters
     ----------
     geometries : sequence of shapely geometries or xarray.DataArray
@@ -97,9 +94,10 @@ def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None 
         A dataset with shapely geometry objects translated into CF-compliant variables :
          - 'x', 'y' : the node coordinates
          - 'crd_x', 'crd_y' : the feature coordinates (might have different names if `grid_mapping` is available).
-         - 'node_count' : The number of nodes per feature. Absent if all instances are Points.
+         - 'node_count' : The number of nodes per feature. Always present for Lines and Polygons. For Points: only present if there are multipart geometries.
+         - 'part_node_count' : The number of nodes per individual geometry. Only for Lines with multipart geometries and for Polygons with multipart geometries or holes.
+         - 'interior_ring' : Integer boolean indicating whether rings are interior or exterior. Only for Polygons with holes.
          - 'geometry_container' : Empty variable with attributes describing the geometry type.
-         - Other variables are not implemented as only Points are currently understood.
 
     References
     ----------
@@ -115,7 +113,7 @@ def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None 
     elif types.issubset({"LineString", "MultiLineString"}):
         ds = lines_to_cf(geometries)
     elif types.issubset({"Polygon", "MultiPolygon"}):
-        raise NotImplementedError("Polygon geometry conversion is not implemented.")
+        ds = polygons_to_cf(geometries)
     else:
         raise ValueError(
             f"Mixed geometry types are not supported in CF-compliant datasets. Got {types}"
@@ -142,9 +140,6 @@ def cf_to_shapely(ds: xr.Dataset):
     """
     Convert geometries stored in a CF-compliant way to shapely objects stored in a single variable.
 
-    .. warning::
-        Only point geometries are currently implemented.
-
     Parameters
     ----------
     ds : xr.Dataset
@@ -168,7 +163,7 @@ def cf_to_shapely(ds: xr.Dataset):
     elif geom_type == "line":
         geometries = cf_to_lines(ds)
     elif geom_type == "polygon":
-        raise NotImplementedError("Polygon geometry conversion is not implemented.")
+        geometries = cf_to_polygons(ds)
     else:
         raise ValueError(
             f"Valid CF geometry types are 'point', 'line' and 'polygon'. Got {geom_type}"
@@ -328,13 +323,13 @@ def lines_to_cf(lines: xr.DataArray | Sequence):
     x = arr[:, 0]
     y = arr[:, 1]
 
-    node_count = np.diff(offsets[0])
+    part_node_count = np.diff(offsets[0])
     if len(offsets) == 1:
         indices = offsets[0]
-        part_node_count = node_count
+        node_count = part_node_count
     else:
         indices = np.take(offsets[0], offsets[1])
-        part_node_count = np.diff(indices)
+        node_count = np.diff(indices)
 
     geom_coords = arr.take(indices[:-1], 0)
     crdX = geom_coords[:, 0]
@@ -342,8 +337,8 @@ def lines_to_cf(lines: xr.DataArray | Sequence):
 
     ds = xr.Dataset(
         data_vars={
-            "node_count": xr.DataArray(node_count, dims=("segment",)),
-            "part_node_count": xr.DataArray(part_node_count, dims=(dim,)),
+            "node_count": xr.DataArray(node_count, dims=(dim,)),
+            "part_node_count": xr.DataArray(part_node_count, dims=("part",)),
             "geometry_container": xr.DataArray(
                 attrs={
                     "geometry_type": "line",
@@ -394,6 +389,151 @@ def cf_to_lines(ds: xr.Dataset):
     # Shorthand for convenience
     geo = ds.geometry_container.attrs
 
+    # The features dimension name, defaults to the one of 'node_count'
+    # or the dimension of the coordinates, if present.
+    feat_dim = None
+    if "coordinates" in geo:
+        xcoord_name, _ = geo["coordinates"].split(" ")
+        (feat_dim,) = ds[xcoord_name].dims
+
+    x_name, y_name = geo["node_coordinates"].split(" ")
+    xy = np.stack([ds[x_name].values, ds[y_name].values], axis=-1)
+
+    node_count_name = geo.get("node_count")
+    part_node_count_name = geo.get("part_node_count", node_count_name)
+    if node_count_name is None:
+        raise ValueError("'node_count' must be provided for line geometries")
+    else:
+        node_count = ds[node_count_name]
+        feat_dim = feat_dim or "index"
+        if feat_dim in ds.coords:
+            node_count = node_count.assign_coords({feat_dim: ds[feat_dim]})
+
+    # first get geometries for all the parts
+    part_node_count = ds[part_node_count_name]
+    offset1 = np.insert(np.cumsum(part_node_count.values), 0, 0)
+    lines = from_ragged_array(GeometryType.LINESTRING, xy, offsets=(offset1,))
+
+    # get index of offset2 values that are edges for part_node_count
+    offset2 = np.nonzero(np.isin(offset1, np.insert(np.cumsum(node_count), 0, 0)))[0]
+
+    multilines = from_ragged_array(
+        GeometryType.MULTILINESTRING, xy, offsets=(offset1, offset2)
+    )
+
+    # get items from lines or multilines depending on number of parts
+    geoms = np.where(np.diff(offset2) == 1, lines[offset2[:-1]], multilines)
+
+    return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
+
+
+def polygons_to_cf(polygons: xr.DataArray | Sequence):
+    """Convert an iterable of polygons (shapely.geometry.[Multi]Polygon) into a CF-compliant geometry dataset.
+
+    Parameters
+    ----------
+    polygons : sequence of shapely.geometry.Polygon or MultiPolygon
+        The sequence of [multi]polygons to translate to a CF dataset.
+
+    Returns
+    -------
+    xr.Dataset
+        A Dataset with variables 'x', 'y', 'crd_x', 'crd_y', 'node_count' and 'geometry_container'
+        and optionally 'part_node_count'.
+    """
+    from shapely import to_ragged_array
+
+    if isinstance(polygons, xr.DataArray):
+        dim = polygons.dims[0]
+        coord = polygons[dim] if dim in polygons.coords else None
+        polygons_ = polygons.values
+    else:
+        dim = "index"
+        coord = None
+        polygons_ = np.array(polygons)
+
+    _, arr, offsets = to_ragged_array(polygons_)
+    x = arr[:, 0]
+    y = arr[:, 1]
+
+    part_node_count = np.diff(offsets[0])
+    if len(offsets) == 1:
+        indices = offsets[0]
+        node_count = part_node_count
+    elif len(offsets) >= 2:
+        indices = np.take(offsets[0], offsets[1])
+        interior_ring = np.isin(offsets[0], indices, invert=True)[:-1].astype(int)
+
+        if len(offsets) == 3:
+            indices = np.take(indices, offsets[2])
+
+        node_count = np.diff(indices)
+
+    geom_coords = arr.take(indices[:-1], 0)
+    crdX = geom_coords[:, 0]
+    crdY = geom_coords[:, 1]
+
+    ds = xr.Dataset(
+        data_vars={
+            "node_count": xr.DataArray(node_count, dims=(dim,)),
+            "interior_ring": xr.DataArray(interior_ring, dims=("part",)),
+            "part_node_count": xr.DataArray(part_node_count, dims=("part",)),
+            "geometry_container": xr.DataArray(
+                attrs={
+                    "geometry_type": "polygon",
+                    "node_count": "node_count",
+                    "part_node_count": "part_node_count",
+                    "interior_ring": "interior_ring",
+                    "node_coordinates": "x y",
+                    "coordinates": "crd_x crd_y",
+                }
+            ),
+        },
+        coords={
+            "x": xr.DataArray(x, dims=("node",), attrs={"axis": "X"}),
+            "y": xr.DataArray(y, dims=("node",), attrs={"axis": "Y"}),
+            "crd_x": xr.DataArray(crdX, dims=(dim,), attrs={"nodes": "x"}),
+            "crd_y": xr.DataArray(crdY, dims=(dim,), attrs={"nodes": "y"}),
+        },
+    )
+
+    if coord is not None:
+        ds = ds.assign_coords({dim: coord})
+
+    # Special case when we have no MultiPolygons and no holes
+    if len(ds.part_node_count) == len(ds.node_count):
+        ds = ds.drop_vars("part_node_count")
+        del ds.geometry_container.attrs["part_node_count"]
+
+    # Special case when we have no holes
+    if (ds.interior_ring == 0).all():
+        ds = ds.drop_vars("interior_ring")
+        del ds.geometry_container.attrs["interior_ring"]
+    return ds
+
+
+def cf_to_polygons(ds: xr.Dataset):
+    """Convert polygon geometries stored in a CF-compliant way to shapely polygons stored in a single variable.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        A dataset with CF-compliant polygon geometries.
+        Must have a "geometry_container" variable with at least a 'node_coordinates' attribute.
+        Must also have the two 1D variables listed by this attribute.
+
+    Returns
+    -------
+    geometry : xr.DataArray
+        A 1D array of shapely.geometry.[Multi]Polygon objects.
+        It has the same dimension as the ``part_node_count`` or the coordinates variables, or
+        ``'features'`` if those were not present in ``ds``.
+    """
+    from shapely import GeometryType, from_ragged_array
+
+    # Shorthand for convenience
+    geo = ds.geometry_container.attrs
+
     # The features dimension name, defaults to the one of 'part_node_count'
     # or the dimension of the coordinates, if present.
     feat_dim = None
@@ -405,39 +545,46 @@ def cf_to_lines(ds: xr.Dataset):
     xy = np.stack([ds[x_name].values, ds[y_name].values], axis=-1)
 
     node_count_name = geo.get("node_count")
-    part_node_count_name = geo.get("part_node_count")
+    part_node_count_name = geo.get("part_node_count", node_count_name)
+    interior_ring_name = geo.get("interior_ring")
+
     if node_count_name is None:
-        raise ValueError("'node_count' must be provided for line geometries")
+        raise ValueError("'node_count' must be provided for polygon geometries")
     else:
         node_count = ds[node_count_name]
-
-    offset1 = np.insert(np.cumsum(node_count.values), 0, 0)
-    lines = from_ragged_array(GeometryType.LINESTRING, xy, offsets=(offset1,))
-
-    if part_node_count_name is None:
-        # No part_node_count means there are no multilines
-        # And if we had no coordinates, then the dimension defaults to "index"
         feat_dim = feat_dim or "index"
-        part_node_count = xr.DataArray(node_count.values, dims=(feat_dim,))
         if feat_dim in ds.coords:
-            part_node_count = part_node_count.assign_coords({feat_dim: ds[feat_dim]})
+            node_count = node_count.assign_coords({feat_dim: ds[feat_dim]})
 
-        geoms = lines
+    # first get geometries for all the rings
+    part_node_count = ds[part_node_count_name]
+    offset1 = np.insert(np.cumsum(part_node_count.values), 0, 0)
+
+    if interior_ring_name is None:
+        offset2 = np.array(list(range(len(offset1))))
     else:
-        part_node_count = ds[part_node_count_name]
+        interior_ring = ds[interior_ring_name]
+        if not interior_ring[0] == 0:
+            raise ValueError("coordinate array must start with an exterior ring")
+        offset2 = np.append(np.where(interior_ring == 0)[0], [len(part_node_count)])
 
-        # get index of offset1 values that are edges for part_node_count
-        offset2 = np.nonzero(
-            np.isin(offset1, np.insert(np.cumsum(part_node_count), 0, 0))
-        )[0]
-        multilines = from_ragged_array(
-            GeometryType.MULTILINESTRING, xy, offsets=(offset1, offset2)
+    polygons = from_ragged_array(GeometryType.POLYGON, xy, offsets=(offset1, offset2))
+
+    # get index of offset2 values that are edges for node_count
+    offset3 = np.nonzero(
+        np.isin(
+            offset2,
+            np.nonzero(np.isin(offset1, np.insert(np.cumsum(node_count), 0, 0)))[0],
         )
+    )[0]
+    multipolygons = from_ragged_array(
+        GeometryType.MULTIPOLYGON, xy, offsets=(offset1, offset2, offset3)
+    )
 
-        # get items from lines or multilines depending on number of segments
-        geoms = np.where(np.diff(offset2) == 1, lines[offset2[:-1]], multilines)
-
-    return xr.DataArray(geoms, dims=part_node_count.dims, coords=part_node_count.coords)
+    # get items from polygons or multipolygons depending on number of parts
+    geoms = np.where(np.diff(offset3) == 1, polygons[offset3[:-1]], multipolygons)
+    
+    return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
 
 
 def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:

@@ -22,7 +22,7 @@ jobs:
   upstream-dev:
     name: upstream-dev
     runs-on: ubuntu-latest
-    if: ${{ (contains( github.event.pull_request.labels.*.name, 'test-upstream') && github.event_name == 'pull_request') || github.event_name == 'workflow_dispatch' }}
+    if: ${{ (contains( github.event.pull_request.labels.*.name, 'test-upstream') && github.event_name == 'pull_request') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
     defaults:
       run:
         shell: bash -l {0}

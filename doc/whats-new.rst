@@ -3,6 +3,23 @@
 What's New
 ----------
 
+v0.8.10 (unreleased)
+====================
+- Fix methods in ``utils`` to work with xarray >= 2024.02.0. By `Pascal Bourgault`_.
+
+v0.8.9 (Feb 06, 2023)
+=====================
+- Convert integer (e.g. ``1``) units to string (e.g. ``"1"``) for pint. By `Justus Magin`_.
+
+v0.8.8 (Jan 19, 2023)
+=====================
+- Add conversion between CF geometries and Shapely objects for polygons. By `Julia Signell`_.
+- Support 32bit wide bit masks. By `Michael St Laurent`_.
+
+v0.8.7 (Dec 19, 2023)
+=====================
+- Add conversion between CF geometries and Shapely objects for lines. By `Julia Signell`_.
+
 v0.8.5 (Oct 24, 2023)
 =====================
 - Fix for ``get_bounds_dim_name``. By `Deepak Cherian`_.
@@ -248,4 +265,6 @@ v0.1.3
 .. _`Mathias Hauser`: https://github.com/mathause
 .. _`Aidan Heerdegen`: https://github.com/aidanheerdegen
 .. _`Clément Haëck`: https://github.com/Descanonge
+.. _`Julia Signell`: https://github.com/jsignell
+.. _`Michael St Laurent`: https://github.com/mps010160
 .. _`flag variables`: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags

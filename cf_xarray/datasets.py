@@ -503,6 +503,16 @@ flag_indep = xr.DataArray(
     name="flag_var",
 )
 
+flag_indep_uint16 = xr.DataArray(
+    np.array([1, 10, 100, 1000, 10000, 65535], dtype=np.uint16),
+    dims=("time",),
+    attrs={
+        "flag_masks": [2**i for i in range(16)],
+        "flag_meanings": " ".join([f"flag_{2**i}" for i in range(16)]),
+        "standard_name": "flag_independent",
+    },
+    name="flag_var",
+)
 
 flag_mix = xr.DataArray(
     np.array([4, 8, 13, 5, 10, 14, 7, 3], np.uint8),

@@ -450,8 +450,8 @@ def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:
     ----------
     ds : xr.Dataset
         Dataset with "latitude" and "longitude" variables as well as their bounds variables.
-        1D "latitude" and "longitude" variables are supported. This function will automatically
-        broadcast them against each other.
+        1D and 2D "latitude" and "longitude" variables are supported. 1D variables will 
+        be broadcast against each other.
 
     Returns
     -------

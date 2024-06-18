@@ -41,6 +41,21 @@ depth_c = xr.DataArray([30.0], name="depth_c")
 s = xr.DataArray([0, 1, 2], dims=("lev"), name="s")
 
 
+@pytest.mark.parametrize(
+    "order,kwargs,expected",
+    [
+        ("nkji", {"nji": ps, "k": a}, ("time", "lev", "lat", "lon")),
+        ("nkij", {"nji": ps, "k": a}, ("time", "lev", "lon", "lat")),
+        ("ijn", {"nji": ps}, ("lon", "lat", "time")),
+        ("njk", {"nji": ps, "k": a}, ("time", "lat", "lev")),
+    ],
+)
+def test_derive_dimension_order(order, kwargs, expected):
+    order = parametric.derive_dimension_order(order, **kwargs)
+
+    assert order == expected
+
+
 def test_atmosphere_ln_pressure_coordinate():
     lev = xr.DataArray(
         [0, 1, 2],
@@ -325,7 +340,9 @@ def test_ocean_s_coordinate_g2():
 
 
 def test_ocean_sigma_z_coordinate():
-    zlev = xr.DataArray([0, 1, np.nan], dims=("lev",), name="zlev", attrs={"standard_name": "altitude"})
+    zlev = xr.DataArray(
+        [0, 1, np.nan], dims=("lev",), name="zlev", attrs={"standard_name": "altitude"}
+    )
 
     _sigma = xr.DataArray([np.nan, np.nan, 3], dims=("lev",), name="sigma")
 
@@ -411,12 +428,34 @@ def test_ocean_double_sigma_coordinate():
     assert output.attrs["standard_name"] == "altitude"
 
 
-@pytest.mark.parametrize("input,expected", [
-    ({"zlev": {"standard_name": "altitude"}}, "altitude"),
-    ({"zlev": {"standard_name": "altitude"}, "eta": {"standard_name": "sea_surface_height_above_geoid"}}, "altitude"),
-    ({"zlev": {"standard_name": "altitude"}, "eta": {"standard_name": "sea_surface_height_above_geoid"}, "depth": {"standard_name": "sea_floor_depth_below_geoid"}}, "altitude"),
-    ({"eta": {"standard_name": "sea_surface_height_above_geoid"}, "depth": {"standard_name": "sea_floor_depth_below_geoid"}}, "altitude"),
-])
+@pytest.mark.parametrize(
+    "input,expected",
+    [
+        ({"zlev": {"standard_name": "altitude"}}, "altitude"),
+        (
+            {
+                "zlev": {"standard_name": "altitude"},
+                "eta": {"standard_name": "sea_surface_height_above_geoid"},
+            },
+            "altitude",
+        ),
+        (
+            {
+                "zlev": {"standard_name": "altitude"},
+                "eta": {"standard_name": "sea_surface_height_above_geoid"},
+                "depth": {"standard_name": "sea_floor_depth_below_geoid"},
+            },
+            "altitude",
+        ),
+        (
+            {
+                "eta": {"standard_name": "sea_surface_height_above_geoid"},
+                "depth": {"standard_name": "sea_floor_depth_below_geoid"},
+            },
+            "altitude",
+        ),
+    ],
+)
 def test_derive_ocean_stdname(input, expected):
     output = parametric._derive_ocean_stdname(**input)
 
@@ -424,7 +463,9 @@ def test_derive_ocean_stdname(input, expected):
 
 
 def test_derive_ocean_stdname_no_values():
-    with pytest.raises(ValueError, match="Must provide atleast one of depth, eta, zlev."):
+    with pytest.raises(
+        ValueError, match="Must provide atleast one of depth, eta, zlev."
+    ):
         parametric._derive_ocean_stdname()
 
 
@@ -434,12 +475,17 @@ def test_derive_ocean_stdname_empty_value():
 
 
 def test_derive_ocean_stdname_no_standard_name():
-    with pytest.raises(ValueError, match="The standard name for the 'zlev' variable is not available."):
+    with pytest.raises(
+        ValueError, match="The standard name for the 'zlev' variable is not available."
+    ):
         parametric._derive_ocean_stdname(zlev={})
 
 
 def test_derive_ocean_stdname_no_match():
-    with pytest.raises(ValueError, match="Could not derive standard name from combination of not in any list."):
+    with pytest.raises(
+        ValueError,
+        match="Could not derive standard name from combination of not in any list.",
+    ):
         parametric._derive_ocean_stdname(zlev={"standard_name": "not in any list"})
 
 

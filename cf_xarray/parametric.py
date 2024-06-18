@@ -61,7 +61,6 @@ def _derive_ocean_stdname(**kwargs):
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#table-computed-standard-names
     """
-
     found_stdname = None
 
     allowed_names = {"zlev", "eta", "depth"}
@@ -189,6 +188,48 @@ def func_from_stdname(stdname):
     return getattr(m, stdname)
 
 
+def derive_dimension_order(output_order, **dim_map):
+    """Derive dimension ordering from input map.
+
+    This will derive a dimensinal ordering from a map of dimension
+    identifiers and variables containing the dimensions.
+
+    This is useful when dimension names are not know.
+
+    For example if the desired output ordering was "nkji" where
+    variable "A" contains "nji" (time, lat, lon) and "B" contains
+    "k" (height) then the output would be (time, height, lat, lon).
+
+    This also works when dimensions are missing.
+
+    For example if the desired output ordering was "nkji" where
+    variable "A" contains "n" (time) and "B" contains
+    "k" (height) then the output would be (time, height).
+
+    Parameters
+    ----------
+    output_order : str
+        Dimension identifiers in desired order, e.g. "nkji".
+    **dim_map : dict
+        Dimension identifiers and variable containing them, e.g. "nji": eta, "k": s.
+
+    Returns
+    -------
+    list
+        Output dimensions in desired order.
+    """
+    dims = {}
+
+    for x, y in dim_map.items():
+        for i, z in enumerate(x):
+            try:
+                dims[z] = y.dims[i]
+            except IndexError:
+                dims[z] = None
+
+    return tuple(dims[x] for x in list(output_order) if dims[x] is not None)
+
+
 def atmosphere_ln_pressure_coordinate(p0, lev):
     """Atmosphere natural log pressure coordinate.
 
@@ -244,7 +285,9 @@ def atmosphere_sigma_coordinate(sigma, ps, ptop):
 
     p = p.squeeze().rename("p").assign_attrs(standard_name="air_pressure")
 
-    return p.transpose("time", "lev", "lat", "lon")
+    output_order = derive_dimension_order("nkji", nji=ps, k=sigma)
+
+    return p.transpose(*output_order)
 
 
 def atmosphere_hybrid_sigma_pressure_coordinate(b, ps, p0, a=None, ap=None):
@@ -282,7 +325,9 @@ def atmosphere_hybrid_sigma_pressure_coordinate(b, ps, p0, a=None, ap=None):
 
     p = p.squeeze().rename("p").assign_attrs(standard_name="air_pressure")
 
-    return p.transpose("time", "lev", "lat", "lon")
+    output_order = derive_dimension_order("nkji", nji=ps, k=b)
+
+    return p.transpose(*output_order)
 
 
 def atmosphere_hybrid_height_coordinate(a, b, orog):
@@ -320,7 +365,9 @@ def atmosphere_hybrid_height_coordinate(a, b, orog):
 
     z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
 
-    return z.transpose("time", "lev", "lat", "lon")
+    output_order = derive_dimension_order("nkji", nji=orog, k=b)
+
+    return z.transpose(*output_order)
 
 
 def atmosphere_sleve_coordinate(a, b1, b2, ztop, zsurf1, zsurf2):
@@ -364,7 +411,9 @@ def atmosphere_sleve_coordinate(a, b1, b2, ztop, zsurf1, zsurf2):
 
     z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
 
-    return z.transpose("time", "lev", "lat", "lon")
+    output_order = derive_dimension_order("nkji", nji=zsurf1, k=a)
+
+    return z.transpose(*output_order)
 
 
 def ocean_sigma_coordinate(sigma, eta, depth):
@@ -397,7 +446,9 @@ def ocean_sigma_coordinate(sigma, eta, depth):
 
     z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
 
-    return z.transpose("time", "lev", "lat", "lon")
+    output_order = derive_dimension_order("nkji", nji=eta, k=sigma)
+
+    return z.transpose(*output_order)
 
 
 def ocean_s_coordinate(s, eta, depth, a, b, depth_c):
@@ -440,7 +491,9 @@ def ocean_s_coordinate(s, eta, depth, a, b, depth_c):
 
     z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
 
-    return z.transpose("time", "lev", "lat", "lon")
+    output_order = derive_dimension_order("nkji", nji=eta, k=s)
+
+    return z.transpose(*output_order)
 
 
 def ocean_s_coordinate_g1(s, C, eta, depth, depth_c):
@@ -471,15 +524,17 @@ def ocean_s_coordinate_g1(s, C, eta, depth, depth_c):
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_s_coordinate_generic_form_1
     """
-    s = depth_c * s + (depth - depth_c) * C
+    S = depth_c * s + (depth - depth_c) * C
 
-    z = s + eta * (1 + s / depth)
+    z = S + eta * (1 + s / depth)
 
     out_stdname = _derive_ocean_stdname(eta=eta.attrs, depth=depth.attrs)
 
     z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
 
-    return z.transpose("time", "lev", "lat", "lon")
+    output_order = derive_dimension_order("nkji", nji=eta, k=s)
+
+    return z.transpose(*output_order)
 
 
 def ocean_s_coordinate_g2(s, C, eta, depth, depth_c):
@@ -510,15 +565,17 @@ def ocean_s_coordinate_g2(s, C, eta, depth, depth_c):
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_s_coordinate_generic_form_2
     """
-    s = (depth_c * s + depth * C) / (depth_c + depth)
+    S = (depth_c * s + depth * C) / (depth_c + depth)
 
-    z = eta + (eta + depth) * s
+    z = eta + (eta + depth) * S
 
     out_stdname = _derive_ocean_stdname(eta=eta.attrs, depth=depth.attrs)
 
     z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
 
-    return z.transpose("time", "lev", "lat", "lon")
+    output_order = derive_dimension_order("nkji", nji=eta, k=s)
+
+    return z.transpose(*output_order)
 
 
 def ocean_sigma_z_coordinate(sigma, eta, depth, depth_c, nsigma, zlev):
@@ -573,7 +630,9 @@ def ocean_sigma_z_coordinate(sigma, eta, depth, depth_c, nsigma, zlev):
 
     z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
 
-    return z.transpose("time", "lev", "lat", "lon")
+    output_order = derive_dimension_order("nkji", nji=eta, k=sigma)
+
+    return z.transpose(*output_order)
 
 
 def ocean_double_sigma_coordinate(sigma, depth, z1, z2, a, href, k_c):
@@ -623,4 +682,6 @@ def ocean_double_sigma_coordinate(sigma, depth, z1, z2, a, href, k_c):
 
     z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
 
-    return z.transpose("lev", "lat", "lon")
+    output_order = derive_dimension_order("kji", ji=depth, k=sigma)
+
+    return z.transpose(*output_order)

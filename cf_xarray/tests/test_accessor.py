@@ -1309,12 +1309,16 @@ def test_decode_vertical_coords() -> None:
     ):
         romsds.cf.decode_vertical_coords()
 
+    # needs standard names on `eta` and `depth` to derive computed standard name
+    romsds.h.attrs["standard_name"] = "sea_floor_depth_below_ geopotential_datum"
+    romsds.zeta.attrs["standard_name"] = "sea_surface_height_above_ geopotential_datum"
+
     with pytest.warns(DeprecationWarning):
         romsds.cf.decode_vertical_coords(prefix="z_rho")
 
     romsds_less_h = romsds.drop_vars(["h"])
 
-    with pytest.raises(KeyError, match="Required terms {'depth'} absent in dataset."):
+    with pytest.raises(KeyError, match="Required terms depth absent in dataset."):
         romsds_less_h.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
 

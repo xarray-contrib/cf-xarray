@@ -1454,9 +1454,9 @@ def test_rename(obj):
         "air_temperature" if isinstance(obj, Dataset) else "longitude": "renamed"
     }
     xr_dict = {
-        "air"
-        if isinstance(obj, Dataset) and "air" in obj.data_vars
-        else "lon": "renamed"
+        (
+            "air" if isinstance(obj, Dataset) and "air" in obj.data_vars else "lon"
+        ): "renamed"
     }
     assert_identical(obj.rename(xr_dict), obj.cf.rename(cf_dict))
     assert_identical(obj.rename(**xr_dict), obj.cf.rename(**cf_dict))

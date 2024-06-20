@@ -587,7 +587,7 @@ def cf_to_polygons(ds: xr.Dataset):
     return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
 
 
-def grid_to_polygons(ds: xr.Dataset) -> xr.DataArray:
+def bounds_to_polygons(ds: xr.Dataset) -> xr.DataArray:
     """
     Converts the bounds of a regular 2D lat/lon grid to a 2D array of shapely polygons.
 

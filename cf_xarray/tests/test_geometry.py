@@ -4,7 +4,21 @@ import xarray as xr
 
 import cf_xarray as cfxr
 
+from ..geometry import decode_geometries, encode_geometries
 from . import requires_shapely
+
+
+@pytest.fixture
+def polygon_geometry() -> xr.DataArray:
+    from shapely.geometry import Polygon
+
+    # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
+    geoms = np.empty(2, dtype=object)
+    geoms[:] = [
+        Polygon(([50, 0], [40, 15], [30, 0])),
+        Polygon(([70, 50], [60, 65], [50, 50])),
+    ]
+    return xr.DataArray(geoms, dims=("index",), name="geometry")
 
 
 @pytest.fixture
@@ -127,18 +141,9 @@ def geometry_line_without_multilines_ds():
 
 
 @pytest.fixture
-def geometry_polygon_without_holes_ds():
-    from shapely.geometry import Polygon
-
-    # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
-    geoms = np.empty(2, dtype=object)
-    geoms[:] = [
-        Polygon(([50, 0], [40, 15], [30, 0])),
-        Polygon(([70, 50], [60, 65], [50, 50])),
-    ]
-
+def geometry_polygon_without_holes_ds(polygon_geometry):
+    shp_da = polygon_geometry
     ds = xr.Dataset()
-    shp_da = xr.DataArray(geoms, dims=("index",), name="geometry")
 
     cf_ds = ds.assign(
         x=xr.DataArray(
@@ -521,3 +526,19 @@ def test_reshape_unique_geometries(geometry_ds):
     in_ds = in_ds.assign(geometry=geoms)
     with pytest.raises(ValueError, match="The geometry variable must be 1D"):
         cfxr.geometry.reshape_unique_geometries(in_ds)
+
+
+@requires_shapely
+def test_encode_decode(geometry_ds, polygon_geometry):
+
+    geom_dim_ds = xr.Dataset()
+    geom_dim_ds = geom_dim_ds.assign_coords(
+        xr.Coordinates(
+            coords={"geoms": xr.Variable("geoms", polygon_geometry.variable)},
+            indexes={},
+        )
+    ).assign({"foo": ("geoms", [1, 2])})
+
+    for ds in (geometry_ds[1], polygon_geometry.to_dataset(), geom_dim_ds):
+        roundtripped = decode_geometries(encode_geometries(ds))
+        xr.testing.assert_identical(ds, roundtripped)

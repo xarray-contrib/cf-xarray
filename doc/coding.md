@@ -26,6 +26,10 @@ xr.set_options(display_expand_data=False)
 
 `cf_xarray` aims to support encoding and decoding variables using CF conventions not yet implemented by Xarray.
 
+## Geometries
+
+See [](./geometry.md) for more.
+
 ## Compression by gathering
 
 The ["compression by gathering"](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering)

@@ -8,15 +8,13 @@ kernelspec:
 ---
 
 ```{eval-rst}
-.. currentmodule:: xarray
+.. currentmodule:: cf_xarray
 ```
 
 # Geometries
 
 ```{seealso}
-1. [The CF conventions on Geometries](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#geometries)
-1. {py:func}`cf_xarray.shapely_to_cf`
-1. {py:func}`cf_xarray.cf_to_shapely`
+[The CF conventions on Geometries](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#geometries)
 ```
 
 `cf_xarray` can convert between vector geometries represented as shapely objects
@@ -42,6 +40,7 @@ da = xr.DataArray(
     dims=("index",),
     name="geometry"
 )
+da
 ```
 
 ```{warning}
@@ -50,7 +49,30 @@ da = xr.DataArray(
 geometries of the same type.
 ```
 
-Now we can take that `xr.DataArray` containing shapely geometries and convert it to cf:
+## Encode / Decode
+
+`cf-xarray` provides {py:func}`geometry.encode_geometries` and {py:func}`geometry.decode_geometries` to
+encode and decode xarray Datasets to/from a CF-compliant form that can be written to any array storage format.
+
+For example:
+
+```{code-cell}
+ds = da.to_dataset()
+encoded = cfxr.geometry.encode_geometries(ds)
+encoded
+```
+
+This dataset can then be written to any format supported by Xarray.
+To decode, reverse the process using {py:func}`geometry.decode_geometries`
+
+```{code-cell}
+decoded = cfxr.geometry.decode_geometries(encoded)
+ds.identical(decoded)
+```
+
+## Lower-level conversions
+
+Encoding a single DataArray is possible using {py:func}`geometry.shapely_to_cf`.
 
 ```{code-cell}
 ds_cf = cfxr.shapely_to_cf(da)
@@ -94,6 +116,6 @@ By default these are called `'crd_x'` and `'crd_y'` unless `grid_mapping` is spe
 
 For MultiPolygons with holes the CF notation is slightly ambiguous on which hole is associated
 with which polygon. This is problematic because shapely stores holes within the polygon
-object that they are associated with. `cf_xarray` assumes that the the shapes are interleaved
+object that they are associated with. `cf_xarray` assumes that the shapes are interleaved
 such that the holes (interior rings) are associated with the exteriors (exterior rings) that
 immediately precede them.

@@ -106,6 +106,7 @@ Attributes
     Dataset.cf.coordinates
     Dataset.cf.formula_terms
     Dataset.cf.grid_mapping_names
+    Dataset.cf.geometries
     Dataset.cf.standard_names
 
 .. _dsmeth:

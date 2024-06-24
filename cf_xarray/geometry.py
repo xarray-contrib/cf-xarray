@@ -159,6 +159,8 @@ def encode_geometries(ds: xr.Dataset):
     for varname, var in ds._variables.items():
         if varname == name:
             continue
+        # TODO: this is incomplete. It works for vector data cubes where one of the geometry vars
+        # is a dimension coordinate.
         if name in var.dims:
             var = var.copy()
             var._attrs = copy.deepcopy(var._attrs)
@@ -244,7 +246,7 @@ def reshape_unique_geometries(
     out[geom_var] = ds[geom_var].isel({old_name: unique_indexes})
     if old_name not in ds.coords:
         # If there was no coord before, drop the dummy one we made.
-        out = out.drop_vars(old_name)
+        out = out.drop_vars(old_name)  # type: ignore[arg-type,unused-ignore]  # Hashable/str stuff
     return out
 
 

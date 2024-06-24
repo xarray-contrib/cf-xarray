@@ -295,6 +295,17 @@ def _format_dsg_roles(accessor, dims, rich):
     )
 
 
+def _format_geometries(accessor, dims, rich):
+    yield make_text_section(
+        accessor,
+        "CF Geometries",
+        "geometries",
+        dims=dims,
+        # valid_keys=_DSG_ROLES,
+        rich=rich,
+    )
+
+
 def _format_coordinates(accessor, dims, coords, rich):
     from .accessor import _AXIS_NAMES, _CELL_MEASURES, _COORD_NAMES
 

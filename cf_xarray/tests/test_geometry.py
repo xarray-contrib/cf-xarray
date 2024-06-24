@@ -22,48 +22,6 @@ def polygon_geometry() -> xr.DataArray:
 
 
 @pytest.fixture
-def geometry_ds():
-    from shapely.geometry import MultiPoint, Point
-
-    # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
-    geoms = np.empty(4, dtype=object)
-    geoms[:] = [
-        MultiPoint([(1.0, 2.0), (2.0, 3.0)]),
-        Point(3.0, 4.0),
-        Point(4.0, 5.0),
-        Point(3.0, 4.0),
-    ]
-
-    ds = xr.Dataset(
-        {
-            "data": xr.DataArray(range(len(geoms)), dims=("index",)),
-            "time": xr.DataArray([0, 0, 0, 1], dims=("index",)),
-        }
-    )
-    shp_ds = ds.assign(geometry=xr.DataArray(geoms, dims=("index",)))
-
-    cf_ds = ds.assign(
-        x=xr.DataArray([1.0, 2.0, 3.0, 4.0, 3.0], dims=("node",), attrs={"axis": "X"}),
-        y=xr.DataArray([2.0, 3.0, 4.0, 5.0, 4.0], dims=("node",), attrs={"axis": "Y"}),
-        node_count=xr.DataArray([2, 1, 1, 1], dims=("index",)),
-        crd_x=xr.DataArray([1.0, 3.0, 4.0, 3.0], dims=("index",), attrs={"nodes": "x"}),
-        crd_y=xr.DataArray([2.0, 4.0, 5.0, 4.0], dims=("index",), attrs={"nodes": "y"}),
-        geometry_container=xr.DataArray(
-            attrs={
-                "geometry_type": "point",
-                "node_count": "node_count",
-                "node_coordinates": "x y",
-                "coordinates": "crd_x crd_y",
-            }
-        ),
-    )
-
-    cf_ds = cf_ds.set_coords(["x", "y", "crd_x", "crd_y"])
-
-    return cf_ds, shp_ds
-
-
-@pytest.fixture
 def geometry_line_ds():
     from shapely.geometry import LineString, MultiLineString
 
@@ -284,8 +242,11 @@ def test_shapely_to_cf(geometry_ds):
     from shapely.geometry import Point
 
     expected, in_ds = geometry_ds
+    expected = expected.copy(deep=True)
 
+    # This isn't really a roundtrip test
     out = xr.merge([in_ds.drop_vars("geometry"), cfxr.shapely_to_cf(in_ds.geometry)])
+    del expected.data.attrs["geometry"]
     xr.testing.assert_identical(out, expected)
 
     out = xr.merge(

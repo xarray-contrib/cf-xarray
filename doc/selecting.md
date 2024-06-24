@@ -22,7 +22,10 @@ xr.set_options(display_expand_data=False)
 
 # Selecting DataArrays
 
-A second powerful feature of `cf_xarray` is the ability select DataArrays using special "CF names" like the "latitude", or "longitude" coordinate names, "X"  or "Y" axes names, oreven using the `standard_name` attribute if present.
+```{seealso}
+```
+
+A powerful feature of `cf_xarray` is the ability select DataArrays using special "CF names" like the "latitude", or "longitude" coordinate names, "X"  or "Y" axes names, oreven using the `standard_name` attribute if present.
 
 To demonstrate this, let's load a few datasets
 

@@ -585,3 +585,66 @@ def cf_to_polygons(ds: xr.Dataset):
     geoms = np.where(np.diff(offset3) == 1, polygons[offset3[:-1]], multipolygons)
 
     return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
+
+
+def bounds_to_polygons(ds: xr.Dataset) -> xr.DataArray:
+    """
+    Converts the bounds of a regular 2D lat/lon grid to a 2D array of shapely polygons.
+
+    Modified from https://notebooksharing.space/view/c6c1f3a7d0c260724115eaa2bf78f3738b275f7f633c1558639e7bbd75b31456.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Dataset with "latitude" and "longitude" variables as well as their bounds variables.
+        1D and 2D "latitude" and "longitude" variables are supported. 1D variables will
+        be broadcast against each other.
+
+    Returns
+    -------
+    DataArray
+        DataArray with shapely polygon per grid cell.
+    """
+    import shapely
+
+    grid = ds.cf[["latitude", "longitude"]].load()
+    bounds = grid.cf.bounds
+    dims = grid.cf.dims
+
+    if "latitude" in dims or "longitude" in dims:
+        # for 1D lat, lon, this allows them to be
+        # broadcast against each other
+        grid = grid.reset_coords()
+
+    assert "latitude" in bounds
+    assert "longitude" in bounds
+    (lon_bounds,) = bounds["longitude"]
+    (lat_bounds,) = bounds["latitude"]
+
+    with xr.set_options(keep_attrs=True):
+        (points,) = xr.broadcast(grid)
+
+    bounds_dim = grid.cf.get_bounds_dim_name("latitude")
+    points = points.transpose(..., bounds_dim)
+    lonbnd = points[lon_bounds].data
+    latbnd = points[lat_bounds].data
+
+    if points.sizes[bounds_dim] == 2:
+        lonbnd = lonbnd[..., [0, 0, 1, 1]]
+        latbnd = latbnd[..., [0, 1, 1, 0]]
+
+    elif points.sizes[bounds_dim] != 4:
+        raise ValueError(
+            f"The size of the detected bounds or vertex dimension {bounds_dim} is not 2 or 4."
+        )
+
+    # geopandas needs this
+    mask = lonbnd[..., 0] >= 180
+    lonbnd[mask, :] = lonbnd[mask, :] - 360
+
+    polyarray = shapely.polygons(shapely.linearrings(lonbnd, latbnd))
+
+    # 'geometry' is a blessed name in geopandas.
+    boxes = points[lon_bounds][..., 0].copy(data=polyarray).rename("geometry")
+
+    return boxes

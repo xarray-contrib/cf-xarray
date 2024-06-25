@@ -2274,8 +2274,8 @@ class CFDatasetAccessor(CFAccessor):
         References
         ----------
         Please refer to the CF conventions document :
-          1. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate
-          2. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord.
+          1. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#parametric-vertical-coordinate
+          2. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#parametric-v-coord.
 
         Examples
         --------
@@ -2551,7 +2551,7 @@ class CFDatasetAccessor(CFAccessor):
 
         References
         ----------
-        Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-boundaries.
+        Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#cell-boundaries.
         """
         if keys is None:
             coords = tuple(self.keys())
@@ -2760,8 +2760,8 @@ class CFDataArrayAccessor(CFAccessor):
         References
         ----------
         Please refer to the CF conventions document :
-          1. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-vertical-coordinate
-          2. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#parametric-v-coord.
+          1. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#parametric-vertical-coordinate
+          2. http://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#parametric-v-coord.
 
         Examples
         --------

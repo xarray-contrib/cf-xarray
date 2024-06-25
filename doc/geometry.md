@@ -88,7 +88,7 @@ cfxr.cf_to_shapely(ds_cf)
 ```
 
 This conversion adds coordinates that aren't in the `xr.DataArray` that we started with.
-By default these are called `crd_x` and `crd_y` unless `grid_mapping` is specified.
+By default these are called `'crd_x'` and `'crd_y'` unless `grid_mapping` is specified.
 
 ## Gotchas
 

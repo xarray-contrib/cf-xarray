@@ -9,6 +9,11 @@ kernelspec:
 
 # SGRID / UGRID
 
+```{seealso}
+1. [SGRID conventions](https://sgrid.github.io/sgrid/)
+1. [UGRID conventions](http://ugrid-conventions.github.io/ugrid-conventions/)
+```
+
 ## SGRID
 
 `cf_xarray` can parse the attributes on the `grid_topology` variable to identify dimension names with axes names `X`, `Y`, `Z`.

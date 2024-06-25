@@ -2076,3 +2076,25 @@ def test_ancillary_variables_extra_dim():
         }
     )
     assert_identical(ds.cf["X"], ds["x"])
+
+
+def test_geometry_association(geometry_ds):
+    cf_ds, _ = geometry_ds
+    actual = cf_ds.cf[["data"]]
+    for name in ["geometry_container", "x", "y", "node_count", "crd_x", "crd_y"]:
+        assert name in actual.coords
+
+    actual = cf_ds.cf["data"]
+    for name in ["geometry_container", "node_count", "crd_x", "crd_y"]:
+        assert name in actual.coords
+
+    assert cf_ds.cf.geometries == {"point": ["geometry_container"]}
+    assert_identical(cf_ds.cf["geometry"], cf_ds["geometry_container"])
+    with pytest.raises(ValueError):
+        cf_ds.cf["point"]
+
+    expected = cf_ds[["geometry_container", "node_count", "x", "y", "crd_x", "crd_y"]]
+    assert_identical(
+        cf_ds.cf[["point"]],
+        expected.set_coords(["node_count", "x", "y", "crd_x", "crd_y"]),
+    )

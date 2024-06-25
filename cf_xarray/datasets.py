@@ -748,3 +748,32 @@ sgrid_delft3["grid"] = xr.DataArray(
         node_coordinates="node_lon node_lat node_elevation",
     ),
 )
+
+
+def point_dataset():
+    from shapely.geometry import MultiPoint, Point
+
+    da = xr.DataArray(
+        [
+            MultiPoint([(1.0, 2.0), (2.0, 3.0)]),
+            Point(3.0, 4.0),
+            Point(4.0, 5.0),
+            Point(3.0, 4.0),
+        ],
+        dims=("index",),
+        name="geometry",
+    )
+    ds = da.to_dataset()
+    return ds
+
+
+def encoded_point_dataset():
+    from .geometry import encode_geometries
+
+    ds = encode_geometries(point_dataset())
+    ds["data"] = (
+        "index",
+        np.arange(ds.sizes["index"]),
+        {"geometry": "geometry_container"},
+    )
+    return ds

@@ -4,49 +4,21 @@ import xarray as xr
 
 import cf_xarray as cfxr
 
+from ..geometry import decode_geometries, encode_geometries
 from . import requires_shapely
 
 
 @pytest.fixture
-def geometry_ds():
-    from shapely.geometry import MultiPoint, Point
+def polygon_geometry() -> xr.DataArray:
+    from shapely.geometry import Polygon
 
     # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
-    geoms = np.empty(4, dtype=object)
+    geoms = np.empty(2, dtype=object)
     geoms[:] = [
-        MultiPoint([(1.0, 2.0), (2.0, 3.0)]),
-        Point(3.0, 4.0),
-        Point(4.0, 5.0),
-        Point(3.0, 4.0),
+        Polygon(([50, 0], [40, 15], [30, 0])),
+        Polygon(([70, 50], [60, 65], [50, 50])),
     ]
-
-    ds = xr.Dataset(
-        {
-            "data": xr.DataArray(range(len(geoms)), dims=("index",)),
-            "time": xr.DataArray([0, 0, 0, 1], dims=("index",)),
-        }
-    )
-    shp_ds = ds.assign(geometry=xr.DataArray(geoms, dims=("index",)))
-
-    cf_ds = ds.assign(
-        x=xr.DataArray([1.0, 2.0, 3.0, 4.0, 3.0], dims=("node",), attrs={"axis": "X"}),
-        y=xr.DataArray([2.0, 3.0, 4.0, 5.0, 4.0], dims=("node",), attrs={"axis": "Y"}),
-        node_count=xr.DataArray([2, 1, 1, 1], dims=("index",)),
-        crd_x=xr.DataArray([1.0, 3.0, 4.0, 3.0], dims=("index",), attrs={"nodes": "x"}),
-        crd_y=xr.DataArray([2.0, 4.0, 5.0, 4.0], dims=("index",), attrs={"nodes": "y"}),
-        geometry_container=xr.DataArray(
-            attrs={
-                "geometry_type": "point",
-                "node_count": "node_count",
-                "node_coordinates": "x y",
-                "coordinates": "crd_x crd_y",
-            }
-        ),
-    )
-
-    cf_ds = cf_ds.set_coords(["x", "y", "crd_x", "crd_y"])
-
-    return cf_ds, shp_ds
+    return xr.DataArray(geoms, dims=("index",), name="geometry")
 
 
 @pytest.fixture
@@ -127,18 +99,9 @@ def geometry_line_without_multilines_ds():
 
 
 @pytest.fixture
-def geometry_polygon_without_holes_ds():
-    from shapely.geometry import Polygon
-
-    # empty/fill workaround to avoid numpy deprecation(warning) due to the array interface of shapely geometries.
-    geoms = np.empty(2, dtype=object)
-    geoms[:] = [
-        Polygon(([50, 0], [40, 15], [30, 0])),
-        Polygon(([70, 50], [60, 65], [50, 50])),
-    ]
-
+def geometry_polygon_without_holes_ds(polygon_geometry):
+    shp_da = polygon_geometry
     ds = xr.Dataset()
-    shp_da = xr.DataArray(geoms, dims=("index",), name="geometry")
 
     cf_ds = ds.assign(
         x=xr.DataArray(
@@ -279,8 +242,11 @@ def test_shapely_to_cf(geometry_ds):
     from shapely.geometry import Point
 
     expected, in_ds = geometry_ds
+    expected = expected.copy(deep=True)
 
+    # This isn't really a roundtrip test
     out = xr.merge([in_ds.drop_vars("geometry"), cfxr.shapely_to_cf(in_ds.geometry)])
+    del expected.data.attrs["geometry"]
     xr.testing.assert_identical(out, expected)
 
     out = xr.merge(
@@ -521,3 +487,19 @@ def test_reshape_unique_geometries(geometry_ds):
     in_ds = in_ds.assign(geometry=geoms)
     with pytest.raises(ValueError, match="The geometry variable must be 1D"):
         cfxr.geometry.reshape_unique_geometries(in_ds)
+
+
+@requires_shapely
+def test_encode_decode(geometry_ds, polygon_geometry):
+
+    geom_dim_ds = xr.Dataset()
+    geom_dim_ds = geom_dim_ds.assign_coords(
+        xr.Coordinates(
+            coords={"geoms": xr.Variable("geoms", polygon_geometry.variable)},
+            indexes={},
+        )
+    ).assign({"foo": ("geoms", [1, 2])})
+
+    for ds in (geometry_ds[1], polygon_geometry.to_dataset(), geom_dim_ds):
+        roundtripped = decode_geometries(encode_geometries(ds))
+        xr.testing.assert_identical(ds, roundtripped)

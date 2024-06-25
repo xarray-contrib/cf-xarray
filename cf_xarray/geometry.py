@@ -1,10 +1,189 @@
 from __future__ import annotations
 
+import copy
 from collections.abc import Sequence
 
 import numpy as np
 import pandas as pd
 import xarray as xr
+
+GEOMETRY_CONTAINER_NAME = "geometry_container"
+
+__all__ = [
+    "decode_geometries",
+    "encode_geometries",
+    "cf_to_shapely",
+    "shapely_to_cf",
+]
+
+
+def decode_geometries(encoded: xr.Dataset) -> xr.Dataset:
+    """
+    Decode CF encoded geometries to a numpy object array containing shapely geometries.
+
+    Parameters
+    ----------
+    encoded : Dataset
+        A Xarray Dataset containing encoded geometries.
+
+    Returns
+    -------
+    Dataset
+        A Xarray Dataset containing decoded geometries.
+
+    See Also
+    --------
+    shapely_to_cf
+    cf_to_shapely
+    encode_geometries
+    """
+    if GEOMETRY_CONTAINER_NAME not in encoded._variables:
+        raise NotImplementedError(
+            f"Currently only a single geometry variable named {GEOMETRY_CONTAINER_NAME!r} is supported."
+            "A variable by this name is not present in the provided dataset."
+        )
+
+    enc_geom_var = encoded[GEOMETRY_CONTAINER_NAME]
+    geom_attrs = enc_geom_var.attrs
+    # Grab the coordinates attribute
+    geom_attrs.update(enc_geom_var.encoding)
+
+    geom_var = cf_to_shapely(encoded).variable
+
+    todrop = (GEOMETRY_CONTAINER_NAME,) + tuple(
+        s
+        for s in " ".join(
+            geom_attrs.get(attr, "")
+            for attr in [
+                "interior_ring",
+                "node_coordinates",
+                "node_count",
+                "part_node_count",
+                "coordinates",
+            ]
+        ).split(" ")
+        if s
+    )
+    decoded = encoded.drop_vars(todrop)
+
+    name = geom_attrs.get("variable_name", None)
+    if name in decoded.dims:
+        decoded = decoded.assign_coords(
+            xr.Coordinates(coords={name: geom_var}, indexes={})
+        )
+    else:
+        decoded[name] = geom_var
+
+    # Is this a good idea? We are deleting information.
+    for var in decoded._variables.values():
+        if var.attrs.get("geometry") == GEOMETRY_CONTAINER_NAME:
+            var.attrs.pop("geometry")
+    return decoded
+
+
+def encode_geometries(ds: xr.Dataset):
+    """
+    Encode any discovered geometry variables using the CF conventions.
+
+    Practically speaking, geometry variables are numpy object arrays where the first
+    element is a shapely geometry.
+
+    .. warning::
+
+       Only a single geometry variable is supported at present. Contributions to fix this
+       are welcome.
+
+    Parameters
+    ----------
+    ds : Dataset
+       Dataset containing at least one geometry variable.
+
+    Returns
+    -------
+    Dataset
+       Where all geometry variables are encoded.
+
+    See Also
+    --------
+    shapely_to_cf
+    cf_to_shapely
+    """
+    from shapely import (
+        LineString,
+        MultiLineString,
+        MultiPoint,
+        MultiPolygon,
+        Point,
+        Polygon,
+    )
+
+    SHAPELY_TYPES = (
+        Point,
+        LineString,
+        Polygon,
+        MultiPoint,
+        MultiLineString,
+        MultiPolygon,
+    )
+
+    geom_var_names = [
+        name
+        for name, var in ds._variables.items()
+        if var.dtype == "O" and isinstance(var.data.flat[0], SHAPELY_TYPES)
+    ]
+    if not geom_var_names:
+        return ds
+
+    if to_drop := set(geom_var_names) & set(ds._indexes):
+        # e.g. xvec GeometryIndex
+        ds = ds.drop_indexes(to_drop)
+
+    if len(geom_var_names) > 1:
+        raise NotImplementedError(
+            "Multiple geometry variables are not supported at this time. "
+            "Contributions to fix this are welcome. "
+            f"Detected geometry variables are {geom_var_names!r}"
+        )
+
+    (name,) = geom_var_names
+    variables = {}
+    # If `name` is a dimension name, then we need to drop it. Otherwise we don't
+    # So set errors="ignore"
+    variables.update(
+        shapely_to_cf(ds[name]).drop_vars(name, errors="ignore")._variables
+    )
+
+    geom_var = ds[name]
+
+    more_updates = {}
+    for varname, var in ds._variables.items():
+        if varname == name:
+            continue
+        # TODO: this is incomplete. It works for vector data cubes where one of the geometry vars
+        # is a dimension coordinate.
+        if name in var.dims:
+            var = var.copy()
+            var._attrs = copy.deepcopy(var._attrs)
+            var.attrs["geometry"] = GEOMETRY_CONTAINER_NAME
+            # The grid_mapping and coordinates attributes can be carried by the geometry container
+            # variable provided they are also carried by the data variables associated with the container.
+            if to_add := geom_var.attrs.get("coordinates", ""):
+                var.attrs["coordinates"] = var.attrs.get("coordinates", "") + to_add
+        more_updates[varname] = var
+    variables.update(more_updates)
+
+    # WARNING: cf-xarray specific convention.
+    # For vector data cubes, `name` is a dimension name.
+    # By encoding to CF, we have
+    # encoded the information in that variable across many different
+    # variables (e.g. node_count) with `name` as a dimension.
+    # We have to record `name` somewhere so that we reconstruct
+    # a geometry variable of the right name at decode-time.
+    variables[GEOMETRY_CONTAINER_NAME].attrs["variable_name"] = name
+
+    encoded = xr.Dataset(variables)
+
+    return encoded
 
 
 def reshape_unique_geometries(
@@ -67,7 +246,7 @@ def reshape_unique_geometries(
     out[geom_var] = ds[geom_var].isel({old_name: unique_indexes})
     if old_name not in ds.coords:
         # If there was no coord before, drop the dummy one we made.
-        out = out.drop_vars(old_name)
+        out = out.drop_vars(old_name)  # type: ignore[arg-type,unused-ignore]  # Hashable/str stuff
     return out
 
 
@@ -119,13 +298,15 @@ def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None 
             f"Mixed geometry types are not supported in CF-compliant datasets. Got {types}"
         )
 
+    ds[GEOMETRY_CONTAINER_NAME].attrs.update(coordinates="crd_x crd_y")
+
     # Special treatment of selected grid mappings
     if grid_mapping == "longitude_latitude":
         # Special case for longitude_latitude grid mapping
         ds = ds.rename(crd_x="lon", crd_y="lat")
         ds.lon.attrs.update(units="degrees_east", standard_name="longitude")
         ds.lat.attrs.update(units="degrees_north", standard_name="latitude")
-        ds.geometry_container.attrs.update(coordinates="lon lat")
+        ds[GEOMETRY_CONTAINER_NAME].attrs.update(coordinates="lon lat")
         ds.x.attrs.update(units="degrees_east", standard_name="longitude")
         ds.y.attrs.update(units="degrees_north", standard_name="latitude")
     elif grid_mapping is not None:
@@ -157,7 +338,7 @@ def cf_to_shapely(ds: xr.Dataset):
     ----------
     Please refer to the CF conventions document: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#geometries
     """
-    geom_type = ds.geometry_container.attrs["geometry_type"]
+    geom_type = ds[GEOMETRY_CONTAINER_NAME].attrs["geometry_type"]
     if geom_type == "point":
         geometries = cf_to_points(ds)
     elif geom_type == "line":
@@ -235,7 +416,7 @@ def points_to_cf(pts: xr.DataArray | Sequence):
     # Special case when we have no MultiPoints
     if (ds.node_count == 1).all():
         ds = ds.drop_vars("node_count")
-        del ds.geometry_container.attrs["node_count"]
+        del ds[GEOMETRY_CONTAINER_NAME].attrs["node_count"]
     return ds
 
 
@@ -259,7 +440,7 @@ def cf_to_points(ds: xr.Dataset):
     from shapely.geometry import MultiPoint, Point
 
     # Shorthand for convenience
-    geo = ds.geometry_container.attrs
+    geo = ds[GEOMETRY_CONTAINER_NAME].attrs
 
     # The features dimension name, defaults to the one of 'node_count' or the dimension of the coordinates, if present.
     feat_dim = None
@@ -267,10 +448,10 @@ def cf_to_points(ds: xr.Dataset):
         xcoord_name, _ = geo["coordinates"].split(" ")
         (feat_dim,) = ds[xcoord_name].dims
 
-    x_name, y_name = ds.geometry_container.attrs["node_coordinates"].split(" ")
+    x_name, y_name = ds[GEOMETRY_CONTAINER_NAME].attrs["node_coordinates"].split(" ")
     xy = np.stack([ds[x_name].values, ds[y_name].values], axis=-1)
 
-    node_count_name = ds.geometry_container.attrs.get("node_count")
+    node_count_name = ds[GEOMETRY_CONTAINER_NAME].attrs.get("node_count")
     if node_count_name is None:
         # No node_count means all geometries are single points (node_count = 1)
         # And if we had no coordinates, then the dimension defaults to "features"
@@ -363,7 +544,7 @@ def lines_to_cf(lines: xr.DataArray | Sequence):
     # Special case when we have no MultiLines
     if len(ds.part_node_count) == len(ds.node_count):
         ds = ds.drop_vars("part_node_count")
-        del ds.geometry_container.attrs["part_node_count"]
+        del ds[GEOMETRY_CONTAINER_NAME].attrs["part_node_count"]
     return ds
 
 
@@ -387,7 +568,7 @@ def cf_to_lines(ds: xr.Dataset):
     from shapely import GeometryType, from_ragged_array
 
     # Shorthand for convenience
-    geo = ds.geometry_container.attrs
+    geo = ds[GEOMETRY_CONTAINER_NAME].attrs
 
     # The features dimension name, defaults to the one of 'node_count'
     # or the dimension of the coordinates, if present.
@@ -503,12 +684,12 @@ def polygons_to_cf(polygons: xr.DataArray | Sequence):
     # Special case when we have no MultiPolygons and no holes
     if len(ds.part_node_count) == len(ds.node_count):
         ds = ds.drop_vars("part_node_count")
-        del ds.geometry_container.attrs["part_node_count"]
+        del ds[GEOMETRY_CONTAINER_NAME].attrs["part_node_count"]
 
     # Special case when we have no holes
     if (ds.interior_ring == 0).all():
         ds = ds.drop_vars("interior_ring")
-        del ds.geometry_container.attrs["interior_ring"]
+        del ds[GEOMETRY_CONTAINER_NAME].attrs["interior_ring"]
     return ds
 
 
@@ -532,7 +713,7 @@ def cf_to_polygons(ds: xr.Dataset):
     from shapely import GeometryType, from_ragged_array
 
     # Shorthand for convenience
-    geo = ds.geometry_container.attrs
+    geo = ds[GEOMETRY_CONTAINER_NAME].attrs
 
     # The features dimension name, defaults to the one of 'part_node_count'
     # or the dimension of the coordinates, if present.

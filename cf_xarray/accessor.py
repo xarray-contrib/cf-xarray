@@ -2993,45 +2993,47 @@ class CFDataArrayAccessor(CFAccessor):
         Parameters
         ----------
         flags: Sequence[str]
-            Flags to extract. If empty (string or list), return all flags in
-            `flag_meanings`.
+            Flags to extract. If None, return all flags in `flag_meanings`.
         """
+        flag_dict = self.flag_dict
         if flags is None:
-            flags = tuple(self.flag_dict.keys())
+            flags = list(self.flag_dict.keys())
+        else:
+            for flag in flags:
+                if flag not in self.flag_dict:
+                    raise ValueError(
+                        f"Did not find flag meaning [{flag}] in known flag meanings:"
+                        f" [{self.flag_dict.keys()!r}]"
+                    )
+            flag_dict = {f: flag_dict[f] for f in flags}
+
+        # Check if we are in simplified cases
+        all_mutually_exclusive = any(f.flag_mask is None for f in flag_dict.values())
+        all_indep = any(f.flag_value is None for f in flag_dict.values())
 
         out = {}  # Output arrays
 
-        masks = []  # Bitmasks and values for asked flags
-        values = []
-        flags_reduced = []  # Flags left after removing mutually excl. flags
-        for flag in flags:
-            if flag not in self.flag_dict:
-                raise ValueError(
-                    f"Did not find flag value meaning [{flag}] in known flag meanings:"
-                    f" [{self.flag_dict.keys()!r}]"
-                )
-            mask, value = self.flag_dict[flag]
-            if mask is None:
-                out[flag] = self._obj == value
+        if all_mutually_exclusive:
+            for flag, params in flag_dict.items():
+                out[flag] = self._obj == params.flag_value
+            return Dataset(out)
+
+        # We cast both masks and flag variable as integers to make the
+        # bitwise comparison.
+        # TODO We could probably restrict the integer size
+        bit_mask = DataArray(
+            [f.flag_mask for f in flag_dict.values()], dims=["_mask"]
+        ).astype("i")
+        x = self._obj.astype("i")
+
+        bit_comp = x & bit_mask
+
+        for i, (flag, params) in enumerate(flag_dict.items()):
+            bit = bit_comp.isel(_mask=i)
+            if all_indep:
+                out[flag] = bit.astype(bool)
             else:
-                masks.append(mask)
-                values.append(value)
-                flags_reduced.append(flag)
-
-        if len(masks) > 0:  # If independant masks are left
-            # We cast both masks and flag variable as integers to make the
-            # bitwise comparison. We could probably restrict the integer size
-            # but it's difficult to make it safely for mixed type flags.
-            bit_mask = DataArray(masks, dims=["_mask"]).astype("i")
-            x = self._obj.astype("i")
-            bit_comp = x & bit_mask
-
-            for i, (flag, value) in enumerate(zip(flags_reduced, values)):
-                bit = bit_comp.isel(_mask=i)
-                if value is not None:
-                    out[flag] = bit == value
-                else:
-                    out[flag] = bit.astype(bool)
+                out[flag] = bit == params.flag_value
 
         return Dataset(out)
 

@@ -2832,6 +2832,11 @@ class CFDatasetAccessor(CFAccessor):
 
 @xr.register_dataarray_accessor("cf")
 class CFDataArrayAccessor(CFAccessor):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._flags: Dataset | None = None
+
     @property
     def formula_terms(self) -> dict[str, str]:  # numpydoc ignore=SS06
         """
@@ -2977,6 +2982,8 @@ class CFDataArrayAccessor(CFAccessor):
         """
         Dataset containing boolean masks of available flags.
         """
+        if self._flags is not None:
+            return self._flags
         return self._extract_flags()
 
     def _extract_flags(self, flags: Sequence[Hashable] | None = None) -> Dataset:

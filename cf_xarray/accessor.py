@@ -1167,7 +1167,9 @@ class CFAccessor:
         )
         return dict(zip(flag_meanings, flag_params))
 
-    def _assert_valid_other_comparison(self, other: Hashable) -> Mapping[Hashable, FlagParam]:
+    def _assert_valid_other_comparison(
+        self, other: Hashable
+    ) -> Mapping[Hashable, FlagParam]:
         if other not in self.flag_dict:
             raise ValueError(
                 f"Did not find flag value meaning [{other}] in known flag meanings: [{self.flag_dict.keys()!r}]"

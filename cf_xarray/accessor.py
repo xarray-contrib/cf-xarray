@@ -1114,41 +1114,6 @@ class _CFWrappedPlotMethods:
         )
 
 
-def create_flag_dict(da) -> Mapping[Hashable, FlagParam]:
-    """
-    Return possible flag meanings and associated bitmask/values.
-
-    The mapping values are a tuple containing a bitmask and a value. Either
-    can be None.
-    If only a bitmask: Independent flags.
-    If only a value: Mutually exclusive flags.
-    If both: Mix of independent and mutually exclusive flags.
-    """
-    if not da.cf.is_flag_variable:
-        raise ValueError(
-            "Comparisons are only supported for DataArrays that represent "
-            "CF flag variables. .attrs must contain 'flag_meanings' and "
-            "'flag_values' or 'flag_masks'."
-        )
-
-    flag_meanings = da.attrs["flag_meanings"].split(" ")
-    n_flag = len(flag_meanings)
-
-    flag_values = da.attrs.get("flag_values", [None] * n_flag)
-    flag_masks = da.attrs.get("flag_masks", [None] * n_flag)
-
-    if not (n_flag == len(flag_values) == len(flag_masks)):
-        raise ValueError(
-            "Not as many flag meanings as values or masks. "
-            "Please check the flag_meanings, flag_values, flag_masks attributes "
-        )
-
-    flag_params = tuple(
-        FlagParam(mask, value) for mask, value in zip(flag_masks, flag_values)
-    )
-    return dict(zip(flag_meanings, flag_params))
-
-
 class CFAccessor:
     """
     Common Dataset and DataArray accessor functionality.
@@ -1157,23 +1122,62 @@ class CFAccessor:
     def __init__(self, obj):
         self._obj = obj
         self._all_cell_measures = None
+        self._flag_dict: Mapping[Hashable, FlagParam] | None = None
 
     def __setstate__(self, d):
         self.__dict__ = d
 
-    def _assert_valid_other_comparison(self, other):
-        # TODO cache this property
-        flag_dict = create_flag_dict(self._obj)
-        if other not in flag_dict:
+    @property
+    def flag_dict(self) -> Mapping[Hashable, FlagParam]:
+        """
+        Return possible flag meanings and associated bitmask/values.
+
+        The mapping values are a tuple containing a bitmask and a value. Either
+        can be None.
+        If only a bitmask: Independent flags.
+        If only a value: Mutually exclusive flags.
+        If both: Mix of independent and mutually exclusive flags.
+        """
+        if self._flag_dict is not None:
+            return self._flag_dict
+
+        da = self._obj
+
+        if not da.cf.is_flag_variable:
             raise ValueError(
-                f"Did not find flag value meaning [{other}] in known flag meanings: [{flag_dict.keys()!r}]"
+                "Comparisons are only supported for DataArrays that represent "
+                "CF flag variables. .attrs must contain 'flag_meanings' and "
+                "'flag_values' or 'flag_masks'."
             )
-        if flag_dict[other].flag_mask is not None:
+
+        flag_meanings = da.attrs["flag_meanings"].split(" ")
+        n_flag = len(flag_meanings)
+
+        flag_values = da.attrs.get("flag_values", [None] * n_flag)
+        flag_masks = da.attrs.get("flag_masks", [None] * n_flag)
+
+        if not (n_flag == len(flag_values) == len(flag_masks)):
+            raise ValueError(
+                "Not as many flag meanings as values or masks. "
+                "Please check the flag_meanings, flag_values, flag_masks attributes "
+            )
+
+        flag_params = tuple(
+            FlagParam(mask, value) for mask, value in zip(flag_masks, flag_values)
+        )
+        return dict(zip(flag_meanings, flag_params))
+
+    def _assert_valid_other_comparison(self, other: Hashable) -> Mapping[Hashable, FlagParam]:
+        if other not in self.flag_dict:
+            raise ValueError(
+                f"Did not find flag value meaning [{other}] in known flag meanings: [{self.flag_dict.keys()!r}]"
+            )
+        if self.flag_dict[other].flag_mask is not None:
             raise NotImplementedError(
                 "Only equals and not-equals comparisons with flag masks are supported."
                 " Please open an issue."
             )
-        return flag_dict
+        return self.flag_dict
 
     def __eq__(self, other) -> DataArray:  # type: ignore[override]
         """
@@ -1320,15 +1324,13 @@ class CFAccessor:
             raise ValueError(
                 ".cf.isin is only supported on DataArrays that contain CF flag attributes."
             )
-        # TODO cache this property
-        flag_dict = create_flag_dict(self._obj)
         mapped_test_elements = []
         for elem in test_elements:
-            if elem not in flag_dict:
+            if elem not in self.flag_dict:
                 raise ValueError(
-                    f"Did not find flag value meaning [{elem}] in known flag meanings: [{flag_dict.keys()!r}]"
+                    f"Did not find flag value meaning [{elem}] in known flag meanings: [{self.flag_dict.keys()!r}]"
                 )
-            mapped_test_elements.append(flag_dict[elem].flag_value)
+            mapped_test_elements.append(self.flag_dict[elem].flag_value)
         return self._obj.isin(mapped_test_elements)
 
     def _drop_missing_variables(self, variables: list[Hashable]) -> list[Hashable]:
@@ -2985,11 +2987,8 @@ class CFDataArrayAccessor(CFAccessor):
             Flags to extract. If empty (string or list), return all flags in
             `flag_meanings`.
         """
-        # TODO cache this property
-        flag_dict = create_flag_dict(self._obj)
-
         if flags is None:
-            flags = tuple(flag_dict.keys())
+            flags = tuple(self.flag_dict.keys())
 
         out = {}  # Output arrays
 
@@ -2997,12 +2996,12 @@ class CFDataArrayAccessor(CFAccessor):
         values = []
         flags_reduced = []  # Flags left after removing mutually excl. flags
         for flag in flags:
-            if flag not in flag_dict:
+            if flag not in self.flag_dict:
                 raise ValueError(
                     f"Did not find flag value meaning [{flag}] in known flag meanings:"
-                    f" [{flag_dict.keys()!r}]"
+                    f" [{self.flag_dict.keys()!r}]"
                 )
-            mask, value = flag_dict[flag]
+            mask, value = self.flag_dict[flag]
             if mask is None:
                 out[flag] = self._obj == value
             else:

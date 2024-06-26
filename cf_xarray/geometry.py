@@ -17,6 +17,19 @@ __all__ = [
 ]
 
 
+# Useful convention language:
+# 1. Whether linked to normal CF space-time coordinates with a nodes attribute or not, inclusion of such coordinates is
+#    recommended to maintain backward compatibility with software that has not implemented geometry capabilities.
+# 2. The geometry node coordinate variables must each have an axis attribute whose allowable values are X, Y, and Z.
+# 3. If a coordinates attribute is carried by the geometry container variable or its parent data variable, then those coordinate variables
+#    that have a meaningful correspondence with node coordinates are indicated as such by a nodes attribute that names the corresponding node
+#    coordinates, but only if the grid_mapping associated the geometry node variables is the same as that of the coordinate variables.
+#    If a different grid mapping is used, then the provided coordinates must not have the nodes attribute.
+#
+# Interpretation:
+# 1. node coordinates are exact; the 'normal' coordinates are a reasonable value to use, if you do not know how to interpret the nodes.
+
+
 def decode_geometries(encoded: xr.Dataset) -> xr.Dataset:
     """
     Decode CF encoded geometries to a numpy object array containing shapely geometries.
@@ -282,6 +295,14 @@ def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None 
     ----------
     Please refer to the CF conventions document: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#geometries
     """
+
+    if isinstance(geometries, xr.DataArray) and grid_mapping is not None:
+        raise DeprecationWarning(
+            "Explicitly passing `grid_mapping` with DataArray of geometries is deprecated. "
+            "Please set a `grid_mapping` attribute on `geometries`, ",
+            "and set the grid mapping variable as a coordinate",
+        )
+
     # Get all types to call the appropriate translation function.
     types = {
         geom.item().geom_type if isinstance(geom, xr.DataArray) else geom.geom_type
@@ -300,19 +321,38 @@ def shapely_to_cf(geometries: xr.DataArray | Sequence, grid_mapping: str | None 
 
     ds[GEOMETRY_CONTAINER_NAME].attrs.update(coordinates="crd_x crd_y")
 
+    if (
+        grid_mapping is None
+        and isinstance(geometries, xr.DataArray)
+        and (grid_mapping_varname := geometries.attrs.get("grid_mapping"))
+    ):
+        if grid_mapping_varname in geometries.coords:
+            grid_mapping = geometries.coords[grid_mapping_varname].attrs[
+                "grid_mapping_name"
+            ]
+            for name_ in ["x", "y", "crd_x", "crd_y"]:
+                ds[name_].attrs["grid_mapping"] = grid_mapping_varname
+
     # Special treatment of selected grid mappings
-    if grid_mapping == "longitude_latitude":
-        # Special case for longitude_latitude grid mapping
+    if grid_mapping in ["latitude_longitude", "rotated_latitude_longitude"]:
+        # Special case for longitude_latitude type grid mappings
         ds = ds.rename(crd_x="lon", crd_y="lat")
-        ds.lon.attrs.update(units="degrees_east", standard_name="longitude")
-        ds.lat.attrs.update(units="degrees_north", standard_name="latitude")
+        if grid_mapping == "latitude_longitude":
+            ds.lon.attrs.update(units="degrees_east", standard_name="longitude")
+            ds.x.attrs.update(units="degrees_east", standard_name="longitude")
+            ds.lat.attrs.update(units="degrees_north", standard_name="latitude")
+            ds.y.attrs.update(units="degrees_north", standard_name="latitude")
+        elif grid_mapping == "rotated_latitude_longitude":
+            ds.lon.attrs.update(units="degrees", standard_name="grid_longitude")
+            ds.x.attrs.update(units="degrees", standard_name="grid_longitude")
+            ds.lat.attrs.update(units="degrees", standard_name="grid_latitude")
+            ds.y.attrs.update(units="degrees", standard_name="grid_latitude")
         ds[GEOMETRY_CONTAINER_NAME].attrs.update(coordinates="lon lat")
-        ds.x.attrs.update(units="degrees_east", standard_name="longitude")
-        ds.y.attrs.update(units="degrees_north", standard_name="latitude")
     elif grid_mapping is not None:
-        raise NotImplementedError(
-            f"Only grid mapping longitude_latitude is implemented. Got {grid_mapping}."
-        )
+        ds.crd_x.attrs.update(standard_name="projection_x_coordinate")
+        ds.x.attrs.update(standard_name="projection_x_coordinate")
+        ds.crd_y.attrs.update(standard_name="projection_y_coordinate")
+        ds.y.attrs.update(standard_name="projection_y_coordinate")
 
     return ds
 

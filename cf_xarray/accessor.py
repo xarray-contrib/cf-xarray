@@ -8,6 +8,7 @@ from collections import ChainMap, namedtuple
 from collections.abc import Hashable, Iterable, Mapping, MutableMapping, Sequence
 from datetime import datetime
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Literal,
@@ -56,6 +57,9 @@ from .utils import (
     parse_cell_methods_attr,
     parse_cf_standard_name_table,
 )
+
+if TYPE_CHECKING:
+    from pyproj import CRS
 
 FlagParam = namedtuple("FlagParam", ["flag_mask", "flag_value"])
 
@@ -2341,6 +2345,22 @@ class CFDatasetAccessor(CFAccessor):
         Add additional keys by specifying "custom criteria". See :ref:`custom_criteria` for more.
         """
         return _getitem(self, key)
+
+    @property
+    def crs(self) -> CRS:
+        """
+        Returns a ``pyproj.CRS`` instance constructed from the grid_mapping variable's attributes.
+        """
+        from pyproj import CRS
+
+        try:
+            gm = self["grid_mapping"]
+        except KeyError as e:
+            raise ValueError(
+                "CRS is constructed from the 'grid_mapping' variable, but that could not be detected."
+            ) from e
+
+        return CRS.from_cf(gm.attrs)
 
     @property
     def formula_terms(self) -> dict[Hashable, dict[str, str]]:  # numpydoc ignore=SS06

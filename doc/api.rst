@@ -45,6 +45,7 @@ Attributes
     DataArray.cf.cell_measures
     DataArray.cf.cf_roles
     DataArray.cf.coordinates
+    DataArray.cf.crs
     DataArray.cf.formula_terms
     DataArray.cf.grid_mapping_name
     DataArray.cf.is_flag_variable
@@ -103,6 +104,7 @@ Attributes
     Dataset.cf.bounds
     Dataset.cf.cell_measures
     Dataset.cf.cf_roles
+    Dataset.cf.crs
     Dataset.cf.coordinates
     Dataset.cf.formula_terms
     Dataset.cf.grid_mapping_names

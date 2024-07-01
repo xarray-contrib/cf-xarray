@@ -360,6 +360,8 @@ def test_shapely_to_cf_errors():
     )
     assert encoded["x"].attrs["standard_name"] == "projection_x_coordinate"
     assert encoded["y"].attrs["standard_name"] == "projection_y_coordinate"
+    for name in ["x", "y", "crd_x", "crd_y"]:
+        assert "grid_mapping" not in encoded[name].attrs
 
 
 @requires_shapely

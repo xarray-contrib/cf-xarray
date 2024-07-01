@@ -37,7 +37,12 @@ __all__ = [
 class GeometryNames:
     """Helper class to ease handling of all the variable names needed for CF geometries."""
 
-    def __init__(self, suffix: str = "", grid_mapping: str | None = None):
+    def __init__(
+        self,
+        suffix: str = "",
+        grid_mapping_name: str | None = None,
+        grid_mapping: str | None = None,
+    ):
         self.container_name: str = GEOMETRY_CONTAINER_NAME + suffix
         self.node_dim: str = "node" + suffix
         self.node_count: str = "node_count" + suffix
@@ -51,24 +56,29 @@ class GeometryNames:
         self.attrs_x: dict[str, str] = {}
         self.attrs_y: dict[str, str] = {}
 
+        gmattr = {"grid_mapping": grid_mapping} if grid_mapping else {}
         # Special treatment of selected grid mappings
-        if grid_mapping in ["latitude_longitude", "rotated_latitude_longitude"]:
+        if grid_mapping_name in ["latitude_longitude", "rotated_latitude_longitude"]:
             # Special case for longitude_latitude type grid mappings
             self.coordinates_x = "lon"
             self.coordinates_y = "lat"
-            if grid_mapping == "latitude_longitude":
-                self.attrs_x = dict(units="degrees_east", standard_name="longitude")
-                self.attrs_y = dict(units="degrees_north", standard_name="latitude")
-            elif grid_mapping == "rotated_latitude_longitude":
+            if grid_mapping_name == "latitude_longitude":
                 self.attrs_x = dict(
-                    units="degrees_east", standard_name="grid_longitude"
+                    units="degrees_east", standard_name="longitude", **gmattr
                 )
                 self.attrs_y = dict(
-                    units="degrees_north", standard_name="grid_latitude"
+                    units="degrees_north", standard_name="latitude", **gmattr
                 )
-        elif grid_mapping is not None:
-            self.attrs_x = dict(standard_name="projection_x_coordinate")
-            self.attrs_y = dict(standard_name="projection_y_coordinate")
+            elif grid_mapping_name == "rotated_latitude_longitude":
+                self.attrs_x = dict(
+                    units="degrees_east", standard_name="grid_longitude", **gmattr
+                )
+                self.attrs_y = dict(
+                    units="degrees_north", standard_name="grid_latitude", **gmattr
+                )
+        elif grid_mapping_name is not None:
+            self.attrs_x = dict(standard_name="projection_x_coordinate", **gmattr)
+            self.attrs_y = dict(standard_name="projection_y_coordinate", **gmattr)
 
     @property
     def geometry_container_attrs(self) -> dict[str, str]:
@@ -429,6 +439,8 @@ def shapely_to_cf(
         geom.item().geom_type if isinstance(geom, xr.DataArray) else geom.geom_type
         for geom in geometries
     }
+
+    grid_mapping_varname = None
     if (
         grid_mapping is None
         and isinstance(geometries, xr.DataArray)
@@ -439,7 +451,9 @@ def shapely_to_cf(
                 "grid_mapping_name"
             ]
 
-    names = GeometryNames(suffix=suffix, grid_mapping=grid_mapping)
+    names = GeometryNames(
+        suffix=suffix, grid_mapping_name=grid_mapping, grid_mapping=grid_mapping_varname
+    )
 
     if types.issubset({"Point", "MultiPoint"}):
         ds = points_to_cf(geometries, names=names)
@@ -451,9 +465,6 @@ def shapely_to_cf(
         raise ValueError(
             f"Mixed geometry types are not supported in CF-compliant datasets. Got {types}"
         )
-
-        # for name_ in ["x", "y", "crd_x", "crd_y"]:
-        #     ds[name_].attrs["grid_mapping"] = grid_mapping_varname
 
     return ds
 

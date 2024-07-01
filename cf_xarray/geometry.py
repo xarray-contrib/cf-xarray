@@ -55,30 +55,28 @@ class GeometryNames:
         self.interior_ring: str = "interior_ring" + suffix
         self.attrs_x: dict[str, str] = {}
         self.attrs_y: dict[str, str] = {}
+        self.grid_mapping_attr = {"grid_mapping": grid_mapping} if grid_mapping else {}
 
-        gmattr = {"grid_mapping": grid_mapping} if grid_mapping else {}
         # Special treatment of selected grid mappings
         if grid_mapping_name in ["latitude_longitude", "rotated_latitude_longitude"]:
             # Special case for longitude_latitude type grid mappings
             self.coordinates_x = "lon"
             self.coordinates_y = "lat"
             if grid_mapping_name == "latitude_longitude":
-                self.attrs_x = dict(
-                    units="degrees_east", standard_name="longitude", **gmattr
-                )
-                self.attrs_y = dict(
-                    units="degrees_north", standard_name="latitude", **gmattr
-                )
+                self.attrs_x = dict(units="degrees_east", standard_name="longitude")
+                self.attrs_y = dict(units="degrees_north", standard_name="latitude")
             elif grid_mapping_name == "rotated_latitude_longitude":
                 self.attrs_x = dict(
-                    units="degrees_east", standard_name="grid_longitude", **gmattr
+                    units="degrees_east", standard_name="grid_longitude"
                 )
                 self.attrs_y = dict(
-                    units="degrees_north", standard_name="grid_latitude", **gmattr
+                    units="degrees_north", standard_name="grid_latitude"
                 )
         elif grid_mapping_name is not None:
-            self.attrs_x = dict(standard_name="projection_x_coordinate", **gmattr)
-            self.attrs_y = dict(standard_name="projection_y_coordinate", **gmattr)
+            self.attrs_x = dict(standard_name="projection_x_coordinate")
+            self.attrs_y = dict(standard_name="projection_y_coordinate")
+        self.attrs_x.update(self.grid_mapping_attr)
+        self.attrs_y.update(self.grid_mapping_attr)
 
     @property
     def geometry_container_attrs(self) -> dict[str, str]:
@@ -86,6 +84,7 @@ class GeometryNames:
             "node_count": self.node_count,
             "node_coordinates": f"{self.node_coordinates_x} {self.node_coordinates_y}",
             "coordinates": f"{self.coordinates_x} {self.coordinates_y}",
+            **self.grid_mapping_attr,
         }
 
     def coords(self, *, dim: str, x, y, crdX, crdY) -> dict[str, xr.DataArray]:
@@ -182,6 +181,7 @@ def decode_geometries(encoded: xr.Dataset) -> xr.Dataset:
     for container_name in containers:
         enc_geom_var = encoded[container_name]
         geom_attrs = enc_geom_var.attrs
+
         # Grab the coordinates attribute
         geom_attrs.update(enc_geom_var.encoding)
 
@@ -282,11 +282,13 @@ def encode_geometries(ds: xr.Dataset):
 
     variables = {}
     for name in geom_var_names:
-        container_name = GEOMETRY_CONTAINER_NAME + "_" + name
+        # TODO: do we prefer this choice be invariant to number of geometry variables
+        suffix = "_" + name if len(geom_var_names) > 1 else ""
+        container_name = GEOMETRY_CONTAINER_NAME + suffix
         # If `name` is a dimension name, then we need to drop it. Otherwise we don't
         # So set errors="ignore"
         variables.update(
-            shapely_to_cf(ds[name], suffix="_" + name)
+            shapely_to_cf(ds[name], suffix=suffix)
             .drop_vars(name, errors="ignore")
             ._variables
         )
@@ -447,9 +449,10 @@ def shapely_to_cf(
         and (grid_mapping_varname := geometries.attrs.get("grid_mapping"))
     ):
         if grid_mapping_varname in geometries.coords:
-            grid_mapping = geometries.coords[grid_mapping_varname].attrs[
-                "grid_mapping_name"
-            ]
+            # Not all CRS can be encoded in CF
+            grid_mapping = geometries.coords[grid_mapping_varname].attrs.get(
+                "grid_mapping_name", None
+            )
 
     names = GeometryNames(
         suffix=suffix, grid_mapping_name=grid_mapping, grid_mapping=grid_mapping_varname
@@ -512,6 +515,8 @@ def cf_to_shapely(ds: xr.Dataset, *, container: str = GEOMETRY_CONTAINER_NAME):
         raise ValueError(
             f"Valid CF geometry types are 'point', 'line' and 'polygon'. Got {geom_type}"
         )
+    if gm := ds[container].attrs.get("grid_mapping"):
+        geometries.attrs["grid_mapping"] = gm
 
     return geometries.rename("geometry")
 

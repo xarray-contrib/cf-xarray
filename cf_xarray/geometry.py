@@ -10,6 +10,7 @@ import pandas as pd
 import xarray as xr
 
 GEOMETRY_CONTAINER_NAME = "geometry_container"
+FEATURES_DIM_NAME = "features"
 
 __all__ = [
     "decode_geometries",
@@ -34,6 +35,8 @@ __all__ = [
 
 @dataclass
 class GeometryNames:
+    """Helper class to ease handling of all the variable names needed for CF geometries."""
+
     def __init__(self, suffix: str = "", grid_mapping: str | None = None):
         self.container_name: str = GEOMETRY_CONTAINER_NAME + suffix
         self.node_dim: str = "node" + suffix
@@ -315,7 +318,7 @@ def encode_geometries(ds: xr.Dataset):
 def reshape_unique_geometries(
     ds: xr.Dataset,
     geom_var: str = "geometry",
-    new_dim: str = "features",
+    new_dim: str = FEATURES_DIM_NAME,
 ) -> xr.Dataset:
     """Reshape a dataset containing a geometry variable so that all unique features are
     identified along a new dimension.
@@ -524,7 +527,7 @@ def points_to_cf(pts: xr.DataArray | Sequence, *, names: GeometryNames | None = 
         coord = pts[dim] if dim in pts.coords else None
         pts_ = pts.values.tolist()
     else:
-        dim = "features"
+        dim = FEATURES_DIM_NAME
         coord = None
         pts_ = pts
 
@@ -599,8 +602,8 @@ def cf_to_points(ds: xr.Dataset):
     node_count_name = ds[container_name].attrs.get("node_count")
     if node_count_name is None:
         # No node_count means all geometries are single points (node_count = 1)
-        # And if we had no coordinates, then the dimension defaults to "features"
-        feat_dim = feat_dim or "features"
+        # And if we had no coordinates, then the dimension defaults to FEATURES_DIM_NAME
+        feat_dim = feat_dim or FEATURES_DIM_NAME
         node_count = xr.DataArray([1] * xy.shape[0], dims=(feat_dim,))
         if feat_dim in ds.coords:
             node_count = node_count.assign_coords({feat_dim: ds[feat_dim]})

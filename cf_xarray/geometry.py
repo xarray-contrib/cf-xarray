@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 from collections import ChainMap
 from collections.abc import Hashable, Sequence
+from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
@@ -29,6 +30,70 @@ __all__ = [
 #
 # Interpretation:
 # 1. node coordinates are exact; the 'normal' coordinates are a reasonable value to use, if you do not know how to interpret the nodes.
+
+
+@dataclass
+class GeometryNames:
+    def __init__(self, suffix: str = "", grid_mapping: str | None = None):
+        self.container_name: str = GEOMETRY_CONTAINER_NAME + suffix
+        self.node_dim: str = "node" + suffix
+        self.node_count: str = "node_count" + suffix
+        self.node_coordinates_x: str = "x" + suffix
+        self.node_coordinates_y: str = "y" + suffix
+        self.coordinates_x: str = "crd_x" + suffix
+        self.coordinates_y: str = "crd_y" + suffix
+        self.part_node_count: str = "part_node_count" + suffix
+        self.part_dim: str = "part" + suffix
+        self.interior_ring: str = "interior_ring" + suffix
+        self.attrs_x: dict[str, str] = {}
+        self.attrs_y: dict[str, str] = {}
+
+        # Special treatment of selected grid mappings
+        if grid_mapping in ["latitude_longitude", "rotated_latitude_longitude"]:
+            # Special case for longitude_latitude type grid mappings
+            self.coordinates_x = "lon"
+            self.coordinates_y = "lat"
+            if grid_mapping == "latitude_longitude":
+                self.attrs_x = dict(units="degrees_east", standard_name="longitude")
+                self.attrs_y = dict(units="degrees_north", standard_name="latitude")
+            elif grid_mapping == "rotated_latitude_longitude":
+                self.attrs_x = dict(
+                    units="degrees_east", standard_name="grid_longitude"
+                )
+                self.attrs_y = dict(
+                    units="degrees_north", standard_name="grid_latitude"
+                )
+        elif grid_mapping is not None:
+            self.attrs_x = dict(standard_name="projection_x_coordinate")
+            self.attrs_y = dict(standard_name="projection_y_coordinate")
+
+    @property
+    def geometry_container_attrs(self) -> dict[str, str]:
+        return {
+            "node_count": self.node_count,
+            "node_coordinates": f"{self.node_coordinates_x} {self.node_coordinates_y}",
+            "coordinates": f"{self.coordinates_x} {self.coordinates_y}",
+        }
+
+    def coords(self, *, dim: str, x, y, crdX, crdY) -> dict[str, xr.DataArray]:
+        return {
+            self.node_coordinates_x: xr.DataArray(
+                x, dims=self.node_dim, attrs={"axis": "X", **self.attrs_x}
+            ),
+            self.node_coordinates_y: xr.DataArray(
+                y, dims=self.node_dim, attrs={"axis": "Y", **self.attrs_y}
+            ),
+            self.coordinates_x: xr.DataArray(
+                crdX,
+                dims=(dim,),
+                attrs={"nodes": self.node_coordinates_x, **self.attrs_x},
+            ),
+            self.coordinates_y: xr.DataArray(
+                crdY,
+                dims=(dim,),
+                attrs={"nodes": self.node_coordinates_y, **self.attrs_y},
+            ),
+        }
 
 
 def _assert_single_geometry_container(ds: xr.Dataset) -> str:
@@ -202,20 +267,13 @@ def encode_geometries(ds: xr.Dataset):
         # e.g. xvec GeometryIndex
         ds = ds.drop_indexes(to_drop)
 
-    if len(geom_var_names) > 1:
-        raise NotImplementedError(
-            "Multiple geometry variables are not supported at this time. "
-            "Contributions to fix this are welcome. "
-            f"Detected geometry variables are {geom_var_names!r}"
-        )
-
     variables = {}
     for name in geom_var_names:
         container_name = GEOMETRY_CONTAINER_NAME + "_" + name
         # If `name` is a dimension name, then we need to drop it. Otherwise we don't
         # So set errors="ignore"
         variables.update(
-            shapely_to_cf(ds[name], container_name=container_name)
+            shapely_to_cf(ds[name], suffix="_" + name)
             .drop_vars(name, errors="ignore")
             ._variables
         )
@@ -321,7 +379,8 @@ def reshape_unique_geometries(
 def shapely_to_cf(
     geometries: xr.DataArray | Sequence,
     grid_mapping: str | None = None,
-    container_name: str = GEOMETRY_CONTAINER_NAME,
+    *,
+    suffix: str = "",
 ):
     """
     Convert a DataArray with shapely geometry objects into a CF-compliant dataset.
@@ -367,19 +426,6 @@ def shapely_to_cf(
         geom.item().geom_type if isinstance(geom, xr.DataArray) else geom.geom_type
         for geom in geometries
     }
-    if types.issubset({"Point", "MultiPoint"}):
-        ds = points_to_cf(geometries, container_name=container_name)
-    elif types.issubset({"LineString", "MultiLineString"}):
-        ds = lines_to_cf(geometries, container_name=container_name)
-    elif types.issubset({"Polygon", "MultiPolygon"}):
-        ds = polygons_to_cf(geometries, container_name=container_name)
-    else:
-        raise ValueError(
-            f"Mixed geometry types are not supported in CF-compliant datasets. Got {types}"
-        )
-
-    ds[container_name].attrs.update(coordinates="crd_x crd_y")
-
     if (
         grid_mapping is None
         and isinstance(geometries, xr.DataArray)
@@ -389,29 +435,22 @@ def shapely_to_cf(
             grid_mapping = geometries.coords[grid_mapping_varname].attrs[
                 "grid_mapping_name"
             ]
-            for name_ in ["x", "y", "crd_x", "crd_y"]:
-                ds[name_].attrs["grid_mapping"] = grid_mapping_varname
 
-    # Special treatment of selected grid mappings
-    if grid_mapping in ["latitude_longitude", "rotated_latitude_longitude"]:
-        # Special case for longitude_latitude type grid mappings
-        ds = ds.rename(crd_x="lon", crd_y="lat")
-        if grid_mapping == "latitude_longitude":
-            ds.lon.attrs.update(units="degrees_east", standard_name="longitude")
-            ds.x.attrs.update(units="degrees_east", standard_name="longitude")
-            ds.lat.attrs.update(units="degrees_north", standard_name="latitude")
-            ds.y.attrs.update(units="degrees_north", standard_name="latitude")
-        elif grid_mapping == "rotated_latitude_longitude":
-            ds.lon.attrs.update(units="degrees", standard_name="grid_longitude")
-            ds.x.attrs.update(units="degrees", standard_name="grid_longitude")
-            ds.lat.attrs.update(units="degrees", standard_name="grid_latitude")
-            ds.y.attrs.update(units="degrees", standard_name="grid_latitude")
-        ds[container_name].attrs.update(coordinates="lon lat")
-    elif grid_mapping is not None:
-        ds.crd_x.attrs.update(standard_name="projection_x_coordinate")
-        ds.x.attrs.update(standard_name="projection_x_coordinate")
-        ds.crd_y.attrs.update(standard_name="projection_y_coordinate")
-        ds.y.attrs.update(standard_name="projection_y_coordinate")
+    names = GeometryNames(suffix=suffix, grid_mapping=grid_mapping)
+
+    if types.issubset({"Point", "MultiPoint"}):
+        ds = points_to_cf(geometries, names=names)
+    elif types.issubset({"LineString", "MultiLineString"}):
+        ds = lines_to_cf(geometries, names=names)
+    elif types.issubset({"Polygon", "MultiPolygon"}):
+        ds = polygons_to_cf(geometries, names=names)
+    else:
+        raise ValueError(
+            f"Mixed geometry types are not supported in CF-compliant datasets. Got {types}"
+        )
+
+        # for name_ in ["x", "y", "crd_x", "crd_y"]:
+        #     ds[name_].attrs["grid_mapping"] = grid_mapping_varname
 
     return ds
 
@@ -463,9 +502,7 @@ def cf_to_shapely(ds: xr.Dataset, *, container: str = GEOMETRY_CONTAINER_NAME):
     return geometries.rename("geometry")
 
 
-def points_to_cf(
-    pts: xr.DataArray | Sequence, *, container_name: str = GEOMETRY_CONTAINER_NAME
-):
+def points_to_cf(pts: xr.DataArray | Sequence, *, names: GeometryNames | None = None):
     """Get a list of points (shapely.geometry.[Multi]Point) and return a CF-compliant geometry dataset.
 
     Parameters
@@ -482,6 +519,7 @@ def points_to_cf(
     from shapely.geometry import MultiPoint
 
     if isinstance(pts, xr.DataArray):
+        # TODO: Fix this hardcoding
         dim = pts.dims[0]
         coord = pts[dim] if dim in pts.coords else None
         pts_ = pts.values.tolist()
@@ -502,33 +540,27 @@ def points_to_cf(
         crdX.append(xy[0, 0])
         crdY.append(xy[0, 1])
 
+    if names is None:
+        names = GeometryNames()
+
     ds = xr.Dataset(
         data_vars={
-            "node_count": xr.DataArray(node_count, dims=(dim,)),
-            container_name: xr.DataArray(
-                attrs={
-                    "geometry_type": "point",
-                    "node_count": "node_count",
-                    "node_coordinates": "x y",
-                    "coordinates": "crd_x crd_y",
-                }
+            names.node_count: xr.DataArray(node_count, dims=(dim,)),
+            names.container_name: xr.DataArray(
+                data=np.nan,
+                attrs={"geometry_type": "point", **names.geometry_container_attrs},
             ),
         },
-        coords={
-            "x": xr.DataArray(x, dims=("node",), attrs={"axis": "X"}),
-            "y": xr.DataArray(y, dims=("node",), attrs={"axis": "Y"}),
-            "crd_x": xr.DataArray(crdX, dims=(dim,), attrs={"nodes": "x"}),
-            "crd_y": xr.DataArray(crdY, dims=(dim,), attrs={"nodes": "y"}),
-        },
+        coords=names.coords(x=x, y=y, crdX=crdX, crdY=crdY, dim=dim),
     )
 
     if coord is not None:
         ds = ds.assign_coords({dim: coord})
 
     # Special case when we have no MultiPoints
-    if (ds.node_count == 1).all():
-        ds = ds.drop_vars("node_count")
-        del ds[container_name].attrs["node_count"]
+    if (ds[names.node_count] == 1).data.all():
+        ds = ds.drop_vars(names.node_count)
+        del ds[names.container_name].attrs["node_count"]
     return ds
 
 
@@ -585,12 +617,13 @@ def cf_to_points(ds: xr.Dataset):
             geoms[i] = MultiPoint(xy[j : j + n, :])
         j += n
 
-    return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
+    da = xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
+    if node_count_name:
+        del da[node_count_name]
+    return da
 
 
-def lines_to_cf(
-    lines: xr.DataArray | Sequence, *, container_name: str = GEOMETRY_CONTAINER_NAME
-):
+def lines_to_cf(lines: xr.DataArray | Sequence, *, names: GeometryNames | None = None):
     """Convert an iterable of lines (shapely.geometry.[Multi]Line) into a CF-compliant geometry dataset.
 
     Parameters
@@ -615,6 +648,9 @@ def lines_to_cf(
         coord = None
         lines_ = np.array(lines)
 
+    if names is None:
+        names = GeometryNames()
+
     _, arr, offsets = to_ragged_array(lines_)
     x = arr[:, 0]
     y = arr[:, 1]
@@ -633,33 +669,23 @@ def lines_to_cf(
 
     ds = xr.Dataset(
         data_vars={
-            "node_count": xr.DataArray(node_count, dims=(dim,)),
-            "part_node_count": xr.DataArray(part_node_count, dims=("part",)),
-            container_name: xr.DataArray(
-                attrs={
-                    "geometry_type": "line",
-                    "node_count": "node_count",
-                    "part_node_count": "part_node_count",
-                    "node_coordinates": "x y",
-                    "coordinates": "crd_x crd_y",
-                }
+            names.node_count: xr.DataArray(node_count, dims=(dim,)),
+            names.container_name: xr.DataArray(
+                data=np.nan,
+                attrs={"geometry_type": "line", **names.geometry_container_attrs},
             ),
         },
-        coords={
-            "x": xr.DataArray(x, dims=("node",), attrs={"axis": "X"}),
-            "y": xr.DataArray(y, dims=("node",), attrs={"axis": "Y"}),
-            "crd_x": xr.DataArray(crdX, dims=(dim,), attrs={"nodes": "x"}),
-            "crd_y": xr.DataArray(crdY, dims=(dim,), attrs={"nodes": "y"}),
-        },
+        coords=names.coords(x=x, y=y, crdX=crdX, crdY=crdY, dim=dim),
     )
 
     if coord is not None:
         ds = ds.assign_coords({dim: coord})
 
     # Special case when we have no MultiLines
-    if len(ds.part_node_count) == len(ds.node_count):
-        ds = ds.drop_vars("part_node_count")
-        del ds[container_name].attrs["part_node_count"]
+    if len(part_node_count) != len(node_count):
+        ds[names.part_node_count] = xr.DataArray(part_node_count, dims=names.part_dim)
+        ds[names.container_name].attrs["part_node_count"] = names.part_node_count
+
     return ds
 
 
@@ -722,11 +748,13 @@ def cf_to_lines(ds: xr.Dataset):
     # get items from lines or multilines depending on number of parts
     geoms = np.where(np.diff(offset2) == 1, lines[offset2[:-1]], multilines)
 
-    return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
+    return xr.DataArray(
+        geoms, dims=node_count.dims, coords=node_count.coords
+    ).drop_vars(node_count_name)
 
 
 def polygons_to_cf(
-    polygons: xr.DataArray | Sequence, *, container_name: str = GEOMETRY_CONTAINER_NAME
+    polygons: xr.DataArray | Sequence, *, names: GeometryNames | None = None
 ):
     """Convert an iterable of polygons (shapely.geometry.[Multi]Polygon) into a CF-compliant geometry dataset.
 
@@ -734,6 +762,9 @@ def polygons_to_cf(
     ----------
     polygons : sequence of shapely.geometry.Polygon or MultiPolygon
         The sequence of [multi]polygons to translate to a CF dataset.
+
+    names: GeometryNames, optional
+       Structure that helps manipulate geometry attrs.
 
     Returns
     -------
@@ -751,6 +782,9 @@ def polygons_to_cf(
         dim = "index"
         coord = None
         polygons_ = np.array(polygons)
+
+    if names is None:
+        names = GeometryNames()
 
     _, arr, offsets = to_ragged_array(polygons_)
     x = arr[:, 0]
@@ -775,40 +809,27 @@ def polygons_to_cf(
 
     ds = xr.Dataset(
         data_vars={
-            "node_count": xr.DataArray(node_count, dims=(dim,)),
-            "interior_ring": xr.DataArray(interior_ring, dims=("part",)),
-            "part_node_count": xr.DataArray(part_node_count, dims=("part",)),
-            container_name: xr.DataArray(
-                attrs={
-                    "geometry_type": "polygon",
-                    "node_count": "node_count",
-                    "part_node_count": "part_node_count",
-                    "interior_ring": "interior_ring",
-                    "node_coordinates": "x y",
-                    "coordinates": "crd_x crd_y",
-                }
+            names.node_count: xr.DataArray(node_count, dims=(dim,)),
+            names.container_name: xr.DataArray(
+                data=np.nan,
+                attrs={"geometry_type": "polygon", **names.geometry_container_attrs},
             ),
         },
-        coords={
-            "x": xr.DataArray(x, dims=("node",), attrs={"axis": "X"}),
-            "y": xr.DataArray(y, dims=("node",), attrs={"axis": "Y"}),
-            "crd_x": xr.DataArray(crdX, dims=(dim,), attrs={"nodes": "x"}),
-            "crd_y": xr.DataArray(crdY, dims=(dim,), attrs={"nodes": "y"}),
-        },
+        coords=names.coords(x=x, y=y, crdX=crdX, crdY=crdY, dim=dim),
     )
 
     if coord is not None:
         ds = ds.assign_coords({dim: coord})
 
     # Special case when we have no MultiPolygons and no holes
-    if len(ds.part_node_count) == len(ds.node_count):
-        ds = ds.drop_vars("part_node_count")
-        del ds[container_name].attrs["part_node_count"]
+    if len(part_node_count) != len(node_count):
+        ds[names.part_node_count] = xr.DataArray(part_node_count, dims=names.part_dim)
+        ds[names.container_name].attrs["part_node_count"] = names.part_node_count
 
     # Special case when we have no holes
-    if (ds.interior_ring == 0).all():
-        ds = ds.drop_vars("interior_ring")
-        del ds[container_name].attrs["interior_ring"]
+    if (interior_ring != 0).any():
+        ds[names.interior_ring] = xr.DataArray(interior_ring, dims=names.part_dim)
+        ds[names.container_name].attrs["interior_ring"] = names.interior_ring
     return ds
 
 
@@ -886,4 +907,6 @@ def cf_to_polygons(ds: xr.Dataset):
     # get items from polygons or multipolygons depending on number of parts
     geoms = np.where(np.diff(offset3) == 1, polygons[offset3[:-1]], multipolygons)
 
-    return xr.DataArray(geoms, dims=node_count.dims, coords=node_count.coords)
+    return xr.DataArray(
+        geoms, dims=node_count.dims, coords=node_count.coords
+    ).drop_vars(node_count_name)

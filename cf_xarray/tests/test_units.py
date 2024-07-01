@@ -75,12 +75,14 @@ def test_udunits_power_syntax_parse_units():
         ("m ** -1", "m-1"),
         ("m ** 2 / s ** 2", "m2 s-2"),
         ("m ** 3 / (kg * s ** 2)", "m3 kg-1 s-2"),
+        ("", ""),
     ),
 )
 def test_udunits_format(units, expected):
     u = ureg.parse_units(units)
 
     assert f"{u:cf}" == expected
+    assert f"{u:~cf}" == expected
 
 
 @pytest.mark.parametrize(

@@ -87,7 +87,7 @@ class GeometryNames:
             **self.grid_mapping_attr,
         }
 
-    def coords(self, *, dim: str, x, y, crdX, crdY) -> dict[str, xr.DataArray]:
+    def coords(self, *, dim: Hashable, x, y, crdX, crdY) -> dict[str, xr.DataArray]:
         return {
             self.node_coordinates_x: xr.DataArray(
                 x, dims=self.node_dim, attrs={"axis": "X", **self.attrs_x}
@@ -108,7 +108,7 @@ class GeometryNames:
         }
 
 
-def _assert_single_geometry_container(ds: xr.Dataset) -> str:
+def _assert_single_geometry_container(ds: xr.Dataset) -> Hashable:
     container_names = _get_geometry_containers(ds)
     if len(container_names) > 1:
         raise ValueError(
@@ -176,7 +176,7 @@ def decode_geometries(encoded: xr.Dataset) -> xr.Dataset:
             "have a `geometry_type` attribute."
         )
 
-    todrop = []
+    todrop: list[Hashable] = []
     decoded = xr.Dataset()
     for container_name in containers:
         enc_geom_var = encoded[container_name]
@@ -283,7 +283,7 @@ def encode_geometries(ds: xr.Dataset):
     variables = {}
     for name in geom_var_names:
         # TODO: do we prefer this choice be invariant to number of geometry variables
-        suffix = "_" + name if len(geom_var_names) > 1 else ""
+        suffix = "_" + str(name) if len(geom_var_names) > 1 else ""
         container_name = GEOMETRY_CONTAINER_NAME + suffix
         # If `name` is a dimension name, then we need to drop it. Otherwise we don't
         # So set errors="ignore"
@@ -472,7 +472,7 @@ def shapely_to_cf(
     return ds
 
 
-def cf_to_shapely(ds: xr.Dataset, *, container: str = GEOMETRY_CONTAINER_NAME):
+def cf_to_shapely(ds: xr.Dataset, *, container: Hashable = GEOMETRY_CONTAINER_NAME):
     """
     Convert geometries stored in a CF-compliant way to shapely objects stored in a single variable.
 

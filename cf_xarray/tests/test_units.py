@@ -80,12 +80,11 @@ def test_udunits_power_syntax_parse_units():
 )
 def test_udunits_format(units, expected):
     u = ureg.parse_units(units)
-    assert f"{u:~cf}" == expected
-
     if units == "":
         # The non-shortened dimensionless can only work with recent pint
         pytest.importorskip("pint", minversion="0.24.1")
 
+    assert f"{u:~cf}" == expected
     assert f"{u:cf}" == expected
 
 

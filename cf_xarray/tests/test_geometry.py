@@ -265,8 +265,8 @@ def test_shapely_to_cf(geometry_ds):
         [
             in_ds.drop_vars("geometry").isel(index=slice(1, None)),
             cfxr.shapely_to_cf(
-                in_ds.geometry.isel(index=slice(1, None)),
-                grid_mapping="longitude_latitude",
+                in_ds.geometry.isel(index=slice(1, None)).data,
+                grid_mapping="latitude_longitude",
             ),
         ]
     )
@@ -355,10 +355,11 @@ def test_shapely_to_cf_errors():
     with pytest.raises(ValueError, match="Mixed geometry types are not supported"):
         cfxr.shapely_to_cf(geoms)
 
-    with pytest.raises(
-        NotImplementedError, match="Only grid mapping longitude_latitude"
-    ):
-        cfxr.shapely_to_cf([Point(4, 5)], grid_mapping="albers_conical_equal_area")
+    encoded = cfxr.shapely_to_cf(
+        [Point(4, 5)], grid_mapping="albers_conical_equal_area"
+    )
+    assert encoded["x"].attrs["standard_name"] == "projection_x_coordinate"
+    assert encoded["y"].attrs["standard_name"] == "projection_y_coordinate"
 
 
 @requires_shapely
@@ -491,7 +492,6 @@ def test_reshape_unique_geometries(geometry_ds):
 
 @requires_shapely
 def test_encode_decode(geometry_ds, polygon_geometry):
-
     geom_dim_ds = xr.Dataset()
     geom_dim_ds = geom_dim_ds.assign_coords(
         xr.Coordinates(

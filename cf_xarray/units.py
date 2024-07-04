@@ -27,9 +27,10 @@ def short_formatter(unit, registry, **options):
     out : str
         Units following CF-Convention, using symbols.
     """
-    # pint 0.24.1 gives this for dimensionless units
-    if unit == {"dimensionless": 1}:
-        return ""
+    # pint 0.24.1 gives {"dimensionless": 1} for non-shortened dimensionless units
+    # CF uses "1" to denote fractions and dimensionless quantities
+    if unit == {"dimensionless": 1} or not unit:
+        return "1"
 
     # If u is a name, get its symbol (same as pint's "~" pre-formatter)
     # otherwise, assume a symbol (pint should have already raised on invalid units before this)
@@ -51,7 +52,7 @@ def short_formatter(unit, registry, **options):
         )
 
     out = pint.formatter(*args, as_ratio=False, product_fmt=" ", power_fmt="{}{}")
-    # To avoid potentiel unicode problems in netCDF. In both case, this unit is not recognized by udunits
+    # To avoid potentiel unicode problems in netCDF. In both cases, this unit is not recognized by udunits
     return out.replace("Δ°", "delta_deg")
 
 

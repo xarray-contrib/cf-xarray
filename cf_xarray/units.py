@@ -4,62 +4,57 @@ import functools
 import re
 
 import pint
-from pint import (  # noqa: F401
-    DimensionalityError,
-    UndefinedUnitError,
-    UnitStrippedWarning,
-)
+from packaging.version import Version
 
 from .utils import emit_user_level_warning
 
-# from `xclim`'s unit support module with permission of the maintainers
-try:
 
-    @pint.register_unit_format("cf")
-    def short_formatter(unit, registry, **options):
-        """Return a CF-compliant unit string from a `pint` unit.
+@pint.register_unit_format("cf")
+def short_formatter(unit, registry, **options):
+    """Return a CF-compliant unit string from a `pint` unit.
 
-        Parameters
-        ----------
-        unit : pint.UnitContainer
-            Input unit.
-        registry : pint.UnitRegistry
-            the associated registry
-        **options
-            Additional options (may be ignored)
+    Parameters
+    ----------
+    unit : pint.UnitContainer
+        Input unit.
+    registry : pint.UnitRegistry
+        The associated registry
+    **options
+        Additional options (may be ignored)
 
-        Returns
-        -------
-        out : str
-            Units following CF-Convention, using symbols.
-        """
-        import re
+    Returns
+    -------
+    out : str
+        Units following CF-Convention, using symbols.
+    """
+    # pint 0.24.1 gives {"dimensionless": 1} for non-shortened dimensionless units
+    # CF uses "1" to denote fractions and dimensionless quantities
+    if unit == {"dimensionless": 1} or not unit:
+        return "1"
 
-        # convert UnitContainer back to Unit
-        unit = registry.Unit(unit)
-        # Print units using abbreviations (millimeter -> mm)
-        s = f"{unit:~D}"
+    # If u is a name, get its symbol (same as pint's "~" pre-formatter)
+    # otherwise, assume a symbol (pint should have already raised on invalid units before this)
+    unit = pint.util.UnitsContainer(
+        {
+            registry._get_symbol(u) if u in registry._units else u: exp
+            for u, exp in unit.items()
+        }
+    )
 
-        # Search and replace patterns
-        pat = r"(?P<inverse>(?:1 )?/ )?(?P<unit>\w+)(?: \*\* (?P<pow>\d))?"
+    # Change in formatter signature in pint 0.24
+    if Version(pint.__version__) < Version("0.24"):
+        args = (unit.items(),)
+    else:
+        # Numerators splitted from denominators
+        args = (
+            ((u, e) for u, e in unit.items() if e >= 0),
+            ((u, e) for u, e in unit.items() if e < 0),
+        )
 
-        def repl(m):
-            i, u, p = m.groups()
-            p = p or (1 if i else "")
-            neg = "-" if i else ""
+    out = pint.formatter(*args, as_ratio=False, product_fmt=" ", power_fmt="{}{}")
+    # To avoid potentiel unicode problems in netCDF. In both cases, this unit is not recognized by udunits
+    return out.replace("Δ°", "delta_deg")
 
-            return f"{u}{neg}{p}"
-
-        out, n = re.subn(pat, repl, s)
-
-        # Remove multiplications
-        out = out.replace(" * ", " ")
-        # Delta degrees:
-        out = out.replace("Δ°", "delta_deg")
-        return out.replace("percent", "%")
-
-except ImportError:
-    pass
 
 # ------
 # Reused with modification from MetPy under the terms of the BSD 3-Clause License.

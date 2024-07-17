@@ -502,6 +502,10 @@ def test_encode_decode(geometry_ds, polygon_geometry):
         )
     ).assign({"foo": ("geoms", [1, 2])})
 
-    for ds in (geometry_ds[1], polygon_geometry.to_dataset(), geom_dim_ds):
+    polyds = (
+        polygon_geometry.rename("polygons").rename({"index": "index2"}).to_dataset()
+    )
+    multi_ds = xr.merge([polyds, geometry_ds[1]])
+    for ds in (geometry_ds[1], polygon_geometry.to_dataset(), geom_dim_ds, multi_ds):
         roundtripped = decode_geometries(encode_geometries(ds))
         xr.testing.assert_identical(ds, roundtripped)

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 import xarray as xr
+from numpy.typing import ArrayLike
 
 GEOMETRY_CONTAINER_NAME = "geometry_container"
 FEATURES_DIM_NAME = "features"
@@ -91,10 +92,10 @@ class GeometryNames:
         self,
         *,
         dim: Hashable,
-        x: np.ndarray,
-        y: np.ndarray,
-        crdX: np.ndarray | None = None,
-        crdY: np.ndarray | None = None,
+        x: ArrayLike,
+        y: ArrayLike,
+        crdX: ArrayLike | None = None,
+        crdY: ArrayLike | None = None,
     ) -> dict[str, xr.DataArray]:
         """
         Construct coordinate DataArrays for the numpy data (x, y, crdX, crdY)
@@ -263,7 +264,9 @@ def encode_geometries(ds: xr.Dataset):
     Returns
     -------
     Dataset
-       Where all geometry variables are encoded.
+       Where all geometry variables are encoded. The information in a single geometry
+       variable in the input is split across multiple variables in the returned Dataset
+       following the CF conventions.
 
     See Also
     --------

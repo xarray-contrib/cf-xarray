@@ -175,7 +175,7 @@ def _get_geometry_containers(obj: xr.DataArray | xr.Dataset) -> list[Hashable]:
 
 def decode_geometries(encoded: xr.Dataset) -> xr.Dataset:
     """
-    Decode CF encoded geometries to a numpy object array containing shapely geometries.
+    Decode CF encoded geometries to numpy object arrays containing shapely geometries.
 
     Parameters
     ----------
@@ -254,11 +254,6 @@ def encode_geometries(ds: xr.Dataset):
 
     Practically speaking, geometry variables are numpy object arrays where the first
     element is a shapely geometry.
-
-    .. warning::
-
-       Only a single geometry variable is supported at present. Contributions to fix this
-       are welcome.
 
     Parameters
     ----------

@@ -97,9 +97,8 @@ ds.identical(decoded)
 
 The following limitations can be relaxed in the future. PRs welcome!
 
-1. cf-xarray uses `"geometry_container"` as the name for the geometry variable always
-1. cf-xarray only supports decoding a single geometry in a Dataset.
-1. CF xarray will not set the `"geometry"` attribute that links a variable to a geometry by default unless the geometry variable is a dimension coordiante for that variable. This heuristic works OK for vector data cubes (e.g. [xvec](https://xvec.readthedocs.io/en/stable/)). You should set the `"geometry"` attribute manually otherwise. Suggestions for better behaviour here are very welcome.
+1. cf-xarray uses `"geometry_container"` as the name for the geometry variable always. If there are multiple geometry variables then `"geometry_N"`is used where N is an integer >= 0. cf-xarray behaves similarly for all associated geometry variables names: i.e. `"node"`, `"node_count"`, `"part_node_count"`, `"part"`, `"interior_ring"`. `"x"`, `"y"` (with suffixes if needed) are always the node coordinate variable names, and `"crd_x"`, `"crd_y"` are the nominal X, Y coordinate locations. None of this is configurable at the moment.
+1. CF xarray will not set the `"geometry"` attribute that links a variable to a geometry by default unless the geometry variable is a dimension coordinate for that variable. This heuristic works OK for vector data cubes (e.g. [xvec](https://xvec.readthedocs.io/en/stable/)). You should set the `"geometry"` attribute manually otherwise. Suggestions for better behaviour here are very welcome.
 
 ## Lower-level conversions
 

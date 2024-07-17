@@ -474,6 +474,7 @@ def shapely_to_cf(
                 "grid_mapping_name", None
             )
 
+    # TODO: consider accepting a GeometryNames instance from the user instead
     names = GeometryNames(
         suffix=suffix, grid_mapping_name=grid_mapping, grid_mapping=grid_mapping_varname
     )

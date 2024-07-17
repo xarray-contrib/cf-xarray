@@ -87,25 +87,50 @@ class GeometryNames:
             **self.grid_mapping_attr,
         }
 
-    def coords(self, *, dim: Hashable, x, y, crdX, crdY) -> dict[str, xr.DataArray]:
-        return {
+    def coords(
+        self,
+        *,
+        dim: Hashable,
+        x: np.ndarray,
+        y: np.ndarray,
+        crdX: np.ndarray | None = None,
+        crdY: np.ndarray | None = None,
+    ) -> dict[str, xr.DataArray]:
+        """
+        Construct coordinate DataArrays for the numpy data (x, y, crdX, crdY)
+
+        Parameters
+        ----------
+        x: array
+            Node coordinates for X coordinate
+        y: array
+            Node coordinates for Y coordinate
+        crdX: array, optional
+            Nominal X coordinate
+        crdY: array, optional
+            Nominal X coordinate
+        """
+        mapping = {
             self.node_coordinates_x: xr.DataArray(
                 x, dims=self.node_dim, attrs={"axis": "X", **self.attrs_x}
             ),
             self.node_coordinates_y: xr.DataArray(
                 y, dims=self.node_dim, attrs={"axis": "Y", **self.attrs_y}
             ),
-            self.coordinates_x: xr.DataArray(
+        }
+        if crdX is not None:
+            mapping[self.coordinates_x] = xr.DataArray(
                 crdX,
                 dims=(dim,),
                 attrs={"nodes": self.node_coordinates_x, **self.attrs_x},
-            ),
-            self.coordinates_y: xr.DataArray(
+            )
+        if crdY is not None:
+            mapping[self.coordinates_y] = xr.DataArray(
                 crdY,
                 dims=(dim,),
                 attrs={"nodes": self.node_coordinates_y, **self.attrs_y},
-            ),
-        }
+            )
+        return mapping
 
 
 def _assert_single_geometry_container(ds: xr.Dataset) -> Hashable:

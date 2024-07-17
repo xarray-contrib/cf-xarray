@@ -559,6 +559,8 @@ def points_to_cf(pts: xr.DataArray | Sequence, *, names: GeometryNames | None = 
 
     if isinstance(pts, xr.DataArray):
         # TODO: Fix this hardcoding
+        if pts.ndim != 1:
+            raise ValueError("Only 1D DataArrays are supported.")
         dim = pts.dims[0]
         coord = pts[dim] if dim in pts.coords else None
         pts_ = pts.values.tolist()

@@ -208,10 +208,8 @@ def find_set_bits(mask, value, repeated_masks, bit_length):
 
 
 def _format_flags(accessor, rich):
-    from .accessor import create_flag_dict
-
     try:
-        flag_dict = create_flag_dict(accessor._obj)
+        flag_dict = accessor.flag_dict
     except ValueError:
         return _print_rows(
             "Flag Meanings", ["Invalid Mapping. Check attributes."], rich

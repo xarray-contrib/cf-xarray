@@ -26,6 +26,7 @@ Geometries
     geometry.encode_geometries
     geometry.shapely_to_cf
     geometry.cf_to_shapely
+    geometry.GeometryNames
 
 .. currentmodule:: xarray
 

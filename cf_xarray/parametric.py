@@ -612,11 +612,15 @@ def ocean_sigma_z_coordinate(sigma, eta, depth, depth_c, nsigma, zlev):
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_sigma_over_z_coordinate
     """
-    n, j, i = eta.shape
+    z_shape = list(eta.shape)
 
-    k = sigma.shape[0]
+    z_shape.insert(1, sigma.shape[0])
 
-    z = xr.DataArray(np.empty((n, k, j, i)), dims=("time", "lev", "lat", "lon"))
+    z_dims = list(eta.dims)
+
+    z_dims.insert(1, sigma.dims[0])
+
+    z = xr.DataArray(np.empty(z_shape), dims=z_dims)
 
     z_sigma = eta + sigma * (np.minimum(depth_c, depth) + eta)
 
@@ -666,13 +670,14 @@ def ocean_double_sigma_coordinate(sigma, depth, z1, z2, a, href, k_c):
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_double_sigma_coordinate
     """
-    k = sigma.shape[0]
-
-    j, i = depth.shape
-
     f = 0.5 * (z1 + z2) + 0.5 * (z1 - z2) * np.tanh(2 * a / (z1 - z2) * (depth - href))
 
-    z = xr.DataArray(np.empty((k, j, i)), dims=("lev", "lat", "lon"), name="z")
+    # shape k, j, i
+    z_shape = sigma.shape + depth.shape
+
+    z_dims = sigma.dims + depth.dims
+
+    z = xr.DataArray(np.empty(z_shape), dims=z_dims, name="z")
 
     z = xr.where(sigma.k <= k_c, sigma * f, z)
 

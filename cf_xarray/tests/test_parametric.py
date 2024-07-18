@@ -508,7 +508,7 @@ def test_check_requirements():
 
     with pytest.raises(
         KeyError,
-        match=r"'Required terms b, p0 and atleast one optional term a, ap absent in dataset.'",
+        match=r"'Required terms b, p0 are absent in the dataset.'",
     ):
         parametric.check_requirements(
             parametric.atmosphere_hybrid_sigma_pressure_coordinate, ["ps"]
@@ -516,7 +516,7 @@ def test_check_requirements():
 
     with pytest.raises(
         KeyError,
-        match="'Atleast one of the optional terms a, ap is absent in dataset.'",
+        match="'Atleast one optional term a, ap is absent in the dataset.'",
     ):
         parametric.check_requirements(
             parametric.atmosphere_hybrid_sigma_pressure_coordinate, ["ps", "p0", "b"]
@@ -524,8 +524,18 @@ def test_check_requirements():
 
     with pytest.raises(
         KeyError,
-        match="'Required terms b and atleast one optional term a, ap absent in dataset.'",
+        match="'Required terms b are absent in the dataset.'",
     ):
         parametric.check_requirements(
             parametric.atmosphere_hybrid_sigma_pressure_coordinate, ["ps", "p0", "a"]
         )
+
+    # Should pass
+    parametric.check_requirements(
+        parametric.atmosphere_hybrid_sigma_pressure_coordinate, ["ps", "p0", "b", "a"]
+    )
+
+    # check case insensitive
+    parametric.check_requirements(
+        parametric.atmosphere_hybrid_sigma_pressure_coordinate, ["ps", "P0", "b", "A"]
+    )

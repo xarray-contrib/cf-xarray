@@ -140,6 +140,9 @@ def check_requirements(func, terms):
     if len(terms) == 0:
         raise KeyError(f"Required terms {', '.join(sorted(args))} absent in dataset.")
 
+    # handle case insensitive
+    terms = {x.lower() for x in terms}
+
     n = len(spec.defaults or [])
 
     # last `n` arguments are optional
@@ -151,20 +154,16 @@ def check_requirements(func, terms):
     if (req & terms) != req:
         req_diff = sorted(req - terms)
 
-        opt_err = ""
-
-        # optional is not present in terms
-        if len(opt) > 0 and not (opt <= terms):
-            opt_err = f"and atleast one optional term {', '.join(sorted(opt))} "
-
         raise KeyError(
-            f"Required terms {', '.join(req_diff)} {opt_err}absent in dataset."
+            f"Required terms {', '.join(req_diff)} are absent in the dataset."
         )
 
-    # atleast one optional is in diff, only required for atmoshphere hybrid sigma pressure coordinate
-    if len(opt) > 0 and not (opt <= terms):
+    # if there are optional arguments check that atleast one
+    # is in the intersection, only required for
+    # atmosphere_hybrid_sigma_pressure_coordinate
+    if len(opt) > 0 and len(opt & terms) == 0:
         raise KeyError(
-            f"Atleast one of the optional terms {', '.join(sorted(opt))} is absent in dataset."
+            f"Atleast one optional term {', '.join(sorted(opt))} is absent in the dataset."
         )
 
 
@@ -496,7 +495,7 @@ def ocean_s_coordinate(s, eta, depth, a, b, depth_c):
     return z.transpose(*output_order)
 
 
-def ocean_s_coordinate_g1(s, C, eta, depth, depth_c):
+def ocean_s_coordinate_g1(s, c, eta, depth, depth_c):
     """Ocean s-coordinate, generic form 1.
 
     Standard name: ocean_s_coordinate_g1
@@ -524,7 +523,7 @@ def ocean_s_coordinate_g1(s, C, eta, depth, depth_c):
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_s_coordinate_generic_form_1
     """
-    S = depth_c * s + (depth - depth_c) * C
+    S = depth_c * s + (depth - depth_c) * c
 
     z = S + eta * (1 + s / depth)
 
@@ -537,7 +536,7 @@ def ocean_s_coordinate_g1(s, C, eta, depth, depth_c):
     return z.transpose(*output_order)
 
 
-def ocean_s_coordinate_g2(s, C, eta, depth, depth_c):
+def ocean_s_coordinate_g2(s, c, eta, depth, depth_c):
     """Ocean s-coordinate, generic form 2.
 
     Standard name: ocean_s_coordinate_g2
@@ -565,7 +564,7 @@ def ocean_s_coordinate_g2(s, C, eta, depth, depth_c):
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_s_coordinate_generic_form_2
     """
-    S = (depth_c * s + depth * C) / (depth_c + depth)
+    S = (depth_c * s + depth * c) / (depth_c + depth)
 
     z = eta + (eta + depth) * S
 

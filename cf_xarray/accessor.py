@@ -2705,7 +2705,8 @@ class CFDatasetAccessor(CFAccessor):
                         f"Variable {value!r} is required to decode coordinate for {dim!r}"
                         " but it is absent in the Dataset."
                     )
-                terms[key] = ds[value]
+                # keys should be case insensitive
+                terms[key.lower()] = ds[value]
 
             try:
                 func = parametric.func_from_stdname(stdname)

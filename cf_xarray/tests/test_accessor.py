@@ -1318,7 +1318,9 @@ def test_decode_vertical_coords() -> None:
 
     romsds_less_h = romsds.drop_vars(["h"])
 
-    with pytest.raises(KeyError, match="Required terms depth absent in dataset."):
+    with pytest.raises(
+        KeyError, match="Required terms depth are absent in the dataset."
+    ):
         romsds_less_h.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
 

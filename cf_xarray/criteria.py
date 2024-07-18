@@ -12,7 +12,10 @@ except ImportError:
 from collections.abc import Mapping, MutableMapping
 from typing import Any
 
+#: CF Roles understood by cf-xarray
 _DSG_ROLES = ["timeseries_id", "profile_id", "trajectory_id"]
+#: Geometry types understood by cf-xarray
+_GEOMETRY_TYPES = ("line", "point", "polygon")
 
 cf_role_criteria: Mapping[str, Mapping[str, str]] = {
     k: {"cf_role": k}
@@ -29,6 +32,12 @@ cf_role_criteria: Mapping[str, Mapping[str, str]] = {
 # A grid mapping varibale is anything with a grid_mapping_name attribute
 grid_mapping_var_criteria: Mapping[str, Mapping[str, Any]] = {
     "grid_mapping": {"grid_mapping_name": re.compile(".")}
+}
+
+# A geometry container is anything with a geometry_type attribute
+geometry_var_criteria: Mapping[str, Mapping[str, Any]] = {
+    "geometry": {"geometry_type": re.compile(".")},
+    **{k: {"geometry_type": k} for k in _GEOMETRY_TYPES},
 }
 
 coordinate_criteria: MutableMapping[str, MutableMapping[str, tuple]] = {

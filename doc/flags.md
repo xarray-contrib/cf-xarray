@@ -15,6 +15,10 @@ kernelspec:
 
 # Flag Variables
 
+```{seealso}
+1. [CF conventions on flag variables and masks](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags)
+```
+
 `cf_xarray` has some support for [flag variables](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#flags), including flag masks.
 
 ## Flag Values

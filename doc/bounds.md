@@ -4,12 +4,13 @@
 
 # Bounds Variables
 
-See
-
+```{seealso}
+1. [CF conventions on coordinate bounds](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#cell-boundaries)
 1. {py:attr}`Dataset.cf.bounds`,
 1. {py:func}`Dataset.cf.add_bounds`,
 1. {py:func}`cf_xarray.bounds_to_vertices`,
 1. {py:func}`cf_xarray.vertices_to_bounds`
+```
 
 `cf_xarray` supports parsing [coordinate bounds](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#cell-boundaries) as encoded in the CF `bounds` attribute. A useful feature for incomplete dataset is also the automatic bounds estimation possible through `cf.add_bounds`. This method will estimate the missing bounds by finding the middle points between elements of the given coordinate, but also by extrapolating to find the outer bounds of the grid. This linear estimation works well with rectilinear grids, but it is only a coarse approximation for curvilinear and simple irregular grids.
 

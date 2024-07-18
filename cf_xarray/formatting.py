@@ -110,9 +110,11 @@ def _print_rows(subtitle: str, rows: list[str], rich: bool):
 
     # Add subtitle to the first row, align other rows
     rows = [
-        _format_subtitle(subtitle, rich=rich) + row
-        if i == 0
-        else len(subtitle) * " " + row
+        (
+            _format_subtitle(subtitle, rich=rich) + row
+            if i == 0
+            else len(subtitle) * " " + row
+        )
         for i, row in enumerate(rows)
     ]
 
@@ -289,6 +291,17 @@ def _format_dsg_roles(accessor, dims, rich):
         "cf_roles",
         dims=dims,
         valid_keys=_DSG_ROLES,
+        rich=rich,
+    )
+
+
+def _format_geometries(accessor, dims, rich):
+    yield make_text_section(
+        accessor,
+        "CF Geometries",
+        "geometries",
+        dims=dims,
+        # valid_keys=_DSG_ROLES,
         rich=rich,
     )
 

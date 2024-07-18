@@ -25,7 +25,7 @@ from xarray.core.resample import Resample
 from xarray.core.rolling import Coarsen, Rolling
 from xarray.core.weighted import Weighted
 
-from . import sgrid
+from . import parametric, sgrid
 from .criteria import (
     _DSG_ROLES,
     _GEOMETRY_TYPES,
@@ -2748,13 +2748,8 @@ class CFDatasetAccessor(CFAccessor):
         """
         ds = self._obj
 
-        requirements = {
-            "ocean_s_coordinate_g1": {"depth_c", "depth", "s", "C", "eta"},
-            "ocean_s_coordinate_g2": {"depth_c", "depth", "s", "C", "eta"},
-            "ocean_sigma_coordinate": {"sigma", "eta", "depth"},
-        }
-
         allterms = self.formula_terms
+
         for dim in allterms:
             if prefix is None:
                 assert (
@@ -2776,6 +2771,7 @@ class CFDatasetAccessor(CFAccessor):
                 suffix = dim.split("_")
                 zname = f"{prefix}_" + "_".join(suffix[1:])
 
+            # never touched, if standard name is missing it's not included in allterms
             if "standard_name" not in ds[dim].attrs:
                 continue
             stdname = ds[dim].attrs["standard_name"]
@@ -2784,46 +2780,26 @@ class CFDatasetAccessor(CFAccessor):
             terms = {}
             for key, value in allterms[dim].items():
                 if value not in ds:
+                    # is this ever hit, if variable is missing it's missing in decoded allterms
                     raise KeyError(
                         f"Variable {value!r} is required to decode coordinate for {dim!r}"
                         " but it is absent in the Dataset."
                     )
-                terms[key] = ds[value]
+                # keys should be case insensitive
+                terms[key.lower()] = ds[value]
 
-            absent_terms = requirements[stdname] - set(terms)
-            if absent_terms:
-                raise KeyError(f"Required terms {absent_terms} absent in dataset.")
-
-            if stdname == "ocean_s_coordinate_g1":
-                # S(k,j,i) = depth_c * s(k) + (depth(j,i) - depth_c) * C(k)
-                S = (
-                    terms["depth_c"] * terms["s"]
-                    + (terms["depth"] - terms["depth_c"]) * terms["C"]
-                )
-
-                # z(n,k,j,i) = S(k,j,i) + eta(n,j,i) * (1 + S(k,j,i) / depth(j,i))
-                ztemp = S + terms["eta"] * (1 + S / terms["depth"])
-
-            elif stdname == "ocean_s_coordinate_g2":
-                # make sure all necessary terms are present in terms
-                # (depth_c * s(k) + depth(j,i) * C(k)) / (depth_c + depth(j,i))
-                S = (terms["depth_c"] * terms["s"] + terms["depth"] * terms["C"]) / (
-                    terms["depth_c"] + terms["depth"]
-                )
-
-                # z(n,k,j,i) = eta(n,j,i) + (eta(n,j,i) + depth(j,i)) * S(k,j,i)
-                ztemp = terms["eta"] + (terms["eta"] + terms["depth"]) * S
-
-            elif stdname == "ocean_sigma_coordinate":
-                # z(n,k,j,i) = eta(n,j,i) + sigma(k)*(depth(j,i)+eta(n,j,i))
-                ztemp = terms["eta"] + terms["sigma"] * (terms["depth"] + terms["eta"])
-
-            else:
+            try:
+                func = parametric.func_from_stdname(stdname)
+            except AttributeError:
+                # Should occur since stdname is check before
                 raise NotImplementedError(
-                    f"Coordinate function for {stdname!r} not implemented yet. Contributions welcome!"
-                )
+                    f"Coordinate function for {stdname!r} not implmented yet. Contributions welcome!"
+                ) from None
 
-            ds.coords[zname] = ztemp
+            # let KeyError propagate
+            parametric.check_requirements(func, terms)
+
+            ds.coords[zname] = func(**terms)
 
 
 @xr.register_dataarray_accessor("cf")

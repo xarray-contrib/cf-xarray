@@ -980,7 +980,7 @@ def bounds_to_polygons(ds: xr.Dataset) -> xr.DataArray:
     grid = ds.cf[["latitude", "longitude"]].load()
     bounds = grid.cf.bounds
     coordinates = grid.cf.coordinates
-    dims = grid.cf.dims
+    dims = tuple(grid.cf.sizes)
     bounds_dim = grid.cf.get_bounds_dim_name("latitude")
 
     if "latitude" in dims or "longitude" in dims:
@@ -999,9 +999,9 @@ def bounds_to_polygons(ds: xr.Dataset) -> xr.DataArray:
         broadcasted = xr.broadcast(
             grid[lon],
             grid[lat],
+        ) + xr.broadcast(
             grid[lon_bounds],
             grid[lat_bounds],
-            exclude=bounds_dim,
         )
         asdict = dict(zip([lon, lat, lon_bounds, lat_bounds], broadcasted))
         # display(asdict)

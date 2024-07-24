@@ -51,7 +51,13 @@ def test_percent_units():
     assert str(ureg("%").units) == "percent"
 
 
-@pytest.mark.xfail(reason="not supported by pint, yet: hgrecco/pint#1295")
+def test_integer_units():
+    """Test that integer 1 units is equal to dimensionless"""
+    # need to explicitly use parse_units to bypass the runtime type checking
+    # in the quantity constructor
+    assert str(ureg.parse_units(1)) == "dimensionless"
+
+
 def test_udunits_power_syntax():
     """Test that UDUNITS style powers are properly parsed and interpreted."""
     assert ureg("m2 s-2").units == ureg.m**2 / ureg.s**2
@@ -69,11 +75,16 @@ def test_udunits_power_syntax_parse_units():
         ("m ** -1", "m-1"),
         ("m ** 2 / s ** 2", "m2 s-2"),
         ("m ** 3 / (kg * s ** 2)", "m3 kg-1 s-2"),
+        ("", "1"),
     ),
 )
 def test_udunits_format(units, expected):
     u = ureg.parse_units(units)
+    if units == "":
+        # The non-shortened dimensionless can only work with recent pint
+        pytest.importorskip("pint", minversion="0.24.1")
 
+    assert f"{u:~cf}" == expected
     assert f"{u:cf}" == expected
 
 

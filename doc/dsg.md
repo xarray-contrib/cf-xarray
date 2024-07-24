@@ -23,6 +23,11 @@ xr.set_options(display_expand_data=False)
 
 # Discrete Sampling Geometries
 
+```{seealso}
+1. [CF conventions on Discrete Sampling Geometries](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.9/cf-conventions.html#discrete-sampling-geometries)
+1. {py:attr}`Dataset.cf.cf_roles`
+```
+
 `cf_xarray` supports identifying variables by the [`cf_role` attribute](http://cfconventions.org/Data/cf-conventions/cf-conventions-1.9/cf-conventions.html#discrete-sampling-geometries).
 
 ```{code-cell}

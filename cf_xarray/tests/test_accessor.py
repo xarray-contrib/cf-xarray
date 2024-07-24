@@ -26,6 +26,7 @@ from ..datasets import (
     dsg,
     flag_excl,
     flag_indep,
+    flag_indep_uint16,
     flag_mix,
     forecast,
     mollwds,
@@ -164,6 +165,7 @@ def test_repr() -> None:
     # Flag DataArray
     assert "Flag Variable" in repr(flag_excl.cf)
     assert "Flag Variable" in repr(flag_indep.cf)
+    assert "Flag Variable" in repr(flag_indep_uint16.cf)
     assert "Flag Variable" in repr(flag_mix.cf)
     assert "Flag Variable" in repr(basin.cf)
 
@@ -1452,9 +1454,9 @@ def test_rename(obj):
         "air_temperature" if isinstance(obj, Dataset) else "longitude": "renamed"
     }
     xr_dict = {
-        "air"
-        if isinstance(obj, Dataset) and "air" in obj.data_vars
-        else "lon": "renamed"
+        (
+            "air" if isinstance(obj, Dataset) and "air" in obj.data_vars else "lon"
+        ): "renamed"
     }
     assert_identical(obj.rename(xr_dict), obj.cf.rename(cf_dict))
     assert_identical(obj.rename(**xr_dict), obj.cf.rename(**cf_dict))
@@ -1837,6 +1839,30 @@ class TestFlags:
             res = flag_indep.cf.flags[name]
             np.testing.assert_equal(res.to_numpy(), expected[i])
 
+    def test_flag_indep_uint16(self) -> None:
+        expected = [
+            [True, False, False, False, False, True],  # bit     1
+            [False, True, False, False, False, True],  # bit     2
+            [False, False, True, False, False, True],  # bit     4
+            [False, True, False, True, False, True],  # bit     8
+            [False, False, False, False, True, True],  # bit    16
+            [False, False, True, True, False, True],  # bit    32
+            [False, False, True, True, False, True],  # bit    64
+            [False, False, False, True, False, True],  # bit   128
+            [False, False, False, True, True, True],  # bit   256
+            [False, False, False, True, True, True],  # bit   512
+            [False, False, False, False, True, True],  # bit  1024
+            [False, False, False, False, False, True],  # bit  2048
+            [False, False, False, False, False, True],  # bit  4096
+            [False, False, False, False, True, True],  # bit  8192
+            [False, False, False, False, False, True],  # bit 16384
+            [False, False, False, False, False, True],  # bit 32768
+        ]
+        for i in range(16):
+            name = f"flag_{2**i}"
+            res = flag_indep_uint16.cf.flags[name]
+            np.testing.assert_equal(res.to_numpy(), expected[i])
+
     def test_flag_mix(self) -> None:
         expected = [
             [False, False, True, True, False, False, True, True],  # flag 1
@@ -1983,6 +2009,7 @@ def test_curvefit() -> None:
         [basin, "Flag Variable"],
         [flag_mix, "Flag Variable"],
         [flag_indep, "Flag Variable"],
+        [flag_indep_uint16, "Flag Variable"],
         [flag_excl, "Flag Variable"],
         [dsg, "Discrete Sampling Geometry"],
     ),
@@ -2049,3 +2076,25 @@ def test_ancillary_variables_extra_dim():
         }
     )
     assert_identical(ds.cf["X"], ds["x"])
+
+
+def test_geometry_association(geometry_ds):
+    cf_ds, _ = geometry_ds
+    actual = cf_ds.cf[["data"]]
+    for name in ["geometry_container", "x", "y", "node_count", "crd_x", "crd_y"]:
+        assert name in actual.coords
+
+    actual = cf_ds.cf["data"]
+    for name in ["geometry_container", "node_count", "crd_x", "crd_y"]:
+        assert name in actual.coords
+
+    assert cf_ds.cf.geometries == {"point": ["geometry_container"]}
+    assert_identical(cf_ds.cf["geometry"], cf_ds["geometry_container"])
+    with pytest.raises(ValueError):
+        cf_ds.cf["point"]
+
+    expected = cf_ds[["geometry_container", "node_count", "x", "y", "crd_x", "crd_y"]]
+    assert_identical(
+        cf_ds.cf[["point"]],
+        expected.set_coords(["node_count", "x", "y", "crd_x", "crd_y"]),
+    )

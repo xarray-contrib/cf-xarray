@@ -17,6 +17,17 @@ Top-level API
     encode_multi_index_as_compress
     decode_compress_to_multi_index
 
+Geometries
+----------
+.. autosummary::
+    :toctree: generated/
+
+    geometry.decode_geometries
+    geometry.encode_geometries
+    geometry.shapely_to_cf
+    geometry.cf_to_shapely
+    geometry.GeometryNames
+
 .. currentmodule:: xarray
 
 DataArray
@@ -96,6 +107,7 @@ Attributes
     Dataset.cf.coordinates
     Dataset.cf.formula_terms
     Dataset.cf.grid_mapping_names
+    Dataset.cf.geometries
     Dataset.cf.standard_names
 
 .. _dsmeth:

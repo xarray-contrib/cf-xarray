@@ -11,5 +11,4 @@ from .utils import _get_version
 
 from . import geometry  # noqa
 
-#
 __version__ = _get_version()

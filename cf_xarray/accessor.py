@@ -2789,17 +2789,14 @@ class CFDatasetAccessor(CFAccessor):
                 terms[key.lower()] = ds[value]
 
             try:
-                func = parametric.func_from_stdname(stdname)
-            except AttributeError:
+                transform = parametric.TRANSFORM_FROM_STDNAME[stdname]
+            except KeyError:
                 # Should occur since stdname is check before
                 raise NotImplementedError(
                     f"Coordinate function for {stdname!r} not implmented yet. Contributions welcome!"
                 ) from None
 
-            # let KeyError propagate
-            parametric.check_requirements(func, terms)
-
-            ds.coords[zname] = func(**terms)
+            ds.coords[zname] = transform.from_terms(terms)
 
 
 @xr.register_dataarray_accessor("cf")

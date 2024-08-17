@@ -41,21 +41,6 @@ depth_c = xr.DataArray([30.0], name="depth_c")
 s = xr.DataArray([0, 1, 2], dims=("lev"), name="s")
 
 
-@pytest.mark.parametrize(
-    "order,kwargs,expected",
-    [
-        ("nkji", {"nji": ps, "k": a}, ("time", "lev", "lat", "lon")),
-        ("nkij", {"nji": ps, "k": a}, ("time", "lev", "lon", "lat")),
-        ("ijn", {"nji": ps}, ("lon", "lat", "time")),
-        ("njk", {"nji": ps, "k": a}, ("time", "lat", "lev")),
-    ],
-)
-def test_derive_dimension_order(order, kwargs, expected):
-    order = parametric.derive_dimension_order(order, **kwargs)
-
-    assert order == expected
-
-
 def test_atmosphere_ln_pressure_coordinate():
     lev = xr.DataArray(
         [0, 1, 2],
@@ -63,94 +48,128 @@ def test_atmosphere_ln_pressure_coordinate():
         name="lev",
     )
 
-    output = parametric.atmosphere_ln_pressure_coordinate(p0, lev)
+    transform = parametric.AtmosphereLnPressure.from_terms(
+        {
+            "p0": p0,
+            "lev": lev,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray([10.0, 3.678794, 1.353353], dims=("lev",), name="p")
 
     assert_allclose(output, expected)
 
-    assert output.name == "p"
     assert output.attrs["standard_name"] == "air_pressure"
 
 
 def test_atmosphere_sigma_coordinate():
     ptop = xr.DataArray([0.98692327], name="ptop")
 
-    output = parametric.atmosphere_sigma_coordinate(sigma, ps, ptop)
+    transform = parametric.AtmosphereSigma.from_terms(
+        {
+            "sigma": sigma,
+            "ps": ps,
+            "ptop": ptop,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
             [
                 [[0.986923, 0.986923], [0.986923, 0.986923]],
-                [[1.0, 1.0], [1.0, 1.0]],
-                [[1.013077, 1.013077], [1.013077, 1.013077]],
+                [[0.986923, 0.986923], [0.986923, 0.986923]],
             ],
             [
-                [[0.986923, 0.986923], [0.986923, 0.986923]],
                 [[1.0, 1.0], [1.0, 1.0]],
+                [[1.0, 1.0], [1.0, 1.0]],
+            ],
+            [
+                [[1.013077, 1.013077], [1.013077, 1.013077]],
                 [[1.013077, 1.013077], [1.013077, 1.013077]],
             ],
         ],
-        dims=("time", "lev", "lat", "lon"),
+        dims=("lev", "time", "lat", "lon"),
         coords={"k": (("lev",), [0, 1, 2])},
         name="p",
     )
 
     assert_allclose(output, expected)
 
-    assert output.name == "p"
     assert output.attrs["standard_name"] == "air_pressure"
 
 
 def test_atmosphere_hybrid_sigma_pressure_coordinate():
     ap = xr.DataArray([3, 4, 5], dims=("lev",), name="ap")
 
-    output = parametric.atmosphere_hybrid_sigma_pressure_coordinate(b, ps, p0, a=a)
+    transform = parametric.AtmosphereHybridSigmaPressure.from_terms(
+        {
+            "b": b,
+            "ps": ps,
+            "a": a,
+            "p0": p0,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
             [
                 [[6.0, 6.0], [6.0, 6.0]],
-                [[17.0, 17.0], [17.0, 17.0]],
-                [[28.0, 28.0], [28.0, 28.0]],
+                [[6.0, 6.0], [6.0, 6.0]],
             ],
             [
-                [[6.0, 6.0], [6.0, 6.0]],
                 [[17.0, 17.0], [17.0, 17.0]],
+                [[17.0, 17.0], [17.0, 17.0]],
+            ],
+            [
+                [[28.0, 28.0], [28.0, 28.0]],
                 [[28.0, 28.0], [28.0, 28.0]],
             ],
         ],
-        dims=("time", "lev", "lat", "lon"),
+        dims=("lev", "time", "lat", "lon"),
         name="p",
     )
 
     assert_allclose(output, expected)
 
-    assert output.name == "p"
     assert output.attrs["standard_name"] == "air_pressure"
 
-    output = parametric.atmosphere_hybrid_sigma_pressure_coordinate(b, ps, p0, ap=ap)
+    transform = parametric.AtmosphereHybridSigmaPressure.from_terms(
+        {
+            "b": b,
+            "ps": ps,
+            "ap": ap,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
             [
                 [[9.0, 9.0], [9.0, 9.0]],
-                [[11.0, 11.0], [11.0, 11.0]],
-                [[13.0, 13.0], [13.0, 13.0]],
+                [[9.0, 9.0], [9.0, 9.0]],
             ],
             [
-                [[9.0, 9.0], [9.0, 9.0]],
                 [[11.0, 11.0], [11.0, 11.0]],
+                [[11.0, 11.0], [11.0, 11.0]],
+            ],
+            [
+                [[13.0, 13.0], [13.0, 13.0]],
                 [[13.0, 13.0], [13.0, 13.0]],
             ],
         ],
-        dims=("time", "lev", "lat", "lon"),
+        dims=("lev", "time", "lat", "lon"),
         name="p",
     )
 
     assert_allclose(output, expected)
 
-    assert output.name == "p"
     assert output.attrs["standard_name"] == "air_pressure"
 
 
@@ -161,28 +180,37 @@ def test_atmosphere_hybrid_height_coordinate():
         attrs={"standard_name": "surface_altitude"},
     )
 
-    output = parametric.atmosphere_hybrid_height_coordinate(a, b, orog)
+    transform = parametric.AtmosphereHybridHeight.from_terms(
+        {
+            "a": a,
+            "b": b,
+            "orog": orog,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
             [
                 [[0.0, 0.0], [0.0, 0.0]],
-                [[1.0, 1.0], [1.0, 1.0]],
-                [[2.0, 2.0], [2.0, 2.0]],
+                [[0.0, 0.0], [0.0, 0.0]],
             ],
             [
-                [[0.0, 0.0], [0.0, 0.0]],
                 [[1.0, 1.0], [1.0, 1.0]],
+                [[1.0, 1.0], [1.0, 1.0]],
+            ],
+            [
+                [[2.0, 2.0], [2.0, 2.0]],
                 [[2.0, 2.0], [2.0, 2.0]],
             ],
         ],
-        dims=("time", "lev", "lat", "lon"),
+        dims=("lev", "time", "lat", "lon"),
         name="p",
     )
 
     assert_allclose(output, expected)
 
-    assert output.name == "z"
     assert output.attrs["standard_name"] == "altitude"
 
 
@@ -201,55 +229,84 @@ def test_atmosphere_sleve_coordinate():
 
     zsurf2 = xr.DataArray(np.ones((2, 2, 2)), dims=("time", "lat", "lon"))
 
-    output = parametric.atmosphere_sleve_coordinate(a, b1, b2, ztop, zsurf1, zsurf2)
+    transform = parametric.AtmosphereSleve.from_terms(
+        {
+            "a": a,
+            "b1": b1,
+            "b2": b2,
+            "ztop": ztop,
+            "zsurf1": zsurf1,
+            "zsurf2": zsurf2,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
             [
                 [[1.0, 1.0], [1.0, 1.0]],
-                [[31.0, 31.0], [31.0, 31.0]],
-                [[61.0, 61.0], [61.0, 61.0]],
+                [[1.0, 1.0], [1.0, 1.0]],
             ],
             [
-                [[1.0, 1.0], [1.0, 1.0]],
                 [[31.0, 31.0], [31.0, 31.0]],
+                [[31.0, 31.0], [31.0, 31.0]],
+            ],
+            [
+                [[61.0, 61.0], [61.0, 61.0]],
                 [[61.0, 61.0], [61.0, 61.0]],
             ],
         ],
-        dims=("time", "lev", "lat", "lon"),
+        dims=("lev", "time", "lat", "lon"),
         name="z",
     )
 
     assert_allclose(output, expected)
 
-    assert output.name == "z"
     assert output.attrs["standard_name"] == "altitude"
 
 
 def test_ocean_sigma_coordinate():
-    output = parametric.ocean_sigma_coordinate(sigma, eta, depth)
+    transform = parametric.OceanSigma.from_terms(
+        {
+            "sigma": sigma,
+            "eta": eta,
+            "depth": depth,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
             [
-                [[1.0, 1.0], [1.0, 1.0]],
-                [[3.0, 3.0], [3.0, 3.0]],
-                [[5.0, 5.0], [5.0, 5.0]],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
             ],
             [
-                [[1.0, 1.0], [1.0, 1.0]],
-                [[3.0, 3.0], [3.0, 3.0]],
-                [[5.0, 5.0], [5.0, 5.0]],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
             ],
         ],
-        dims=("time", "lev", "lat", "lon"),
+        dims=("time", "lat", "lon", "lev"),
         name="z",
         coords={"k": (("lev",), [0, 1, 2])},
     )
 
     assert_allclose(output, expected)
 
-    assert output.name == "z"
     assert output.attrs["standard_name"] == "altitude"
 
 
@@ -258,84 +315,142 @@ def test_ocean_s_coordinate():
 
     _b = xr.DataArray([1], name="b")
 
-    output = parametric.ocean_s_coordinate(s, eta, depth, _a, _b, depth_c)
+    transform = parametric.OceanS.from_terms(
+        {
+            "s": s,
+            "eta": eta,
+            "depth": depth,
+            "a": _a,
+            "b": _b,
+            "depth_c": depth_c,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
             [
-                [[12.403492, 12.403492], [12.403492, 12.403492]],
-                [[40.434874, 40.434874], [40.434874, 40.434874]],
-                [[70.888995, 70.888995], [70.888995, 70.888995]],
+                [
+                    [12.403492, 40.434874, 70.888995],
+                    [12.403492, 40.434874, 70.888995],
+                ],
+                [
+                    [12.403492, 40.434874, 70.888995],
+                    [12.403492, 40.434874, 70.888995],
+                ],
             ],
             [
-                [[12.403492, 12.403492], [12.403492, 12.403492]],
-                [[40.434874, 40.434874], [40.434874, 40.434874]],
-                [[70.888995, 70.888995], [70.888995, 70.888995]],
+                [
+                    [12.403492, 40.434874, 70.888995],
+                    [12.403492, 40.434874, 70.888995],
+                ],
+                [
+                    [12.403492, 40.434874, 70.888995],
+                    [12.403492, 40.434874, 70.888995],
+                ],
             ],
         ],
-        dims=("time", "lev", "lat", "lon"),
+        dims=("time", "lat", "lon", "lev"),
         name="z",
     )
 
     assert_allclose(output, expected)
 
-    assert output.name == "z"
     assert output.attrs["standard_name"] == "altitude"
 
 
 def test_ocean_s_coordinate_g1():
     C = xr.DataArray([0, 1, 2], dims=("lev",), name="C")
 
-    output = parametric.ocean_s_coordinate_g1(s, C, eta, depth, depth_c)
+    transform = parametric.OceanSG2.from_terms(
+        {
+            "s": s,
+            "c": C,
+            "eta": eta,
+            "depth": depth,
+            "depth_c": depth_c,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
             [
-                [[1.0, 1.0], [1.0, 1.0]],
-                [[3.0, 3.0], [3.0, 3.0]],
-                [[5.0, 5.0], [5.0, 5.0]],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
             ],
             [
-                [[1.0, 1.0], [1.0, 1.0]],
-                [[3.0, 3.0], [3.0, 3.0]],
-                [[5.0, 5.0], [5.0, 5.0]],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
             ],
         ],
-        dims=("time", "lev", "lat", "lon"),
+        dims=("time", "lat", "lon", "lev"),
         name="z",
     )
 
     assert_allclose(output, expected)
 
-    assert output.name == "z"
     assert output.attrs["standard_name"] == "altitude"
 
 
 def test_ocean_s_coordinate_g2():
     C = xr.DataArray([0, 1, 2], dims=("lev",), name="C")
 
-    output = parametric.ocean_s_coordinate_g2(s, C, eta, depth, depth_c)
+    transform = parametric.OceanSG2.from_terms(
+        {
+            "s": s,
+            "c": C,
+            "eta": eta,
+            "depth": depth,
+            "depth_c": depth_c,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
             [
-                [[1.0, 1.0], [1.0, 1.0]],
-                [[3.0, 3.0], [3.0, 3.0]],
-                [[5.0, 5.0], [5.0, 5.0]],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
             ],
             [
-                [[1.0, 1.0], [1.0, 1.0]],
-                [[3.0, 3.0], [3.0, 3.0]],
-                [[5.0, 5.0], [5.0, 5.0]],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
+                [
+                    [1.0, 3.0, 5.0],
+                    [1.0, 3.0, 5.0],
+                ],
             ],
         ],
-        dims=("time", "lev", "lat", "lon"),
+        dims=("time", "lat", "lon", "lev"),
         name="z",
     )
 
     assert_allclose(output, expected)
 
-    assert output.name == "z"
     assert output.attrs["standard_name"] == "altitude"
 
 
@@ -346,28 +461,40 @@ def test_ocean_sigma_z_coordinate():
 
     _sigma = xr.DataArray([np.nan, np.nan, 3], dims=("lev",), name="sigma")
 
-    output = parametric.ocean_sigma_z_coordinate(_sigma, eta, depth, depth_c, 10, zlev)
+    transform = parametric.OceanSigmaZ.from_terms(
+        {
+            "sigma": _sigma,
+            "eta": eta,
+            "depth": depth,
+            "depth_c": depth_c,
+            "nsigma": 10,
+            "zlev": zlev,
+        }
+    )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
             [
                 [[0.0, 0.0], [0.0, 0.0]],
-                [[1.0, 1.0], [1.0, 1.0]],
-                [[7.0, 7.0], [7.0, 7.0]],
+                [[0.0, 0.0], [0.0, 0.0]],
             ],
             [
-                [[0.0, 0.0], [0.0, 0.0]],
                 [[1.0, 1.0], [1.0, 1.0]],
+                [[1.0, 1.0], [1.0, 1.0]],
+            ],
+            [
+                [[7.0, 7.0], [7.0, 7.0]],
                 [[7.0, 7.0], [7.0, 7.0]],
             ],
         ],
-        dims=("time", "lev", "lat", "lon"),
+        dims=("lev", "time", "lat", "lon"),
         name="z",
     )
 
     assert_allclose(output, expected)
 
-    assert output.name == "z"
     assert output.attrs["standard_name"] == "altitude"
 
 
@@ -407,9 +534,19 @@ def test_ocean_double_sigma_coordinate():
         name="a",
     )
 
-    output = parametric.ocean_double_sigma_coordinate(
-        sigma, depth, z1, z2, a, href, k_c
+    transform = parametric.OceanDoubleSigma.from_terms(
+        {
+            "sigma": sigma,
+            "depth": depth,
+            "z1": z1,
+            "z2": z2,
+            "a": a,
+            "href": href,
+            "k_c": k_c,
+        }
     )
+
+    output = transform.decode()
 
     expected = xr.DataArray(
         [
@@ -424,7 +561,6 @@ def test_ocean_double_sigma_coordinate():
 
     assert_allclose(output, expected)
 
-    assert output.name == "z"
     assert output.attrs["standard_name"] == "altitude"
 
 
@@ -487,55 +623,3 @@ def test_derive_ocean_stdname_no_match():
         match="Could not derive standard name from combination of not in any list.",
     ):
         parametric._derive_ocean_stdname(zlev={"standard_name": "not in any list"})
-
-
-def test_func_from_stdname():
-    with pytest.raises(AttributeError):
-        parametric.func_from_stdname("test")
-
-    func = parametric.func_from_stdname("atmosphere_ln_pressure_coordinate")
-
-    assert func == parametric.atmosphere_ln_pressure_coordinate
-
-
-def test_check_requirements():
-    with pytest.raises(KeyError, match="'Required terms lev, p0 absent in dataset.'"):
-        parametric.check_requirements(parametric.atmosphere_ln_pressure_coordinate, [])
-
-    parametric.check_requirements(
-        parametric.atmosphere_ln_pressure_coordinate, ["p0", "lev"]
-    )
-
-    with pytest.raises(
-        KeyError,
-        match=r"'Required terms b, p0 are absent in the dataset.'",
-    ):
-        parametric.check_requirements(
-            parametric.atmosphere_hybrid_sigma_pressure_coordinate, ["ps"]
-        )
-
-    with pytest.raises(
-        KeyError,
-        match="'Atleast one optional term a, ap is absent in the dataset.'",
-    ):
-        parametric.check_requirements(
-            parametric.atmosphere_hybrid_sigma_pressure_coordinate, ["ps", "p0", "b"]
-        )
-
-    with pytest.raises(
-        KeyError,
-        match="'Required terms b are absent in the dataset.'",
-    ):
-        parametric.check_requirements(
-            parametric.atmosphere_hybrid_sigma_pressure_coordinate, ["ps", "p0", "a"]
-        )
-
-    # Should pass
-    parametric.check_requirements(
-        parametric.atmosphere_hybrid_sigma_pressure_coordinate, ["ps", "p0", "b", "a"]
-    )
-
-    # check case insensitive
-    parametric.check_requirements(
-        parametric.atmosphere_hybrid_sigma_pressure_coordinate, ["ps", "P0", "b", "A"]
-    )

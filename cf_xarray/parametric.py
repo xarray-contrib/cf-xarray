@@ -1,8 +1,9 @@
-import inspect
-import sys
+from abc import ABC, abstractmethod
+from collections.abc import Sequence
 
 import numpy as np
 import xarray as xr
+from xarray import DataArray
 
 ocean_stdname_map = {
     "altitude": {
@@ -110,126 +111,23 @@ def _derive_ocean_stdname(**kwargs):
     return found_stdname
 
 
-def check_requirements(func, terms):
-    """Checks terms against function requirements.
+class ParamerticVerticalCoordinate(ABC):
+    @classmethod
+    @abstractmethod
+    def from_terms(cls, terms: dict):
+        pass
 
-    Uses `func` argument specification as requirements and checks terms against this.
-    Postitional arguments without a default are required but when a default value is
-    provided the arguement is considered optional. Atleast one optional argument must
-    be present (special case for atmosphere_hybrid_sigma_pressure_coordinate).
+    @abstractmethod
+    def decode(self):
+        pass
 
-    Parameters
-    ----------
-    func : function
-        Function to check requirements.
-    terms : list
-        List of terms to check `func` requirements against.
-
-    Raises
-    ------
-    KeyError
-        If `terms` is empty or missing required/optional terms.
-    """
-    if not isinstance(terms, set):
-        terms = set(terms)
-
-    spec = inspect.getfullargspec(func)
-
-    args = spec.args or []
-
-    if len(terms) == 0:
-        raise KeyError(f"Required terms {', '.join(sorted(args))} absent in dataset.")
-
-    # handle case insensitive
-    terms = {x.lower() for x in terms}
-
-    n = len(spec.defaults or [])
-
-    # last `n` arguments are optional
-    opt = set(args[len(args) - n :])
-
-    req = set(args) - opt
-
-    # req must all be present in terms
-    if (req & terms) != req:
-        req_diff = sorted(req - terms)
-
-        raise KeyError(
-            f"Required terms {', '.join(req_diff)} are absent in the dataset."
-        )
-
-    # if there are optional arguments check that atleast one
-    # is in the intersection, only required for
-    # atmosphere_hybrid_sigma_pressure_coordinate
-    if len(opt) > 0 and len(opt & terms) == 0:
-        raise KeyError(
-            f"Atleast one optional term {', '.join(sorted(opt))} is absent in the dataset."
-        )
+    @property
+    @abstractmethod
+    def computed_standard_name(self):
+        pass
 
 
-def func_from_stdname(stdname):
-    """Get function from module.
-
-    Uses `stdname` to return function from module.
-
-    Parameters
-    ----------
-    stdname : str
-        Name of the function.
-
-    Raises
-    ------
-    AttributeError
-        If a function name `stdname` is not in the module.
-    """
-    m = sys.modules[__name__]
-
-    return getattr(m, stdname)
-
-
-def derive_dimension_order(output_order, **dim_map):
-    """Derive dimension ordering from input map.
-
-    This will derive a dimensinal ordering from a map of dimension
-    identifiers and variables containing the dimensions.
-
-    This is useful when dimension names are not know.
-
-    For example if the desired output ordering was "nkji" where
-    variable "A" contains "nji" (time, lat, lon) and "B" contains
-    "k" (height) then the output would be (time, height, lat, lon).
-
-    This also works when dimensions are missing.
-
-    For example if the desired output ordering was "nkji" where
-    variable "A" contains "n" (time) and "B" contains
-    "k" (height) then the output would be (time, height).
-
-    Parameters
-    ----------
-    output_order : str
-        Dimension identifiers in desired order, e.g. "nkji".
-    **dim_map : dict
-        Dimension identifiers and variable containing them, e.g. "nji": eta, "k": s.
-
-    Returns
-    -------
-    list
-        Output dimensions in desired order.
-    """
-    dims = {}
-
-    for x, y in dim_map.items():
-        for i, z in enumerate(x):
-            try:
-                dims[z] = y.dims[i]
-            except IndexError:
-                dims[z] = None
-
-    return tuple(dims[x] for x in list(output_order) if dims[x] is not None)
-
-
-def atmosphere_ln_pressure_coordinate(p0, lev):
+class AtmosphereLnPressure(ParamerticVerticalCoordinate):
     """Atmosphere natural log pressure coordinate.
 
     Standard name: atmosphere_ln_pressure_coordinate
@@ -241,24 +139,42 @@ def atmosphere_ln_pressure_coordinate(p0, lev):
     lev : xr.DataArray
         Vertical dimensionless coordinate.
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with new pressure coordinate.
-
     References
     ----------
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#atmosphere-natural-log-pressure-coordinate
     """
-    p = p0 * np.exp(-lev)
 
-    p = p.squeeze().rename("p").assign_attrs(standard_name="air_pressure")
+    def __init__(self, p0, lev):
+        self.p0 = p0
+        self.lev = lev
 
-    return p
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
+
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        p = self.p0 * np.exp(-self.lev)
+
+        return p.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+
+    @property
+    def computed_standard_name(self):
+        """Computes coordinate standard name."""
+        return "air_pressure"
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        p0, lev = get_terms(terms, "p0", "lev")
+
+        return cls(p0, lev)
 
 
-def atmosphere_sigma_coordinate(sigma, ps, ptop):
+class AtmosphereSigma(ParamerticVerticalCoordinate):
     """Atmosphere sigma coordinate.
 
     Standard name: atmosphere_sigma_coordinate
@@ -270,26 +186,43 @@ def atmosphere_sigma_coordinate(sigma, ps, ptop):
     ps : xr.DataArray
         Horizontal surface pressure.
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with new pressure coordinate.
-
     References
     ----------
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_atmosphere_sigma_coordinate
     """
-    p = ptop + sigma * (ps - ptop)
 
-    p = p.squeeze().rename("p").assign_attrs(standard_name="air_pressure")
+    def __init__(self, sigma, ps, ptop):
+        self.sigma = sigma
+        self.ps = ps
+        self.ptop = ptop
 
-    output_order = derive_dimension_order("nkji", nji=ps, k=sigma)
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
 
-    return p.transpose(*output_order)
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        p = self.ptop + self.sigma * (self.ps - self.ptop)
+
+        return p.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+
+    @property
+    def computed_standard_name(self) -> str:
+        """Computes coordinate standard name."""
+        return "air_pressure"
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        sigma, ps, ptop = get_terms(terms, "sigma", "ps", "ptop")
+
+        return cls(sigma, ps, ptop)
 
 
-def atmosphere_hybrid_sigma_pressure_coordinate(b, ps, p0, a=None, ap=None):
+class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
     """Atmosphere hybrid sigma pressure coordinate.
 
     Standard name: atmosphere_hybrid_sigma_pressure_coordinate
@@ -307,29 +240,63 @@ def atmosphere_hybrid_sigma_pressure_coordinate(b, ps, p0, a=None, ap=None):
     ap : xr.DataArray
         Component of hybrid coordinate.
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with new pressure coordinate.
-
     References
     ----------
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_atmosphere_hybrid_sigma_pressure_coordinate
     """
-    if a is None:
-        p = ap + b * ps
-    else:
-        p = a * p0 + b * ps
 
-    p = p.squeeze().rename("p").assign_attrs(standard_name="air_pressure")
+    def __init__(self, b, ps, p0=None, a=None, ap=None):
+        self.b = b
+        self.ps = ps
+        self.p0 = p0
+        self.a = a
+        self.ap = ap
 
-    output_order = derive_dimension_order("nkji", nji=ps, k=b)
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
 
-    return p.transpose(*output_order)
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        if self.a is None:
+            p = self.ap + self.b * self.ps
+        else:
+            p = self.a * self.p0 + self.b * self.ps
+
+        return p.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+
+    @property
+    def computed_standard_name(self) -> str:
+        """Computes coordinate standard name."""
+        return "air_pressure"
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        b, ps, p0, a, ap = get_terms(terms, "b", "ps", optional=("p0", "a", "ap"))
+
+        if a is None and ap is None:
+            raise KeyError(
+                "Optional terms 'a', 'ap' are absent in the dataset, atleast one must be present."
+            )
+
+        if a is not None and ap is not None:
+            raise Exception(
+                "Both optional terms 'a' and 'ap' are present in the dataset, please drop one of them."
+            )
+
+        if a is not None and p0 is None:
+            raise KeyError(
+                "Optional term 'a' is present but 'p0' is absent in the dataset."
+            )
+
+        return cls(b, ps, p0, a, ap)
 
 
-def atmosphere_hybrid_height_coordinate(a, b, orog):
+class AtmosphereHybridHeight(ParamerticVerticalCoordinate):
     """Atmosphere hybrid height coordinate.
 
     Standard name: atmosphere_hybrid_height_coordinate
@@ -343,33 +310,50 @@ def atmosphere_hybrid_height_coordinate(a, b, orog):
     orog : xr.DataArray
         Height of the surface above the datum.
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with the height above the datum.
-
     References
     ----------
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#atmosphere-hybrid-height-coordinate
     """
-    z = a + b * orog
 
-    orog_stdname = orog.attrs["standard_name"]
+    def __init__(self, a, b, orog):
+        self.a = a
+        self.b = b
+        self.orog = orog
 
-    if orog_stdname == "surface_altitude":
-        out_stdname = "altitude"
-    elif orog_stdname == "surface_height_above_geopotential_datum":
-        out_stdname = "height_above_geopotential_datum"
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
 
-    z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        z = self.a + self.b * self.orog
 
-    output_order = derive_dimension_order("nkji", nji=orog, k=b)
+        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
 
-    return z.transpose(*output_order)
+    @property
+    def computed_standard_name(self) -> str:
+        """Computes coordinate standard name."""
+        orog_stdname = self.orog.attrs["standard_name"]
+
+        if orog_stdname == "surface_altitude":
+            out_stdname = "altitude"
+        elif orog_stdname == "surface_height_above_geopotential_datum":
+            out_stdname = "height_above_geopotential_datum"
+
+        return out_stdname
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        a, b, orog = get_terms(terms, "a", "b", "orog")
+
+        return cls(a, b, orog)
 
 
-def atmosphere_sleve_coordinate(a, b1, b2, ztop, zsurf1, zsurf2):
+class AtmosphereSleve(ParamerticVerticalCoordinate):
     """Atmosphere smooth level vertical (SLEVE) coordinate.
 
     Standard name: atmosphere_sleve_coordinate
@@ -389,33 +373,57 @@ def atmosphere_sleve_coordinate(a, b1, b2, ztop, zsurf1, zsurf2):
     zsurf2 : xr.DataArray
         Small-scale component of the topography.
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with the height above the datum.
-
     References
     ----------
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_atmosphere_smooth_level_vertical_sleve_coordinate
     """
-    z = a * ztop + b1 * zsurf1 + b2 * zsurf2
 
-    ztop_stdname = ztop.attrs["standard_name"]
+    def __init__(self, a, b1, b2, ztop, zsurf1, zsurf2):
+        self.a = a
+        self.b1 = b1
+        self.b2 = b2
+        self.ztop = ztop
+        self.zsurf1 = zsurf1
+        self.zsurf2 = zsurf2
 
-    if ztop_stdname == "altitude_at_top_of_atmosphere_model":
-        out_stdname = "altitude"
-    elif ztop_stdname == "height_above_geopotential_datum_at_top_of_atmosphere_model":
-        out_stdname = "height_above_geopotential_datum"
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
 
-    z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        z = self.a * self.ztop + self.b1 * self.zsurf1 + self.b2 * self.zsurf2
 
-    output_order = derive_dimension_order("nkji", nji=zsurf1, k=a)
+        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
 
-    return z.transpose(*output_order)
+    @property
+    def computed_standard_name(self) -> str:
+        """Computes coordinate standard name."""
+        ztop_stdname = self.ztop.attrs["standard_name"]
+
+        if ztop_stdname == "altitude_at_top_of_atmosphere_model":
+            out_stdname = "altitude"
+        elif (
+            ztop_stdname == "height_above_geopotential_datum_at_top_of_atmosphere_model"
+        ):
+            out_stdname = "height_above_geopotential_datum"
+
+        return out_stdname
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        a, b1, b2, ztop, zsurf1, zsurf2 = get_terms(
+            terms, "a", "b1", "b2", "ztop", "zsurf1", "zsurf2"
+        )
+
+        return cls(a, b1, b2, ztop, zsurf1, zsurf2)
 
 
-def ocean_sigma_coordinate(sigma, eta, depth):
+class OceanSigma(ParamerticVerticalCoordinate):
     """Ocean sigma coordinate.
 
     Standard name: ocean_sigma_coordinate
@@ -429,28 +437,45 @@ def ocean_sigma_coordinate(sigma, eta, depth):
     depth : xr.DataArray
         Distance (positive value) from the datum to the sea floor.
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with the height (positive upwards) relative to the datum.
-
     References
     ----------
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_sigma_coordinate
     """
-    z = eta + sigma * (depth + eta)
 
-    out_stdname = _derive_ocean_stdname(eta=eta.attrs, depth=depth.attrs)
+    def __init__(self, sigma, eta, depth):
+        self.sigma = sigma
+        self.eta = eta
+        self.depth = depth
 
-    z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
 
-    output_order = derive_dimension_order("nkji", nji=eta, k=sigma)
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        z = self.eta + self.sigma * (self.depth + self.eta)
 
-    return z.transpose(*output_order)
+        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+
+    @property
+    def computed_standard_name(self) -> str:
+        """Computes coordinate standard name."""
+        out_stdname = _derive_ocean_stdname(eta=self.eta.attrs, depth=self.depth.attrs)
+
+        return out_stdname
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        sigma, eta, depth = get_terms(terms, "sigma", "eta", "depth")
+
+        return cls(sigma, eta, depth)
 
 
-def ocean_s_coordinate(s, eta, depth, a, b, depth_c):
+class OceanS(ParamerticVerticalCoordinate):
     """Ocean s-coordinate.
 
     Standard name: ocean_s_coordinate
@@ -470,32 +495,56 @@ def ocean_s_coordinate(s, eta, depth, a, b, depth_c):
     depth_c : xr.DataArray
         Constant controlling stretch.
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with the height (positive upwards) relative to the datum.
-
     References
     ----------
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_s_coordinate
     """
-    C = (1 - b) * np.sinh(a * s) / np.sinh(a) + b * (
-        np.tanh(a * (s + 0.5)) / 2 * np.tanh(0.5 * a) - 0.5
-    )
 
-    z = eta * (1 + s) + depth_c * s + (depth - depth_c) * C
+    def __init__(self, s, eta, depth, a, b, depth_c):
+        self.s = s
+        self.eta = eta
+        self.depth = depth
+        self.a = a
+        self.b = b
+        self.depth_c = depth_c
 
-    out_stdname = _derive_ocean_stdname(eta=eta.attrs, depth=depth.attrs)
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
 
-    z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        C = (1 - self.b) * np.sinh(self.a * self.s) / np.sinh(self.a) + self.b * (
+            np.tanh(self.a * (self.s + 0.5)) / 2 * np.tanh(0.5 * self.a) - 0.5
+        )
 
-    output_order = derive_dimension_order("nkji", nji=eta, k=s)
+        z = (
+            self.eta * (1 + self.s)
+            + self.depth_c * self.s
+            + (self.depth - self.depth_c) * C
+        )
 
-    return z.transpose(*output_order)
+        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+
+    @property
+    def computed_standard_name(self) -> str:
+        """Computes coordinate standard name."""
+        return _derive_ocean_stdname(eta=self.eta.attrs, depth=self.depth.attrs)
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        s, eta, depth, a, b, depth_c = get_terms(
+            terms, "s", "eta", "depth", "a", "b", "depth_c"
+        )
+
+        return cls(s, eta, depth, a, b, depth_c)
 
 
-def ocean_s_coordinate_g1(s, c, eta, depth, depth_c):
+class OceanSG1(ParamerticVerticalCoordinate):
     """Ocean s-coordinate, generic form 1.
 
     Standard name: ocean_s_coordinate_g1
@@ -513,30 +562,49 @@ def ocean_s_coordinate_g1(s, c, eta, depth, depth_c):
     depth_c : xr.DataArray
         Constant (positive value) is a critical depth controlling the stretching.
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with the height (positive upwards) relative to ocean datum.
-
     References
     ----------
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_s_coordinate_generic_form_1
     """
-    S = depth_c * s + (depth - depth_c) * c
 
-    z = S + eta * (1 + s / depth)
+    def __init__(self, s, c, eta, depth, depth_c):
+        self.s = s
+        self.c = c
+        self.eta = eta
+        self.depth = depth
+        self.depth_c = depth_c
 
-    out_stdname = _derive_ocean_stdname(eta=eta.attrs, depth=depth.attrs)
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
 
-    z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        S = self.depth_c * self.s + (self.depth - self.depth_c) * self.c
 
-    output_order = derive_dimension_order("nkji", nji=eta, k=s)
+        z = S + self.eta * (1 + self.s / self.depth)
 
-    return z.transpose(*output_order)
+        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+
+    @property
+    def computed_standard_name(self) -> str:
+        """Computes coordinate standard name."""
+        return _derive_ocean_stdname(eta=self.eta.attrs, depth=self.depth.attrs)
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        s, c, eta, depth, depth_c = get_terms(
+            terms, "s", "c", "eta", "depth", "depth_c"
+        )
+
+        return cls(s, c, eta, depth, depth_c)
 
 
-def ocean_s_coordinate_g2(s, c, eta, depth, depth_c):
+class OceanSG2(ParamerticVerticalCoordinate):
     """Ocean s-coordinate, generic form 2.
 
     Standard name: ocean_s_coordinate_g2
@@ -554,30 +622,49 @@ def ocean_s_coordinate_g2(s, c, eta, depth, depth_c):
     depth_c : xr.DataArray
         Constant (positive value) is a critical depth controlling the stretching.
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with the height (positive upwards) relative to ocean datum.
-
     References
     ----------
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_s_coordinate_generic_form_2
     """
-    S = (depth_c * s + depth * c) / (depth_c + depth)
 
-    z = eta + (eta + depth) * S
+    def __init__(self, s, c, eta, depth, depth_c):
+        self.s = s
+        self.c = c
+        self.eta = eta
+        self.depth = depth
+        self.depth_c = depth_c
 
-    out_stdname = _derive_ocean_stdname(eta=eta.attrs, depth=depth.attrs)
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
 
-    z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        S = (self.depth_c * self.s + self.depth * self.c) / (self.depth_c + self.depth)
 
-    output_order = derive_dimension_order("nkji", nji=eta, k=s)
+        z = self.eta + (self.eta + self.depth) * S
 
-    return z.transpose(*output_order)
+        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+
+    @property
+    def computed_standard_name(self) -> str:
+        """Computes coordinate standard name."""
+        return _derive_ocean_stdname(eta=self.eta.attrs, depth=self.depth.attrs)
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        s, c, eta, depth, depth_c = get_terms(
+            terms, "s", "c", "eta", "depth", "depth_c"
+        )
+
+        return cls(s, c, eta, depth, depth_c)
 
 
-def ocean_sigma_z_coordinate(sigma, eta, depth, depth_c, nsigma, zlev):
+class OceanSigmaZ(ParamerticVerticalCoordinate):
     """Ocean sigma over z coordinate.
 
     Standard name: ocean_sigma_z_coordinate
@@ -597,11 +684,6 @@ def ocean_sigma_z_coordinate(sigma, eta, depth, depth_c, nsigma, zlev):
     zlev : xr.DataArray
         Coordinate defined only for `nlayer - nsigma` where `nlayer` is the size of the vertical coordinate.
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with the height (positive upwards) relative to the ocean datum.
-
     Notes
     -----
     The description of this type of parametric vertical coordinate is defective in version 1.8 and earlier versions of the standard, in that it does not state what values the vertical coordinate variable should contain. Therefore, in accordance with the rules, all versions of the standard before 1.9 are deprecated for datasets that use the "ocean sigma over z" coordinate.
@@ -611,34 +693,61 @@ def ocean_sigma_z_coordinate(sigma, eta, depth, depth_c, nsigma, zlev):
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_sigma_over_z_coordinate
     """
-    z_shape = list(eta.shape)
 
-    z_shape.insert(1, sigma.shape[0])
+    def __init__(self, sigma, eta, depth, depth_c, nsigma, zlev):
+        self.sigma = sigma
+        self.eta = eta
+        self.depth = depth
+        self.depth_c = depth_c
+        self.nsigma = nsigma
+        self.zlev = zlev
 
-    z_dims = list(eta.dims)
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
 
-    z_dims.insert(1, sigma.dims[0])
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        z_shape = list(self.eta.shape)
 
-    z = xr.DataArray(np.empty(z_shape), dims=z_dims)
+        z_shape.insert(1, self.sigma.shape[0])
 
-    z_sigma = eta + sigma * (np.minimum(depth_c, depth) + eta)
+        z_dims = list(self.eta.dims)
 
-    z = xr.where(~np.isnan(sigma), z_sigma, z)
+        z_dims.insert(1, self.sigma.dims[0])
 
-    z = xr.where(np.isnan(sigma), zlev, z)
+        z = xr.DataArray(np.empty(z_shape), dims=z_dims)
 
-    out_stdname = _derive_ocean_stdname(
-        eta=eta.attrs, depth=depth.attrs, zlev=zlev.attrs
-    )
+        z_sigma = self.eta + self.sigma * (
+            np.minimum(self.depth_c, self.depth) + self.eta
+        )
 
-    z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
+        z = xr.where(~np.isnan(self.sigma), z_sigma, z)
 
-    output_order = derive_dimension_order("nkji", nji=eta, k=sigma)
+        z = xr.where(np.isnan(self.sigma), self.zlev, z)
 
-    return z.transpose(*output_order)
+        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+
+    @property
+    def computed_standard_name(self) -> str:
+        """Computes coordinate standard name."""
+        return _derive_ocean_stdname(
+            eta=self.eta.attrs, depth=self.depth.attrs, zlev=self.zlev.attrs
+        )
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        sigma, eta, depth, depth_c, nsigma, zlev = get_terms(
+            terms, "sigma", "eta", "depth", "depth_c", "nsigma", "zlev"
+        )
+
+        return cls(sigma, eta, depth, depth_c, nsigma, zlev)
 
 
-def ocean_double_sigma_coordinate(sigma, depth, z1, z2, a, href, k_c):
+class OceanDoubleSigma(ParamerticVerticalCoordinate):
     """Ocean double sigma coordinate.
 
     Standard name: ocean_double_sigma_coordinate
@@ -659,33 +768,95 @@ def ocean_double_sigma_coordinate(sigma, depth, z1, z2, a, href, k_c):
         Constant with units of length.
     k_c : xr.DataArray
 
-    Returns
-    -------
-    xr.DataArray
-        A DataArray with the height (positive upwards) relative to the datum.
-
     References
     ----------
     Please refer to the CF conventions document :
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_double_sigma_coordinate
     """
-    f = 0.5 * (z1 + z2) + 0.5 * (z1 - z2) * np.tanh(2 * a / (z1 - z2) * (depth - href))
 
-    # shape k, j, i
-    z_shape = sigma.shape + depth.shape
+    def __init__(self, sigma, depth, z1, z2, a, href, k_c):
+        self.sigma = sigma
+        self.depth = depth
+        self.z1 = z1
+        self.z2 = z2
+        self.a = a
+        self.href = href
+        self.k_c = k_c
 
-    z_dims = sigma.dims + depth.dims
+    def decode(self) -> xr.DataArray:
+        """Decode coordinate.
 
-    z = xr.DataArray(np.empty(z_shape), dims=z_dims, name="z")
+        Returns
+        -------
+        xr.DataArray
+            Decoded parametric vertical coordinate.
+        """
+        f = 0.5 * (self.z1 + self.z2) + 0.5 * (self.z1 - self.z2) * np.tanh(
+            2 * self.a / (self.z1 - self.z2) * (self.depth - self.href)
+        )
 
-    z = xr.where(sigma.k <= k_c, sigma * f, z)
+        # shape k, j, i
+        z_shape = self.sigma.shape + self.depth.shape
 
-    z = xr.where(sigma.k > k_c, f + (sigma - 1) * (depth - f), z)
+        z_dims = self.sigma.dims + self.depth.dims
 
-    out_stdname = _derive_ocean_stdname(depth=depth.attrs)
+        z = xr.DataArray(np.empty(z_shape), dims=z_dims, name="z")
 
-    z = z.squeeze().rename("z").assign_attrs(standard_name=out_stdname)
+        z = xr.where(self.sigma.k <= self.k_c, self.sigma * f, z)
 
-    output_order = derive_dimension_order("kji", ji=depth, k=sigma)
+        z = xr.where(
+            self.sigma.k > self.k_c, f + (self.sigma - 1) * (self.depth - f), z
+        )
 
-    return z.transpose(*output_order)
+        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+
+    @property
+    def computed_standard_name(self) -> str:
+        """Computes coordinate standard name."""
+        return _derive_ocean_stdname(depth=self.depth.attrs)
+
+    @classmethod
+    def from_terms(cls, terms: dict):
+        """Create coordinate from terms."""
+        sigma, depth, z1, z2, a, href, k_c = get_terms(
+            terms, "sigma", "depth", "z1", "z2", "a", "href", "k_c"
+        )
+
+        return cls(sigma, depth, z1, z2, a, href, k_c)
+
+
+TRANSFORM_FROM_STDNAME = {
+    "atmosphere_ln_pressure_coordinate": AtmosphereLnPressure,
+    "atmosphere_sigma_coordinate": AtmosphereSigma,
+    "atmosphere_hybrid_sigma_pressure_coordinate": AtmosphereHybridSigmaPressure,
+    "atmosphere_hybrid_height_coordinate": AtmosphereHybridHeight,
+    "atmosphere_sleve_coordinate": AtmosphereSleve,
+    "ocean_sigma_coordinate": OceanSigma,
+    "ocean_s_coordinate": OceanS,
+    "ocean_s_coordinate_g1": OceanSG1,
+    "ocean_s_coordinate_g2": OceanSG2,
+    "ocean_sigma_z_coordinate": OceanSigmaZ,
+    "ocean_double_sigma_coordinate": OceanDoubleSigma,
+}
+
+
+def get_terms(
+    terms: dict[str, DataArray], *required, optional: Sequence[str] = None
+) -> DataArray:
+    if optional is None:
+        optional = []
+
+    selected_terms = []
+
+    for term in required + tuple(optional):
+        da = None
+
+        try:
+            da = terms[term]
+        except KeyError:
+            if term not in optional:
+                raise KeyError(f"Required term {term} is absent in dataset.") from None
+
+        selected_terms.append(da)
+
+    return selected_terms

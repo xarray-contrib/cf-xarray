@@ -13,18 +13,18 @@ ocean_stdname_map = {
     },
     "height_above_geopotential_datum": {
         "zlev": "height_above_geopotential_datum",
-        "eta": "sea_surface_height_above_ geopotential_datum",
-        "depth": "sea_floor_depth_below_ geopotential_datum",
+        "eta": "sea_surface_height_above_geopotential_datum",
+        "depth": "sea_floor_depth_below_geopotential_datum",
     },
     "height_above_reference_ellipsoid": {
         "zlev": "height_above_reference_ellipsoid",
-        "eta": "sea_surface_height_above_ reference_ellipsoid",
-        "depth": "sea_floor_depth_below_ reference_ellipsoid",
+        "eta": "sea_surface_height_above_reference_ellipsoid",
+        "depth": "sea_floor_depth_below_reference_ellipsoid",
     },
     "height_above_mean_sea_level": {
         "zlev": "height_above_mean_sea_level",
-        "eta": "sea_surface_height_above_mean_ sea_level",
-        "depth": "sea_floor_depth_below_mean_ sea_level",
+        "eta": "sea_surface_height_above_mean_sea_level",
+        "depth": "sea_floor_depth_below_mean_sea_level",
     },
 }
 

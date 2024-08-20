@@ -855,7 +855,9 @@ def get_terms(
             da = terms[term]
         except KeyError:
             if term not in optional:
-                raise KeyError(f"Required term {term} is absent in the dataset.") from None
+                raise KeyError(
+                    f"Required term {term} is absent in the dataset."
+                ) from None
 
         selected_terms.append(da)
 

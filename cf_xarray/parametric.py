@@ -278,17 +278,17 @@ class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
         """Create coordinate from terms."""
         b, ps, p0, a, ap = get_terms(terms, "b", "ps", optional=("p0", "a", "ap"))
 
-        if a is None and ap is None:
+        if a is None and ap is None:  # type: ignore[unreachable]
             raise KeyError(
                 "Optional terms 'a', 'ap' are absent in the dataset, atleast one must be present."
             )
 
-        if a is not None and ap is not None:
+        if a is not None and ap is not None:  # type: ignore[redundant-expr]
             raise Exception(
                 "Both optional terms 'a' and 'ap' are present in the dataset, please drop one of them."
             )
 
-        if a is not None and p0 is None:
+        if a is not None and p0 is None:  # type: ignore[unreachable]
             raise KeyError(
                 "Optional term 'a' is present but 'p0' is absent in the dataset."
             )
@@ -841,8 +841,8 @@ TRANSFORM_FROM_STDNAME = {
 
 
 def get_terms(
-    terms: dict[str, DataArray], *required, optional: Sequence[str] = None
-) -> DataArray:
+    terms: dict[str, DataArray], *required, optional: Sequence[str] | None = None
+) -> list[DataArray]:
     if optional is None:
         optional = []
 
@@ -861,4 +861,4 @@ def get_terms(
 
         selected_terms.append(da)
 
-    return selected_terms
+    return selected_terms  # type: ignore[return-value]

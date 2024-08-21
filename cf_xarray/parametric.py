@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 import numpy as np
 import xarray as xr
@@ -127,6 +128,7 @@ class ParamerticVerticalCoordinate(ABC):
         pass
 
 
+@dataclass
 class AtmosphereLnPressure(ParamerticVerticalCoordinate):
     """Atmosphere natural log pressure coordinate.
 
@@ -145,9 +147,8 @@ class AtmosphereLnPressure(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#atmosphere-natural-log-pressure-coordinate
     """
 
-    def __init__(self, p0, lev):
-        self.p0 = p0
-        self.lev = lev
+    p0: DataArray
+    lev: DataArray
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.
@@ -174,6 +175,7 @@ class AtmosphereLnPressure(ParamerticVerticalCoordinate):
         return cls(p0, lev)
 
 
+@dataclass
 class AtmosphereSigma(ParamerticVerticalCoordinate):
     """Atmosphere sigma coordinate.
 
@@ -192,10 +194,9 @@ class AtmosphereSigma(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_atmosphere_sigma_coordinate
     """
 
-    def __init__(self, sigma, ps, ptop):
-        self.sigma = sigma
-        self.ps = ps
-        self.ptop = ptop
+    sigma: DataArray
+    ps: DataArray
+    ptop: DataArray
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.
@@ -222,6 +223,7 @@ class AtmosphereSigma(ParamerticVerticalCoordinate):
         return cls(sigma, ps, ptop)
 
 
+@dataclass
 class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
     """Atmosphere hybrid sigma pressure coordinate.
 
@@ -246,12 +248,27 @@ class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_atmosphere_hybrid_sigma_pressure_coordinate
     """
 
-    def __init__(self, b, ps, p0=None, a=None, ap=None):
-        self.b = b
-        self.ps = ps
-        self.p0 = p0
-        self.a = a
-        self.ap = ap
+    b: DataArray
+    ps: DataArray
+    p0: DataArray
+    a: DataArray
+    ap: DataArray
+
+    def __post_init__(self):
+        if self.a is None and self.ap is None:
+            raise KeyError(
+                "Optional terms 'a', 'ap' are absent in the dataset, atleast one must be present."
+            )
+
+        if self.a is not None and self.ap is not None:
+            raise Exception(
+                "Both optional terms 'a' and 'ap' are present in the dataset, please drop one of them."
+            )
+
+        if self.a is not None and self.p0 is None:
+            raise KeyError(
+                "Optional term 'a' is present but 'p0' is absent in the dataset."
+            )
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.
@@ -262,7 +279,7 @@ class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
             Decoded parametric vertical coordinate.
         """
         if self.a is None:
-            p = self.ap + self.b * self.ps
+            p = self.ap + self.b * self.ps  # type: ignore[unreachable]
         else:
             p = self.a * self.p0 + self.b * self.ps
 
@@ -278,24 +295,10 @@ class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
         """Create coordinate from terms."""
         b, ps, p0, a, ap = get_terms(terms, "b", "ps", optional=("p0", "a", "ap"))
 
-        if a is None and ap is None:  # type: ignore[unreachable]
-            raise KeyError(
-                "Optional terms 'a', 'ap' are absent in the dataset, atleast one must be present."
-            )
-
-        if a is not None and ap is not None:  # type: ignore[redundant-expr]
-            raise Exception(
-                "Both optional terms 'a' and 'ap' are present in the dataset, please drop one of them."
-            )
-
-        if a is not None and p0 is None:  # type: ignore[unreachable]
-            raise KeyError(
-                "Optional term 'a' is present but 'p0' is absent in the dataset."
-            )
-
         return cls(b, ps, p0, a, ap)
 
 
+@dataclass
 class AtmosphereHybridHeight(ParamerticVerticalCoordinate):
     """Atmosphere hybrid height coordinate.
 
@@ -316,10 +319,9 @@ class AtmosphereHybridHeight(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#atmosphere-hybrid-height-coordinate
     """
 
-    def __init__(self, a, b, orog):
-        self.a = a
-        self.b = b
-        self.orog = orog
+    a: DataArray
+    b: DataArray
+    orog: DataArray
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.
@@ -353,6 +355,7 @@ class AtmosphereHybridHeight(ParamerticVerticalCoordinate):
         return cls(a, b, orog)
 
 
+@dataclass
 class AtmosphereSleve(ParamerticVerticalCoordinate):
     """Atmosphere smooth level vertical (SLEVE) coordinate.
 
@@ -379,13 +382,12 @@ class AtmosphereSleve(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_atmosphere_smooth_level_vertical_sleve_coordinate
     """
 
-    def __init__(self, a, b1, b2, ztop, zsurf1, zsurf2):
-        self.a = a
-        self.b1 = b1
-        self.b2 = b2
-        self.ztop = ztop
-        self.zsurf1 = zsurf1
-        self.zsurf2 = zsurf2
+    a: DataArray
+    b1: DataArray
+    b2: DataArray
+    ztop: DataArray
+    zsurf1: DataArray
+    zsurf2: DataArray
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.
@@ -423,6 +425,7 @@ class AtmosphereSleve(ParamerticVerticalCoordinate):
         return cls(a, b1, b2, ztop, zsurf1, zsurf2)
 
 
+@dataclass
 class OceanSigma(ParamerticVerticalCoordinate):
     """Ocean sigma coordinate.
 
@@ -443,10 +446,9 @@ class OceanSigma(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_sigma_coordinate
     """
 
-    def __init__(self, sigma, eta, depth):
-        self.sigma = sigma
-        self.eta = eta
-        self.depth = depth
+    sigma: DataArray
+    eta: DataArray
+    depth: DataArray
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.
@@ -475,6 +477,7 @@ class OceanSigma(ParamerticVerticalCoordinate):
         return cls(sigma, eta, depth)
 
 
+@dataclass
 class OceanS(ParamerticVerticalCoordinate):
     """Ocean s-coordinate.
 
@@ -501,13 +504,12 @@ class OceanS(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_s_coordinate
     """
 
-    def __init__(self, s, eta, depth, a, b, depth_c):
-        self.s = s
-        self.eta = eta
-        self.depth = depth
-        self.a = a
-        self.b = b
-        self.depth_c = depth_c
+    s: DataArray
+    eta: DataArray
+    depth: DataArray
+    a: DataArray
+    b: DataArray
+    depth_c: DataArray
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.
@@ -544,6 +546,7 @@ class OceanS(ParamerticVerticalCoordinate):
         return cls(s, eta, depth, a, b, depth_c)
 
 
+@dataclass
 class OceanSG1(ParamerticVerticalCoordinate):
     """Ocean s-coordinate, generic form 1.
 
@@ -568,12 +571,11 @@ class OceanSG1(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_s_coordinate_generic_form_1
     """
 
-    def __init__(self, s, c, eta, depth, depth_c):
-        self.s = s
-        self.c = c
-        self.eta = eta
-        self.depth = depth
-        self.depth_c = depth_c
+    s: DataArray
+    c: DataArray
+    eta: DataArray
+    depth: DataArray
+    depth_c: DataArray
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.
@@ -604,6 +606,7 @@ class OceanSG1(ParamerticVerticalCoordinate):
         return cls(s, c, eta, depth, depth_c)
 
 
+@dataclass
 class OceanSG2(ParamerticVerticalCoordinate):
     """Ocean s-coordinate, generic form 2.
 
@@ -628,12 +631,11 @@ class OceanSG2(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_s_coordinate_generic_form_2
     """
 
-    def __init__(self, s, c, eta, depth, depth_c):
-        self.s = s
-        self.c = c
-        self.eta = eta
-        self.depth = depth
-        self.depth_c = depth_c
+    s: DataArray
+    c: DataArray
+    eta: DataArray
+    depth: DataArray
+    depth_c: DataArray
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.
@@ -664,6 +666,7 @@ class OceanSG2(ParamerticVerticalCoordinate):
         return cls(s, c, eta, depth, depth_c)
 
 
+@dataclass
 class OceanSigmaZ(ParamerticVerticalCoordinate):
     """Ocean sigma over z coordinate.
 
@@ -694,13 +697,12 @@ class OceanSigmaZ(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_sigma_over_z_coordinate
     """
 
-    def __init__(self, sigma, eta, depth, depth_c, nsigma, zlev):
-        self.sigma = sigma
-        self.eta = eta
-        self.depth = depth
-        self.depth_c = depth_c
-        self.nsigma = nsigma
-        self.zlev = zlev
+    sigma: DataArray
+    eta: DataArray
+    depth: DataArray
+    depth_c: DataArray
+    nsigma: DataArray
+    zlev: DataArray
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.
@@ -735,6 +737,7 @@ class OceanSigmaZ(ParamerticVerticalCoordinate):
         return cls(sigma, eta, depth, depth_c, nsigma, zlev)
 
 
+@dataclass
 class OceanDoubleSigma(ParamerticVerticalCoordinate):
     """Ocean double sigma coordinate.
 
@@ -762,14 +765,13 @@ class OceanDoubleSigma(ParamerticVerticalCoordinate):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#_ocean_double_sigma_coordinate
     """
 
-    def __init__(self, sigma, depth, z1, z2, a, href, k_c):
-        self.sigma = sigma
-        self.depth = depth
-        self.z1 = z1
-        self.z2 = z2
-        self.a = a
-        self.href = href
-        self.k_c = k_c
+    sigma: DataArray
+    depth: DataArray
+    z1: DataArray
+    z2: DataArray
+    a: DataArray
+    href: DataArray
+    k_c: DataArray
 
     def decode(self) -> xr.DataArray:
         """Decode coordinate.

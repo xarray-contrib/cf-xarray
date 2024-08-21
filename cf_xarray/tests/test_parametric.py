@@ -598,18 +598,6 @@ def test_derive_ocean_stdname(input, expected):
     assert output == expected
 
 
-def test_derive_ocean_stdname_no_values():
-    with pytest.raises(
-        ValueError, match="Must provide atleast one of depth, eta, zlev."
-    ):
-        parametric._derive_ocean_stdname()
-
-
-def test_derive_ocean_stdname_empty_value():
-    with pytest.raises(ValueError, match="The values for zlev cannot be `None`."):
-        parametric._derive_ocean_stdname(zlev=None)
-
-
 def test_derive_ocean_stdname_no_standard_name():
     with pytest.raises(
         ValueError, match="The standard name for the 'zlev' variable is not available."

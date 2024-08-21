@@ -29,7 +29,7 @@ OCEAN_STDNAME_MAP = {
 }
 
 
-def _derive_ocean_stdname(**kwargs):
+def _derive_ocean_stdname(*, zlev=None, eta=None, depth=None):
     """Derive standard name for computer ocean coordinates.
 
     Uses the concatentation of formula terms `zlev`, `eta`, and `depth`
@@ -63,33 +63,29 @@ def _derive_ocean_stdname(**kwargs):
       1. https://cfconventions.org/cf-conventions/cf-conventions.html#table-computed-standard-names
     """
     found_stdname = None
-
-    allowed_names = {"zlev", "eta", "depth"}
-
-    if len(kwargs) == 0 or not (set(kwargs) <= allowed_names):
-        raise ValueError(
-            f"Must provide atleast one of {', '.join(sorted(allowed_names))}."
-        )
-
     search_term = ""
+    search_vars = {"zlev": zlev, "eta": eta, "depth": depth}
 
-    for x, y in sorted(kwargs.items(), key=lambda x: x[0]):
+    for x, y in sorted(search_vars.items(), key=lambda x: x[0]):
+        if y is None:
+            continue
+
         try:
             search_term = f"{search_term}{y['standard_name']}"
         except TypeError:
             raise ValueError(
-                f"The values for {', '.join(sorted(kwargs.keys()))} cannot be `None`."
+                f"The values for {', '.join(sorted(search_vars.keys()))} cannot be `None`."
             ) from None
         except KeyError:
             raise ValueError(
                 f"The standard name for the {x!r} variable is not available."
             ) from None
 
-    for x, y in ocean_stdname_map.items():
+    for x, y in OCEAN_STDNAME_MAP.items():
         check_term = "".join(
             [
                 y[i]
-                for i, j in sorted(kwargs.items(), key=lambda x: x[0])
+                for i, j in sorted(search_vars.items(), key=lambda x: x[0])
                 if j is not None
             ]
         )
@@ -101,7 +97,11 @@ def _derive_ocean_stdname(**kwargs):
 
     if found_stdname is None:
         stdnames = ", ".join(
-            [y["standard_name"] for _, y in sorted(kwargs.items(), key=lambda x: x[0])]
+            [
+                y["standard_name"]
+                for _, y in sorted(search_vars.items(), key=lambda x: x[0])
+                if y is not None
+            ]
         )
 
         raise ValueError(

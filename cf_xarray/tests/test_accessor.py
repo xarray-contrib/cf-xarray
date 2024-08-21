@@ -57,6 +57,8 @@ datasets = [airds, airds.chunk({"lat": 5})]
 dataarrays = [airds.air, airds.air.chunk({"lat": 5})]
 objects = datasets + dataarrays
 
+xr.set_options(use_flox=False)
+
 
 def assert_dicts_identical(dict1, dict2):
     assert dict1.keys() == dict2.keys()

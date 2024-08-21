@@ -170,9 +170,7 @@ class AtmosphereLnPressure(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        p0, lev = get_terms(terms, "p0", "lev")
-
-        return cls(p0, lev)
+        return cls(**get_terms(terms, "p0", "lev"))
 
 
 @dataclass
@@ -218,9 +216,7 @@ class AtmosphereSigma(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        sigma, ps, ptop = get_terms(terms, "sigma", "ps", "ptop")
-
-        return cls(sigma, ps, ptop)
+        return cls(**get_terms(terms, "sigma", "ps", "ptop"))
 
 
 @dataclass
@@ -293,9 +289,7 @@ class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        b, ps, p0, a, ap = get_terms(terms, "b", "ps", optional=("p0", "a", "ap"))
-
-        return cls(b, ps, p0, a, ap)
+        return cls(**get_terms(terms, "b", "ps", optional=("p0", "a", "ap")))
 
 
 @dataclass
@@ -350,9 +344,7 @@ class AtmosphereHybridHeight(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        a, b, orog = get_terms(terms, "a", "b", "orog")
-
-        return cls(a, b, orog)
+        return cls(**get_terms(terms, "a", "b", "orog"))
 
 
 @dataclass
@@ -418,11 +410,7 @@ class AtmosphereSleve(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        a, b1, b2, ztop, zsurf1, zsurf2 = get_terms(
-            terms, "a", "b1", "b2", "ztop", "zsurf1", "zsurf2"
-        )
-
-        return cls(a, b1, b2, ztop, zsurf1, zsurf2)
+        return cls(**get_terms(terms, "a", "b1", "b2", "ztop", "zsurf1", "zsurf2"))
 
 
 @dataclass
@@ -472,9 +460,7 @@ class OceanSigma(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        sigma, eta, depth = get_terms(terms, "sigma", "eta", "depth")
-
-        return cls(sigma, eta, depth)
+        return cls(**get_terms(terms, "sigma", "eta", "depth"))
 
 
 @dataclass
@@ -539,11 +525,7 @@ class OceanS(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        s, eta, depth, a, b, depth_c = get_terms(
-            terms, "s", "eta", "depth", "a", "b", "depth_c"
-        )
-
-        return cls(s, eta, depth, a, b, depth_c)
+        return cls(**get_terms(terms, "s", "eta", "depth", "a", "b", "depth_c"))
 
 
 @dataclass
@@ -599,11 +581,7 @@ class OceanSG1(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        s, c, eta, depth, depth_c = get_terms(
-            terms, "s", "c", "eta", "depth", "depth_c"
-        )
-
-        return cls(s, c, eta, depth, depth_c)
+        return cls(**get_terms(terms, "s", "c", "eta", "depth", "depth_c"))
 
 
 @dataclass
@@ -659,11 +637,7 @@ class OceanSG2(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        s, c, eta, depth, depth_c = get_terms(
-            terms, "s", "c", "eta", "depth", "depth_c"
-        )
-
-        return cls(s, c, eta, depth, depth_c)
+        return cls(**get_terms(terms, "s", "c", "eta", "depth", "depth_c"))
 
 
 @dataclass
@@ -730,11 +704,9 @@ class OceanSigmaZ(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        sigma, eta, depth, depth_c, nsigma, zlev = get_terms(
-            terms, "sigma", "eta", "depth", "depth_c", "nsigma", "zlev"
+        return cls(
+            **get_terms(terms, "sigma", "eta", "depth", "depth_c", "nsigma", "zlev")
         )
-
-        return cls(sigma, eta, depth, depth_c, nsigma, zlev)
 
 
 @dataclass
@@ -808,11 +780,7 @@ class OceanDoubleSigma(ParamerticVerticalCoordinate):
     @classmethod
     def from_terms(cls, terms: dict):
         """Create coordinate from terms."""
-        sigma, depth, z1, z2, a, href, k_c = get_terms(
-            terms, "sigma", "depth", "z1", "z2", "a", "href", "k_c"
-        )
-
-        return cls(sigma, depth, z1, z2, a, href, k_c)
+        return cls(**get_terms(terms, "sigma", "depth", "z1", "z2", "a", "href", "k_c"))
 
 
 TRANSFORM_FROM_STDNAME = {
@@ -832,11 +800,11 @@ TRANSFORM_FROM_STDNAME = {
 
 def get_terms(
     terms: dict[str, DataArray], *required, optional: Sequence[str] | None = None
-) -> list[DataArray]:
+) -> dict[str, DataArray]:
     if optional is None:
         optional = []
 
-    selected_terms = []
+    selected_terms = {}
 
     for term in required + tuple(optional):
         da = None
@@ -849,6 +817,6 @@ def get_terms(
                     f"Required term {term} is absent in the dataset."
                 ) from None
 
-        selected_terms.append(da)
+        selected_terms[term] = da
 
     return selected_terms  # type: ignore[return-value]

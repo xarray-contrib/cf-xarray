@@ -5,11 +5,17 @@ import inspect
 import itertools
 import re
 from collections import ChainMap, namedtuple
-from collections.abc import Hashable, Iterable, Mapping, MutableMapping, Sequence
+from collections.abc import (
+    Callable,
+    Hashable,
+    Iterable,
+    Mapping,
+    MutableMapping,
+    Sequence,
+)
 from datetime import datetime
 from typing import (
     Any,
-    Callable,
     Literal,
     TypeVar,
     Union,

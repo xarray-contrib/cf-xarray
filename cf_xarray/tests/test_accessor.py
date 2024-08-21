@@ -1125,7 +1125,7 @@ def _check_unchanged(old, new):
             else:
                 assert v == n[k]
 
-    assert type(old) == type(new)
+    assert type(old) == type(new)  # noqa
     _check_attrs_equal(old.attrs, new.attrs)
 
     # Check coordinate attributes and data variable attributes

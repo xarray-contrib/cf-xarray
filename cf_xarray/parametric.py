@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 from xarray import DataArray
 
-ocean_stdname_map = {
+OCEAN_STDNAME_MAP = {
     "altitude": {
         "zlev": "altitude",
         "eta": "sea_surface_height_above_geoid",

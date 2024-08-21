@@ -710,23 +710,11 @@ class OceanSigmaZ(ParamerticVerticalCoordinate):
         xr.DataArray
             Decoded parametric vertical coordinate.
         """
-        z_shape = list(self.eta.shape)
-
-        z_shape.insert(1, self.sigma.shape[0])
-
-        z_dims = list(self.eta.dims)
-
-        z_dims.insert(1, self.sigma.dims[0])
-
-        z = xr.DataArray(np.empty(z_shape), dims=z_dims)
-
         z_sigma = self.eta + self.sigma * (
             np.minimum(self.depth_c, self.depth) + self.eta
         )
 
-        z = xr.where(~np.isnan(self.sigma), z_sigma, z)
-
-        z = xr.where(np.isnan(self.sigma), self.zlev, z)
+        z = xr.where(np.isnan(self.sigma), self.zlev, z_sigma)
 
         return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
 

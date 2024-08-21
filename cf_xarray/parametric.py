@@ -339,7 +339,9 @@ class AtmosphereHybridHeight(ParamerticVerticalCoordinate):
         elif orog_stdname == "surface_height_above_geopotential_datum":
             out_stdname = "height_above_geopotential_datum"
         else:
-            raise ValueError(f"Unknown standard name for hybrid height coordinate: {orog_stdname!r}")
+            raise ValueError(
+                f"Unknown standard name for hybrid height coordinate: {orog_stdname!r}"
+            )
 
         return out_stdname
 

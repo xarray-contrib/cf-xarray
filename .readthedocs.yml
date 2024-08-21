@@ -10,6 +10,7 @@ build:
     pre_install:
       - conda list sphinx
       - conda list cf_xarray
+      - conda list
 
 conda:
   environment: ci/doc.yml

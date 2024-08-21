@@ -20,7 +20,7 @@ dependencies:
   - pint
   - regex
   - shapely
-  - furo
+  - furo>=2024
   - myst-nb
   - pip:
       - -e ../

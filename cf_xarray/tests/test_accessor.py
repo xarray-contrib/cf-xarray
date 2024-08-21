@@ -57,6 +57,8 @@ datasets = [airds, airds.chunk({"lat": 5})]
 dataarrays = [airds.air, airds.air.chunk({"lat": 5})]
 objects = datasets + dataarrays
 
+xr.set_options(use_flox=False)
+
 
 def assert_dicts_identical(dict1, dict2):
     assert dict1.keys() == dict2.keys()
@@ -1125,7 +1127,7 @@ def _check_unchanged(old, new):
             else:
                 assert v == n[k]
 
-    assert type(old) == type(new)
+    assert type(old) == type(new)  # noqa
     _check_attrs_equal(old.attrs, new.attrs)
 
     # Check coordinate attributes and data variable attributes
@@ -1454,9 +1456,9 @@ def test_rename(obj):
         "air_temperature" if isinstance(obj, Dataset) else "longitude": "renamed"
     }
     xr_dict = {
-        "air"
-        if isinstance(obj, Dataset) and "air" in obj.data_vars
-        else "lon": "renamed"
+        (
+            "air" if isinstance(obj, Dataset) and "air" in obj.data_vars else "lon"
+        ): "renamed"
     }
     assert_identical(obj.rename(xr_dict), obj.cf.rename(cf_dict))
     assert_identical(obj.rename(**xr_dict), obj.cf.rename(**cf_dict))
@@ -2076,3 +2078,25 @@ def test_ancillary_variables_extra_dim():
         }
     )
     assert_identical(ds.cf["X"], ds["x"])
+
+
+def test_geometry_association(geometry_ds):
+    cf_ds, _ = geometry_ds
+    actual = cf_ds.cf[["data"]]
+    for name in ["geometry_container", "x", "y", "node_count", "crd_x", "crd_y"]:
+        assert name in actual.coords
+
+    actual = cf_ds.cf["data"]
+    for name in ["geometry_container", "node_count", "crd_x", "crd_y"]:
+        assert name in actual.coords
+
+    assert cf_ds.cf.geometries == {"point": ["geometry_container"]}
+    assert_identical(cf_ds.cf["geometry"], cf_ds["geometry_container"])
+    with pytest.raises(ValueError):
+        cf_ds.cf["point"]
+
+    expected = cf_ds[["geometry_container", "node_count", "x", "y", "crd_x", "crd_y"]]
+    assert_identical(
+        cf_ds.cf[["point"]],
+        expected.set_coords(["node_count", "x", "y", "crd_x", "crd_y"]),
+    )

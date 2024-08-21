@@ -2,7 +2,7 @@
 name = "cf_xarray"
 description = "A convenience wrapper for using CF attributes on xarray objects"
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = {file = "LICENSE"}
 keywords = ["xarray", "metadata", "CF conventions"]
 classifiers = [
@@ -11,7 +11,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -22,7 +21,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-all = ["matplotlib", "pint", "shapely", "regex", "rich", "pooch"]
+all = ["matplotlib", "pint >=0.18, !=0.24.0", "shapely", "regex", "rich", "pooch"]
 
 [project.urls]
 homepage = "https://cf-xarray.readthedocs.io"

@@ -3,25 +3,25 @@ ci:
 
 repos:
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.15.0
+    rev: v3.17.0
     hooks:
       - id: pyupgrade
-        args: ["--py39-plus"]
+        args: ["--py310-plus"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.1.9'
+    rev: 'v0.6.1'
     hooks:
       - id: ruff
         args: ["--show-fixes", "--fix"]
 
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 23.12.1
+    rev: 24.8.0
     hooks:
       - id: black
 
   - repo: https://github.com/rstcheck/rstcheck
-    rev: v6.2.0
+    rev: v6.2.4
     hooks:
         - id: rstcheck
           additional_dependencies: [sphinx, tomli]
@@ -36,7 +36,7 @@ repos:
         - mdformat-myst
 
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.7.1
+    rev: 1.8.7
     hooks:
         - id: nbqa-black
         - id: nbqa-ruff
@@ -47,7 +47,7 @@ repos:
           additional_dependencies: [mdformat==0.7.17]
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -67,7 +67,7 @@ repos:
     - id: validate-cff
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.15
+    rev: v0.19
     hooks:
       - id: validate-pyproject
 

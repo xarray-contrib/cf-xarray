@@ -757,17 +757,10 @@ class OceanDoubleSigma(ParamerticVerticalCoordinate):
             2 * self.a / (self.z1 - self.z2) * (self.depth - self.href)
         )
 
-        # shape k, j, i
-        z_shape = self.sigma.shape + self.depth.shape
-
-        z_dims = self.sigma.dims + self.depth.dims
-
-        z = xr.DataArray(np.empty(z_shape), dims=z_dims, name="z")
-
-        z = xr.where(self.sigma.k <= self.k_c, self.sigma * f, z)
-
         z = xr.where(
-            self.sigma.k > self.k_c, f + (self.sigma - 1) * (self.depth - f), z
+            self.sigma.k <= self.k_c,
+            self.sigma * f,
+            f + (self.sigma - 1) * (self.depth - f),
         )
 
         return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)

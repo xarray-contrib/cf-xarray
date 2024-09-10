@@ -875,9 +875,7 @@ def polygons_to_cf(
 
     # Special case when we have no holes
     if interior_ring.any():
-        ds[names.interior_ring] = xr.DataArray(
-            interior_ring.view(np.int8), dims=names.part_dim
-        )
+        ds[names.interior_ring] = xr.DataArray(interior_ring, dims=names.part_dim)
         ds[names.container_name].attrs["interior_ring"] = names.interior_ring
     return ds
 

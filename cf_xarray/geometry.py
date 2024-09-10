@@ -843,7 +843,7 @@ def polygons_to_cf(
         node_count = part_node_count
     elif len(offsets) >= 2:
         indices = np.take(offsets[0], offsets[1])
-        interior_ring = np.isin(offsets[0], indices, invert=True)[:-1].view(np.int8)
+        interior_ring = np.isin(offsets[0], indices, invert=True)[:-1]
 
         if len(offsets) == 3:
             indices = np.take(indices, offsets[2])
@@ -874,8 +874,10 @@ def polygons_to_cf(
         ds[names.container_name].attrs["part_node_count"] = names.part_node_count
 
     # Special case when we have no holes
-    if (interior_ring != 0).any():
-        ds[names.interior_ring] = xr.DataArray(interior_ring, dims=names.part_dim)
+    if interior_ring.any():
+        ds[names.interior_ring] = xr.DataArray(
+            interior_ring.view(np.int8), dims=names.part_dim
+        )
         ds[names.container_name].attrs["interior_ring"] = names.interior_ring
     return ds
 

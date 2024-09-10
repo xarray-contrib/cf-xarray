@@ -459,11 +459,8 @@ def shapely_to_cf(
             "and set the grid mapping variable as a coordinate",
         )
 
-    # Get all types to call the appropriate translation function.
-    types = {
-        geom.item().geom_type if isinstance(geom, xr.DataArray) else geom.geom_type
-        for geom in geometries
-    }
+    as_data = geometries.data if isinstance(geometries, xr.DataArray) else geometries
+    type_ = as_data[0].geom_type
 
     grid_mapping_varname = None
     if (
@@ -482,16 +479,21 @@ def shapely_to_cf(
         suffix=suffix, grid_mapping_name=grid_mapping, grid_mapping=grid_mapping_varname
     )
 
-    if types.issubset({"Point", "MultiPoint"}):
-        ds = points_to_cf(geometries, names=names)
-    elif types.issubset({"LineString", "MultiLineString"}):
-        ds = lines_to_cf(geometries, names=names)
-    elif types.issubset({"Polygon", "MultiPolygon"}):
-        ds = polygons_to_cf(geometries, names=names)
-    else:
+    try:
+        if type_ in ["Point", "MultiPoint"]:
+            ds = points_to_cf(geometries, names=names)
+        elif type_ in ["LineString", "MultiLineString"]:
+            ds = lines_to_cf(geometries, names=names)
+        elif type_ in ["Polygon", "MultiPolygon"]:
+            ds = polygons_to_cf(geometries, names=names)
+        else:
+            raise ValueError(
+                f"This geometry type is not supported in CF-compliant datasets. Got {type_}"
+            )
+    except NotImplementedError as e:
         raise ValueError(
-            f"Mixed geometry types are not supported in CF-compliant datasets. Got {types}"
-        )
+            "Error converting geometries. Possibly you have provided mixed geometry types."
+        ) from e
 
     return ds
 
@@ -841,7 +843,7 @@ def polygons_to_cf(
         node_count = part_node_count
     elif len(offsets) >= 2:
         indices = np.take(offsets[0], offsets[1])
-        interior_ring = np.isin(offsets[0], indices, invert=True)[:-1].astype(int)
+        interior_ring = np.isin(offsets[0], indices, invert=True)[:-1].view(np.int8)
 
         if len(offsets) == 3:
             indices = np.take(indices, offsets[2])

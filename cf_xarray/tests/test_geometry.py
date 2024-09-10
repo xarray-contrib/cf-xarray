@@ -352,7 +352,7 @@ def test_shapely_to_cf_errors():
         Polygon([[1, 1, 4], [1, 3, 4], [3, 3, 3], [1, 1, 4]]),
         Point(1, 2),
     ]
-    with pytest.raises(ValueError, match="Mixed geometry types are not supported"):
+    with pytest.raises(ValueError, match="Geometry type combination"):
         cfxr.shapely_to_cf(geoms)
 
     encoded = cfxr.shapely_to_cf(

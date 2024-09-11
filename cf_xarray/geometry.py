@@ -854,29 +854,32 @@ def polygons_to_cf(
     crdX = geom_coords[:, 0]
     crdY = geom_coords[:, 1]
 
+    data_vars = {names.node_count: (dim, node_count)}
+    geometry_attrs = names.geometry_container_attrs
+
+    # Special case when we have no MultiPolygons and no holes
+    if len(part_node_count) != len(node_count):
+        data_vars[names.part_node_count] = (names.part_dim, part_node_count)
+        geometry_attrs["part_node_count"] = names.part_node_count
+
+    # Special case when we have no holes
+    if interior_ring.any():
+        data_vars[names.interior_ring] = (names.part_dim, interior_ring)
+        geometry_attrs["interior_ring"] = names.interior_ring
+
+    data_vars[names.container_name] = (
+        (),
+        np.nan,
+        {"geometry_type": "polygon", **geometry_attrs},
+    )
     ds = xr.Dataset(
-        data_vars={
-            names.node_count: xr.DataArray(node_count, dims=(dim,)),
-            names.container_name: xr.DataArray(
-                data=np.nan,
-                attrs={"geometry_type": "polygon", **names.geometry_container_attrs},
-            ),
-        },
+        data_vars=data_vars,
         coords=names.coords(x=x, y=y, crdX=crdX, crdY=crdY, dim=dim),
     )
 
     if coord is not None:
         ds = ds.assign_coords({dim: coord})
 
-    # Special case when we have no MultiPolygons and no holes
-    if len(part_node_count) != len(node_count):
-        ds[names.part_node_count] = xr.DataArray(part_node_count, dims=names.part_dim)
-        ds[names.container_name].attrs["part_node_count"] = names.part_node_count
-
-    # Special case when we have no holes
-    if interior_ring.any():
-        ds[names.interior_ring] = xr.DataArray(interior_ring, dims=names.part_dim)
-        ds[names.container_name].attrs["interior_ring"] = names.interior_ring
     return ds
 
 

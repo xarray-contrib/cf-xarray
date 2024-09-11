@@ -459,11 +459,8 @@ def shapely_to_cf(
             "and set the grid mapping variable as a coordinate",
         )
 
-    # Get all types to call the appropriate translation function.
-    types = {
-        geom.item().geom_type if isinstance(geom, xr.DataArray) else geom.geom_type
-        for geom in geometries
-    }
+    as_data = geometries.data if isinstance(geometries, xr.DataArray) else geometries
+    type_ = as_data[0].geom_type
 
     grid_mapping_varname = None
     if (
@@ -482,16 +479,21 @@ def shapely_to_cf(
         suffix=suffix, grid_mapping_name=grid_mapping, grid_mapping=grid_mapping_varname
     )
 
-    if types.issubset({"Point", "MultiPoint"}):
-        ds = points_to_cf(geometries, names=names)
-    elif types.issubset({"LineString", "MultiLineString"}):
-        ds = lines_to_cf(geometries, names=names)
-    elif types.issubset({"Polygon", "MultiPolygon"}):
-        ds = polygons_to_cf(geometries, names=names)
-    else:
+    try:
+        if type_ in ["Point", "MultiPoint"]:
+            ds = points_to_cf(geometries, names=names)
+        elif type_ in ["LineString", "MultiLineString"]:
+            ds = lines_to_cf(geometries, names=names)
+        elif type_ in ["Polygon", "MultiPolygon"]:
+            ds = polygons_to_cf(geometries, names=names)
+        else:
+            raise ValueError(
+                f"This geometry type is not supported in CF-compliant datasets. Got {type_}"
+            )
+    except NotImplementedError as e:
         raise ValueError(
-            f"Mixed geometry types are not supported in CF-compliant datasets. Got {types}"
-        )
+            "Error converting geometries. Possibly you have provided mixed geometry types."
+        ) from e
 
     return ds
 
@@ -841,7 +843,7 @@ def polygons_to_cf(
         node_count = part_node_count
     elif len(offsets) >= 2:
         indices = np.take(offsets[0], offsets[1])
-        interior_ring = np.isin(offsets[0], indices, invert=True)[:-1].astype(int)
+        interior_ring = np.isin(offsets[0], indices, invert=True)[:-1]
 
         if len(offsets) == 3:
             indices = np.take(indices, offsets[2])
@@ -852,29 +854,32 @@ def polygons_to_cf(
     crdX = geom_coords[:, 0]
     crdY = geom_coords[:, 1]
 
+    data_vars = {names.node_count: (dim, node_count)}
+    geometry_attrs = names.geometry_container_attrs
+
+    # Special case when we have no MultiPolygons and no holes
+    if len(part_node_count) != len(node_count):
+        data_vars[names.part_node_count] = (names.part_dim, part_node_count)
+        geometry_attrs["part_node_count"] = names.part_node_count
+
+    # Special case when we have no holes
+    if interior_ring.any():
+        data_vars[names.interior_ring] = (names.part_dim, interior_ring)
+        geometry_attrs["interior_ring"] = names.interior_ring
+
+    data_vars[names.container_name] = (  # type: ignore[assignment]
+        (),
+        np.nan,
+        {"geometry_type": "polygon", **geometry_attrs},
+    )
     ds = xr.Dataset(
-        data_vars={
-            names.node_count: xr.DataArray(node_count, dims=(dim,)),
-            names.container_name: xr.DataArray(
-                data=np.nan,
-                attrs={"geometry_type": "polygon", **names.geometry_container_attrs},
-            ),
-        },
+        data_vars=data_vars,
         coords=names.coords(x=x, y=y, crdX=crdX, crdY=crdY, dim=dim),
     )
 
     if coord is not None:
         ds = ds.assign_coords({dim: coord})
 
-    # Special case when we have no MultiPolygons and no holes
-    if len(part_node_count) != len(node_count):
-        ds[names.part_node_count] = xr.DataArray(part_node_count, dims=names.part_dim)
-        ds[names.container_name].attrs["part_node_count"] = names.part_node_count
-
-    # Special case when we have no holes
-    if (interior_ring != 0).any():
-        ds[names.interior_ring] = xr.DataArray(interior_ring, dims=names.part_dim)
-        ds[names.container_name].attrs["interior_ring"] = names.interior_ring
     return ds
 
 

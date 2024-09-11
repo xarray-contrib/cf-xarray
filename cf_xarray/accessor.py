@@ -1368,7 +1368,7 @@ class CFAccessor:
         kwargs: dict[str, Any] | None = None,
     ):
         if coords is not None:
-            if isinstance(coords, (Hashable, DataArray)):
+            if isinstance(coords, Hashable | DataArray):
                 coords_iter: Iterable[Hashable | DataArray] = [coords]
             else:
                 coords_iter = coords

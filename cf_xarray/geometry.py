@@ -867,7 +867,7 @@ def polygons_to_cf(
         data_vars[names.interior_ring] = (names.part_dim, interior_ring)
         geometry_attrs["interior_ring"] = names.interior_ring
 
-    data_vars[names.container_name] = (
+    data_vars[names.container_name] = (  # type: ignore[assignment]
         (),
         np.nan,
         {"geometry_type": "polygon", **geometry_attrs},

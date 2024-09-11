@@ -268,14 +268,14 @@ def _format_flags(accessor, rich):
         table.add_column("Value", justify="right")
         table.add_column("Bits", justify="center")
 
-        for val, bit, key in zip(value_text, bit_text, flag_dict):
+        for val, bit, key in zip(value_text, bit_text, flag_dict, strict=False):
             table.add_row(_format_cf_name(key, rich), val, bit)
 
         return table
 
     else:
         rows = []
-        for val, bit, key in zip(value_text, bit_text, flag_dict):
+        for val, bit, key in zip(value_text, bit_text, flag_dict, strict=False):
             rows.append(
                 f"{TAB}{_format_cf_name(key, rich):>{key_width}}: {TAB} {val} {bit}"
             )

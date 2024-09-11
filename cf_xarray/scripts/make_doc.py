@@ -36,7 +36,9 @@ def make_criteria_csv():
     df.transpose().to_csv(os.path.join(csv_dir, "all_criteria.csv"))
 
     # Axes and coordinates
-    for keys, name in zip([_AXIS_NAMES, _COORD_NAMES], ["axes", "coords"]):
+    for keys, name in zip(
+        [_AXIS_NAMES, _COORD_NAMES], ["axes", "coords"], strict=False
+    ):
         subdf = df[sorted(keys)].dropna(axis=1, how="all")
         subdf = subdf.dropna(axis=1, how="all").transpose()
         subdf.transpose().to_csv(os.path.join(csv_dir, f"{name}_criteria.csv"))

@@ -24,13 +24,14 @@ def parse_axes(ds):
         zip(
             axes_names,
             ({k} for k in grid.attrs["node_dimensions"].split(" ")),
+            strict=False,
         )
     )
     for attr in SGRID_DIM_ATTRS:
         if attr in grid.attrs:
             matches = re.findall(pattern, grid.attrs[attr] + "\n")
             assert len(matches) == ndim, matches
-            for ax, match in zip(axes_names, matches):
+            for ax, match in zip(axes_names, matches, strict=False):
                 axes[ax].update(set(match[:2]))
 
     if ndim == 2 and "vertical_dimensions" in grid.attrs:

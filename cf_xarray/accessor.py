@@ -18,7 +18,6 @@ from typing import (
     Any,
     Literal,
     TypeVar,
-    Union,
     cast,
     overload,
 )
@@ -89,7 +88,7 @@ ATTRS["time"] = ATTRS["T"]
 ATTRS["vertical"] = ATTRS["Z"]
 
 # Type for Mapper functions
-Mapper = Callable[[Union[DataArray, Dataset], Hashable], list[Hashable]]
+Mapper = Callable[[DataArray | Dataset, Hashable], list[Hashable]]
 
 # Type for decorators
 F = TypeVar("F", bound=Callable[..., Any])
@@ -1150,9 +1149,10 @@ def create_flag_dict(da) -> Mapping[Hashable, FlagParam]:
         )
 
     flag_params = tuple(
-        FlagParam(mask, value) for mask, value in zip(flag_masks, flag_values)
+        FlagParam(mask, value)
+        for mask, value in zip(flag_masks, flag_values, strict=False)
     )
-    return dict(zip(flag_meanings, flag_params))
+    return dict(zip(flag_meanings, flag_params, strict=False))
 
 
 class CFAccessor:
@@ -3024,7 +3024,7 @@ class CFDataArrayAccessor(CFAccessor):
             x = self._obj.astype("i")
             bit_comp = x & bit_mask
 
-            for i, (flag, value) in enumerate(zip(flags_reduced, values)):
+            for i, (flag, value) in enumerate(zip(flags_reduced, values, strict=False)):
                 bit = bit_comp.isel(_mask=i)
                 if value is not None:
                     out[flag] = bit == value

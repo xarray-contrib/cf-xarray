@@ -81,7 +81,9 @@ def parse_cell_methods_attr(attr: str) -> dict[str, str]:
     if len(strings) % 2 != 0:
         raise ValueError(f"attrs['cell_measures'] = {attr!r} is malformed.")
 
-    return dict(zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)]))
+    return dict(
+        zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)], strict=False)
+    )
 
 
 def invert_mappings(*mappings):

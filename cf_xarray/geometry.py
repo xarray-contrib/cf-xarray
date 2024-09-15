@@ -324,7 +324,7 @@ def encode_geometries(ds: xr.Dataset):
             # TODO: this is incomplete. It works for vector data cubes where one of the geometry vars
             # is a dimension coordinate.
             if name in var.dims:
-                var = var.copy()
+                var = var.copy(deep=False)
                 var._attrs = copy.deepcopy(var._attrs)
                 var.attrs["geometry"] = container_name
                 # The grid_mapping and coordinates attributes can be carried by the geometry container

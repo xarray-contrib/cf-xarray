@@ -46,7 +46,7 @@ def encode_multi_index_as_compress(ds, idxnames=None):
     encoded = ds.reset_index(idxnames)
     for idxname in idxnames:
         mindex = ds.indexes[idxname]
-        coords = dict(zip(mindex.names, mindex.levels))
+        coords = dict(zip(mindex.names, mindex.levels, strict=False))
         encoded.update(coords)
         for c in coords:
             encoded[c].attrs = ds[c].attrs
@@ -112,13 +112,16 @@ def decode_compress_to_multi_index(encoded, idxnames=None):
 
             variables = {
                 dim: encoded[dim].isel({dim: xr.Variable(data=index, dims=idxname)})
-                for dim, index in zip(names, indices)
+                for dim, index in zip(names, indices, strict=False)
             }
             decoded = decoded.assign_coords(variables).set_xindex(
                 names, PandasMultiIndex
             )
         except ImportError:
-            arrays = [encoded[dim].data[index] for dim, index in zip(names, indices)]
+            arrays = [
+                encoded[dim].data[index]
+                for dim, index in zip(names, indices, strict=False)
+            ]
             mindex = pd.MultiIndex.from_arrays(arrays, names=names)
             decoded.coords[idxname] = mindex
 

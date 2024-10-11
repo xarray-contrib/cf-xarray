@@ -83,6 +83,10 @@ authors:
   - family-names: Haëck
     given-names: Clément
     affiliation: Laboratoire d'Océanographie et du Climat (LOCEAN), Paris
+  - family-names: Boutte
+    given-names: Jason
+    orcid: 'https://orcid.org/0009-0009-3996-3772'
+    affiliation: Lawrence Livermore National Laboratory
 identifiers:
   - type: doi
     value: 10.5281/zenodo.4749735

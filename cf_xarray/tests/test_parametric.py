@@ -8,9 +8,9 @@ from cf_xarray import parametric
 ps = xr.DataArray(np.ones((2, 2, 2)), dims=("time", "lat", "lon"), name="ps")
 
 p0 = xr.DataArray(
-    [
-        10,
-    ],
+    10.0,
+    dims=(),
+    coords={},
     name="p0",
 )
 
@@ -36,7 +36,7 @@ depth = xr.DataArray(
     attrs={"standard_name": "sea_floor_depth_below_geoid"},
 )
 
-depth_c = xr.DataArray([30.0], name="depth_c")
+depth_c = xr.DataArray(30.0, dims=(), coords={}, name="depth_c")
 
 s = xr.DataArray([0, 1, 2], dims=("lev"), name="s")
 
@@ -65,7 +65,7 @@ def test_atmosphere_ln_pressure_coordinate():
 
 
 def test_atmosphere_sigma_coordinate():
-    ptop = xr.DataArray([0.98692327], name="ptop")
+    ptop = xr.DataArray(0.98692327, dims=(), coords={}, name="ptop")
 
     transform = parametric.AtmosphereSigma.from_terms(
         {
@@ -220,7 +220,9 @@ def test_atmosphere_sleve_coordinate():
     b2 = xr.DataArray([1, 1, 0], dims=("lev",), name="b2")
 
     ztop = xr.DataArray(
-        [30.0],
+        30.0,
+        dims=(),
+        coords={},
         name="ztop",
         attrs={"standard_name": "altitude_at_top_of_atmosphere_model"},
     )
@@ -311,9 +313,9 @@ def test_ocean_sigma_coordinate():
 
 
 def test_ocean_s_coordinate():
-    _a = xr.DataArray([1], name="a")
+    _a = xr.DataArray(1, dims=(), coords={}, name="a")
 
-    _b = xr.DataArray([1], name="b")
+    _b = xr.DataArray(1, dims=(), coords={}, name="b")
 
     transform = parametric.OceanS.from_terms(
         {
@@ -500,37 +502,37 @@ def test_ocean_sigma_z_coordinate():
 
 def test_ocean_double_sigma_coordinate():
     k_c = xr.DataArray(
-        [
-            1,
-        ],
+        1,
+        dims=(),
+        coords={},
         name="k_c",
     )
 
     href = xr.DataArray(
-        [
-            20.0,
-        ],
+        20.0,
+        dims=(),
+        coords={},
         name="href",
     )
 
     z1 = xr.DataArray(
-        [
-            10.0,
-        ],
+        10.0,
+        dims=(),
+        coords={},
         name="z1",
     )
 
     z2 = xr.DataArray(
-        [
-            30.0,
-        ],
+        30.0,
+        dims=(),
+        coords={},
         name="z2",
     )
 
     a = xr.DataArray(
-        [
-            2.0,
-        ],
+        2.0,
+        dims=(),
+        coords={},
         name="a",
     )
 

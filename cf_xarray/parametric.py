@@ -160,7 +160,7 @@ class AtmosphereLnPressure(ParamerticVerticalCoordinate):
         """
         p = self.p0 * np.exp(-self.lev)
 
-        return p.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return p.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self):
@@ -206,7 +206,7 @@ class AtmosphereSigma(ParamerticVerticalCoordinate):
         """
         p = self.ptop + self.sigma * (self.ps - self.ptop)
 
-        return p.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return p.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self) -> str:
@@ -279,7 +279,7 @@ class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
         else:
             p = self.a * self.p0 + self.b * self.ps
 
-        return p.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return p.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self) -> str:
@@ -327,7 +327,7 @@ class AtmosphereHybridHeight(ParamerticVerticalCoordinate):
         """
         z = self.a + self.b * self.orog
 
-        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return z.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self) -> str:
@@ -395,7 +395,7 @@ class AtmosphereSleve(ParamerticVerticalCoordinate):
         """
         z = self.a * self.ztop + self.b1 * self.zsurf1 + self.b2 * self.zsurf2
 
-        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return z.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self) -> str:
@@ -454,7 +454,7 @@ class OceanSigma(ParamerticVerticalCoordinate):
         """
         z = self.eta + self.sigma * (self.depth + self.eta)
 
-        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return z.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self) -> str:
@@ -521,7 +521,7 @@ class OceanS(ParamerticVerticalCoordinate):
             + (self.depth - self.depth_c) * C
         )
 
-        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return z.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self) -> str:
@@ -577,7 +577,7 @@ class OceanSG1(ParamerticVerticalCoordinate):
 
         z = S + self.eta * (1 + self.s / self.depth)
 
-        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return z.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self) -> str:
@@ -633,7 +633,7 @@ class OceanSG2(ParamerticVerticalCoordinate):
 
         z = self.eta + (self.eta + self.depth) * S
 
-        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return z.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self) -> str:
@@ -698,7 +698,7 @@ class OceanSigmaZ(ParamerticVerticalCoordinate):
 
         z = xr.where(np.isnan(self.sigma), self.zlev, z_sigma)
 
-        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return z.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self) -> str:
@@ -769,7 +769,7 @@ class OceanDoubleSigma(ParamerticVerticalCoordinate):
             f + (self.sigma - 1) * (self.depth - f),
         )
 
-        return z.squeeze().assign_attrs(standard_name=self.computed_standard_name)
+        return z.assign_attrs(standard_name=self.computed_standard_name)
 
     @property
     def computed_standard_name(self) -> str:

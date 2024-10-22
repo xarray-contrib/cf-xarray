@@ -537,7 +537,7 @@ def _get_coords(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
 def _variables(func: F) -> F:
     @functools.wraps(func)
     def wrapper(obj: DataArray | Dataset, key: Hashable) -> list[DataArray]:
-        return [obj[k] for k in func(obj, key)]  # type: ignore[misc]
+        return [obj[k] for k in func(obj, key)]
 
     return cast(F, wrapper)
 

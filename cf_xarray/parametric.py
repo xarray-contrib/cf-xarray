@@ -409,7 +409,7 @@ class AtmosphereSleve(ParametricVerticalCoordinate):
         ):
             out_stdname = "height_above_geopotential_datum"
         else:
-            raise ValueError(f"Unknown standard name: {out_stdname!r}")
+            raise ValueError(f"Unknown standard name: {ztop_stdname!r}")
 
         return out_stdname
 

@@ -3,9 +3,7 @@
 What's New
 ----------
 
-v0.8.10 (unreleased)
-====================
-- Fix methods in ``utils`` to work with xarray >= 2024.02.0. By `Pascal Bourgault`_.
+For updates since Feb 2023 see the `Github releases page <https://github.com/xarray-contrib/cf-xarray/releases>`_.
 
 v0.8.9 (Feb 06, 2023)
 =====================

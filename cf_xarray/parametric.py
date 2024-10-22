@@ -112,7 +112,7 @@ def _derive_ocean_stdname(*, zlev=None, eta=None, depth=None):
     return found_stdname
 
 
-class ParamerticVerticalCoordinate(ABC):
+class ParametricVerticalCoordinate(ABC):
     @classmethod
     @abstractmethod
     def from_terms(cls, terms: dict):
@@ -129,7 +129,7 @@ class ParamerticVerticalCoordinate(ABC):
 
 
 @dataclass
-class AtmosphereLnPressure(ParamerticVerticalCoordinate):
+class AtmosphereLnPressure(ParametricVerticalCoordinate):
     """Atmosphere natural log pressure coordinate.
 
     Standard name: atmosphere_ln_pressure_coordinate
@@ -174,7 +174,7 @@ class AtmosphereLnPressure(ParamerticVerticalCoordinate):
 
 
 @dataclass
-class AtmosphereSigma(ParamerticVerticalCoordinate):
+class AtmosphereSigma(ParametricVerticalCoordinate):
     """Atmosphere sigma coordinate.
 
     Standard name: atmosphere_sigma_coordinate
@@ -220,7 +220,7 @@ class AtmosphereSigma(ParamerticVerticalCoordinate):
 
 
 @dataclass
-class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
+class AtmosphereHybridSigmaPressure(ParametricVerticalCoordinate):
     """Atmosphere hybrid sigma pressure coordinate.
 
     Standard name: atmosphere_hybrid_sigma_pressure_coordinate
@@ -257,7 +257,7 @@ class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
             )
 
         if self.a is not None and self.ap is not None:
-            raise Exception(
+            raise ValueError(
                 "Both optional terms 'a' and 'ap' are present in the dataset, please drop one of them."
             )
 
@@ -293,7 +293,7 @@ class AtmosphereHybridSigmaPressure(ParamerticVerticalCoordinate):
 
 
 @dataclass
-class AtmosphereHybridHeight(ParamerticVerticalCoordinate):
+class AtmosphereHybridHeight(ParametricVerticalCoordinate):
     """Atmosphere hybrid height coordinate.
 
     Standard name: atmosphere_hybrid_height_coordinate
@@ -352,7 +352,7 @@ class AtmosphereHybridHeight(ParamerticVerticalCoordinate):
 
 
 @dataclass
-class AtmosphereSleve(ParamerticVerticalCoordinate):
+class AtmosphereSleve(ParametricVerticalCoordinate):
     """Atmosphere smooth level vertical (SLEVE) coordinate.
 
     Standard name: atmosphere_sleve_coordinate
@@ -420,7 +420,7 @@ class AtmosphereSleve(ParamerticVerticalCoordinate):
 
 
 @dataclass
-class OceanSigma(ParamerticVerticalCoordinate):
+class OceanSigma(ParametricVerticalCoordinate):
     """Ocean sigma coordinate.
 
     Standard name: ocean_sigma_coordinate
@@ -470,7 +470,7 @@ class OceanSigma(ParamerticVerticalCoordinate):
 
 
 @dataclass
-class OceanS(ParamerticVerticalCoordinate):
+class OceanS(ParametricVerticalCoordinate):
     """Ocean s-coordinate.
 
     Standard name: ocean_s_coordinate
@@ -535,7 +535,7 @@ class OceanS(ParamerticVerticalCoordinate):
 
 
 @dataclass
-class OceanSG1(ParamerticVerticalCoordinate):
+class OceanSG1(ParametricVerticalCoordinate):
     """Ocean s-coordinate, generic form 1.
 
     Standard name: ocean_s_coordinate_g1
@@ -591,7 +591,7 @@ class OceanSG1(ParamerticVerticalCoordinate):
 
 
 @dataclass
-class OceanSG2(ParamerticVerticalCoordinate):
+class OceanSG2(ParametricVerticalCoordinate):
     """Ocean s-coordinate, generic form 2.
 
     Standard name: ocean_s_coordinate_g2
@@ -647,7 +647,7 @@ class OceanSG2(ParamerticVerticalCoordinate):
 
 
 @dataclass
-class OceanSigmaZ(ParamerticVerticalCoordinate):
+class OceanSigmaZ(ParametricVerticalCoordinate):
     """Ocean sigma over z coordinate.
 
     Standard name: ocean_sigma_z_coordinate
@@ -716,7 +716,7 @@ class OceanSigmaZ(ParamerticVerticalCoordinate):
 
 
 @dataclass
-class OceanDoubleSigma(ParamerticVerticalCoordinate):
+class OceanDoubleSigma(ParametricVerticalCoordinate):
     """Ocean double sigma coordinate.
 
     Standard name: ocean_double_sigma_coordinate

@@ -73,7 +73,7 @@ with cfxr.set_options(custom_criteria=salt_criteria):
 salty
 ```
 
-Note that `salty` contains both `salt1` and `salt2`. Without setting these criteria, we  would only get `salt1` by default
+Note that `salty` contains both `salt1` and `salt2`. Without setting these criteria, we would only get `salt1` by default
 
 ```{code-cell}
 ds.cf[["sea_water_salinity"]]

@@ -65,7 +65,7 @@ variable `grid` list many more dimension names.
 
 ### Topology variable
 
-`cf_xarray` supports identifying  the `mesh_topology` variable using the `cf_role` attribute.
+`cf_xarray` supports identifying the `mesh_topology` variable using the `cf_role` attribute.
 
 ## More?
 

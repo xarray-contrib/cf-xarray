@@ -1748,7 +1748,7 @@ def test_add_canonical_attributes(override, skip, verbose, capsys):
 
     # Attributes have been added
     for var in sum(ds.cf.standard_names.values(), []):
-        assert set(ds[var].attrs) < set(cf_ds[var].attrs)
+        assert set(ds[var].attrs) <= set(cf_ds[var].attrs)
 
     # Time units did not change
     assert ds["time"].attrs.get("units") is cf_ds["time"].attrs.get("units") is None

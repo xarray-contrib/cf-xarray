@@ -38,7 +38,6 @@ class set_options:  # numpydoc ignore=PR01,PR02
     >>> ds = xr.Dataset({"elev": np.arange(1000)})
     >>> with cf_xarray.set_options(custom_criteria=my_custom_criteria):
     ...     xr.testing.assert_identical(ds["elev"], ds.cf["ssh"])
-    ...
 
     Or to set global options:
 

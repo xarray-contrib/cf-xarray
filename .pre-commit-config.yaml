@@ -3,22 +3,18 @@ ci:
 
 repos:
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.17.0
+    rev: v3.19.1
     hooks:
       - id: pyupgrade
         args: ["--py310-plus"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: 'v0.6.9'
+    rev: 'v0.9.3'
     hooks:
       - id: ruff
-        args: ["--show-fixes", "--fix"]
-
-  - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 24.10.0
-    hooks:
-      - id: black
+        args: ["--fix", "--show-fixes"]
+      - id: ruff-format
 
   - repo: https://github.com/rstcheck/rstcheck
     rev: v6.2.4
@@ -28,7 +24,7 @@ repos:
           args: ['--config', 'pyproject.toml']
 
   - repo: https://github.com/executablebooks/mdformat
-    rev: 0.7.17
+    rev: 0.7.21
     hooks:
     - id: mdformat
       additional_dependencies:
@@ -36,10 +32,8 @@ repos:
         - mdformat-myst
 
   - repo: https://github.com/nbQA-dev/nbQA
-    rev: 1.8.7
+    rev: 1.9.1
     hooks:
-        - id: nbqa-black
-        - id: nbqa-ruff
         - id: nbqa
           entry: nbqa mdformat
           name: nbqa-mdformat
@@ -55,19 +49,13 @@ repos:
       - id: check-yaml
       - id: debug-statements
 
-  - repo: https://github.com/keewis/blackdoc
-    rev: v0.3.9
-    hooks:
-      - id: blackdoc
-        files: .+\.py$
-
   - repo: https://github.com/citation-file-format/cff-converter-python
     rev: "44e8fc9"
     hooks:
     - id: validate-cff
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: v0.20.2
+    rev: v0.23
     hooks:
       - id: validate-pyproject
 

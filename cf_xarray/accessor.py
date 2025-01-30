@@ -680,7 +680,7 @@ def _getattr(
             None,
         ):
             raise AttributeError(
-                f"{obj.__class__.__name__+'.cf'!r} object has no attribute {attr!r}"
+                f"{obj.__class__.__name__ + '.cf'!r} object has no attribute {attr!r}"
             ) from None
         raise AttributeError(
             f"{attr!r} is not a valid attribute on the underlying xarray object."
@@ -1374,7 +1374,11 @@ class CFAccessor:
                 coords_iter = coords
             coords = [
                 apply_mapper(
-                    [_single(_get_coords)], self._obj, v, error=False, default=[v]  # type: ignore[arg-type]
+                    [_single(_get_coords)],
+                    self._obj,
+                    v,
+                    error=False,
+                    default=[v],  # type: ignore[arg-type]
                 )[0]
                 for v in coords_iter
             ]
@@ -1385,7 +1389,11 @@ class CFAccessor:
                 reduce_dims_iter = list(reduce_dims)
             reduce_dims = [
                 apply_mapper(
-                    [_single(_get_dims)], self._obj, v, error=False, default=[v]  # type: ignore[arg-type]
+                    [_single(_get_dims)],
+                    self._obj,
+                    v,
+                    error=False,
+                    default=[v],  # type: ignore[arg-type]
                 )[0]
                 for v in reduce_dims_iter
             ]
@@ -2758,9 +2766,9 @@ class CFDatasetAccessor(CFAccessor):
 
         for dim in allterms:
             if prefix is None:
-                assert (
-                    outnames is not None
-                ), "if prefix is None, outnames must be provided"
+                assert outnames is not None, (
+                    "if prefix is None, outnames must be provided"
+                )
                 # set outnames here
                 try:
                     zname = outnames[dim]

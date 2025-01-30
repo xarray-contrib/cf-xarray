@@ -53,9 +53,6 @@ write_to = "cf_xarray/_version.py"
 write_to_template= '__version__ = "{version}"'
 tag_regex= "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
 
-[tool.black]
-target-version = ["py310"]
-
 [tool.ruff]
 target-version = "py310"
 builtins = ["ellipsis"]
@@ -66,14 +63,18 @@ exclude = [
 
 [tool.ruff.lint]
 # E402: module level import not at top of file
-# E501: line too long - let ruff worry about that
+# E501: line too long - let black worry about that
+# E731: do not assign a lambda expression, use a def
 ignore = [
     "E402",
     "E501",
+    "E731",
     "B018",
     "B015",
 ]
 select = [
+    # Bugbear
+    "B",
     # Pyflakes
     "F",
     # Pycodestyle
@@ -83,9 +84,6 @@ select = [
     "I",
     # Pyupgrade
     "UP",
-]
-extend-select = [
-  "B",  # flake8-bugbear
 ]
 
 [tool.ruff.lint.isort]
@@ -102,6 +100,10 @@ known-third-party = [
     "sphinx_autosummary_accessors",
     "xarray"
 ]
+
+[tool.ruff.format]
+# Enable reformatting of code snippets in docstrings.
+docstring-code-format = true
 
 
 [tool.pytest]

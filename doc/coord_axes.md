@@ -55,7 +55,7 @@ This table lists these internal criteria
    :stub-columns: 1
 ```
 
-Any DataArray that has `standard_name: "latitude"` or `_CoordinateAxisType: "Lat"` or `"units": "degrees_north"` in its `attrs` will be identified as the `"latitude"` variable by cf-xarray.  Similarly for other coordinate names.
+Any DataArray that has `standard_name: "latitude"` or `_CoordinateAxisType: "Lat"` or `"units": "degrees_north"` in its `attrs` will be identified as the `"latitude"` variable by cf-xarray. Similarly for other coordinate names.
 
 ## Axis Names
 
@@ -68,7 +68,7 @@ Similar criteria exist for the concept of "axes".
    :stub-columns: 1
 ```
 
-## `.axes` and  `.coordinates` properties
+## `.axes` and `.coordinates` properties
 
 Alternatively use the special properties {py:attr}`DataArray.cf.axes` or {py:attr}`DataArray.cf.coordinates` to access the variable names. These properties return dictionaries that map "CF names" to a list of variable names. Note that a list is always returned even if only one variable name matches the name `"latitude"` (for example).
 

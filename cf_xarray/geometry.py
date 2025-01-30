@@ -4,6 +4,7 @@ import copy
 from collections import ChainMap
 from collections.abc import Hashable, Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -20,6 +21,9 @@ __all__ = [
     "shapely_to_cf",
 ]
 
+
+if TYPE_CHECKING:
+    from shapely import MultiPoint, Point
 
 # Useful convention language:
 # 1. Whether linked to normal CF space-time coordinates with a nodes attribute or not, inclusion of such coordinates is
@@ -547,7 +551,11 @@ def cf_to_shapely(ds: xr.Dataset, *, container: Hashable = GEOMETRY_CONTAINER_NA
     return geometries.rename("geometry")
 
 
-def points_to_cf(pts: xr.DataArray | Sequence, *, names: GeometryNames | None = None):
+def points_to_cf(
+    pts: xr.DataArray | Sequence[Point | MultiPoint],
+    *,
+    names: GeometryNames | None = None,
+):
     """Get a list of points (shapely.geometry.[Multi]Point) and return a CF-compliant geometry dataset.
 
     Parameters
@@ -563,6 +571,7 @@ def points_to_cf(pts: xr.DataArray | Sequence, *, names: GeometryNames | None = 
     """
     from shapely.geometry import MultiPoint
 
+    pts_: Sequence[Point | MultiPoint]
     if isinstance(pts, xr.DataArray):
         # TODO: Fix this hardcoding
         if pts.ndim != 1:

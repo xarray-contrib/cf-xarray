@@ -21,15 +21,14 @@ ds_with_tuple = airds.rename({"air": (1, 2, 3)})
 
 # POM dataset
 pomds = xr.Dataset()
+# fmt: off
 pomds["sigma"] = (
-    # fmt: off
     "sigma",
     [-0.983333, -0.95    , -0.916667, -0.883333, -0.85    , -0.816667,
      -0.783333, -0.75    , -0.716667, -0.683333, -0.65    , -0.616667,
      -0.583333, -0.55    , -0.516667, -0.483333, -0.45    , -0.416667,
      -0.383333, -0.35    , -0.316667, -0.283333, -0.25    , -0.216667,
      -0.183333, -0.15    , -0.116667, -0.083333, -0.05    , -0.016667],
-    # fmt: on
     {
         "units": "sigma_level",
         "long_name": "Sigma Stretched Vertical Coordinate at Nodes",
@@ -38,6 +37,7 @@ pomds["sigma"] = (
         "formula_terms": "sigma: sigma eta: zeta depth: depth",
     }
 )
+# fmt: on
 pomds["depth"] = 175.0
 pomds["zeta"] = ("ocean_time", [-0.155356, -0.127435])
 
@@ -109,15 +109,14 @@ multiple["v2"] = (("x2", "y2"), np.ones((10, 5)) * 15)
 
 
 romsds = xr.Dataset()
+# fmt: off
 romsds["s_rho"] = (
-    # fmt: off
     "s_rho",
     [-0.983333, -0.95    , -0.916667, -0.883333, -0.85    , -0.816667,
      -0.783333, -0.75    , -0.716667, -0.683333, -0.65    , -0.616667,
      -0.583333, -0.55    , -0.516667, -0.483333, -0.45    , -0.416667,
      -0.383333, -0.35    , -0.316667, -0.283333, -0.25    , -0.216667,
      -0.183333, -0.15    , -0.116667, -0.083333, -0.05    , -0.016667],
-    # fmt: on
     {
         "long_name": "S-coordinate at RHO-points",
         "valid_min": -1.0,
@@ -125,13 +124,14 @@ romsds["s_rho"] = (
         "standard_name": "ocean_s_coordinate_g2",
         "formula_terms": "s: s_rho C: Cs_r eta: zeta depth: h depth_c: hc",
         "field": "s_rho, scalar",
-    }
+    },
 )
+# fmt: on
 romsds.coords["hc"] = 20.0
 romsds.coords["h"] = 603.9
 romsds.coords["Vtransform"] = 2.0
+# fmt: off
 romsds.coords["Cs_r"] = (
-    # fmt: off
     "s_rho",
     [-9.33010396e-01, -8.09234736e-01, -6.98779853e-01, -6.01008926e-01,
      -5.15058562e-01, -4.39938913e-01, -3.74609181e-01, -3.18031817e-01,
@@ -141,8 +141,8 @@ romsds.coords["Cs_r"] = (
      -2.53860004e-02, -1.95414261e-02, -1.46880431e-02, -1.06952600e-02,
      -7.45515186e-03, -4.87981407e-03, -2.89916971e-03, -1.45919898e-03,
      -5.20560097e-04, -5.75774004e-05],
-    # fmt: on
 )
+# fmt: on
 romsds["zeta"] = ("ocean_time", [-0.155356, -0.127435])
 romsds["temp"] = (
     ("ocean_time", "s_rho"),

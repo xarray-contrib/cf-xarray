@@ -1374,11 +1374,11 @@ class CFAccessor:
                 coords_iter = coords
             coords = [
                 apply_mapper(
-                    [_single(_get_coords)],
+                    [_single(_get_coords)],  # type:ignore[arg-type]
                     self._obj,
                     v,
                     error=False,
-                    default=[v],  # type: ignore[arg-type]
+                    default=[v],
                 )[0]
                 for v in coords_iter
             ]
@@ -1389,11 +1389,11 @@ class CFAccessor:
                 reduce_dims_iter = list(reduce_dims)
             reduce_dims = [
                 apply_mapper(
-                    [_single(_get_dims)],
+                    [_single(_get_dims)],  # type:ignore[arg-type]
                     self._obj,
                     v,
                     error=False,
-                    default=[v],  # type: ignore[arg-type]
+                    default=[v],
                 )[0]
                 for v in reduce_dims_iter
             ]

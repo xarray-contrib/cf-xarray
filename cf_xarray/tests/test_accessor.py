@@ -453,7 +453,7 @@ def test_rename_like() -> None:
 @pytest.mark.parametrize(
     "attr, xrkwargs, cfkwargs",
     (
-        ("resample", {"time": "M"}, {"T": "M"}),
+        ("resample", {"time": "ME"}, {"T": "ME"}),
         ("rolling", {"lat": 5}, {"Y": 5}),
         ("groupby", {"group": "time"}, {"group": "T"}),
         ("groupby", {"group": "time.month"}, {"group": "T.month"}),
@@ -2047,7 +2047,8 @@ def test_ancillary_variables_extra_dim():
             ),
         }
     )
-    assert_identical(ds.cf["X"], ds["x"])
+    with pytest.warns(UserWarning):
+        assert_identical(ds.cf["X"], ds["x"])
 
 
 def test_geometry_association(geometry_ds):

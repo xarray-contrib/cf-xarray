@@ -23,6 +23,11 @@ def _guess_bounds_1d(da, dim):
         ADDED_INDEX = True
 
     diff = da.diff(dim)
+    # Here we would need some escape based on a check of whether we were
+    # looking at cftime or not. It's not clear to me whether the fix should be
+    # here or further upstream though (either the casting shouldn't happen or
+    # numpy should be able to handle operations with cftime or we have some odd
+    # use case and need a workaround here).
     lower = da - diff / 2
     upper = da + diff / 2
     bounds = xr.concat([lower, upper], dim="bounds")

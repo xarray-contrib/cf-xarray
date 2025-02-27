@@ -21,12 +21,19 @@ Geometries
 ----------
 .. autosummary::
     :toctree: generated/
-
     geometry.decode_geometries
+
     geometry.encode_geometries
     geometry.shapely_to_cf
     geometry.cf_to_shapely
     geometry.GeometryNames
+
+
+Groupers
+--------
+.. autosummary::
+    :toctree: generated/
+    groupers.FlagGrouper
 
 .. currentmodule:: xarray
 

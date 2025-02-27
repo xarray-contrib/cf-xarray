@@ -13,7 +13,7 @@ class FlagGrouper(Grouper):
 
         if group.dtype.kind in "iu" and (np.diff(values) == 1).all():
             # optimize
-            codes = group.data - group.data[0].astype(int)
+            codes = group.data - values[0].astype(int)
         else:
             codes, _ = pd.factorize(group.data.ravel())
 

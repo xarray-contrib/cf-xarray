@@ -1,27 +1,33 @@
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
-from xarray.groupers import EncodedGroups, Grouper
+from xarray.groupers import EncodedGroups, UniqueGrouper
 
 
-class FlagGrouper(Grouper):
+@dataclass
+class FlagGrouper(UniqueGrouper):
     def factorize(self, group) -> EncodedGroups:
-        assert "flag_values" in group.attrs
-        assert "flag_meanings" in group.attrs
+        if "flag_values" not in group.attrs or "flag_meanings" not in group.attrs:
+            raise ValueError(
+                "FlagGrouper can only be used with flag variables that have"
+                "`flag_values` and `flag_meanings` specified in attrs."
+            )
 
         values = np.array(group.attrs["flag_values"])
         full_index = pd.Index(group.attrs["flag_meanings"].split(" "))
 
-        if group.dtype.kind in "iu" and (np.diff(values) == 1).all():
-            # optimize
-            codes = group.data - values[0].astype(int)
-        else:
-            codes, _ = pd.factorize(group.data.ravel())
+        self.labels = values
+        ret = super().factorize(group)
 
-        codes_da = group.copy(data=codes.reshape(group.shape))
+        codes_da = ret.codes
         codes_da.attrs.pop("flag_values")
         codes_da.attrs.pop("flag_meanings")
 
-        return EncodedGroups(codes=codes_da, full_index=full_index)
+        ret.codes = codes_da
+        ret.full_index = full_index
+
+        return ret
 
     def reset(self):
         pass

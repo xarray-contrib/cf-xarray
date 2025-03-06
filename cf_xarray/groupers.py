@@ -18,13 +18,17 @@ class FlagGrouper(UniqueGrouper):
         full_index = pd.Index(group.attrs["flag_meanings"].split(" "))
 
         self.labels = values
+
+        # TODO: we could optimize here, since `group` is already factorized,
+        # but there are subtleties. For example, the attrs must be up to date,
+        # any value that is not in flag_values will cause an error, etc.
         ret = super().factorize(group)
 
-        codes_da = ret.codes
-        codes_da.attrs.pop("flag_values")
-        codes_da.attrs.pop("flag_meanings")
+        ret.codes.attrs.pop("flag_values")
+        ret.codes.attrs.pop("flag_meanings")
 
-        ret.codes = codes_da
-        ret.full_index = full_index
-
-        return ret
+        return EncodedGroups(
+            codes=ret.codes,
+            full_index=full_index,
+            group_indices=ret.group_indices,
+        )

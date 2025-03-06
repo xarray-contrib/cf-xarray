@@ -60,6 +60,38 @@ You can also check whether a DataArray has the appropriate attributes to be reco
 da.cf.is_flag_variable
 ```
 
+## GroupBy
+
+Flag variables, such as that above, are naturally used for GroupBy operations.
+cf-xarray provides a `FlagGrouper` that understands the `flag_meanings` and `flag_values` attributes.
+
+Let's load an example dataset where the `flag_var` array has the needed attributes.
+
+```{code-cell}
+import cf_xarray as cfxr
+import numpy as np
+
+from cf_xarray.datasets import flag_excl
+
+ds = flag_excl.to_dataset().set_coords('flag_var')
+ds["foo"] = ("time", np.arange(8))
+ds.flag_var
+```
+
+Now use the :py:class:`~cf_xarray.groupers.FlagGrouper` to group by this flag variable:
+
+```{code-cell}
+from cf_xarray.groupers import FlagGrouper
+
+ds.groupby(flag_var=FlagGrouper()).mean()
+```
+
+Note how the output coordinate has the values from `flag_meanings`!
+
+```{seealso}
+See the Xarray docs on using [Grouper objects](https://docs.xarray.dev/en/stable/user-guide/groupby.html#grouper-objects).
+```
+
 ## Flag Masks
 
 ```{warning}

@@ -7,6 +7,12 @@ from xarray.groupers import EncodedGroups, UniqueGrouper
 
 @dataclass
 class FlagGrouper(UniqueGrouper):
+    """
+    Grouper object that allows convenient categorical grouping by a CF flag variable.
+
+    Labels in the grouped output will be restricted to those listed in ``flag_meanings``.
+    """
+
     def factorize(self, group) -> EncodedGroups:
         if "flag_values" not in group.attrs or "flag_meanings" not in group.attrs:
             raise ValueError(

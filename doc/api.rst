@@ -21,8 +21,8 @@ Geometries
 ----------
 .. autosummary::
     :toctree: generated/
-    geometry.decode_geometries
 
+    geometry.decode_geometries
     geometry.encode_geometries
     geometry.shapely_to_cf
     geometry.cf_to_shapely
@@ -33,7 +33,8 @@ Groupers
 --------
 .. autosummary::
     :toctree: generated/
-    groupers.FlagGrouper
+
+   groupers.FlagGrouper
 
 .. currentmodule:: xarray
 

@@ -28,6 +28,3 @@ class FlagGrouper(UniqueGrouper):
         ret.full_index = full_index
 
         return ret
-
-    def reset(self):
-        pass

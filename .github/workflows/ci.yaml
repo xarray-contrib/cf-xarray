@@ -18,7 +18,7 @@ env:
 
 jobs:
   build:
-    name: Build (${{ matrix.python-version }}, ${{ matrix.os }})
+    name: Build (${{ matrix.python-version }}, ${{ matrix.os }}), ${{ matrix.env }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -43,10 +43,6 @@ jobs:
       - name: Set environment variables
         run: |
           echo "PYTHON_VERSION=${{ matrix.python-version }}" >> $GITHUB_ENV
-          if [[ "${{ matrix.env }}" == "all-min-deps" ]] ;
-          then
-              echo "CONDA_ENV_FILE=ci/environment-all-min-deps.yml" >> $GITHUB_ENV
-          fi
           if [[ "${{ matrix.env }}" == "" ]] ;
           then
               echo "CONDA_ENV_FILE=ci/environment.yml" >> $GITHUB_ENV
@@ -54,6 +50,10 @@ jobs:
           if [[ "${{ matrix.env }}" == "no-optional-deps" ]] ;
           then
               echo "CONDA_ENV_FILE=ci/environment-no-optional-deps.yml" >> $GITHUB_ENV
+          fi
+          if [[ "${{ matrix.env }}" == "all-min-deps" ]] ;
+          then
+              echo "CONDA_ENV_FILE=ci/environment-all-min-deps.yml" >> $GITHUB_ENV
           fi
       - name: Set up conda environment
         uses: mamba-org/setup-micromamba@v2

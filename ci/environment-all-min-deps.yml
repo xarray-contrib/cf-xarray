@@ -11,14 +11,14 @@ dependencies:
   - matplotlib-base
   - netcdf4
   - pandas
-  - pint>=0.18,!=0.24.0
+  - pint==0.19
   - pooch
   - regex
   - rich
   - pooch
   - scipy
   - shapely
-  - xarray>=2022.03.0
+  - xarray==2022.03.0
   - pip
   - pip:
       - pytest-pretty

@@ -3,6 +3,8 @@ import pytest
 import xarray as xr
 from xarray.testing import assert_identical
 
+pytest.importorskip("xarray", "2024.07.0")
+
 from cf_xarray.datasets import flag_excl
 from cf_xarray.groupers import FlagGrouper
 

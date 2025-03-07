@@ -1,3 +1,7 @@
+import xarray
+from packaging.version import Version
+
+from . import geometry as geometry
 from . import sgrid  # noqa
 from .accessor import CFAccessor  # noqa
 from .coding import (  # noqa
@@ -9,6 +13,7 @@ from .helpers import bounds_to_vertices, vertices_to_bounds  # noqa
 from .options import set_options  # noqa
 from .utils import _get_version
 
-from . import geometry, groupers  # noqa
+if Version(xarray.__version__) >= Version("2024.07.0"):
+    from . import groupers as groupers
 
 __version__ = _get_version()

@@ -18,7 +18,7 @@ dependencies:
   - pooch
   - scipy
   - shapely
-  - xarray==2022.03.0
+  - xarray==2023.09.0
   - pip
   - pip:
       - pytest-pretty

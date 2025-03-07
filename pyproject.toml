@@ -17,7 +17,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "xarray>=2022.03.0",
+    "xarray>=2023.09.0",
 ]
 dynamic = ["version"]
 
@@ -33,7 +33,7 @@ changelog = "https://cf-xarray.readthedocs.io/en/latest/whats-new.html"
 [build-system]
 requires = [
     # xarray is need for dynamic version string
-    "xarray>=2022.03.0",
+    "xarray>=2023.09.0",
     "setuptools>=45",
     "setuptools_scm[toml]>=6.2",
 ]

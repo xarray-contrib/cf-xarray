@@ -1306,14 +1306,24 @@ def test_Z_vs_vertical_ROMS() -> None:
 
 
 def test_decode_vertical_coords() -> None:
+    # Fixes 'UnboundLocalError: cannot access local variable 'romsds' where it is not associated with a value'
+    from ..datasets import romsds
+
+    # needs standard names on `eta` and `depth` to derive computed standard name
+    romsds.h.attrs["standard_name"] = "sea_floor_depth_below_geopotential_datum"
+    romsds.zeta.attrs["standard_name"] = "sea_surface_height_above_geopotential_datum"
+
+    romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
+
+    assert romsds.z_rho.shape == (2, 30)
+    assert romsds.z_rho.attrs["standard_name"] == "height_above_geopotential_datum"
+
+    romsds = romsds.drop_vars("z_rho")
+
     with pytest.raises(
         AssertionError, match="if prefix is None, outnames must be provided"
     ):
         romsds.cf.decode_vertical_coords()
-
-    # needs standard names on `eta` and `depth` to derive computed standard name
-    romsds.h.attrs["standard_name"] = "sea_floor_depth_below_ geopotential_datum"
-    romsds.zeta.attrs["standard_name"] = "sea_surface_height_above_ geopotential_datum"
 
     with pytest.warns(DeprecationWarning):
         romsds.cf.decode_vertical_coords(prefix="z_rho")

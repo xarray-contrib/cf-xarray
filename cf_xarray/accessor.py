@@ -24,7 +24,6 @@ from typing import (
 
 import xarray as xr
 from xarray import DataArray, Dataset
-from xarray.core.arithmetic import SupportsArithmetic
 from xarray.core.groupby import GroupBy
 from xarray.core.resample import Resample
 from xarray.core.rolling import Coarsen, Rolling
@@ -997,7 +996,7 @@ def _possible_x_y_plot(obj, key, skip=None):
         return _get_possible(obj.cf, y_criteria)
 
 
-class _CFWrappedClass(SupportsArithmetic):
+class _CFWrappedClass:
     """
     This class is used to wrap any class in _WRAPPED_CLASSES.
     """

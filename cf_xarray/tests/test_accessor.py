@@ -1524,15 +1524,14 @@ def test_groupby_special_ops() -> None:
     grouped = airds.groupby_bins("lat", np.arange(20, 50, 10))
 
     # __iter__
-    for (label, group), (cflabel, cfgroup) in zip(grouped, cfgrouped, strict=False):
+    for (label, group), (cflabel, cfgroup) in zip(grouped, cfgrouped, strict=True):
         assert label == cflabel
         assert_identical(group, cfgroup)
 
     # arithmetic
     # TODO: Extremely buggy!
     # 1. cfgrouped - cfgrouped.mean() raises RecursionError
-    # 2. use_flox=True doesn't preserve attributes for some reason
-    with xr.set_options(keep_attrs=True):
+    with xr.set_options(keep_attrs=True, use_flox=True):
         expected = grouped - grouped.mean()
         actual = grouped - cfgrouped.mean()
     assert_identical(expected, actual)

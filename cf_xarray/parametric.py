@@ -782,7 +782,7 @@ class OceanDoubleSigma(ParametricVerticalCoordinate):
         return cls(**get_terms(terms, "sigma", "depth", "z1", "z2", "a", "href", "k_c"))
 
 
-TRANSFORM_FROM_STDNAME = {
+TRANSFORM_FROM_STDNAME: dict[str, type[ParametricVerticalCoordinate]] = {
     "atmosphere_ln_pressure_coordinate": AtmosphereLnPressure,
     "atmosphere_sigma_coordinate": AtmosphereSigma,
     "atmosphere_hybrid_sigma_pressure_coordinate": AtmosphereHybridSigmaPressure,

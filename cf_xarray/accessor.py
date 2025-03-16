@@ -2726,7 +2726,9 @@ class CFDatasetAccessor(CFAccessor):
                 results[v].append(k)
         return results
 
-    def decode_vertical_coords(self, *, outnames=None, prefix=None):
+    def decode_vertical_coords(
+        self, *, outnames: dict[str, str] | None = None, prefix: str | None = None
+    ) -> None:
         """
         Decode parameterized vertical coordinates in place.
 
@@ -2764,6 +2766,7 @@ class CFDatasetAccessor(CFAccessor):
         allterms = self.formula_terms
 
         for dim in allterms:
+            dim = cast(str, dim)
             if prefix is None:
                 assert outnames is not None, (
                     "if prefix is None, outnames must be provided"

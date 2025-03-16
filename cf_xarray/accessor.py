@@ -2810,7 +2810,7 @@ class CFDatasetAccessor(CFAccessor):
                     f"Coordinate function for {stdname!r} not implmented yet. Contributions welcome!"
                 ) from None
 
-            ds.coords[zname] = transform.from_terms(terms)
+            ds.coords[zname] = transform.from_terms(terms).decode()
 
 
 @xr.register_dataarray_accessor("cf")

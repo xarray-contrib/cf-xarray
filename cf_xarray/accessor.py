@@ -26,8 +26,17 @@ import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.groupby import GroupBy
 from xarray.core.resample import Resample
-from xarray.core.rolling import Coarsen, Rolling
-from xarray.core.weighted import Weighted
+
+try:
+    from xarray.core.rolling import Coarsen, Rolling
+except ImportError:
+    from xarray.computation.rolling import Coarsen, Rolling
+
+try:
+    from xarray.core.weighted import Weighted
+except ImportError:
+    from xarray.computation.weighted import Weighted
+
 
 from . import parametric, sgrid
 from .criteria import (

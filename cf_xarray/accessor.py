@@ -28,21 +28,23 @@ from xarray.core.groupby import GroupBy
 from xarray.core.resample import Resample
 
 try:
-    from xarray.core.rolling import (  # type:ignore[import-not-found,no-redef]
+    from xarray.core.rolling import (  # type:ignore[import-not-found,no-redef,unused-ignore]
         Coarsen,
         Rolling,
     )
 except ImportError:
-    from xarray.computation.rolling import (  # type:ignore[import-not-found,no-redef]
+    from xarray.computation.rolling import (  # type:ignore[import-not-found,no-redef,unused-ignore]
         Coarsen,
         Rolling,
     )
 
 try:
-    from xarray.core.weighted import Weighted  # type:ignore[import-not-found,no-redef]
+    from xarray.core.weighted import (
+        Weighted,  # type:ignore[import-not-found,no-redef,unused-ignore]
+    )
 except ImportError:
-    from xarray.computation.weighted import (
-        Weighted,  # type:ignore[import-not-found,no-redef]
+    from xarray.computation.weighted import (  # type:ignore[import-not-found,no-redef,unused-ignore]
+        Weighted,
     )
 
 

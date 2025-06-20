@@ -39,8 +39,8 @@ except ImportError:
     )
 
 try:
-    from xarray.core.weighted import (
-        Weighted,  # type:ignore[import-not-found,no-redef,unused-ignore]
+    from xarray.core.weighted import (  # type:ignore[import-not-found,no-redef,unused-ignore]
+        Weighted,
     )
 except ImportError:
     from xarray.computation.weighted import (  # type:ignore[import-not-found,no-redef,unused-ignore]
@@ -1376,7 +1376,7 @@ class CFAccessor:
 
     def curvefit(
         self,
-        coords: Hashable | DataArray | Iterable[Hashable | DataArray],
+        coords: Hashable | Iterable[Hashable],
         func: Callable[..., Any],
         reduce_dims: Hashable | Iterable[Hashable] | None = None,
         skipna: bool = True,
@@ -1386,8 +1386,8 @@ class CFAccessor:
         kwargs: dict[str, Any] | None = None,
     ):
         if coords is not None:
-            if isinstance(coords, Hashable | DataArray):
-                coords_iter: Iterable[Hashable | DataArray] = [coords]
+            if isinstance(coords, Hashable):
+                coords_iter: Iterable[Hashable] = [coords]
             else:
                 coords_iter = coords
             coords = [

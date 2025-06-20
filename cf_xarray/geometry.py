@@ -298,8 +298,10 @@ def encode_geometries(ds: xr.Dataset):
     geom_var_names = [
         name
         for name, var in ds._variables.items()
-        if var.dtype == "O" and isinstance(var.data.flat[0], SHAPELY_TYPES)
+        if var.dtype == "geometry"
+        or (var.dtype == "O" and isinstance(var.data.flat[0], SHAPELY_TYPES))
     ]
+
     if not geom_var_names:
         return ds
 

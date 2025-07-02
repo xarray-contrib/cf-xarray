@@ -48,6 +48,13 @@ except ImportError:
     )
 
 
+try:
+    import pyproj
+    import cartopy.crs
+except ImportError:
+    pyproj = None
+
+
 from . import parametric, sgrid
 from .criteria import (
     _DSG_ROLES,
@@ -2745,6 +2752,20 @@ class CFDatasetAccessor(CFAccessor):
                 results[v].append(k)
         return results
 
+    @property
+    def crs(self):
+        """Cartopy CRS of the dataset's grid mapping."""
+        if pyproj is None:
+            raise ImportError('`crs` accessor requires optional packages `pyproj` and `cartopy`.')
+        gmaps = list(itertools.chain(*self.grid_mapping_names.values()))
+        if len(gmaps) > 1:
+            raise ValueError("Multiple grid mappings found.")
+        if len(gmaps) == 0:
+            if 'longitude' in self:
+                return cartopy.crs.PlateCarree()
+            raise ValueError('No grid mapping nor longitude found in dataset.')
+        return cartopy.crs.Projection(pyproj.CRS.from_cf(self._obj[gmaps[0]].attrs))
+
     def decode_vertical_coords(
         self, *, outnames: dict[str, str] | None = None, prefix: str | None = None
     ) -> None:
@@ -2899,6 +2920,21 @@ class CFDataArrayAccessor(CFAccessor):
             terms[key] = value
         return terms
 
+    def _get_grid_mapping(self, ignore_missing=False) -> DataArray:
+        da = self._obj
+
+        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
+        grid_mapping = attrs_or_encoding.get("grid_mapping", None)
+        if not grid_mapping:
+            if ignore_missing:
+                return None
+            raise ValueError("No 'grid_mapping' attribute present.")
+
+        if grid_mapping not in da._coords:
+            raise ValueError(f"Grid Mapping variable {grid_mapping} not present.")
+
+        return da[grid_mapping]
+
     @property
     def grid_mapping_name(self) -> str:
         """
@@ -2919,20 +2955,21 @@ class CFDataArrayAccessor(CFAccessor):
         >>> rotds.cf["temp"].cf.grid_mapping_name
         'rotated_latitude_longitude'
         """
-
-        da = self._obj
-
-        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
-        grid_mapping = attrs_or_encoding.get("grid_mapping", None)
-        if not grid_mapping:
-            raise ValueError("No 'grid_mapping' attribute present.")
-
-        if grid_mapping not in da._coords:
-            raise ValueError(f"Grid Mapping variable {grid_mapping} not present.")
-
-        grid_mapping_var = da[grid_mapping]
-
+        grid_mapping_var = self._get_grid_mapping()
         return grid_mapping_var.attrs["grid_mapping_name"]
+
+    @property
+    def crs(self):
+        """Cartopy CRS of the dataset's grid mapping."""
+        if pyproj is None:
+            raise ImportError('`crs` accessor requires optional packages `pyproj` and `cartopy`.')
+
+        grid_mapping_var = self._get_grid_mapping(ignore_missing=True)
+        if grid_mapping_var is None:
+            if 'longitude' in self:
+                return cartopy.crs.PlateCarree()
+            raise ValueError('No grid mapping nor longitude found.')
+        return cartopy.crs.Projection(pyproj.CRS.from_cf(grid_mapping_var.attrs))
 
     def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray:
         """

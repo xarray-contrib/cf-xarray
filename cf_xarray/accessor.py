@@ -49,8 +49,8 @@ except ImportError:
 
 
 try:
-    import pyproj
     import cartopy.crs
+    import pyproj
 except ImportError:
     pyproj = None
 
@@ -2756,14 +2756,16 @@ class CFDatasetAccessor(CFAccessor):
     def crs(self):
         """Cartopy CRS of the dataset's grid mapping."""
         if pyproj is None:
-            raise ImportError('`crs` accessor requires optional packages `pyproj` and `cartopy`.')
+            raise ImportError(
+                "`crs` accessor requires optional packages `pyproj` and `cartopy`."
+            )
         gmaps = list(itertools.chain(*self.grid_mapping_names.values()))
         if len(gmaps) > 1:
             raise ValueError("Multiple grid mappings found.")
         if len(gmaps) == 0:
-            if 'longitude' in self:
+            if "longitude" in self:
                 return cartopy.crs.PlateCarree()
-            raise ValueError('No grid mapping nor longitude found in dataset.')
+            raise ValueError("No grid mapping nor longitude found in dataset.")
         return cartopy.crs.Projection(pyproj.CRS.from_cf(self._obj[gmaps[0]].attrs))
 
     def decode_vertical_coords(
@@ -2962,13 +2964,15 @@ class CFDataArrayAccessor(CFAccessor):
     def crs(self):
         """Cartopy CRS of the dataset's grid mapping."""
         if pyproj is None:
-            raise ImportError('`crs` accessor requires optional packages `pyproj` and `cartopy`.')
+            raise ImportError(
+                "`crs` accessor requires optional packages `pyproj` and `cartopy`."
+            )
 
         grid_mapping_var = self._get_grid_mapping(ignore_missing=True)
         if grid_mapping_var is None:
-            if 'longitude' in self:
+            if "longitude" in self:
                 return cartopy.crs.PlateCarree()
-            raise ValueError('No grid mapping nor longitude found.')
+            raise ValueError("No grid mapping nor longitude found.")
         return cartopy.crs.Projection(pyproj.CRS.from_cf(grid_mapping_var.attrs))
 
     def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray:

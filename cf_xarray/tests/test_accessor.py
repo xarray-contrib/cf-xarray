@@ -1087,17 +1087,19 @@ def test_bad_grid_mapping_attribute():
 
 @requires_cartopy
 def test_crs() -> None:
-    from pyproj import CRS
     import cartopy.crs as ccrs
+    from pyproj import CRS
 
     # Dataset with explicit grid mapping
     # ccrs.RotatedPole is not the same as CRS.from_cf(rotated_pole)...
     # They are equivalent though, but specified differently
     exp = ccrs.Projection(CRS.from_cf(rotds.rotated_pole.attrs))
     assert rotds.cf.crs == exp
-    with pytest.raises(ValueError, match='Grid Mapping variable rotated_pole not present'):
+    with pytest.raises(
+        ValueError, match="Grid Mapping variable rotated_pole not present"
+    ):
         rotds.temp.cf.crs
-    assert rotds.set_coords('rotated_pole').temp.cf.crs == exp
+    assert rotds.set_coords("rotated_pole").temp.cf.crs == exp
 
     # Dataset with regular latlon (no grid mapping )
     exp = ccrs.PlateCarree()

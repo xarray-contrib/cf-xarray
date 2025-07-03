@@ -202,7 +202,8 @@ def is_latitude_longitude(ds):
     - they are 1D (so either a list of points or a regular grid)
     """
     return (
-        'longitude' in ds.cf and 'latitude' in ds.cf
-        and ds.cf['longitude'].ndim == 1
-        and ds.cf['latitude'].ndim == 1
+        "longitude" in ds.cf
+        and "latitude" in ds.cf
+        and ds.cf["longitude"].ndim == 1
+        and ds.cf["latitude"].ndim == 1
     )

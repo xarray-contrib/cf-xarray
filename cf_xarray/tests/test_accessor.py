@@ -41,6 +41,7 @@ from ..datasets import (
 )
 from . import (
     raise_if_dask_computes,
+    requires_cartopy,
     requires_cftime,
     requires_pint,
     requires_pooch,
@@ -1082,6 +1083,32 @@ def test_bad_grid_mapping_attribute():
     #    assert ds.cf.grid_mappings == {}
     with pytest.warns(UserWarning):
         ds.cf.get_associated_variable_names("temp", error=False)
+
+
+@requires_cartopy
+def test_crs() -> None:
+    from pyproj import CRS
+    import cartopy.crs as ccrs
+
+    # Dataset with explicit grid mapping
+    # ccrs.RotatedPole is not the same as CRS.from_cf(rotated_pole)...
+    # They are equivalent though, but specified differently
+    exp = ccrs.Projection(CRS.from_cf(rotds.rotated_pole.attrs))
+    assert rotds.cf.crs == exp
+    with pytest.raises(ValueError, match='Grid Mapping variable rotated_pole not present'):
+        rotds.temp.cf.crs
+    assert rotds.set_coords('rotated_pole').temp.cf.crs == exp
+
+    # Dataset with regular latlon (no grid mapping )
+    exp = ccrs.PlateCarree()
+    assert forecast.cf.crs == exp
+    assert forecast.sst.cf.crs == exp
+
+    # Dataset with no grid mapping specified but not on latlon (error)
+    with pytest.raises(ValueError, match="No grid mapping found"):
+        mollwds.cf.crs
+    with pytest.raises(ValueError, match="No grid mapping found"):
+        mollwds.lon_bounds.cf.crs
 
 
 def test_docstring() -> None:

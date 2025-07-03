@@ -83,6 +83,7 @@ from .utils import (
     always_iterable,
     emit_user_level_warning,
     invert_mappings,
+    is_latitude_longitude,
     parse_cell_methods_attr,
     parse_cf_standard_name_table,
 )
@@ -2761,9 +2762,9 @@ class CFDatasetAccessor(CFAccessor):
         if len(gmaps) > 1:
             raise ValueError("Multiple grid mappings found.")
         if len(gmaps) == 0:
-            if 'longitude' in self:
+            if is_latitude_longitude(self._obj):
                 return cartopy.crs.PlateCarree()
-            raise ValueError('No grid mapping nor longitude found in dataset.')
+            raise ValueError('No grid mapping found and dataset guessed as not latitude_longitude.')
         return cartopy.crs.Projection(pyproj.CRS.from_cf(self._obj[gmaps[0]].attrs))
 
     def decode_vertical_coords(
@@ -2966,9 +2967,9 @@ class CFDataArrayAccessor(CFAccessor):
 
         grid_mapping_var = self._get_grid_mapping(ignore_missing=True)
         if grid_mapping_var is None:
-            if 'longitude' in self:
+            if is_latitude_longitude(self._obj):
                 return cartopy.crs.PlateCarree()
-            raise ValueError('No grid mapping nor longitude found.')
+            raise ValueError('No grid mapping found and dataset guesses as not latitude_longitude.')
         return cartopy.crs.Projection(pyproj.CRS.from_cf(grid_mapping_var.attrs))
 
     def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray:

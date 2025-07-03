@@ -49,8 +49,8 @@ except ImportError:
 
 
 try:
-    import pyproj
     import cartopy.crs
+    import pyproj
 except ImportError:
     pyproj = None
 
@@ -2757,7 +2757,9 @@ class CFDatasetAccessor(CFAccessor):
     def crs(self):
         """Cartopy CRS of the dataset's grid mapping."""
         if pyproj is None:
-            raise ImportError('`crs` accessor requires optional packages `pyproj` and `cartopy`.')
+            raise ImportError(
+                "`crs` accessor requires optional packages `pyproj` and `cartopy`."
+            )
         gmaps = list(itertools.chain(*self.grid_mapping_names.values()))
         if len(gmaps) > 1:
             raise ValueError("Multiple grid mappings found.")
@@ -2963,7 +2965,9 @@ class CFDataArrayAccessor(CFAccessor):
     def crs(self):
         """Cartopy CRS of the dataset's grid mapping."""
         if pyproj is None:
-            raise ImportError('`crs` accessor requires optional packages `pyproj` and `cartopy`.')
+            raise ImportError(
+                "`crs` accessor requires optional packages `pyproj` and `cartopy`."
+            )
 
         grid_mapping_var = self._get_grid_mapping(ignore_missing=True)
         if grid_mapping_var is None:

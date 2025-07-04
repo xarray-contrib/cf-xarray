@@ -137,6 +137,7 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 
 [[tool.mypy.overrides]]
 module=[
+    "cartopy",
     "cftime",
     "pandas",
     "pooch",

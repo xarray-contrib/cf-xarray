@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import importlib
 import inspect
 import itertools
 import re
@@ -48,10 +49,11 @@ except ImportError:
     )
 
 
-try:
+if importlib.util.find_spec("cartopy"):
+    # pyproj is a dep of cartopy
     import cartopy.crs
     import pyproj
-except ImportError:
+else:
     pyproj = None
 
 
@@ -2754,7 +2756,7 @@ class CFDatasetAccessor(CFAccessor):
         return results
 
     @property
-    def crs(self):
+    def cartopy_crs(self):
         """Cartopy CRS of the dataset's grid mapping."""
         if pyproj is None:
             raise ImportError(
@@ -2925,7 +2927,7 @@ class CFDataArrayAccessor(CFAccessor):
             terms[key] = value
         return terms
 
-    def _get_grid_mapping(self, ignore_missing=False) -> DataArray:
+    def _get_grid_mapping(self, ignore_missing=False) -> DataArray | None:
         da = self._obj
 
         attrs_or_encoding = ChainMap(da.attrs, da.encoding)
@@ -2964,7 +2966,7 @@ class CFDataArrayAccessor(CFAccessor):
         return grid_mapping_var.attrs["grid_mapping_name"]
 
     @property
-    def crs(self):
+    def cartopy_crs(self):
         """Cartopy CRS of the dataset's grid mapping."""
         if pyproj is None:
             raise ImportError(

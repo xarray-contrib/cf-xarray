@@ -198,12 +198,13 @@ def emit_user_level_warning(message, category=None):
 def is_latitude_longitude(ds):
     """
     A dataset is probably using the latitude_longitude grid mapping implicitly if
-    - it has both longitude and latitude variables
+    - it has both longitude and latitude coordinates
     - they are 1D (so either a list of points or a regular grid)
     """
+    coords = ds.cf.coordinates
     return (
-        "longitude" in ds.cf
-        and "latitude" in ds.cf
-        and ds.cf["longitude"].ndim == 1
-        and ds.cf["latitude"].ndim == 1
+        "longitude" in coords
+        and "latitude" in coords
+        and ds[coords["longitude"][0]].ndim == 1
+        and ds[coords["latitude"][0]].ndim == 1
     )

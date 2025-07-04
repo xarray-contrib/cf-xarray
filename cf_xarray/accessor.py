@@ -1102,6 +1102,10 @@ class _CFWrappedPlotMethods:
                 func.__name__ == "wrapper"
                 and (kwargs.get("hue") or self._obj.ndim == 1)
             )
+            is_grid_plot = (func.__name__ in ["contour", "countourf", "pcolormsh"]) or (
+                func.__name__ == "wrapper"
+                and (self._obj.ndim - sum(["col" in kwargs, "row" in kwargs])) == 2
+            )
             if is_line_plot:
                 hue = kwargs.get("hue")
                 if "x" not in kwargs and "y" not in kwargs:
@@ -1111,6 +1115,20 @@ class _CFWrappedPlotMethods:
             else:
                 kwargs = self._process_x_or_y(kwargs, "x", skip=kwargs.get("y"))
                 kwargs = self._process_x_or_y(kwargs, "y", skip=kwargs.get("x"))
+            if is_grid_plot and pyproj is not None:
+                from cartopy.mpl.geoaxes import GeoAxes
+
+                ax = kwargs.get("ax")
+                if ax is None or isinstance(ax, GeoAxes):
+                    try:
+                        kwargs["transform"] = self._obj.cf.cartopy_crs
+                    except ValueError:
+                        pass
+                    else:
+                        if ax is None:
+                            kwargs.setdefault("subplot_kws", {}).setdefault(
+                                "projection", kwargs["transform"]
+                            )
 
             # Now set some nice properties
             kwargs = self._set_axis_props(kwargs, "x")

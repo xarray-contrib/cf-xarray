@@ -226,9 +226,7 @@ def _get_ordered_vertices(bounds: xr.DataArray) -> np.ndarray:
     Parameters
     ----------
     bounds : xr.DataArray
-        A DataArray containing bounds information, typically with shape (..., 2),
-        where the last dimension represents the lower and upper bounds for each
-        interval.
+        A DataArray containing bounds information, typically with shape (..., 2).
 
     Returns
     -------

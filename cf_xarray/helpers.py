@@ -217,11 +217,13 @@ def _bounds_helper(values, n_core_dims, nbounds, order):
 
 
 def _get_ordered_vertices(bounds: xr.DataArray) -> np.ndarray:
-    """Extracts the sorted unique vertices from a bounds DataArray.
+    """Extracts a sorted 1D array of unique vertex values from a bounds DataArray.
 
-    This function flattens the bounds to pairs, finds all unique values, and
-    returns them sorted. This ensures that the vertices are in ascending order,
-    regardless of the original order in the bounds DataArray.
+    This function takes a DataArray (or array-like) containing bounds information,
+    typically as pairs of values along the last dimension. It flattens the
+    bounds into pairs, extracts all unique vertex values, and returns them in
+    sorted order. The sorting order (ascending or descending) is determined by
+    inspecting the direction of the first non-equal bounds pair.
 
     Parameters
     ----------
@@ -233,23 +235,28 @@ def _get_ordered_vertices(bounds: xr.DataArray) -> np.ndarray:
     np.ndarray
         A 1D NumPy array of sorted unique vertex values extracted from the
         bounds.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> import xarray as xr
-    >>> bounds = xr.DataArray(np.array([[0, 1], [1, 2], [2, 3]]))
-    >>> _get_ordered_vertices(bounds)
-    array([0, 1, 2, 3])
-    >>> # Unordered bounds (left is upper bound)
-    >>> bounds = xr.DataArray(np.array([[1, 0], [2, 1], [3, 2]]))
-    >>> _get_ordered_vertices(bounds)
-    array([0, 1, 2, 3])
     """
-    flat = bounds.reshape(-1, 2)
-    vertices = np.unique(flat)
+    # Convert to array if needed
+    arr = bounds.values if isinstance(bounds, xr.DataArray) else bounds
+    arr = np.asarray(arr)
 
-    return np.sort(vertices)
+    # Flatten to (N, 2) pairs and get all unique values.
+    pairs = arr.reshape(-1, 2)
+    vertices = np.unique(pairs)
+
+    # Determine order: find the first pair with different values
+    ascending = True
+    for left, right in pairs:
+        if left != right:
+            ascending = right > left
+            break
+
+    # Sort vertices in ascending or descending order as needed.
+    vertices = np.sort(vertices)
+    if not ascending:
+        vertices = vertices[::-1]
+
+    return vertices
 
 
 def vertices_to_bounds(

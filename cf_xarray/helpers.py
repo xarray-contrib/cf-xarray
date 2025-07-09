@@ -211,9 +211,47 @@ def _bounds_helper(values, n_core_dims, nbounds, order):
             vertex_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
     elif n_core_dims == 1 and nbounds == 2:
         # Middle points case (1D lat/lon)
-        vertex_vals = np.concatenate((values[..., :, 0], values[..., -1:, 1]), axis=-1)
+        vertex_vals = _get_ordered_vertices(values)
 
     return vertex_vals
+
+
+def _get_ordered_vertices(bounds: xr.DataArray) -> np.ndarray:
+    """Extracts the sorted unique vertices from a bounds DataArray.
+
+    This function flattens the bounds to pairs, finds all unique values, and
+    returns them sorted. This ensures that the vertices are in ascending order,
+    regardless of the original order in the bounds DataArray.
+
+    Parameters
+    ----------
+    bounds : xr.DataArray
+        A DataArray containing bounds information, typically with shape (..., 2),
+        where the last dimension represents the lower and upper bounds for each
+        interval.
+
+    Returns
+    -------
+    np.ndarray
+        A 1D NumPy array of sorted unique vertex values extracted from the
+        bounds.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import xarray as xr
+    >>> bounds = xr.DataArray(np.array([[0, 1], [1, 2], [2, 3]]))
+    >>> _get_ordered_vertices(bounds)
+    array([0, 1, 2, 3])
+    >>> # Unordered bounds (left is upper bound)
+    >>> bounds = xr.DataArray(np.array([[1, 0], [2, 1], [3, 2]]))
+    >>> _get_ordered_vertices(bounds)
+    array([0, 1, 2, 3])
+    """
+    flat = bounds.reshape(-1, 2)
+    vertices = np.unique(flat)
+
+    return np.sort(vertices)
 
 
 def vertices_to_bounds(

@@ -280,8 +280,9 @@ def _get_ordered_vertices(bounds: np.ndarray) -> np.ndarray:
 
 def _is_bounds_strictly_monotonic(arr: np.ndarray) -> bool:
     """
-    Check if the array is strictly monotonic (all values ascend or descend
-    across all intervals if flattened).
+    Check if the input array is strictly monotonic (either strictly increasing
+    or strictly decreasing) when flattened, ignoring any intervals where
+    consecutive values are equal.
 
     Parameters
     ----------

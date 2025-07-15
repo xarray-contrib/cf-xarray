@@ -218,18 +218,20 @@ def _bounds_helper(values, n_core_dims, nbounds, order):
 
 def _get_ordered_vertices(bounds: np.ndarray) -> np.ndarray:
     """
-    Convert a bounds array of shape (..., N, 2) or (N, 2) into a 1D array of
-    vertices.
+    Convert a bounds array of shape (..., N, 2) or (N, 2) into a 1D array of vertices.
 
     This function reconstructs the vertices from a bounds array, handling both
-    strictly monotonic and non-strictly monotonic bounds. For strictly monotonic
-    bounds, it concatenates the left endpoints and the last right endpoint. For
-    non-strictly monotonic bounds (i.e., bounds that are consistently ascending or
-    descending within their intervals, but not strictly so), it uses the minimum
-    of each interval as the lower endpoint and the maximum of the last interval as
-    the final vertex, then sorts the vertices in ascending or descending order to
-    match the direction of the bounds.
+    strictly monotonic and non-strictly monotonic bounds.
 
+    - For strictly monotonic bounds (all values increase or decrease when flattened),
+      it concatenates the left endpoints and the last right endpoint.
+    - For non-strictly monotonic bounds (bounds are consistently ascending or descending
+      within intervals, but not strictly so), it:
+        - Uses the minimum of each interval as the lower endpoint.
+        - Uses the maximum of the last interval as the final vertex.
+        - Sorts the vertices in ascending or descending order to match the direction of the bounds.
+
+    Features:
     - Handles both ascending and descending bounds.
     - Does not require bounds to be strictly monotonic.
     - Preserves repeated coordinates if present.
@@ -238,13 +240,12 @@ def _get_ordered_vertices(bounds: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     bounds : np.ndarray
-        An array containing bounds information, typically with shape (N, 2)
-        or (..., N, 2).
+        Array of bounds, typically with shape (N, 2) or (..., N, 2).
 
     Returns
     -------
     np.ndarray
-        An array of vertices with shape (..., N+1) or (N+1,).
+        Array of vertices with shape (..., N+1) or (N+1,).
     """
     if _is_bounds_strictly_monotonic(bounds):
         # Example: [[51.0, 50.5], [50.5, 50.0]]
@@ -279,11 +280,8 @@ def _get_ordered_vertices(bounds: np.ndarray) -> np.ndarray:
 
 def _is_bounds_strictly_monotonic(arr: np.ndarray) -> bool:
     """
-    Check if the second-to-last axis of a numpy array is strictly monotonic.
-
-    This function checks if the second-to-last axis of the input array is
-    strictly monotonic (either strictly increasing or strictly decreasing)
-    for arrays of shape (..., N, 2), preserving leading dimensions.
+    Check if the array is strictly monotonic (all values ascend or descend
+    across all intervals if flattened).
 
     Parameters
     ----------
@@ -293,39 +291,21 @@ def _is_bounds_strictly_monotonic(arr: np.ndarray) -> bool:
     Returns
     -------
     bool
-        True if the array is strictly monotonic along the second-to-last axis
-        for all leading dimensions, False otherwise.
-
-    Examples
-    --------
-    >>> bounds = np.array(
-    ...     [
-    ...         [76.25, 73.75],
-    ...         [73.75, 71.25],
-    ...         [71.25, 68.75],
-    ...         [68.75, 66.25],
-    ...         [66.25, 63.75],
-    ...     ],
-    ...     dtype=np.float32,
-    ... )
-    >>> _is_bounds_strictly_monotonic(bounds)
-    True
+        True if the flattened array is strictly increasing or decreasing,
+        False otherwise.
     """
     # NOTE: Python 3.10 uses numpy 1.26.4. If the input is a datetime64 array,
     # numpy 1.26.4 may raise: numpy.core._exceptions._UFuncInputCastingError:
     # Cannot cast ufunc 'greater' input 0 from dtype('<m8[ns]') to dtype('<m8')
     # with casting rule 'same_kind' To avoid this, always cast to float64 before
     # np.diff.
-    arr_numeric = arr.astype("float64")
-    diffs = np.diff(arr_numeric, axis=-2)
-    strictly_increasing = np.all(diffs > 0, axis=-2)
-    strictly_decreasing = np.all(diffs < 0, axis=-2)
-
-    return np.all(strictly_increasing | strictly_decreasing)
+    arr_numeric = arr.astype("float64").flatten()
+    diffs = np.diff(arr_numeric)
+    return np.all(diffs > 0) or np.all(diffs < 0)
 
 
 def is_bounds_ascending(bounds: np.ndarray) -> bool:
-    """Check if bounds are in ascending order.
+    """Check if bounds are in ascending order (between intervals).
 
     Parameters
     ----------

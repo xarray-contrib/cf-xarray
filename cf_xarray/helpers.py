@@ -298,13 +298,16 @@ def _is_bounds_strictly_monotonic(arr: np.ndarray) -> bool:
 
     Examples
     --------
-    >>> bounds = np.array([
-    ...     [76.25, 73.75],
-    ...     [73.75, 71.25],
-    ...     [71.25, 68.75],
-    ...     [68.75, 66.25],
-    ...     [66.25, 63.75]
-    ... ], dtype=np.float32)
+    >>> bounds = np.array(
+    ...     [
+    ...         [76.25, 73.75],
+    ...         [73.75, 71.25],
+    ...         [71.25, 68.75],
+    ...         [68.75, 66.25],
+    ...         [66.25, 63.75],
+    ...     ],
+    ...     dtype=np.float32,
+    ... )
     >>> _is_bounds_strictly_monotonic(bounds)
     True
     """

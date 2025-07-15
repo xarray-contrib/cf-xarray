@@ -301,7 +301,12 @@ def _is_bounds_strictly_monotonic(arr: np.ndarray) -> bool:
     # np.diff.
     arr_numeric = arr.astype("float64").flatten()
     diffs = np.diff(arr_numeric)
-    return np.all(diffs > 0) or np.all(diffs < 0)
+    nonzero_diffs = diffs[diffs != 0]
+
+    if nonzero_diffs.size == 0:
+        return True  # All values are equal, treat as monotonic
+
+    return np.all(nonzero_diffs > 0) or np.all(nonzero_diffs < 0)
 
 
 def is_bounds_ascending(bounds: np.ndarray) -> bool:

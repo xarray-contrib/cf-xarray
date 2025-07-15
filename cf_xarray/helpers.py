@@ -311,7 +311,13 @@ def _is_bounds_strictly_monotonic(arr: np.ndarray) -> bool:
     >>> _is_bounds_strictly_monotonic(bounds)
     True
     """
-    diffs = np.diff(arr, axis=-2)
+    # NOTE: Python 3.10 uses numpy 1.26.4. If the input is a datetime64 array,
+    # numpy 1.26.4 may raise: numpy.core._exceptions._UFuncInputCastingError:
+    # Cannot cast ufunc 'greater' input 0 from dtype('<m8[ns]') to dtype('<m8')
+    # with casting rule 'same_kind' To avoid this, always cast to float64 before
+    # np.diff.
+    arr_numeric = arr.astype("float64")
+    diffs = np.diff(arr_numeric, axis=-2)
     strictly_increasing = np.all(diffs > 0, axis=-2)
     strictly_decreasing = np.all(diffs < 0, axis=-2)
 

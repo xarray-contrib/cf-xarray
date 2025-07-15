@@ -216,47 +216,124 @@ def _bounds_helper(values, n_core_dims, nbounds, order):
     return vertex_vals
 
 
-def _get_ordered_vertices(bounds: xr.DataArray) -> np.ndarray:
-    """Extracts a sorted 1D array of unique vertex values from a bounds DataArray.
+def _get_ordered_vertices(bounds: np.ndarray) -> np.ndarray:
+    """
+    Convert a bounds array of shape (..., N, 2) or (N, 2) into a 1D array of
+    vertices.
 
-    This function takes a DataArray (or array-like) containing bounds information,
-    typically as pairs of values along the last dimension. It flattens the
-    bounds into pairs, extracts all unique vertex values, and returns them in
-    sorted order. The sorting order (ascending or descending) is determined by
-    inspecting the direction of the first non-equal bounds pair.
+    This function reconstructs the vertices from a bounds array, handling both
+    strictly monotonic and non-strictly monotonic bounds. For strictly monotonic
+    bounds, it concatenates the left endpoints and the last right endpoint. For
+    non-strictly monotonic bounds (i.e., bounds that are consistently ascending or
+    descending within their intervals, but not strictly so), it uses the minimum
+    of each interval as the lower endpoint and the maximum of the last interval as
+    the final vertex, then sorts the vertices in ascending or descending order to
+    match the direction of the bounds.
+
+    - Handles both ascending and descending bounds.
+    - Does not require bounds to be strictly monotonic.
+    - Preserves repeated coordinates if present.
+    - Output shape is (..., N+1) or (N+1,).
 
     Parameters
     ----------
-    bounds : xr.DataArray
-        A DataArray containing bounds information, typically with shape (..., 2).
+    bounds : np.ndarray
+        An array containing bounds information, typically with shape (N, 2)
+        or (..., N, 2).
 
     Returns
     -------
     np.ndarray
-        A 1D NumPy array of sorted unique vertex values extracted from the
-        bounds.
+        An array of vertices with shape (..., N+1) or (N+1,).
     """
-    # Convert to array if needed
-    arr = bounds.values if isinstance(bounds, xr.DataArray) else bounds
-    arr = np.asarray(arr)
+    if _is_bounds_strictly_monotonic(bounds):
+        # Example: [[51.0, 50.5], [50.5, 50.0]]
+        # Example Result: [51.0, 50.5, 50.0]
+        vertices = np.concatenate((bounds[..., :, 0], bounds[..., -1:, 1]), axis=-1)
+    else:
+        # Example with bounds (descending) [[50.5, 50.0], [51.0, 50.5]]
+        # Get the lower endpoints of each bounds interval
+        # Example Result: [50, 50.5]
+        lower_endpoints = np.minimum(bounds[..., :, 0], bounds[..., :, 1])
 
-    # Flatten to (N, 2) pairs and get all unique values.
-    pairs = arr.reshape(-1, 2)
-    vertices = np.unique(pairs)
+        # Get the upper endpoint of the last interval.
+        # Example Result: 51.0
+        last_upper_endpoint = np.maximum(bounds[..., -1, 0], bounds[..., -1, 1])
 
-    # Determine order: find the first pair with different values
-    ascending = True
-    for left, right in pairs:
-        if left != right:
-            ascending = right > left
-            break
+        # Concatenate lower endpoints and the last upper endpoint.
+        # Example Result: [50.0, 50.5, 51.0]
+        vertices = np.concatenate(
+            [lower_endpoints, np.expand_dims(last_upper_endpoint, axis=-1)], axis=-1
+        )
 
-    # Sort vertices in ascending or descending order as needed.
-    vertices = np.sort(vertices)
-    if not ascending:
-        vertices = vertices[::-1]
+        # Sort vertices based on the direction of the bounds
+        # Example Result: [51.0, 50.5, 50.0]
+        ascending = is_bounds_ascending(bounds)
+        if ascending:
+            vertices = np.sort(vertices, axis=-1)
+        else:
+            vertices = np.sort(vertices, axis=-1)[..., ::-1]
 
     return vertices
+
+
+def _is_bounds_strictly_monotonic(arr: np.ndarray) -> bool:
+    """
+    Check if the second-to-last axis of a numpy array is strictly monotonic.
+
+    This function checks if the second-to-last axis of the input array is
+    strictly monotonic (either strictly increasing or strictly decreasing)
+    for arrays of shape (..., N, 2), preserving leading dimensions.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        Numpy array to check, typically with shape (..., N, 2).
+
+    Returns
+    -------
+    bool
+        True if the array is strictly monotonic along the second-to-last axis
+        for all leading dimensions, False otherwise.
+
+    Examples
+    --------
+    >>> bounds = np.array([
+    ...     [76.25, 73.75],
+    ...     [73.75, 71.25],
+    ...     [71.25, 68.75],
+    ...     [68.75, 66.25],
+    ...     [66.25, 63.75]
+    ... ], dtype=np.float32)
+    >>> _is_bounds_strictly_monotonic(bounds)
+    True
+    """
+    diffs = np.diff(arr, axis=-2)
+    strictly_increasing = np.all(diffs > 0, axis=-2)
+    strictly_decreasing = np.all(diffs < 0, axis=-2)
+
+    return np.all(strictly_increasing | strictly_decreasing)
+
+
+def is_bounds_ascending(bounds: np.ndarray) -> bool:
+    """Check if bounds are in ascending order.
+
+    Parameters
+    ----------
+    bounds : np.ndarray
+        An array containing bounds information, typically with shape (N, 2)
+        or (..., N, 2).
+
+    Returns
+    -------
+    bool
+        True if bounds are in ascending order, False if they are in descending
+        order.
+    """
+    lower = bounds[..., :, 0]
+    upper = bounds[..., :, 1]
+
+    return np.all(lower < upper)
 
 
 def vertices_to_bounds(

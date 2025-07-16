@@ -2,7 +2,7 @@
 name = "cf_xarray"
 description = "A convenience wrapper for using CF attributes on xarray objects"
 readme = "README.rst"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {file = "LICENSE"}
 keywords = ["xarray", "metadata", "CF conventions"]
 classifiers = [
@@ -11,7 +11,6 @@ classifiers = [
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -55,7 +54,7 @@ write_to_template= '__version__ = "{version}"'
 tag_regex= "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
 
 [tool.ruff]
-target-version = "py310"
+target-version = "py311"
 builtins = ["ellipsis"]
 exclude = [
     ".eggs",

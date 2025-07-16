@@ -6,6 +6,7 @@ dependencies:
   - pytest
   - pytest-xdist
   - dask
+  - cartopy
   - flox
   - lxml
   - matplotlib-base
@@ -13,6 +14,7 @@ dependencies:
   - pandas
   - pint
   - pooch
+  - pyproj
   - regex
   - rich
   - pooch

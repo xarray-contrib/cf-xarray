@@ -8,7 +8,7 @@ dependencies:
   - netcdf4
   - pooch
   - xarray
-  - sphinx<8
+  - sphinx
   - sphinx-copybutton
   - numpydoc
   - sphinx-autosummary-accessors

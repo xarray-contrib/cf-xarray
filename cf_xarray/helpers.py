@@ -312,7 +312,6 @@ def _get_ordered_vertices(
     if _is_bounds_monotonic(bounds):
         vertices = np.concatenate((bounds[..., :, 0], bounds[..., -1:, 1]), axis=-1)
     else:
-
         if order == "ascending":
             endpoints = np.minimum(bounds[..., :, 0], bounds[..., :, 1])
             last_endpoint = np.maximum(bounds[..., -1, 0], bounds[..., -1, 1])

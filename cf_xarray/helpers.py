@@ -175,19 +175,69 @@ def bounds_to_vertices(
             f"Bounds format not understood. Got {bounds.dims} with shape {bounds.shape}."
         )
 
+    core_dim_coords = {
+        dim: bounds.coords[dim].values for dim in core_dims if dim in bounds.coords
+    }
+    core_dim_orders = _get_core_dim_orders(core_dim_coords)
+
     return xr.apply_ufunc(
         _bounds_helper,
         bounds,
         input_core_dims=[core_dims + [bounds_dim]],
         dask="parallelized",
-        kwargs={"n_core_dims": n_core_dims, "nbounds": nbounds, "order": order},
+        kwargs={
+            "n_core_dims": n_core_dims,
+            "nbounds": nbounds,
+            "order": order,
+            "core_dim_orders": core_dim_orders,
+        },
         output_core_dims=[output_core_dims],
         dask_gufunc_kwargs=dict(output_sizes=output_sizes),
         output_dtypes=[bounds.dtype],
     )
 
 
-def _bounds_helper(values, n_core_dims, nbounds, order):
+def _get_core_dim_orders(core_dim_coords: dict[str, np.ndarray]) -> dict[str, str]:
+    """
+    Determine the order (ascending, descending, or mixed) of each core dimension
+    based on its coordinates.
+
+    Repeated (equal) coordinates are ignored when determining the order. If all
+    coordinates are equal, the order is treated as "ascending".
+
+    Parameters
+    ----------
+    core_dim_coords : dict of str to np.ndarray
+        A dictionary mapping dimension names to their coordinate arrays.
+
+    Returns
+    -------
+    core_dim_orders : dict of str to str
+        A dictionary mapping each dimension name to a string indicating the order:
+        - "ascending": strictly increasing (ignoring repeated values)
+        - "descending": strictly decreasing (ignoring repeated values)
+        - "mixed": neither strictly increasing nor decreasing (ignoring repeated values)
+    """
+    core_dim_orders = {}
+
+    for dim, coords in core_dim_coords.items():
+        diffs = np.diff(coords)
+        nonzero_diffs = diffs[diffs != 0]
+
+        if nonzero_diffs.size == 0:
+            # All values are equal, treat as ascending
+            core_dim_orders[dim] = "ascending"
+        elif np.all(nonzero_diffs > 0):
+            core_dim_orders[dim] = "ascending"
+        elif np.all(nonzero_diffs < 0):
+            core_dim_orders[dim] = "descending"
+        else:
+            core_dim_orders[dim] = "mixed"
+
+    return core_dim_orders
+
+
+def _bounds_helper(values, n_core_dims, nbounds, order, core_dim_orders):
     if n_core_dims == 2 and nbounds == 4:
         # Vertices case (2D lat/lon)
         if order in ["counterclockwise", None]:
@@ -211,78 +261,80 @@ def _bounds_helper(values, n_core_dims, nbounds, order):
             vertex_vals = np.block([[bot_left, bot_right], [top_left, top_right]])
     elif n_core_dims == 1 and nbounds == 2:
         # Middle points case (1D lat/lon)
-        vertex_vals = _get_ordered_vertices(values)
+        vertex_vals = _get_ordered_vertices(values, core_dim_orders)
 
     return vertex_vals
 
 
-def _get_ordered_vertices(bounds: np.ndarray) -> np.ndarray:
+def _get_ordered_vertices(
+    bounds: np.ndarray, core_dim_orders: dict[str, str]
+) -> np.ndarray:
     """
     Convert a bounds array of shape (..., N, 2) or (N, 2) into a 1D array of vertices.
 
     This function reconstructs the vertices from a bounds array, handling both
-    strictly monotonic and non-strictly monotonic bounds.
+    monotonic and non-monotonic cases.
 
-    - For strictly monotonic bounds (all values increase or decrease when flattened),
-      it concatenates the left endpoints and the last right endpoint.
-    - For non-strictly monotonic bounds (bounds are consistently ascending or descending
-      within intervals, but not strictly so), it:
-        - Uses the minimum of each interval as the lower endpoint.
-        - Uses the maximum of the last interval as the final vertex.
-        - Sorts the vertices in ascending or descending order to match the direction of the bounds.
+    Monotonic bounds (all values strictly increase or decrease when flattened):
+        - Concatenate the left endpoints (bounds[..., :, 0]) with the last right
+          endpoint (bounds[..., -1, 1]) to form the vertices.
+
+    Non-monotonic bounds:
+        - Determine the order of the core dimension(s) ('ascending' or 'descending').
+        - For ascending order:
+            - Use the minimum of each interval as the vertex.
+            - Use the maximum of the last interval as the final vertex.
+        - For descending order:
+            - Use the maximum of each interval as the vertex.
+            - Use the minimum of the last interval as the final vertex.
+        - Vertices are then sorted to match the coordinate direction.
 
     Features:
-    - Handles both ascending and descending bounds.
-    - Does not require bounds to be strictly monotonic.
-    - Preserves repeated coordinates if present.
-    - Output shape is (..., N+1) or (N+1,).
+        - Handles both ascending and descending bounds.
+        - Preserves repeated coordinates if present.
+        - Output shape is (..., N+1) or (N+1,).
 
     Parameters
     ----------
     bounds : np.ndarray
         Array of bounds, typically with shape (N, 2) or (..., N, 2).
+    core_dim_orders : dict[str, str]
+        Dictionary mapping core dimension names to their order ('ascending' or
+        'descending'). Used for sorting the vertices.
 
     Returns
     -------
     np.ndarray
         Array of vertices with shape (..., N+1) or (N+1,).
     """
-    if _is_bounds_strictly_monotonic(bounds):
-        # Example: [[51.0, 50.5], [50.5, 50.0]]
-        # Example Result: [51.0, 50.5, 50.0]
+    order = _get_order_of_core_dims(core_dim_orders)
+
+    if _is_bounds_monotonic(bounds):
         vertices = np.concatenate((bounds[..., :, 0], bounds[..., -1:, 1]), axis=-1)
     else:
-        # Example with bounds (descending) [[50.5, 50.0], [51.0, 50.5]]
-        # Get the lower endpoints of each bounds interval
-        # Example Result: [50, 50.5]
-        lower_endpoints = np.minimum(bounds[..., :, 0], bounds[..., :, 1])
 
-        # Get the upper endpoint of the last interval.
-        # Example Result: 51.0
-        last_upper_endpoint = np.maximum(bounds[..., -1, 0], bounds[..., -1, 1])
+        if order == "ascending":
+            endpoints = np.minimum(bounds[..., :, 0], bounds[..., :, 1])
+            last_endpoint = np.maximum(bounds[..., -1, 0], bounds[..., -1, 1])
+        elif order == "descending":
+            endpoints = np.maximum(bounds[..., :, 0], bounds[..., :, 1])
+            last_endpoint = np.minimum(bounds[..., -1, 0], bounds[..., -1, 1])
 
-        # Concatenate lower endpoints and the last upper endpoint.
-        # Example Result: [50.0, 50.5, 51.0]
         vertices = np.concatenate(
-            [lower_endpoints, np.expand_dims(last_upper_endpoint, axis=-1)], axis=-1
+            [endpoints, np.expand_dims(last_endpoint, axis=-1)], axis=-1
         )
 
-        # Sort vertices based on the direction of the bounds
-        # Example Result: [51.0, 50.5, 50.0]
-        ascending = is_bounds_ascending(bounds)
-        if ascending:
-            vertices = np.sort(vertices, axis=-1)
-        else:
-            vertices = np.sort(vertices, axis=-1)[..., ::-1]
+    vertices = _sort_vertices(vertices, order)
 
     return vertices
 
 
-def _is_bounds_strictly_monotonic(arr: np.ndarray) -> bool:
-    """
-    Check if the input array is strictly monotonic (either strictly increasing
-    or strictly decreasing) when flattened, ignoring any intervals where
-    consecutive values are equal.
+def _is_bounds_monotonic(bounds: np.ndarray) -> bool:
+    """Check if the bounds are monotonic.
+
+    Arrays are monotonic if all values are increasing or decreasing. This
+    functions ignores  an intervals where consecutive values are equal, which
+    represent repeated coordinates.
 
     Parameters
     ----------
@@ -292,43 +344,92 @@ def _is_bounds_strictly_monotonic(arr: np.ndarray) -> bool:
     Returns
     -------
     bool
-        True if the flattened array is strictly increasing or decreasing,
-        False otherwise.
+        True if the flattened array is increasing or decreasing, False otherwise.
     """
     # NOTE: Python 3.10 uses numpy 1.26.4. If the input is a datetime64 array,
     # numpy 1.26.4 may raise: numpy.core._exceptions._UFuncInputCastingError:
     # Cannot cast ufunc 'greater' input 0 from dtype('<m8[ns]') to dtype('<m8')
     # with casting rule 'same_kind' To avoid this, always cast to float64 before
     # np.diff.
-    arr_numeric = arr.astype("float64").flatten()
+    arr_numeric = bounds.astype("float64").flatten()
     diffs = np.diff(arr_numeric)
     nonzero_diffs = diffs[diffs != 0]
 
+    # All values are equal, treat as monotonic
     if nonzero_diffs.size == 0:
-        return True  # All values are equal, treat as monotonic
+        return True
 
     return np.all(nonzero_diffs > 0) or np.all(nonzero_diffs < 0)
 
 
-def is_bounds_ascending(bounds: np.ndarray) -> bool:
-    """Check if bounds are in ascending order (between intervals).
+def _get_order_of_core_dims(core_dim_orders: dict[str, str]) -> str:
+    """
+    Determines the common order of core dimensions from a dictionary of
+    dimension orders.
 
     Parameters
     ----------
-    bounds : np.ndarray
-        An array containing bounds information, typically with shape (N, 2)
-        or (..., N, 2).
+    core_dim_orders : dict of str
+        A dictionary mapping dimension names to their respective order strings.
 
     Returns
     -------
-    bool
-        True if bounds are in ascending order, False if they are in descending
-        order.
-    """
-    lower = bounds[..., :, 0]
-    upper = bounds[..., :, 1]
+    order : str
+        The common order string shared by all core dimensions.
 
-    return np.all(lower < upper)
+    Raises
+    ------
+    ValueError
+        If the core dimension orders are not all aligned (i.e., not all values
+        are the same).
+    """
+    orders = set(core_dim_orders.values())
+
+    if len(orders) != 1:
+        raise ValueError(
+            f"All core dimension orders must be aligned. Got orders: {core_dim_orders}"
+        )
+
+    order = next(iter(orders))
+
+    return order
+
+
+def _sort_vertices(vertices: np.ndarray, order: str) -> np.ndarray:
+    """
+    Sorts the vertices array along the last axis in ascending or descending order.
+
+    Parameters
+    ----------
+    vertices : np.ndarray
+        An array of vertices to be sorted. Sorting is performed along the last
+        axis.
+    order : str
+        The order in which to sort the vertices. Must be either "ascending" or
+        any other value for descending order.
+
+    Returns
+    -------
+    np.ndarray
+        The sorted array of vertices, with the same shape as the input.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> vertices = np.array([[3, 1, 2], [6, 5, 4]])
+    >>> _sort_vertices(vertices, "ascending")
+    array([[1, 2, 3],
+           [4, 5, 6]])
+    >>> _sort_vertices(vertices, "descending")
+    array([[3, 2, 1],
+           [6, 5, 4]])
+    """
+    if order == "ascending":
+        new_vertices = np.sort(vertices, axis=-1)
+    else:
+        new_vertices = np.sort(vertices, axis=-1)[..., ::-1]
+
+    return new_vertices
 
 
 def vertices_to_bounds(

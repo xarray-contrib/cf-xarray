@@ -35,19 +35,20 @@ def test_bounds_to_vertices() -> None:
     lon_no = cfxr.bounds_to_vertices(rotds.lon_bounds, bounds_dim="bounds", order=None)
     assert_equal(lon_no, lon_ccw)
 
-    # 2D case (descending)
+    # 2D case (monotonicly increasing coords, non-monotonic bounds)
     bounds_2d_desc = xr.DataArray(
         [[50.5, 50.0], [51.0, 50.5], [51.0, 50.5], [52.0, 51.5], [52.5, 52.0]],
         dims=("lat", "bounds"),
+        coords={"lat": [50.75, 50.75, 51.25, 51.75, 52.25]},
     )
     expected_vertices_2d_desc = xr.DataArray(
-        [52.5, 52.0, 51.5, 50.5, 50.5, 50.0],
+        [50.0, 50.5, 50.5, 51.5, 52.0, 52.5],
         dims=["lat_vertices"],
     )
     vertices_2d_desc = cfxr.bounds_to_vertices(bounds_2d_desc, bounds_dim="bounds")
     assert_equal(expected_vertices_2d_desc, vertices_2d_desc)
 
-    # 3D case (ascending, "extra" non-core dim should be preserved)
+    # 3D case (non-monotonic bounds, monotonicly increasing coords)
     bounds_3d = xr.DataArray(
         [
             [

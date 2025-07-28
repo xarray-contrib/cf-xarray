@@ -232,7 +232,8 @@ def _get_core_dim_orders(core_dim_coords: dict[str, np.ndarray]) -> dict[str, st
         else:
             zero = 0
 
-        nonzero_diffs = diffs[diffs != zero]
+        # Ensure diffs and zero have the same dtype for comparison.
+        nonzero_diffs = diffs[diffs != diffs.dtype.type(zero)]
 
         if nonzero_diffs.size == 0:
             # All values are equal, treat as ascending

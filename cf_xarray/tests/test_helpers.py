@@ -67,6 +67,11 @@ def test_bounds_to_vertices() -> None:
             ],
         ],
         dims=("extra", "lat", "bounds"),
+        coords={
+            "extra": [0, 1],
+            "lat": [0, 1, 2, 3, 4],
+            "bounds": [0, 1],
+        },
     )
     expected_vertices_3d = xr.DataArray(
         [
@@ -74,6 +79,9 @@ def test_bounds_to_vertices() -> None:
             [60.0, 60.5, 61.0, 61.5, 62.0, 62.5],
         ],
         dims=("extra", "lat_vertices"),
+        coords={
+            "extra": [0, 1],
+        },
     )
     vertices_3d = cfxr.bounds_to_vertices(
         bounds_3d, bounds_dim="bounds", core_dims=["lat"]

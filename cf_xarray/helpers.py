@@ -222,7 +222,17 @@ def _get_core_dim_orders(core_dim_coords: dict[str, np.ndarray]) -> dict[str, st
 
     for dim, coords in core_dim_coords.items():
         diffs = np.diff(coords)
-        nonzero_diffs = diffs[diffs != 0]
+
+        # NOTE: This is added to prevent an issue with numpy 1.26.4 and Python
+        # 3.11: numpy.core._exceptions._UFuncInputCastingError:
+        # Cannot cast ufunc 'not_equal' input 0 from dtype('<m8[ns]') to dtype('<m8')
+        # with casting rule 'same_kind'
+        if np.issubdtype(coords.dtype, np.datetime64):
+            zero = np.timedelta64(0, "ns")
+        else:
+            zero = 0
+
+        nonzero_diffs = diffs[diffs != zero]
 
         if nonzero_diffs.size == 0:
             # All values are equal, treat as ascending

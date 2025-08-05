@@ -368,7 +368,7 @@ def _is_bounds_monotonic(bounds: np.ndarray) -> bool:
     if nonzero_diffs.size == 0:
         return True
 
-    return np.all(nonzero_diffs > 0) or np.all(nonzero_diffs < 0)
+    return bool(np.all(nonzero_diffs > 0) or np.all(nonzero_diffs < 0))
 
 
 def _get_order_of_core_dims(core_dim_orders: dict[str, str]) -> str:

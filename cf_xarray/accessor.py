@@ -440,6 +440,32 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     return list(results)
 
 
+def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> list[str]:
+    """
+    Parse a grid_mapping attribute that may contain multiple grid mappings.
+
+    The attribute has the format: "grid_mapping_variable_name: optional_coordinate_names_space_separated"
+    Multiple sections are separated by colons.
+
+    Examples:
+    - Single: "spatial_ref"
+    - Multiple: "spatial_ref: crs_4326: latitude longitude crs_27700: x27700 y27700"
+
+    Returns a list of grid mapping variable names.
+    """
+    # Check if there are colons indicating multiple mappings
+    if ":" not in grid_mapping_attr:
+        return [grid_mapping_attr.strip()]
+
+    # Use regex to find grid mapping variable names
+    # Pattern matches: word at start OR word that comes after some coordinate names and before ":"
+    # This handles cases like "spatial_ref: crs_4326: latitude longitude crs_27700: x27700 y27700"
+    pattern = r"(?:^|\s)([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*:)"
+    matches = re.findall(pattern, grid_mapping_attr)
+
+    return matches if matches else [grid_mapping_attr.strip()]
+
+
 def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
     """
     Translate from grid mapping name attribute to appropriate variable name.
@@ -467,13 +493,17 @@ def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
     for var in variables.values():
         attrs_or_encoding = ChainMap(var.attrs, var.encoding)
         if "grid_mapping" in attrs_or_encoding:
-            grid_mapping_var_name = attrs_or_encoding["grid_mapping"]
-            if grid_mapping_var_name not in variables:
-                raise ValueError(
-                    f"{var} defines non-existing grid_mapping variable {grid_mapping_var_name}."
-                )
-            if key == variables[grid_mapping_var_name].attrs["grid_mapping_name"]:
-                results.update([grid_mapping_var_name])
+            grid_mapping_attr = attrs_or_encoding["grid_mapping"]
+            # Parse potentially multiple grid mappings
+            grid_mapping_var_names = _parse_grid_mapping_attribute(grid_mapping_attr)
+
+            for grid_mapping_var_name in grid_mapping_var_names:
+                if grid_mapping_var_name not in variables:
+                    raise ValueError(
+                        f"{var} defines non-existing grid_mapping variable {grid_mapping_var_name}."
+                    )
+                if key == variables[grid_mapping_var_name].attrs["grid_mapping_name"]:
+                    results.update([grid_mapping_var_name])
     return list(results)
 
 
@@ -1943,9 +1973,34 @@ class CFAccessor:
                 if dbounds := self._obj[dim].attrs.get("bounds", None):
                     coords["bounds"].append(dbounds)
 
-        for attrname in ["grid", "grid_mapping"]:
-            if maybe := attrs_or_encoding.get(attrname, None):
-                coords[attrname] = [maybe]
+        if grid := attrs_or_encoding.get("grid", None):
+            coords["grid"] = [grid]
+
+        if grid_mapping_attr := attrs_or_encoding.get("grid_mapping", None):
+            # Parse grid mapping variables using the same function
+            grid_mapping_vars = _parse_grid_mapping_attribute(grid_mapping_attr)
+            coords["grid_mapping"] = grid_mapping_vars
+
+            # Extract coordinate variables using regex
+            if ":" in grid_mapping_attr:
+                # Pattern to find coordinate variables: words that come after ":" but before next grid mapping variable
+                # This captures coordinate variables between grid mapping sections
+                coord_pattern = r":\s+([^:]+?)(?=\s+[a-zA-Z_][a-zA-Z0-9_]*\s*:|$)"
+                coord_matches = re.findall(coord_pattern, grid_mapping_attr)
+
+                for coord_section in coord_matches:
+                    # Split each coordinate section and add valid coordinate names
+                    coord_vars = coord_section.split()
+                    # Filter out grid mapping variable names that might have been captured
+                    coord_vars = [
+                        var
+                        for var in coord_vars
+                        if not (
+                            var.startswith(("crs_", "spatial_", "proj_"))
+                            and var in grid_mapping_vars
+                        )
+                    ]
+                    coords["coordinates"].extend(coord_vars)
 
         more: Sequence[Hashable] = ()
         if geometry_var := attrs_or_encoding.get("geometry", None):
@@ -2900,6 +2955,60 @@ class CFDataArrayAccessor(CFAccessor):
         return terms
 
     @property
+    def grid_mapping_names(self) -> dict[str, list[str]]:
+        """
+        Mapping the CF grid mapping name to the grid mapping variable name.
+
+        Returns
+        -------
+        dict
+            Dictionary mapping the CF grid mapping name to the variable name containing
+            the grid mapping attributes.
+
+        See Also
+        --------
+        DataArray.cf.grid_mapping_name
+        Dataset.cf.grid_mapping_names
+
+        References
+        ----------
+        https://cfconventions.org/Data/cf-conventions/cf-conventions-1.10/cf-conventions.html#appendix-grid-mappings
+
+        Examples
+        --------
+        >>> from cf_xarray.datasets import hrrrds
+        >>> hrrrds.foo.cf.grid_mapping_names
+        {'latitude_longitude': ['crs_4326'], 'lambert_azimuthal_equal_area': ['spatial_ref']}
+        """
+        da = self._obj
+        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
+        grid_mapping_attr = attrs_or_encoding.get("grid_mapping", None)
+
+        if not grid_mapping_attr:
+            return {}
+
+        # Parse potentially multiple grid mappings
+        grid_mapping_var_names = _parse_grid_mapping_attribute(grid_mapping_attr)
+
+        results = {}
+        for grid_mapping_var_name in grid_mapping_var_names:
+            # First check if it's in the DataArray's coords (for multiple grid mappings
+            # that are coordinates of the DataArray)
+            if grid_mapping_var_name in da.coords:
+                grid_mapping_var = da.coords[grid_mapping_var_name]
+                if "grid_mapping_name" in grid_mapping_var.attrs:
+                    gmn = grid_mapping_var.attrs["grid_mapping_name"]
+                    if gmn not in results:
+                        results[gmn] = [grid_mapping_var_name]
+                    else:
+                        results[gmn].append(grid_mapping_var_name)
+            # For standalone DataArrays, the grid mapping variables may not be available
+            # This is a limitation of the xarray data model - when you extract a DataArray
+            # from a Dataset, it doesn't carry over non-coordinate variables
+
+        return results
+
+    @property
     def grid_mapping_name(self) -> str:
         """
         CF grid mapping name associated with this variable.
@@ -2911,6 +3020,7 @@ class CFDataArrayAccessor(CFAccessor):
 
         See Also
         --------
+        DataArray.cf.grid_mapping_names
         Dataset.cf.grid_mapping_names
 
         Examples
@@ -2920,19 +3030,22 @@ class CFDataArrayAccessor(CFAccessor):
         'rotated_latitude_longitude'
         """
 
-        da = self._obj
+        # Use grid_mapping_names under the hood
+        grid_mapping_names = self.grid_mapping_names
 
-        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
-        grid_mapping = attrs_or_encoding.get("grid_mapping", None)
-        if not grid_mapping:
+        if not grid_mapping_names:
             raise ValueError("No 'grid_mapping' attribute present.")
 
-        if grid_mapping not in da._coords:
-            raise ValueError(f"Grid Mapping variable {grid_mapping} not present.")
+        if len(grid_mapping_names) > 1:
+            # Get the variable names for error message
+            all_vars = list(itertools.chain.from_iterable(grid_mapping_names.values()))
+            raise ValueError(
+                f"Multiple grid mappings found: {all_vars}. "
+                "Please use DataArray.cf.grid_mapping_names instead."
+            )
 
-        grid_mapping_var = da[grid_mapping]
-
-        return grid_mapping_var.attrs["grid_mapping_name"]
+        # Return the single grid mapping name
+        return next(iter(grid_mapping_names.keys()))
 
     def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray:
         """

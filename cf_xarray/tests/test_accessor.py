@@ -29,6 +29,7 @@ from ..datasets import (
     flag_indep_uint16,
     flag_mix,
     forecast,
+    hrrrds,
     mollwds,
     multiple,
     popds,
@@ -1018,9 +1019,7 @@ def test_grid_mappings():
     assert_identical(actual, expected)
 
     # not properly propagated if grid mapping variable not in coords
-    with pytest.raises(
-        ValueError, match="Grid Mapping variable rotated_pole not present."
-    ):
+    with pytest.raises(ValueError, match="No 'grid_mapping' attribute present."):
         ds.temp.cf.grid_mapping_name
 
     # check for https://github.com/xarray-contrib/cf-xarray/issues/448
@@ -1066,6 +1065,62 @@ def test_grid_mappings():
     # test _get_all with grid_mapping_var mapper
     ds = ds.cf.set_coords("grid_mapping")
     assert "rotated_pole" in ds.coords
+
+
+def test_multiple_grid_mapping_attribute():
+    ds = hrrrds
+
+    # Test Dataset grid_mapping_names
+    # Now includes British National Grid (EPSG:27700) which has grid_mapping_name
+    assert ds.cf.grid_mapping_names == {
+        "latitude_longitude": ["crs_4326"],
+        "lambert_azimuthal_equal_area": ["spatial_ref"],
+        "transverse_mercator": ["crs_27700"],
+    }
+
+    # Test DataArray grid_mapping_names
+    da = ds.foo
+    # Now with improved regex parsing, all 3 grid mappings should be detected
+    assert da.cf.grid_mapping_names == {
+        "latitude_longitude": ["crs_4326"],
+        "lambert_azimuthal_equal_area": ["spatial_ref"],
+        "transverse_mercator": ["crs_27700"],
+    }
+
+    # Test that grid_mapping_name raises an error with multiple mappings
+    with pytest.raises(
+        ValueError,
+        match="Multiple grid mappings found.*Please use DataArray.cf.grid_mapping_names",
+    ):
+        da.cf.grid_mapping_name
+
+    assert "crs_4326" in ds.cf["foo"].coords
+    assert "spatial_ref" in ds.cf["foo"].coords
+    assert "crs_27700" in ds.cf["foo"].coords
+    # Also check that coordinate variables are included
+    assert "latitude" in ds.cf["foo"].coords
+    assert "longitude" in ds.cf["foo"].coords
+    assert "x27700" in ds.cf["foo"].coords
+    assert "y27700" in ds.cf["foo"].coords
+
+    # Test that accessing grid_mapping with cf indexing raises an error for multiple mappings
+    with pytest.raises(
+        KeyError, match="Receive multiple variables for key 'grid_mapping'"
+    ):
+        da.cf["grid_mapping"]
+
+    # Test that DataArrays don't support list indexing
+    with pytest.raises(
+        KeyError, match="Cannot use an Iterable of keys with DataArrays"
+    ):
+        da.cf[["grid_mapping"]]
+
+    # But Dataset should support list indexing and return all grid mappings and coordinates
+    result = ds.cf[["foo", "grid_mapping"]]
+    assert "crs_4326" in result.coords
+    assert "spatial_ref" in result.coords
+    assert "crs_27700" in result.coords
+    assert "foo" in result.data_vars
 
 
 def test_bad_grid_mapping_attribute():

@@ -97,7 +97,7 @@ class GridMapping:
         The coordinate reference system object
     array : xarray.DataArray
         The grid mapping variable as a DataArray containing the CRS parameters
-    coordinates : tuple[str, ...]
+    coordinates : tuple[Hashable, ...]
         Names of coordinate variables associated with this grid mapping. For grid mappings
         that are explicitly listed with coordinates in the grid_mapping attribute
         (e.g., ``'spatial_ref: crs_4326: latitude longitude'``), this contains those coordinates.
@@ -109,7 +109,7 @@ class GridMapping:
     name: str
     crs: Any  # really pyproj.CRS
     array: xr.DataArray
-    coordinates: tuple[str, ...]
+    coordinates: tuple[Hashable, ...]
 
     def __repr__(self) -> str:
         # Try to get EPSG code first, fallback to shorter description
@@ -496,7 +496,7 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     return list(results)
 
 
-def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[str]]:
+def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[Hashable]]:
     """
     Parse a grid_mapping attribute that may contain multiple grid mappings.
 
@@ -522,7 +522,7 @@ def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[str]
     if not grid_mappings:
         return {grid_mapping_attr.strip(): []}
 
-    result = {}
+    result: dict[str, list[Hashable]] = {}
 
     # Now extract coordinates for each grid mapping
     # Split the string to find what comes after each grid mapping variable
@@ -545,11 +545,74 @@ def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[str]
             coords = coord_text.split() if coord_text else []
             # Filter out the next grid mapping variable if it got captured
             coords = [c for c in coords if c not in grid_mappings]
-            result[gm] = coords
+            result[gm] = coords  # type: ignore[assignment]
         else:
             result[gm] = []
 
     return result
+
+
+def _create_grid_mapping(
+    var_name: str,
+    obj_dataset: Dataset,
+    grid_mapping_dict: dict[str, list[Hashable]],
+) -> GridMapping:
+    """
+    Create a GridMapping dataclass instance from a grid mapping variable.
+
+    Parameters
+    ----------
+    var_name : str
+        Name of the grid mapping variable
+    obj_dataset : Dataset
+        Dataset containing the grid mapping variable
+    grid_mapping_dict : dict[str, list[Hashable]]
+        Dictionary mapping grid mapping variable names to their coordinate variables
+
+    Returns
+    -------
+    GridMapping
+        GridMapping dataclass instance
+
+    Notes
+    -----
+    Assumes pyproj is available (should be checked by caller).
+    """
+    from pyproj import (
+        CRS,  # Safe to import since grid_mappings property checks availability
+    )
+
+    var = obj_dataset._variables[var_name]
+
+    # Create DataArray from Variable, preserving the name
+    # Use reset_coords(drop=True) to avoid coordinate conflicts
+    if var_name in obj_dataset.coords:
+        da = obj_dataset.coords[var_name].reset_coords(drop=True)
+    else:
+        da = obj_dataset[var_name].reset_coords(drop=True)
+
+    # Get the CF grid mapping name from the variable's attributes
+    cf_name = var.attrs.get("grid_mapping_name", var_name)
+
+    # Create CRS from the grid mapping variable
+    try:
+        crs = CRS.from_cf(var.attrs)
+    except Exception:
+        # If CRS creation fails, use None
+        crs = None
+
+    # Get associated coordinate variables, fallback to dimension names
+    coordinates: list[Hashable] = grid_mapping_dict.get(var_name, [])
+    if not coordinates:
+        # For DataArrays, find the data variable that references this grid mapping
+        for _data_var_name, data_var in obj_dataset.data_vars.items():
+            if "grid_mapping" in data_var.attrs:
+                gm_attr = data_var.attrs["grid_mapping"]
+                if var_name in gm_attr:
+                    coordinates = list(data_var.dims)
+                    break
+
+    return GridMapping(name=cf_name, crs=crs, array=da, coordinates=tuple(coordinates))
 
 
 def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
@@ -2462,71 +2525,6 @@ class CFAccessor:
 
         return obj
 
-    def _create_grid_mapping(
-        self,
-        var_name: str,
-        obj_dataset: Dataset,
-        grid_mapping_dict: dict[str, list[str]],
-    ) -> GridMapping:
-        """
-        Create a GridMapping dataclass instance from a grid mapping variable.
-
-        Parameters
-        ----------
-        var_name : str
-            Name of the grid mapping variable
-        obj_dataset : Dataset
-            Dataset containing the grid mapping variable
-        grid_mapping_dict : dict[str, list[str]]
-            Dictionary mapping grid mapping variable names to their coordinate variables
-
-        Returns
-        -------
-        GridMapping
-            GridMapping dataclass instance
-
-        Notes
-        -----
-        Assumes pyproj is available (should be checked by caller).
-        """
-        from pyproj import (
-            CRS,  # Safe to import since grid_mappings property checks availability
-        )
-
-        var = obj_dataset._variables[var_name]
-
-        # Create DataArray from Variable, preserving the name
-        # Use reset_coords(drop=True) to avoid coordinate conflicts
-        if var_name in obj_dataset.coords:
-            da = obj_dataset.coords[var_name].reset_coords(drop=True)
-        else:
-            da = obj_dataset[var_name].reset_coords(drop=True)
-
-        # Get the CF grid mapping name from the variable's attributes
-        cf_name = var.attrs.get("grid_mapping_name", var_name)
-
-        # Create CRS from the grid mapping variable
-        try:
-            crs = CRS.from_cf(var.attrs)
-        except Exception:
-            # If CRS creation fails, use None
-            crs = None
-
-        # Get associated coordinate variables, fallback to dimension names
-        coordinates = grid_mapping_dict.get(var_name, [])
-        if not coordinates:
-            # For DataArrays, find the data variable that references this grid mapping
-            for _data_var_name, data_var in obj_dataset.data_vars.items():
-                if "grid_mapping" in data_var.attrs:
-                    gm_attr = data_var.attrs["grid_mapping"]
-                    if var_name in gm_attr:
-                        coordinates = list(data_var.dims)
-                        break
-
-        return GridMapping(
-            name=cf_name, crs=crs, array=da, coordinates=tuple(coordinates)
-        )
-
     @property
     def grid_mappings(self) -> tuple[GridMapping, ...]:
         """
@@ -2611,7 +2609,7 @@ class CFAccessor:
                 continue
 
             grid_mappings.append(
-                self._create_grid_mapping(var_name, obj_dataset, grid_mapping_dict)
+                _create_grid_mapping(var_name, obj_dataset, grid_mapping_dict)
             )
 
         return tuple(grid_mappings)

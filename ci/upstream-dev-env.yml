@@ -13,6 +13,7 @@ dependencies:
   - pooch
   - rich
   - shapely
+  - pyproj
   - pip
   - pip:
     - pytest-pretty

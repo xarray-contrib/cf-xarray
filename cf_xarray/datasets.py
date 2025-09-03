@@ -1,6 +1,5 @@
 import numpy as np
 import xarray as xr
-from pyproj import CRS
 
 airds = xr.tutorial.open_dataset("air_temperature").isel(time=slice(4), lon=slice(50))
 airds.air.attrs["cell_measures"] = "area: cell_area"
@@ -751,37 +750,42 @@ sgrid_delft3["grid"] = xr.DataArray(
 )
 
 
-hrrrds = xr.Dataset()
-hrrrds["foo"] = (
-    ("x", "y"),
-    np.arange(200).reshape((10, 20)),
-    {
-        "grid_mapping": "spatial_ref: crs_4326: latitude longitude crs_27700: x27700 y27700"
-    },
-)
-hrrrds.coords["spatial_ref"] = ((), 0, CRS.from_epsg(3035).to_cf())
-hrrrds.coords["crs_4326"] = ((), 0, CRS.from_epsg(4326).to_cf())
-hrrrds.coords["crs_27700"] = ((), 0, CRS.from_epsg(27700).to_cf())
-hrrrds.coords["latitude"] = (
-    ("x", "y"),
-    np.ones((10, 20)),
-    {"standard_name": "latitude"},
-)
-hrrrds.coords["longitude"] = (
-    ("x", "y"),
-    np.zeros((10, 20)),
-    {"standard_name": "longitude"},
-)
-hrrrds.coords["y27700"] = (
-    ("x", "y"),
-    np.ones((10, 20)),
-    {"standard_name": "projected_x_coordinate"},
-)
-hrrrds.coords["x27700"] = (
-    ("x", "y"),
-    np.zeros((10, 20)),
-    {"standard_name": "projected_y_coordinate"},
-)
+try:
+    from pyproj import CRS
+
+    hrrrds = xr.Dataset()
+    hrrrds["foo"] = (
+        ("x", "y"),
+        np.arange(200).reshape((10, 20)),
+        {
+            "grid_mapping": "spatial_ref: crs_4326: latitude longitude crs_27700: x27700 y27700"
+        },
+    )
+    hrrrds.coords["spatial_ref"] = ((), 0, CRS.from_epsg(3035).to_cf())
+    hrrrds.coords["crs_4326"] = ((), 0, CRS.from_epsg(4326).to_cf())
+    hrrrds.coords["crs_27700"] = ((), 0, CRS.from_epsg(27700).to_cf())
+    hrrrds.coords["latitude"] = (
+        ("x", "y"),
+        np.ones((10, 20)),
+        {"standard_name": "latitude"},
+    )
+    hrrrds.coords["longitude"] = (
+        ("x", "y"),
+        np.zeros((10, 20)),
+        {"standard_name": "longitude"},
+    )
+    hrrrds.coords["y27700"] = (
+        ("x", "y"),
+        np.ones((10, 20)),
+        {"standard_name": "projected_x_coordinate"},
+    )
+    hrrrds.coords["x27700"] = (
+        ("x", "y"),
+        np.zeros((10, 20)),
+        {"standard_name": "projected_y_coordinate"},
+    )
+except ImportError:
+    pass
 
 
 def point_dataset():

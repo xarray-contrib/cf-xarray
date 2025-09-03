@@ -440,7 +440,7 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     return list(results)
 
 
-def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> list[str]:
+def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[str]]:
     """
     Parse a grid_mapping attribute that may contain multiple grid mappings.
 
@@ -448,22 +448,52 @@ def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> list[str]:
     Multiple sections are separated by colons.
 
     Examples:
-    - Single: "spatial_ref"
+    - Single: "spatial_ref" -> {"spatial_ref": []}
     - Multiple: "spatial_ref: crs_4326: latitude longitude crs_27700: x27700 y27700"
+      -> {"spatial_ref": [], "crs_4326": ["latitude", "longitude"], "crs_27700": ["x27700", "y27700"]}
 
-    Returns a list of grid mapping variable names.
+    Returns a dictionary mapping grid mapping variable names to their associated coordinate variables.
     """
     # Check if there are colons indicating multiple mappings
     if ":" not in grid_mapping_attr:
-        return [grid_mapping_attr.strip()]
+        return {grid_mapping_attr.strip(): []}
 
-    # Use regex to find grid mapping variable names
-    # Pattern matches: word at start OR word that comes after some coordinate names and before ":"
-    # This handles cases like "spatial_ref: crs_4326: latitude longitude crs_27700: x27700 y27700"
-    pattern = r"(?:^|\s)([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*:)"
-    matches = re.findall(pattern, grid_mapping_attr)
+    # Use regex to parse the format
+    # First, find all grid mapping variables (words before colons)
+    grid_pattern = r"(?:^|\s)([a-zA-Z_][a-zA-Z0-9_]*)(?=\s*:)"
+    grid_mappings = re.findall(grid_pattern, grid_mapping_attr)
 
-    return matches if matches else [grid_mapping_attr.strip()]
+    if not grid_mappings:
+        return {grid_mapping_attr.strip(): []}
+
+    result = {}
+
+    # Now extract coordinates for each grid mapping
+    # Split the string to find what comes after each grid mapping variable
+    for i, gm in enumerate(grid_mappings):
+        # Pattern to capture everything after this grid mapping until the next one or end
+        if i < len(grid_mappings) - 1:
+            next_gm = grid_mappings[i + 1]
+            # Capture everything between current grid mapping and next one
+            coord_pattern = (
+                rf"{re.escape(gm)}\s*:\s*([^:]*?)(?=\s+{re.escape(next_gm)}\s*:)"
+            )
+        else:
+            # Last grid mapping - capture everything after it
+            coord_pattern = rf"{re.escape(gm)}\s*:\s*(.*)$"
+
+        coord_match = re.search(coord_pattern, grid_mapping_attr)
+        if coord_match:
+            coord_text = coord_match.group(1).strip()
+            # Split coordinates and filter out any grid mapping names that might have been captured
+            coords = coord_text.split() if coord_text else []
+            # Filter out the next grid mapping variable if it got captured
+            coords = [c for c in coords if c not in grid_mappings]
+            result[gm] = coords
+        else:
+            result[gm] = []
+
+    return result
 
 
 def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
@@ -494,8 +524,8 @@ def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
         attrs_or_encoding = ChainMap(var.attrs, var.encoding)
         if grid_mapping_attr := attrs_or_encoding.get("grid_mapping"):
             # Parse potentially multiple grid mappings
-            grid_mapping_var_names = _parse_grid_mapping_attribute(grid_mapping_attr)
-            for grid_mapping_var_name in grid_mapping_var_names:
+            grid_mapping_dict = _parse_grid_mapping_attribute(grid_mapping_attr)
+            for grid_mapping_var_name in grid_mapping_dict.keys():
                 if grid_mapping_var_name not in variables:
                     raise ValueError(
                         f"{var} defines non-existing grid_mapping variable {grid_mapping_var_name}."
@@ -1975,9 +2005,16 @@ class CFAccessor:
             coords["grid"] = [grid]
 
         if grid_mapping_attr := attrs_or_encoding.get("grid_mapping", None):
-            # Parse grid mapping variables using the same function
-            grid_mapping_vars = _parse_grid_mapping_attribute(grid_mapping_attr)
-            coords["grid_mapping"] = cast(list[Hashable], grid_mapping_vars)
+            # Parse grid mapping variables and their coordinates
+            grid_mapping_dict = _parse_grid_mapping_attribute(grid_mapping_attr)
+            coords["grid_mapping"] = cast(
+                list[Hashable], list(grid_mapping_dict.keys())
+            )
+
+            # Add coordinate variables from the grid mapping
+            for coord_vars in grid_mapping_dict.values():
+                if coord_vars:
+                    coords["coordinates"].extend(coord_vars)
 
         more: Sequence[Hashable] = ()
         if geometry_var := attrs_or_encoding.get("geometry", None):
@@ -2965,10 +3002,10 @@ class CFDataArrayAccessor(CFAccessor):
             return {}
 
         # Parse potentially multiple grid mappings
-        grid_mapping_var_names = _parse_grid_mapping_attribute(grid_mapping_attr)
+        grid_mapping_dict = _parse_grid_mapping_attribute(grid_mapping_attr)
 
         results = defaultdict(list)
-        for grid_mapping_var_name in grid_mapping_var_names and set(da.coords):
+        for grid_mapping_var_name in grid_mapping_dict.keys() & set(da.coords):
             grid_mapping_var = da.coords[grid_mapping_var_name]
             if gmn := grid_mapping_var.attrs.get("grid_mapping_name"):
                 results[gmn].append(grid_mapping_var_name)

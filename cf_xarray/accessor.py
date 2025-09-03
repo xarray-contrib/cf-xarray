@@ -4,7 +4,7 @@ import functools
 import inspect
 import itertools
 import re
-from collections import ChainMap, namedtuple
+from collections import ChainMap, defaultdict, namedtuple
 from collections.abc import (
     Callable,
     Hashable,
@@ -2990,21 +2990,11 @@ class CFDataArrayAccessor(CFAccessor):
         # Parse potentially multiple grid mappings
         grid_mapping_var_names = _parse_grid_mapping_attribute(grid_mapping_attr)
 
-        results = {}
-        for grid_mapping_var_name in grid_mapping_var_names:
-            # First check if it's in the DataArray's coords (for multiple grid mappings
-            # that are coordinates of the DataArray)
-            if grid_mapping_var_name in da.coords:
-                grid_mapping_var = da.coords[grid_mapping_var_name]
-                if "grid_mapping_name" in grid_mapping_var.attrs:
-                    gmn = grid_mapping_var.attrs["grid_mapping_name"]
-                    if gmn not in results:
-                        results[gmn] = [grid_mapping_var_name]
-                    else:
-                        results[gmn].append(grid_mapping_var_name)
-            # For standalone DataArrays, the grid mapping variables may not be available
-            # This is a limitation of the xarray data model - when you extract a DataArray
-            # from a Dataset, it doesn't carry over non-coordinate variables
+        results = defaultdict(list)
+        for grid_mapping_var_name in grid_mapping_var_names and set(da.coords):
+            grid_mapping_var = da.coords[grid_mapping_var_name]
+            if gmn := grid_mapping_var.attrs.get("grid_mapping_name"):
+                results[gmn].append(grid_mapping_var_name)
 
         return results
 

@@ -1,3 +1,4 @@
+import numpy as np
 import xarray as xr
 from numpy.testing import assert_array_equal
 from xarray.testing import assert_equal
@@ -5,6 +6,7 @@ from xarray.testing import assert_equal
 import cf_xarray as cfxr  # noqa
 
 from ..datasets import airds, mollwds, rotds
+from . import requires_cftime
 
 try:
     from dask.array import Array as DaskArray
@@ -121,3 +123,36 @@ def test_vertices_to_bounds() -> None:
     # 2D case
     lon_b = cfxr.vertices_to_bounds(mollwds.lon_vertices, out_dims=("bounds", "x", "y"))
     assert_array_equal(mollwds.lon_bounds, lon_b)
+
+
+@requires_cftime
+def test_bounds_to_vertices_cftime() -> None:
+    import cftime
+
+    # Create cftime objects for monthly bounds
+    periods = 3
+    # start = cftime.DatetimeGregorian(2000, 1, 1)
+    edges = [cftime.DatetimeGregorian(2000, m, 1) for m in range(1, periods + 2)]
+
+    # Bounds as [start, end) for each month
+    bnds = np.array([[edges[i], edges[i + 1]] for i in range(periods)])
+    mid = np.array([edges[i] + (edges[i + 1] - edges[i]) / 2 for i in range(periods)])
+
+    # Sample data
+    values = xr.DataArray(
+        np.arange(periods, dtype=float), dims=("time",), coords={"time": mid}
+    )
+
+    # Build dataset with CF-style bounds
+    ds = xr.Dataset(
+        {"foo": values},
+        coords={
+            "time": ("time", mid, {"bounds": "time_bounds"}),
+            "time_bounds": (("time", "bounds"), bnds),
+            "bounds": ("bounds", [0, 1]),
+        },
+    )
+
+    time_c = cfxr.bounds_to_vertices(ds.time_bounds, "bounds")
+    time_b = cfxr.vertices_to_bounds(time_c, out_dims=("bounds", "time"))
+    assert_array_equal(ds.time_bounds, time_b)

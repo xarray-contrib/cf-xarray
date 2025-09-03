@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 from collections.abc import Hashable, Sequence
 
 import numpy as np
@@ -230,6 +231,10 @@ def _get_core_dim_orders(core_dim_coords: dict[str, np.ndarray]) -> dict[str, st
             # Cast to float64 for safe comparison
             diffs_float = diffs.astype("float64")
             nonzero_diffs = diffs_float[diffs_float != 0]
+        elif isinstance(diffs[0], datetime.timedelta):
+            # For datetime timedelta, we use the total_seconds method
+            diffs_float = np.array([x.total_seconds() for x in diffs])
+            nonzero_diffs = diffs_float[diffs_float != 0]
         else:
             zero = 0
             nonzero_diffs = diffs[diffs != zero]
@@ -360,9 +365,17 @@ def _is_bounds_monotonic(bounds: np.ndarray) -> bool:
     # Cannot cast ufunc 'greater' input 0 from dtype('<m8[ns]') to dtype('<m8')
     # with casting rule 'same_kind' To avoid this, always cast to float64 before
     # np.diff.
-    arr_numeric = bounds.astype("float64").flatten()
-    diffs = np.diff(arr_numeric)
-    nonzero_diffs = diffs[diffs != 0]
+
+    diffs = np.diff(bounds.flatten())
+
+    if isinstance(diffs[0], datetime.timedelta):
+        # For datetime timedelta, we use the total_seconds method
+        diffs_float = np.array([x.total_seconds() for x in diffs])
+
+    else:
+        diffs_float = diffs.astype("float64")
+
+    nonzero_diffs = diffs_float[diffs_float != 0]
 
     # All values are equal, treat as monotonic
     if nonzero_diffs.size == 0:

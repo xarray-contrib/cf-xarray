@@ -399,7 +399,7 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
                     results.update((coord,))
                 if criterion == "units":
                     # deal with pint-backed objects
-                    units = getattr(var.data, "units", None)
+                    units = getattr(var.variable._data, "units", None)
                     if units in expected:
                         results.update((coord,))
 

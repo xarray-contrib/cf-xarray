@@ -1088,6 +1088,12 @@ def test_multiple_grid_mapping_attribute():
         "transverse_mercator": ["crs_27700"],
     }
 
+    assert da.cf.get_associated_variable_names()["grid_mapping"] == [
+        "latitude_longitude",
+        "lambert_azimuthal_equal_area",
+        "transverse_mercator",
+    ]
+
     # Test that grid_mapping_name raises an error with multiple mappings
     with pytest.raises(
         ValueError,

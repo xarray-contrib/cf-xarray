@@ -492,11 +492,9 @@ def _get_grid_mapping_name(obj: DataArray | Dataset, key: str) -> list[str]:
     results = set()
     for var in variables.values():
         attrs_or_encoding = ChainMap(var.attrs, var.encoding)
-        if "grid_mapping" in attrs_or_encoding:
-            grid_mapping_attr = attrs_or_encoding["grid_mapping"]
+        if grid_mapping_attr := attrs_or_encoding.get("grid_mapping"):
             # Parse potentially multiple grid mappings
             grid_mapping_var_names = _parse_grid_mapping_attribute(grid_mapping_attr)
-
             for grid_mapping_var_name in grid_mapping_var_names:
                 if grid_mapping_var_name not in variables:
                     raise ValueError(
@@ -1979,28 +1977,7 @@ class CFAccessor:
         if grid_mapping_attr := attrs_or_encoding.get("grid_mapping", None):
             # Parse grid mapping variables using the same function
             grid_mapping_vars = _parse_grid_mapping_attribute(grid_mapping_attr)
-            coords["grid_mapping"] = grid_mapping_vars
-
-            # Extract coordinate variables using regex
-            if ":" in grid_mapping_attr:
-                # Pattern to find coordinate variables: words that come after ":" but before next grid mapping variable
-                # This captures coordinate variables between grid mapping sections
-                coord_pattern = r":\s+([^:]+?)(?=\s+[a-zA-Z_][a-zA-Z0-9_]*\s*:|$)"
-                coord_matches = re.findall(coord_pattern, grid_mapping_attr)
-
-                for coord_section in coord_matches:
-                    # Split each coordinate section and add valid coordinate names
-                    coord_vars = coord_section.split()
-                    # Filter out grid mapping variable names that might have been captured
-                    coord_vars = [
-                        var
-                        for var in coord_vars
-                        if not (
-                            var.startswith(("crs_", "spatial_", "proj_"))
-                            and var in grid_mapping_vars
-                        )
-                    ]
-                    coords["coordinates"].extend(coord_vars)
+            coords["grid_mapping"] = cast(list[Hashable], grid_mapping_vars)
 
         more: Sequence[Hashable] = ()
         if geometry_var := attrs_or_encoding.get("geometry", None):

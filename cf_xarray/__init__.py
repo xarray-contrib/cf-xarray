@@ -3,7 +3,7 @@ from packaging.version import Version
 
 from . import geometry as geometry
 from . import sgrid  # noqa
-from .accessor import CFAccessor  # noqa
+from .accessor import CFAccessor, GridMapping  # noqa
 from .coding import (  # noqa
     decode_compress_to_multi_index,
     encode_multi_index_as_compress,

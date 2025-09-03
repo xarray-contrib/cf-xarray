@@ -13,6 +13,7 @@ from collections.abc import (
     MutableMapping,
     Sequence,
 )
+from dataclasses import dataclass
 from datetime import datetime
 from typing import (
     Any,
@@ -81,6 +82,61 @@ from .utils import (
 )
 
 FlagParam = namedtuple("FlagParam", ["flag_mask", "flag_value"])
+
+
+@dataclass(frozen=True, kw_only=True)
+class GridMapping:
+    """
+    Represents a CF grid mapping with its properties and associated coordinate variables.
+
+    Attributes
+    ----------
+    name : str
+        The CF grid mapping name (e.g., ``'latitude_longitude'``, ``'transverse_mercator'``)
+    crs : pyproj.CRS
+        The coordinate reference system object
+    array : xarray.DataArray
+        The grid mapping variable as a DataArray containing the CRS parameters
+    coordinates : tuple[str, ...]
+        Names of coordinate variables associated with this grid mapping. For grid mappings
+        that are explicitly listed with coordinates in the grid_mapping attribute
+        (e.g., ``'spatial_ref: crs_4326: latitude longitude'``), this contains those coordinates.
+        For grid mappings (e.g. ``spatial_ref``) that don't explicitly specify coordinates,
+        this falls back to the dimension names of the data variable that references
+        this grid mapping.
+    """
+
+    name: str
+    crs: Any  # really pyproj.CRS
+    array: xr.DataArray
+    coordinates: tuple[str, ...]
+
+    def __repr__(self) -> str:
+        # Try to get EPSG code first, fallback to shorter description
+        try:
+            if hasattr(self.crs, "to_epsg") and self.crs.to_epsg():
+                crs_repr = f"<CRS: EPSG:{self.crs.to_epsg()}>"
+            else:
+                # Use the name if available, otherwise authority:code
+                crs_name = getattr(self.crs, "name", str(self.crs)[:50] + "...")
+                crs_repr = f"<CRS: {crs_name}>"
+        except Exception:
+            # Fallback to generic representation
+            crs_repr = "<CRS>"
+
+        # Short array representation - name and shape
+        array_repr = f"<DataArray '{self.array.name}' {self.array.shape}>"
+
+        # Format coordinates nicely
+        coords_repr = f"({', '.join(repr(c) for c in self.coordinates)})"
+
+        return (
+            f"GridMapping(name={self.name!r}, "
+            f"crs={crs_repr}, "
+            f"array={array_repr}, "
+            f"coordinates={coords_repr})"
+        )
+
 
 #: Classes wrapped by cf_xarray.
 _WRAPPED_CLASSES = (Resample, GroupBy, Rolling, Coarsen, Weighted)
@@ -2406,6 +2462,160 @@ class CFAccessor:
 
         return obj
 
+    def _create_grid_mapping(
+        self,
+        var_name: str,
+        obj_dataset: Dataset,
+        grid_mapping_dict: dict[str, list[str]],
+    ) -> GridMapping:
+        """
+        Create a GridMapping dataclass instance from a grid mapping variable.
+
+        Parameters
+        ----------
+        var_name : str
+            Name of the grid mapping variable
+        obj_dataset : Dataset
+            Dataset containing the grid mapping variable
+        grid_mapping_dict : dict[str, list[str]]
+            Dictionary mapping grid mapping variable names to their coordinate variables
+
+        Returns
+        -------
+        GridMapping
+            GridMapping dataclass instance
+
+        Notes
+        -----
+        Assumes pyproj is available (should be checked by caller).
+        """
+        from pyproj import (
+            CRS,  # Safe to import since grid_mappings property checks availability
+        )
+
+        var = obj_dataset._variables[var_name]
+
+        # Create DataArray from Variable, preserving the name
+        # Use reset_coords(drop=True) to avoid coordinate conflicts
+        if var_name in obj_dataset.coords:
+            da = obj_dataset.coords[var_name].reset_coords(drop=True)
+        else:
+            da = obj_dataset[var_name].reset_coords(drop=True)
+
+        # Get the CF grid mapping name from the variable's attributes
+        cf_name = var.attrs.get("grid_mapping_name", var_name)
+
+        # Create CRS from the grid mapping variable
+        try:
+            crs = CRS.from_cf(var.attrs)
+        except Exception:
+            # If CRS creation fails, use None
+            crs = None
+
+        # Get associated coordinate variables, fallback to dimension names
+        coordinates = grid_mapping_dict.get(var_name, [])
+        if not coordinates:
+            # For DataArrays, find the data variable that references this grid mapping
+            for _data_var_name, data_var in obj_dataset.data_vars.items():
+                if "grid_mapping" in data_var.attrs:
+                    gm_attr = data_var.attrs["grid_mapping"]
+                    if var_name in gm_attr:
+                        coordinates = list(data_var.dims)
+                        break
+
+        return GridMapping(
+            name=cf_name, crs=crs, array=da, coordinates=tuple(coordinates)
+        )
+
+    @property
+    def grid_mappings(self) -> tuple[GridMapping, ...]:
+        """
+        Return a tuple of GridMapping objects for all grid mappings in this object.
+
+        For DataArrays, the order in the tuple matches the order that grid mappings appear
+        in the grid_mapping attribute string.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        tuple[GridMapping, ...]
+            Tuple of GridMapping dataclass instances, each containing:
+            - name: CF grid mapping name
+            - crs: pyproj.CRS object
+            - array: xarray.DataArray containing the grid mapping variable
+            - coordinates: tuple of coordinate variable names
+
+        Raises
+        ------
+        ImportError
+            If pyproj is not available. This property requires pyproj for CRS creation.
+
+        Examples
+        --------
+        >>> ds.cf.grid_mappings
+        (GridMapping(name='latitude_longitude', crs=<CRS: EPSG:4326>, ...),)
+
+        Notes
+        -----
+        This property requires pyproj to be installed for creating CRS objects from
+        CF grid mapping parameters. Install with: ``conda install pyproj`` or
+        ``pip install pyproj``.
+        """
+        # Check pyproj availability upfront
+        try:
+            import pyproj  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "pyproj is required for .cf.grid_mappings property. "
+                "Install with: conda install pyproj or pip install pyproj"
+            ) from None
+        # For DataArrays, preserve order from grid_mapping attribute
+        if isinstance(self._obj, DataArray) and "grid_mapping" in self._obj.attrs:
+            grid_mapping_dict = _parse_grid_mapping_attribute(
+                self._obj.attrs["grid_mapping"]
+            )
+            # Get grid mappings in the order they appear in the string
+            ordered_var_names = list(grid_mapping_dict.keys())
+        else:
+            # For Datasets, look for grid_mapping attributes in data variables
+            grid_mapping_dict = {}
+            ordered_var_names = []
+
+            # Search all data variables for grid_mapping attributes
+            for _var_name, var in self._obj.data_vars.items():
+                if "grid_mapping" in var.attrs:
+                    parsed = _parse_grid_mapping_attribute(var.attrs["grid_mapping"])
+                    grid_mapping_dict.update(parsed)
+                    # Add variables in order they appear in this grid_mapping string
+                    for gm_var in parsed.keys():
+                        if gm_var not in ordered_var_names:
+                            ordered_var_names.append(gm_var)
+
+            # If no grid_mapping attributes found in data vars, try grid_mapping_names property
+            if not ordered_var_names and hasattr(self, "grid_mapping_names"):
+                grid_mapping_names = self.grid_mapping_names
+                for var_names in grid_mapping_names.values():
+                    ordered_var_names.extend(var_names)
+
+            if not ordered_var_names:
+                return ()
+
+        grid_mappings = []
+        obj_dataset = self._maybe_to_dataset()
+
+        for var_name in ordered_var_names:
+            if var_name not in obj_dataset._variables:
+                continue
+
+            grid_mappings.append(
+                self._create_grid_mapping(var_name, obj_dataset, grid_mapping_dict)
+            )
+
+        return tuple(grid_mappings)
+
 
 @xr.register_dataset_accessor("cf")
 class CFDatasetAccessor(CFAccessor):
@@ -3009,8 +3219,7 @@ class CFDataArrayAccessor(CFAccessor):
             grid_mapping_var = da.coords[grid_mapping_var_name]
             if gmn := grid_mapping_var.attrs.get("grid_mapping_name"):
                 results[gmn].append(grid_mapping_var_name)
-
-        return results
+        return dict(results)
 
     @property
     def grid_mapping_name(self) -> str:

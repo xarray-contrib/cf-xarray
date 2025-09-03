@@ -29,7 +29,6 @@ from ..datasets import (
     flag_indep_uint16,
     flag_mix,
     forecast,
-    hrrrds,
     mollwds,
     multiple,
     popds,
@@ -45,6 +44,7 @@ from . import (
     requires_cftime,
     requires_pint,
     requires_pooch,
+    requires_pyproj,
     requires_regex,
     requires_rich,
     requires_scipy,
@@ -1067,8 +1067,9 @@ def test_grid_mappings():
     assert "rotated_pole" in ds.coords
 
 
+@requires_pyproj
 def test_multiple_grid_mapping_attribute():
-    ds = hrrrds
+    from ..datasets import hrrrds as ds
 
     # Test Dataset grid_mapping_names
     # Now includes British National Grid (EPSG:27700) which has grid_mapping_name

@@ -30,19 +30,28 @@ repository = "https://github.com/xarray-contrib/cf-xarray.git"
 changelog = "https://cf-xarray.readthedocs.io/en/latest/whats-new.html"
 
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
-build-backend = "hatchling.build"
+requires = [
+    # xarray is need for dynamic version string
+    "xarray>=2023.09.0",
+    "setuptools>=45",
+    "setuptools_scm[toml]>=6.2",
+]
+build-backend = "setuptools.build_meta"
 
-[tool.hatch.build.targets.wheel]
-packages = ["cf_xarray"]
+[tool.setuptools]
+packages = ["cf_xarray", "cf_xarray.scripts"]
 
-[tool.hatch.version]
-source = "vcs"
-fallback-version = "999"
+[tool.setuptools.exclude-package-data]
+cf_xarray = ["tests/*"]
 
-[tool.hatch.version.raw-options]
-version_file = "cf_xarray/_version.py"
-template = '__version__ = "{version}"'
+[tool.setuptools.dynamic]
+version = {attr = "cf_xarray.__version__"}
+
+[tool.setuptools_scm]
+fallback_version = "999"
+write_to = "cf_xarray/_version.py"
+write_to_template= '__version__ = "{version}"'
+tag_regex= "^(?P<prefix>v)?(?P<version>[^\\+]+)(?P<suffix>.*)?$"
 
 [tool.ruff]
 target-version = "py311"

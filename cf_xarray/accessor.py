@@ -609,7 +609,7 @@ def _create_grid_mapping(
 
         x = apply_mapper(_get_with_standard_name, ds, xname, error=False, default=[[]])
         y = apply_mapper(_get_with_standard_name, ds, yname, error=False, default=[[]])
-        coordinates = tuple(itertools.chain(x, y))
+        coordinates = list(itertools.chain(x, y))
 
     return GridMapping(name=cf_name, crs=crs, array=da, coordinates=tuple(coordinates))
 

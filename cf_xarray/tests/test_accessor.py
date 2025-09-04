@@ -987,6 +987,7 @@ def test_get_bounds_dim_name() -> None:
         ds.cf.get_bounds_dim_name("longitude")
 
 
+@requires_pyproj
 def test_grid_mappings():
     ds = rotds.copy(deep=False)
 
@@ -1035,6 +1036,26 @@ def test_grid_mappings():
 
     # grid_mapping_name
     assert ds.cf["temp"].cf.grid_mapping_name == "rotated_latitude_longitude"
+
+    # Test .grid_mappings property with single grid mapping
+    grid_mappings = ds.cf.grid_mappings
+    assert len(grid_mappings) == 1
+    gm = grid_mappings[0]
+    assert gm.name == "rotated_latitude_longitude"
+    assert gm.array.name == "rotated_pole"
+    assert gm.array.shape == ()  # scalar variable
+    assert isinstance(gm.coordinates, tuple)
+    # Should have rlon and rlat detected from standard names
+    assert gm.coordinates == ("rlon", "rlat")
+
+    # Test .grid_mappings property on DataArray with propagated coords
+    da_grid_mappings = ds.cf["temp"].cf.grid_mappings
+    assert len(da_grid_mappings) == 1
+    da_gm = da_grid_mappings[0]
+    assert da_gm.name == "rotated_latitude_longitude"
+    assert da_gm.array.name == "rotated_pole"
+    # Should also detect rlon and rlat from standard names
+    assert da_gm.coordinates == ("rlon", "rlat")
 
     # what if there are really 2 grid mappins?
     ds["temp2"] = ds.temp
@@ -1240,6 +1261,7 @@ def test_grid_mappings_coordinates_attribute():
             )
 
 
+@requires_pyproj
 def test_bad_grid_mapping_attribute():
     ds = rotds.copy(deep=False)
     ds.temp.attrs["grid_mapping"] = "foo"
@@ -1254,6 +1276,10 @@ def test_bad_grid_mapping_attribute():
     #    assert ds.cf.grid_mappings == {}
     with pytest.warns(UserWarning):
         ds.cf.get_associated_variable_names("temp", error=False)
+
+    # Test .grid_mappings property with bad grid mapping - should return empty tuple
+    grid_mappings = ds.cf.grid_mappings
+    assert grid_mappings == ()  # No valid grid mappings since 'foo' doesn't exist
 
 
 def test_docstring() -> None:

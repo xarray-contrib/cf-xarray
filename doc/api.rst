@@ -16,6 +16,7 @@ Top-level API
     set_options
     encode_multi_index_as_compress
     decode_compress_to_multi_index
+    GridMapping
 
 Geometries
 ----------
@@ -56,6 +57,7 @@ Attributes
     DataArray.cf.coordinates
     DataArray.cf.formula_terms
     DataArray.cf.grid_mapping_name
+    DataArray.cf.grid_mappings
     DataArray.cf.is_flag_variable
     DataArray.cf.standard_names
     DataArray.cf.plot
@@ -115,6 +117,7 @@ Attributes
     Dataset.cf.coordinates
     Dataset.cf.formula_terms
     Dataset.cf.grid_mapping_names
+    Dataset.cf.grid_mappings
     Dataset.cf.geometries
     Dataset.cf.standard_names
 

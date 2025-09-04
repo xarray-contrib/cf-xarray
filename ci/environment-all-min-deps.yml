@@ -20,5 +20,6 @@ dependencies:
   - shapely
   - xarray==2023.09.0
   - pip
+  - pyproj
   - pip:
       - pytest-pretty

@@ -10,6 +10,7 @@ dependencies:
   - xarray
   - sphinx
   - sphinx-copybutton
+  - sphinx-autobuild
   - numpydoc
   - sphinx-autosummary-accessors
   - ipython
@@ -22,5 +23,6 @@ dependencies:
   - shapely
   - furo>=2024
   - myst-nb
+  - pyproj
   - pip:
       - -e ../

@@ -44,6 +44,7 @@ from . import (
     requires_cftime,
     requires_pint,
     requires_pooch,
+    requires_pyproj,
     requires_regex,
     requires_rich,
     requires_scipy,
@@ -986,6 +987,7 @@ def test_get_bounds_dim_name() -> None:
         ds.cf.get_bounds_dim_name("longitude")
 
 
+@requires_pyproj
 def test_grid_mappings():
     ds = rotds.copy(deep=False)
 
@@ -1018,9 +1020,7 @@ def test_grid_mappings():
     assert_identical(actual, expected)
 
     # not properly propagated if grid mapping variable not in coords
-    with pytest.raises(
-        ValueError, match="Grid Mapping variable rotated_pole not present."
-    ):
+    with pytest.raises(ValueError, match="No 'grid_mapping' attribute present."):
         ds.temp.cf.grid_mapping_name
 
     # check for https://github.com/xarray-contrib/cf-xarray/issues/448
@@ -1036,6 +1036,26 @@ def test_grid_mappings():
 
     # grid_mapping_name
     assert ds.cf["temp"].cf.grid_mapping_name == "rotated_latitude_longitude"
+
+    # Test .grid_mappings property with single grid mapping
+    grid_mappings = ds.cf.grid_mappings
+    assert len(grid_mappings) == 1
+    gm = grid_mappings[0]
+    assert gm.name == "rotated_latitude_longitude"
+    assert gm.array.name == "rotated_pole"
+    assert gm.array.shape == ()  # scalar variable
+    assert isinstance(gm.coordinates, tuple)
+    # Should have rlon and rlat detected from standard names
+    assert gm.coordinates == ("rlon", "rlat")
+
+    # Test .grid_mappings property on DataArray with propagated coords
+    da_grid_mappings = ds.cf["temp"].cf.grid_mappings
+    assert len(da_grid_mappings) == 1
+    da_gm = da_grid_mappings[0]
+    assert da_gm.name == "rotated_latitude_longitude"
+    assert da_gm.array.name == "rotated_pole"
+    # Should also detect rlon and rlat from standard names
+    assert da_gm.coordinates == ("rlon", "rlat")
 
     # what if there are really 2 grid mappins?
     ds["temp2"] = ds.temp
@@ -1068,6 +1088,180 @@ def test_grid_mappings():
     assert "rotated_pole" in ds.coords
 
 
+@requires_pyproj
+def test_multiple_grid_mapping_attribute():
+    from ..datasets import hrrrds as ds
+
+    # Test Dataset grid_mapping_names
+    # Now includes British National Grid (EPSG:27700) which has grid_mapping_name
+    assert ds.cf.grid_mapping_names == {
+        "latitude_longitude": ["crs_4326"],
+        "lambert_azimuthal_equal_area": ["spatial_ref"],
+        "transverse_mercator": ["crs_27700"],
+    }
+
+    # Test DataArray grid_mapping_names
+    da = ds.foo
+    # Now with improved regex parsing, all 3 grid mappings should be detected
+    assert da.cf.grid_mapping_names == {
+        "latitude_longitude": ["crs_4326"],
+        "lambert_azimuthal_equal_area": ["spatial_ref"],
+        "transverse_mercator": ["crs_27700"],
+    }
+
+    assert ds.cf.get_associated_variable_names("foo")["grid_mapping"] == [
+        "spatial_ref",
+        "crs_4326",
+        "crs_27700",
+    ]
+
+    # Test that grid_mapping_name raises an error with multiple mappings
+    with pytest.raises(
+        ValueError,
+        match="Multiple grid mappings found.*Please use DataArray.cf.grid_mapping_names",
+    ):
+        da.cf.grid_mapping_name
+
+    assert "crs_4326" in ds.cf["foo"].coords
+    assert "spatial_ref" in ds.cf["foo"].coords
+    assert "crs_27700" in ds.cf["foo"].coords
+    # Also check that coordinate variables are included
+    assert "latitude" in ds.cf["foo"].coords
+    assert "longitude" in ds.cf["foo"].coords
+    assert "x27700" in ds.cf["foo"].coords
+    assert "y27700" in ds.cf["foo"].coords
+
+    # Test that accessing grid_mapping with cf indexing raises an error for multiple mappings
+    with pytest.raises(
+        KeyError, match="Receive multiple variables for key 'grid_mapping'"
+    ):
+        da.cf["grid_mapping"]
+
+    # Test that DataArrays don't support list indexing
+    with pytest.raises(
+        KeyError, match="Cannot use an Iterable of keys with DataArrays"
+    ):
+        da.cf[["grid_mapping"]]
+
+    # But Dataset should support list indexing and return all grid mappings and coordinates
+    result = ds.cf[["foo", "grid_mapping"]]
+    assert "crs_4326" in result.coords
+    assert "spatial_ref" in result.coords
+    assert "crs_27700" in result.coords
+    assert "foo" in result.data_vars
+
+
+@requires_pyproj
+def test_grid_mappings_property():
+    """Test the .cf.grid_mappings property on both Dataset and DataArray."""
+    from ..datasets import hrrrds
+
+    ds = hrrrds
+
+    # Test Dataset
+    grid_mappings = ds.cf.grid_mappings
+    assert len(grid_mappings) == 3
+
+    # Check that all expected grid mapping names are present
+    gm_names = {gm.name for gm in grid_mappings}
+    expected_names = {
+        "latitude_longitude",
+        "lambert_azimuthal_equal_area",
+        "transverse_mercator",
+    }
+    assert gm_names == expected_names
+
+    # Test specific properties of each grid mapping
+    for gm in grid_mappings:
+        assert gm.crs is not None  # Should have pyproj CRS
+        assert isinstance(gm.array, xr.DataArray)  # Should be DataArray, not Variable
+        assert isinstance(gm.coordinates, tuple)
+        assert gm.array.name is not None  # DataArray should preserve name
+
+        # Check specific coordinate associations
+        if gm.name == "latitude_longitude":
+            assert gm.coordinates == ("latitude", "longitude")
+        elif gm.name == "transverse_mercator":
+            assert gm.coordinates == ("x27700", "y27700")
+        elif gm.name == "lambert_azimuthal_equal_area":
+            assert gm.coordinates == (
+                "x",
+                "y",
+            )  # Falls back to data variable dimensions
+
+    # Test DataArray
+    da = ds.foo
+    da_grid_mappings = da.cf.grid_mappings
+    assert len(da_grid_mappings) == 3
+
+    # DataArray should have the same grid mappings as Dataset
+    da_names = {gm.name for gm in da_grid_mappings}
+    assert da_names == expected_names
+
+    # Check that coordinates are populated for DataArray too
+    for gm in da_grid_mappings:
+        assert len(gm.coordinates) > 0  # Should never be empty now
+        if gm.name == "lambert_azimuthal_equal_area":
+            assert gm.coordinates == ("x", "y")
+
+
+@requires_pyproj
+def test_grid_mappings_coordinates_attribute():
+    """Test that coordinates attribute is always populated correctly for DataArray grid mappings."""
+    from ..datasets import hrrrds
+
+    ds = hrrrds
+
+    # Focus on DataArray access
+    da = ds.foo
+    grid_mappings = da.cf.grid_mappings
+    assert len(grid_mappings) == 3
+
+    # Verify order preservation for DataArray (should match grid_mapping attribute order)
+    expected_order = [
+        "lambert_azimuthal_equal_area",
+        "latitude_longitude",
+        "transverse_mercator",
+    ]
+    actual_order = [gm.name for gm in grid_mappings]
+    assert actual_order == expected_order, (
+        f"DataArray order {actual_order} doesn't match expected {expected_order}"
+    )
+
+    for gm in grid_mappings:
+        # Coordinates should never be empty
+        assert len(gm.coordinates) > 0, (
+            f"Grid mapping '{gm.name}' has empty coordinates"
+        )
+
+        # All coordinates should be strings
+        assert all(isinstance(coord, str) for coord in gm.coordinates), (
+            f"Grid mapping '{gm.name}' has non-string coordinates: {gm.coordinates}"
+        )
+
+        # Test specific expected coordinates for each grid mapping
+        if gm.name == "latitude_longitude":
+            # Explicitly listed in grid_mapping attribute: "crs_4326: latitude longitude"
+            assert gm.coordinates == ("latitude", "longitude"), (
+                f"Expected ('latitude', 'longitude'), got {gm.coordinates}"
+            )
+        elif gm.name == "transverse_mercator":
+            # Explicitly listed in grid_mapping attribute: "crs_27700: x27700 y27700"
+            assert gm.coordinates == ("x27700", "y27700"), (
+                f"Expected ('x27700', 'y27700'), got {gm.coordinates}"
+            )
+        elif gm.name == "lambert_azimuthal_equal_area":
+            # Not explicitly listed, should fallback to DataArray dimensions
+            assert gm.coordinates == ("x", "y"), (
+                f"Expected ('x', 'y') from DataArray dimensions, got {gm.coordinates}"
+            )
+            # Verify these are actually the DataArray's dimensions
+            assert gm.coordinates == da.dims, (
+                f"Fallback coordinates {gm.coordinates} don't match DataArray dims {da.dims}"
+            )
+
+
+@requires_pyproj
 def test_bad_grid_mapping_attribute():
     ds = rotds.copy(deep=False)
     ds.temp.attrs["grid_mapping"] = "foo"
@@ -1082,6 +1276,10 @@ def test_bad_grid_mapping_attribute():
     #    assert ds.cf.grid_mappings == {}
     with pytest.warns(UserWarning):
         ds.cf.get_associated_variable_names("temp", error=False)
+
+    # Test .grid_mappings property with bad grid mapping - should return empty tuple
+    grid_mappings = ds.cf.grid_mappings
+    assert grid_mappings == ()  # No valid grid mappings since 'foo' doesn't exist
 
 
 def test_docstring() -> None:

@@ -971,3 +971,78 @@ def cf_to_polygons(ds: xr.Dataset):
     return xr.DataArray(
         geoms, dims=node_count.dims, coords=node_count.coords
     ).drop_vars(node_count_name)
+
+
+def bounds_to_polygons(ds: xr.Dataset) -> xr.DataArray:
+    """
+    Converts a regular 2D lat/lon grid to a 2D array of shapely polygons.
+
+    Modified from https://notebooksharing.space/view/c6c1f3a7d0c260724115eaa2bf78f3738b275f7f633c1558639e7bbd75b31456.
+
+    Parameters
+    ----------
+    ds : xr.Dataset
+        Dataset with "latitude" and "longitude" variables as well as their bounds variables.
+        1D "latitude" and "longitude" variables are supported. This function will automatically
+        broadcast them against each other.
+
+    Returns
+    -------
+    DataArray
+        DataArray with shapely polygon per grid cell.
+    """
+    import shapely
+
+    grid = ds.cf[["latitude", "longitude"]].load()
+    bounds = grid.cf.bounds
+    coordinates = grid.cf.coordinates
+    dims = tuple(grid.cf.sizes)
+    bounds_dim = grid.cf.get_bounds_dim_name("latitude")
+
+    if "latitude" in dims or "longitude" in dims:
+        # for 1D lat, lon, this allows them to be
+        # broadcast against each other
+        grid = grid.reset_coords()
+
+    assert "latitude" in bounds
+    assert "longitude" in bounds
+    (lon,) = coordinates["longitude"]
+    (lon_bounds,) = bounds["longitude"]
+    (lat,) = coordinates["latitude"]
+    (lat_bounds,) = bounds["latitude"]
+
+    with xr.set_options(keep_attrs=True):
+        broadcasted = xr.broadcast(
+            grid[lon],
+            grid[lat],
+        ) + xr.broadcast(
+            grid[lon_bounds],
+            grid[lat_bounds],
+        )
+        asdict = dict(zip([lon, lat, lon_bounds, lat_bounds], broadcasted))
+        # display(asdict)
+        points = xr.Dataset(asdict)
+
+    points = points.transpose(..., bounds_dim)
+    lonbnd = points[lon_bounds].data
+    latbnd = points[lat_bounds].data
+
+    if points.sizes[bounds_dim] == 2:
+        lonbnd = lonbnd[..., [0, 0, 1, 1]]
+        latbnd = latbnd[..., [0, 1, 1, 0]]
+
+    elif points.sizes[bounds_dim] != 4:
+        raise ValueError(
+            f"The size of the detected bounds or vertex dimension {bounds_dim} is not 2 or 4."
+        )
+
+    # geopandas needs this
+    mask = lonbnd[..., 0] >= 180
+    lonbnd[mask, :] = lonbnd[mask, :] - 360
+
+    polyarray = shapely.polygons(shapely.linearrings(lonbnd, latbnd))
+
+    # 'geometry' is a blessed name in geopandas.
+    boxes = points[lon_bounds][..., 0].copy(data=polyarray).rename("geometry")
+
+    return boxes

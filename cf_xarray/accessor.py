@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import importlib
 import inspect
 import itertools
 import re
@@ -48,6 +49,14 @@ except ImportError:
     )
 
 
+if importlib.util.find_spec("cartopy"):
+    # pyproj is a dep of cartopy
+    import cartopy.crs
+    import pyproj
+else:
+    pyproj = None
+
+
 from . import parametric, sgrid
 from .criteria import (
     _DSG_ROLES,
@@ -76,6 +85,7 @@ from .utils import (
     always_iterable,
     emit_user_level_warning,
     invert_mappings,
+    is_latitude_longitude,
     parse_cell_methods_attr,
     parse_cf_standard_name_table,
 )
@@ -1092,6 +1102,10 @@ class _CFWrappedPlotMethods:
                 func.__name__ == "wrapper"
                 and (kwargs.get("hue") or self._obj.ndim == 1)
             )
+            is_grid_plot = (func.__name__ in ["contour", "countourf", "pcolormsh"]) or (
+                func.__name__ == "wrapper"
+                and (self._obj.ndim - sum(["col" in kwargs, "row" in kwargs])) == 2
+            )
             if is_line_plot:
                 hue = kwargs.get("hue")
                 if "x" not in kwargs and "y" not in kwargs:
@@ -1101,6 +1115,20 @@ class _CFWrappedPlotMethods:
             else:
                 kwargs = self._process_x_or_y(kwargs, "x", skip=kwargs.get("y"))
                 kwargs = self._process_x_or_y(kwargs, "y", skip=kwargs.get("x"))
+            if is_grid_plot and pyproj is not None:
+                from cartopy.mpl.geoaxes import GeoAxes
+
+                ax = kwargs.get("ax")
+                if ax is None or isinstance(ax, GeoAxes):
+                    try:
+                        kwargs["transform"] = self._obj.cf.cartopy_crs
+                    except ValueError:
+                        pass
+                    else:
+                        if ax is None:
+                            kwargs.setdefault("subplot_kws", {}).setdefault(
+                                "projection", kwargs["transform"]
+                            )
 
             # Now set some nice properties
             kwargs = self._set_axis_props(kwargs, "x")
@@ -2745,6 +2773,24 @@ class CFDatasetAccessor(CFAccessor):
                 results[v].append(k)
         return results
 
+    @property
+    def cartopy_crs(self):
+        """Cartopy CRS of the dataset's grid mapping."""
+        if pyproj is None:
+            raise ImportError(
+                "`crs` accessor requires optional packages `pyproj` and `cartopy`."
+            )
+        gmaps = list(itertools.chain(*self.grid_mapping_names.values()))
+        if len(gmaps) > 1:
+            raise ValueError("Multiple grid mappings found.")
+        if len(gmaps) == 0:
+            if is_latitude_longitude(self._obj):
+                return cartopy.crs.PlateCarree()
+            raise ValueError(
+                "No grid mapping found and dataset guessed as not latitude_longitude."
+            )
+        return cartopy.crs.Projection(pyproj.CRS.from_cf(self._obj[gmaps[0]].attrs))
+
     def decode_vertical_coords(
         self, *, outnames: dict[str, str] | None = None, prefix: str | None = None
     ) -> None:
@@ -2899,6 +2945,21 @@ class CFDataArrayAccessor(CFAccessor):
             terms[key] = value
         return terms
 
+    def _get_grid_mapping(self, ignore_missing=False) -> DataArray | None:
+        da = self._obj
+
+        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
+        grid_mapping = attrs_or_encoding.get("grid_mapping", None)
+        if not grid_mapping:
+            if ignore_missing:
+                return None
+            raise ValueError("No 'grid_mapping' attribute present.")
+
+        if grid_mapping not in da._coords:
+            raise ValueError(f"Grid Mapping variable {grid_mapping} not present.")
+
+        return da[grid_mapping]
+
     @property
     def grid_mapping_name(self) -> str:
         """
@@ -2919,20 +2980,25 @@ class CFDataArrayAccessor(CFAccessor):
         >>> rotds.cf["temp"].cf.grid_mapping_name
         'rotated_latitude_longitude'
         """
-
-        da = self._obj
-
-        attrs_or_encoding = ChainMap(da.attrs, da.encoding)
-        grid_mapping = attrs_or_encoding.get("grid_mapping", None)
-        if not grid_mapping:
-            raise ValueError("No 'grid_mapping' attribute present.")
-
-        if grid_mapping not in da._coords:
-            raise ValueError(f"Grid Mapping variable {grid_mapping} not present.")
-
-        grid_mapping_var = da[grid_mapping]
-
+        grid_mapping_var = self._get_grid_mapping()
         return grid_mapping_var.attrs["grid_mapping_name"]
+
+    @property
+    def cartopy_crs(self):
+        """Cartopy CRS of the dataset's grid mapping."""
+        if pyproj is None:
+            raise ImportError(
+                "`crs` accessor requires optional packages `pyproj` and `cartopy`."
+            )
+
+        grid_mapping_var = self._get_grid_mapping(ignore_missing=True)
+        if grid_mapping_var is None:
+            if is_latitude_longitude(self._obj):
+                return cartopy.crs.PlateCarree()
+            raise ValueError(
+                "No grid mapping found and dataset guesses as not latitude_longitude."
+            )
+        return cartopy.crs.Projection(pyproj.CRS.from_cf(grid_mapping_var.attrs))
 
     def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray:
         """

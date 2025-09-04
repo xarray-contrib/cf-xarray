@@ -193,3 +193,18 @@ def emit_user_level_warning(message, category=None):
     """Emit a warning at the user level by inspecting the stack trace."""
     stacklevel = find_stack_level()
     warnings.warn(message, category=category, stacklevel=stacklevel)
+
+
+def is_latitude_longitude(ds):
+    """
+    A dataset is probably using the latitude_longitude grid mapping implicitly if
+    - it has both longitude and latitude coordinates
+    - they are 1D (so either a list of points or a regular grid)
+    """
+    coords = ds.cf.coordinates
+    return (
+        "longitude" in coords
+        and "latitude" in coords
+        and ds[coords["longitude"][0]].ndim == 1
+        and ds[coords["latitude"][0]].ndim == 1
+    )

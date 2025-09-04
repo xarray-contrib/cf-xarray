@@ -758,7 +758,7 @@ try:
         ("x", "y"),
         np.arange(200).reshape((10, 20)),
         {
-            "grid_mapping": "spatial_ref: crs_4326: latitude longitude crs_27700: x27700 y27700"
+            "grid_mapping": "spatial_ref: x y crs_4326: latitude longitude crs_27700: x27700 y27700"
         },
     )
     hrrrds.coords["spatial_ref"] = ((), 0, CRS.from_epsg(3035).to_cf())

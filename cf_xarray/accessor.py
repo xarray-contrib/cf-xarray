@@ -554,7 +554,7 @@ def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[Hash
 
 def _create_grid_mapping(
     var_name: str,
-    obj_dataset: Dataset,
+    ds: Dataset,
     grid_mapping_dict: dict[str, list[Hashable]],
 ) -> GridMapping:
     """
@@ -576,41 +576,40 @@ def _create_grid_mapping(
 
     Notes
     -----
-    Assumes pyproj is available (should be checked by caller).
+    Assumes pyproj is available.
     """
-    from pyproj import (
-        CRS,  # Safe to import since grid_mappings property checks availability
-    )
+    import pyproj
 
-    var = obj_dataset._variables[var_name]
+    var = ds._variables[var_name]
 
     # Create DataArray from Variable, preserving the name
-    # Use reset_coords(drop=True) to avoid coordinate conflicts
-    if var_name in obj_dataset.coords:
-        da = obj_dataset.coords[var_name].reset_coords(drop=True)
-    else:
-        da = obj_dataset[var_name].reset_coords(drop=True)
+    da = xr.DataArray(ds._variables[var_name], name=var_name)
 
     # Get the CF grid mapping name from the variable's attributes
     cf_name = var.attrs.get("grid_mapping_name", var_name)
 
     # Create CRS from the grid mapping variable
-    try:
-        crs = CRS.from_cf(var.attrs)
-    except Exception:
-        # If CRS creation fails, use None
-        crs = None
+    crs = pyproj.CRS.from_cf(var.attrs)
 
     # Get associated coordinate variables, fallback to dimension names
     coordinates: list[Hashable] = grid_mapping_dict.get(var_name, [])
-    if not coordinates:
-        # For DataArrays, find the data variable that references this grid mapping
-        for _data_var_name, data_var in obj_dataset.data_vars.items():
-            if "grid_mapping" in data_var.attrs:
-                gm_attr = data_var.attrs["grid_mapping"]
-                if var_name in gm_attr:
-                    coordinates = list(data_var.dims)
-                    break
+    # """
+    #     In order to make use of a grid mapping to directly calculate latitude and longitude values
+    #     it is necessary to associate the coordinate variables with the independent variables of the mapping.
+    #     This is done by assigning a standard_name to the coordinate variable.
+    #     The appropriate values of the standard_name depend on the grid mapping and are given in Appendix F, Grid Mappings.
+    # """
+    if not coordinates and len(grid_mapping_dict) == 1:
+        if crs.to_cf().get("grid_mapping_name") == "rotated_latitude_longitude":
+            xname, yname = "grid_longitude", "grid_latitude"
+        elif crs.is_geographic:
+            xname, yname = "longitude", "latitude"
+        elif crs.is_projected:
+            xname, yname = "projection_x_coordinate", "projection_y_coordinate"
+
+        x = apply_mapper(_get_with_standard_name, ds, xname, error=False, default=[[]])
+        y = apply_mapper(_get_with_standard_name, ds, yname, error=False, default=[[]])
+        coordinates = tuple(itertools.chain(x, y))
 
     return GridMapping(name=cf_name, crs=crs, array=da, coordinates=tuple(coordinates))
 

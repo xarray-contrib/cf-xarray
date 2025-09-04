@@ -16,7 +16,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "xarray>=2023.09.0",
+    "xarray>=2024.7.0",
 ]
 dynamic = ["version"]
 
@@ -150,3 +150,95 @@ ignore_missing_imports = true
 
 [tool.coverage.run]
 omit = ["*/tests/*"]
+
+[dependency-groups]
+test-base = [
+    "pytest-cov",
+    "pytest",
+    "pytest-xdist",
+    "pytest-pretty",
+]
+
+test = [
+    {include-group = "test-base"},
+    "dask",
+    "flox",
+    "lxml",
+    "matplotlib",
+    "netcdf4",
+    "pandas",
+    "pint",
+    "pooch",
+    "regex",
+    "rich",
+    "scipy",
+    "shapely",
+    "pyproj",
+]
+
+test-no-optional = [
+    {include-group = "test-base"},
+    "dask",
+    "matplotlib",
+    "netcdf4",
+    "pandas",
+    "pooch",
+]
+
+test-min-deps = [
+    {include-group = "test-base"},
+    "dask",
+    "flox",
+    "lxml",
+    "matplotlib",
+    "netcdf4",
+    "pandas",
+    "pint>=0.18",
+    "pooch",
+    "regex",
+    "rich",
+    "scipy",
+    "shapely",
+    "pyproj",
+]
+
+docs = [
+    "matplotlib",
+    "netcdf4",
+    "pooch",
+    "sphinx",
+    "sphinx-copybutton",
+    "sphinx-autobuild",
+    "numpydoc",
+    "sphinx-autosummary-accessors",
+    "ipython",
+    "ipykernel",
+    "ipywidgets",
+    "pandas",
+    "pint",
+    "regex",
+    "shapely",
+    "furo>=2024",
+    "myst-nb",
+    "pyproj",
+]
+
+test-upstream = [
+    {include-group = "test-base"},
+    "pytest-reportlog",
+    "dask",
+    "matplotlib",
+    "netcdf4",
+    "pandas",
+    "pooch",
+    "rich",
+    "shapely",
+    "pyproj",
+    "xarray @ git+https://github.com/pydata/xarray.git",
+    "flox @ git+https://github.com/dcherian/flox.git",
+    "pint @ git+https://github.com/hgrecco/pint.git",
+]
+
+typing = [
+    "mypy",
+]

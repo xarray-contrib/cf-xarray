@@ -4,16 +4,14 @@ sphinx:
 build:
   os: ubuntu-lts-latest
   tools:
-    python: mambaforge-latest
+    python: "3.11"
   jobs:
     post_checkout:
       - (git --no-pager log --pretty="tformat:%s" -1 | grep -vqF "[skip-rtd]") || exit 183
-    pre_install:
-      - conda list sphinx
-      - conda list cf_xarray
-      - conda list
-
-conda:
-  environment: ci/doc.yml
+    post_create_environment:
+      - pip install uv
+    post_install:
+      - uv pip install --system -e .
+      - uv pip install --system --group docs
 
 formats: []

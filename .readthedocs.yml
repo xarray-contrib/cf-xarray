@@ -6,12 +6,15 @@ build:
   tools:
     python: "3.11"
   jobs:
+    pre_create_environment:
+      - asdf plugin add uv
+      - asdf install uv latest
+      - asdf global uv latest
+    create_environment:
+      - uv venv "${READTHEDOCS_VIRTUALENV_PATH}"
+    install:
+      - UV_PROJECT_ENVIRONMENT="${READTHEDOCS_VIRTUALENV_PATH}" uv sync --frozen --group docs
     post_checkout:
       - (git --no-pager log --pretty="tformat:%s" -1 | grep -vqF "[skip-rtd]") || exit 183
-    post_create_environment:
-      - pip install uv
-    post_install:
-      - uv pip install --system -e .
-      - uv pip install --system --group docs
 
 formats: []

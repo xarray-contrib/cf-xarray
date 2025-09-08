@@ -222,6 +222,11 @@ def _get_core_dim_orders(core_dim_coords: dict[str, np.ndarray]) -> dict[str, st
     core_dim_orders = {}
 
     for dim, coords in core_dim_coords.items():
+        if coords.size <= 1:
+            # A single value, same as all values are equal, treat as ascending
+            core_dim_orders[dim] = "ascending"
+            continue
+
         diffs = np.diff(coords)
 
         # Handle datetime64 and timedelta64 safely for both numpy 1.26.4 and numpy 2

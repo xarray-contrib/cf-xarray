@@ -338,6 +338,12 @@ def _get_ordered_vertices(
         elif order == "descending":
             endpoints = np.maximum(bounds[..., :, 0], bounds[..., :, 1])
             last_endpoint = np.minimum(bounds[..., -1, 0], bounds[..., -1, 1])
+        elif order == "mixed":
+            raise ValueError(
+                "Cannot determine vertices for non-monotonic bounds with mixed core "
+                "dimension orders. Try normalizing the coordinates to a monotonic "
+                "convention and try again."
+            )
 
         vertices = np.concatenate(
             [endpoints, np.expand_dims(last_endpoint, axis=-1)], axis=-1

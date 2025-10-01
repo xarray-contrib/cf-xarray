@@ -58,7 +58,7 @@ jobs:
           pytest -n auto --cov=./ --cov-report=xml
 
       - name: Upload code coverage to Codecov
-        uses: codecov/codecov-action@v5.5.0
+        uses: codecov/codecov-action@v5.5.1
         with:
           file: ./coverage.xml
           flags: unittests
@@ -98,7 +98,7 @@ jobs:
           python -m mypy --install-types --non-interactive --cobertura-xml-report mypy_report cf_xarray/
 
       - name: Upload mypy coverage to Codecov
-        uses: codecov/codecov-action@v5.5.0
+        uses: codecov/codecov-action@v5.5.1
         with:
           file: mypy_report/cobertura.xml
           flags: mypy

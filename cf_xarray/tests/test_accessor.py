@@ -832,6 +832,9 @@ def test_add_bounds(dims):
         assert_allclose(
             added[name].reset_coords(drop=True), expected[dim].transpose(..., "bounds")
         )
+        if dim == "lat":
+            # The CF axes shouldn't have changed
+            assert added.cf.axes["Y"] == ["lat"]
 
     _check_unchanged(original, ds)
 

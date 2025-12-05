@@ -796,18 +796,18 @@ def _guess_bounds(da, dim=None, out_dim="bounds"):
                 f"If dim is None, variable {da.name} must be 1D or 2D. Received {da.ndim}D variable instead."
             )
         dim = da.dims
+    with xr.set_options(keep_attrs=False):
+        if not isinstance(dim, str):
+            if len(dim) > 2:
+                raise NotImplementedError(
+                    "Adding bounds with more than 2 dimensions is not supported."
+                )
+            elif len(dim) == 2:
+                return _guess_bounds_2d(da, dim).rename(bounds=out_dim)
+            else:
+                dim = dim[0]
 
-    if not isinstance(dim, str):
-        if len(dim) > 2:
-            raise NotImplementedError(
-                "Adding bounds with more than 2 dimensions is not supported."
-            )
-        elif len(dim) == 2:
-            return _guess_bounds_2d(da, dim).rename(bounds=out_dim)
-        else:
-            dim = dim[0]
-
-    return _guess_bounds_1d(da, dim).rename(bounds=out_dim)
+        return _guess_bounds_1d(da, dim).rename(bounds=out_dim)
 
 
 def _build_docstring(func):

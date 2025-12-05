@@ -806,7 +806,7 @@ def _guess_bounds(da, dim=None, out_dim="bounds"):
         else:
             dim = dim[0]
 
-    return _guess_bounds_1d(da, dim)
+    return _guess_bounds_1d(da, dim).rename(bounds=out_dim)
 
 
 def _build_docstring(func):

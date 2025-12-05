@@ -154,7 +154,7 @@ omit = ["*/tests/*"]
 [dependency-groups]
 test-base = [
     "pytest-cov",
-    "pytest",
+    "pytest<9",
     "pytest-xdist",
     "pytest-pretty",
 ]

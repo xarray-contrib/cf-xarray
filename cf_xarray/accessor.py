@@ -796,7 +796,6 @@ def _guess_bounds(da, dim=None, out_dim="bounds"):
                 f"If dim is None, variable {da.name} must be 1D or 2D. Received {da.ndim}D variable instead."
             )
         dim = da.dims
-
     if not isinstance(dim, str):
         if len(dim) > 2:
             raise NotImplementedError(

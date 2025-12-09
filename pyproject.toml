@@ -107,7 +107,6 @@ docstring-code-format = true
 
 
 [tool.pytest]
-python_files = "test_*.py"
 testpaths = ["cf_xarray/tests"]
 
 [tool.rstcheck]
@@ -154,7 +153,7 @@ omit = ["*/tests/*"]
 [dependency-groups]
 test-base = [
     "pytest-cov",
-    "pytest<9",
+    "pytest",
     "pytest-xdist",
     "pytest-pretty",
 ]

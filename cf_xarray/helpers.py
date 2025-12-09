@@ -34,7 +34,7 @@ def _guess_bounds_1d(da, dim):
     result = xr.concat([first, bounds], dim=dim).transpose(..., "bounds")
     if ADDED_INDEX:
         result = result.drop_vars(dim)
-    return result
+    return result.drop_attrs(deep=False)
 
 
 def _guess_bounds_2d(da, dims):

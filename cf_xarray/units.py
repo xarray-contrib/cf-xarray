@@ -60,7 +60,7 @@ def short_formatter(unit, registry, **options):
 # Reused with modification from MetPy under the terms of the BSD 3-Clause License.
 # Copyright (c) 2015,2017,2019 MetPy Developers.
 # Create registry, with preprocessors for UDUNITS-style powers (m2 s-2) and percent signs
-units = pint.UnitRegistry(
+units: pint.UnitRegistry = pint.UnitRegistry(
     autoconvert_offset_to_baseunit=True,
     preprocessors=[
         functools.partial(

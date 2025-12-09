@@ -586,7 +586,11 @@ def points_to_cf(
         coord = None
         pts_ = pts
 
-    x, y, node_count, crdX, crdY = [], [], [], [], []
+    x: list[np.ndarray] = []
+    y: list[np.ndarray] = []
+    node_count: list[int] = []
+    crdX: list[float] = []
+    crdY: list[float] = []
     for pt in pts_:
         if isinstance(pt, MultiPoint):
             xy = np.concatenate([p.coords for p in pt.geoms])

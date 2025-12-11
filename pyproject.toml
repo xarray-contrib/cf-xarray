@@ -107,7 +107,6 @@ docstring-code-format = true
 
 
 [tool.pytest]
-python_files = "test_*.py"
 testpaths = ["cf_xarray/tests"]
 
 [tool.rstcheck]

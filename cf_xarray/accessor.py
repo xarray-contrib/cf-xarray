@@ -589,7 +589,46 @@ def _create_grid_mapping(
     cf_name = var.attrs.get("grid_mapping_name", var_name)
 
     # Create CRS from the grid mapping variable
-    crs = pyproj.CRS.from_cf(var.attrs)
+    if cf_name == "healpix":
+        # pyproj does not recognize "healpix" as a grid mapping name,
+        # but the grid uses geographic (lat/lon) coordinates on a sphere.
+        # Build a geographic CRS from the earth_radius parameter.
+        earth_radius = var.attrs.get("earth_radius", 6371229.0)
+        crs = pyproj.CRS.from_json_dict(
+            {
+                "$schema": "https://proj.org/schemas/v0.6/projjson.schema.json",
+                "type": "GeographicCRS",
+                "name": "HEALPix Grid",
+                "datum": {
+                    "type": "GeodeticReferenceFrame",
+                    "name": "Unknown",
+                    "ellipsoid": {
+                        "name": "Custom",
+                        "semi_major_axis": earth_radius,
+                        "semi_minor_axis": earth_radius,
+                    },
+                },
+                "coordinate_system": {
+                    "subtype": "ellipsoidal",
+                    "axis": [
+                        {
+                            "name": "Latitude",
+                            "abbreviation": "lat",
+                            "direction": "north",
+                            "unit": "degree",
+                        },
+                        {
+                            "name": "Longitude",
+                            "abbreviation": "lon",
+                            "direction": "east",
+                            "unit": "degree",
+                        },
+                    ],
+                },
+            }
+        )
+    else:
+        crs = pyproj.CRS.from_cf(var.attrs)
 
     # Get associated coordinate variables, fallback to dimension names
     coordinates: list[Hashable] = grid_mapping_dict.get(var_name, [])
@@ -600,7 +639,11 @@ def _create_grid_mapping(
     #     The appropriate values of the standard_name depend on the grid mapping and are given in Appendix F, Grid Mappings.
     # """
     if not coordinates and len(grid_mapping_dict) == 1:
-        if crs.to_cf().get("grid_mapping_name") == "rotated_latitude_longitude":
+        if cf_name == "healpix":
+            # For HEALPix grids, coordinates are typically latitude/longitude
+            # (if present), but pixel indices are the primary indexing mechanism.
+            xname, yname = "longitude", "latitude"
+        elif crs.to_cf().get("grid_mapping_name") == "rotated_latitude_longitude":
             xname, yname = "grid_longitude", "grid_latitude"
         elif crs.is_geographic:
             xname, yname = "longitude", "latitude"

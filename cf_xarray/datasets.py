@@ -784,6 +784,52 @@ try:
         np.zeros((10, 20)),
         {"standard_name": "projected_y_coordinate"},
     )
+    # HEALPix dataset: refinement_level=1, nside=2, 12*nside^2 = 48 pixels, nested ordering
+    healpix_ds = xr.Dataset(
+        {
+            "tas": xr.DataArray(
+                np.random.default_rng(42).standard_normal((2, 48)).astype(np.float32),
+                dims=["time", "healpix_index"],
+                attrs={
+                    "standard_name": "air_temperature",
+                    "units": "K",
+                    "coordinates": "height",
+                    "grid_mapping": "healpix",
+                    "cell_methods": "time: mean area: mean",
+                },
+            ),
+            "healpix": xr.DataArray(
+                np.int32(0),
+                attrs={
+                    "grid_mapping_name": "healpix",
+                    "earth_radius": 6371000,
+                    "indexing_scheme": "nested",
+                    "refinement_level": 1,
+                },
+            ),
+        },
+        coords={
+            "time": xr.DataArray(
+                [0.0, 1.0],
+                dims=["time"],
+                attrs={
+                    "standard_name": "time",
+                    "calendar": "proleptic_gregorian",
+                    "units": "days since 2025-06-01",
+                },
+            ),
+            "healpix_index": xr.DataArray(
+                np.arange(48),
+                dims=["healpix_index"],
+                attrs={"standard_name": "healpix_index"},
+            ),
+            "height": xr.DataArray(
+                np.float32(2.0),
+                attrs={"standard_name": "height", "units": "m"},
+            ),
+        },
+    )
+
 except ImportError:
     pass
 

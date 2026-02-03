@@ -1265,6 +1265,132 @@ def test_grid_mappings_coordinates_attribute():
 
 
 @requires_pyproj
+def test_reduced_gaussian_grid_mapping_global():
+    """Test GridMapping integration for a full reduced gaussian grid."""
+    from ..datasets import reduced_gaussian_global_ds as ds
+
+    # Grid mapping discovery
+    assert ds.cf.grid_mapping_names == {"reduced_gaussian": ["reduced_gaussian"]}
+
+    # CF indexing returns the grid mapping variable
+    gm_var = ds.cf["reduced_gaussian"]
+    assert gm_var.attrs["grid_mapping_name"] == "reduced_gaussian"
+    assert gm_var.attrs["grid_subtype"] == "octahedral"
+
+    # Grid mapping propagation to data variables
+    da = ds.cf["air_temperature"]
+    assert "reduced_gaussian" in da.coords
+
+    # grid_mapping_name property
+    assert da.cf.grid_mapping_name == "reduced_gaussian"
+
+    # .cf.grid_mappings property returns valid GridMapping
+    gms = ds.cf.grid_mappings
+    assert len(gms) == 1
+    gm = gms[0]
+    assert gm.name == "reduced_gaussian"
+    assert gm.crs is not None
+    assert gm.crs.is_geographic
+    assert gm.array.name == "reduced_gaussian"
+    assert gm.array.shape == ()  # scalar variable
+    assert isinstance(gm.coordinates, tuple)
+    # Should detect reduced_gaussian_index via standard_name
+    assert "reduced_gaussian_index" in gm.coordinates
+
+    # DataArray grid_mappings should also work
+    da_gms = da.cf.grid_mappings
+    assert len(da_gms) == 1
+    assert da_gms[0].name == "reduced_gaussian"
+    assert da_gms[0].crs.is_geographic
+
+    # Repr should include reduced_gaussian
+    assert "reduced_gaussian" in ds.cf.__repr__()
+
+
+@requires_pyproj
+def test_reduced_gaussian_grid_mapping_land():
+    """Test GridMapping for a land-only subset using CF compress/gather."""
+    from ..datasets import reduced_gaussian_land_ds as ds
+
+    # Grid mapping discovery
+    assert ds.cf.grid_mapping_names == {"reduced_gaussian": ["reduced_gaussian"]}
+
+    # Grid mapping propagation
+    da = ds.cf["air_temperature"]
+    assert "reduced_gaussian" in da.coords
+
+    # .cf.grid_mappings property
+    gms = ds.cf.grid_mappings
+    assert len(gms) == 1
+    gm = gms[0]
+    assert gm.name == "reduced_gaussian"
+    assert gm.crs.is_geographic
+    assert gm.array.attrs["grid_subtype"] == "octahedral"
+
+    # Coordinates should include the compress/gather variable
+    assert "grid_points" in gm.coordinates
+
+    # Verify the dataset structure: data on grid_points, with compress attribute
+    assert "grid_points" in ds.dims
+    assert "compress" in ds.grid_points.attrs
+    assert ds.grid_points.attrs["compress"] == "reduced_gaussian_index"
+
+
+@requires_pyproj
+def test_reduced_gaussian_grid_mapping_region():
+    """Test GridMapping for a regional subset using CF compress/gather."""
+    from ..datasets import reduced_gaussian_region_ds as ds
+
+    # Grid mapping discovery
+    assert ds.cf.grid_mapping_names == {"reduced_gaussian": ["reduced_gaussian"]}
+
+    # Grid mapping propagation
+    da = ds.cf["air_temperature"]
+    assert "reduced_gaussian" in da.coords
+
+    # .cf.grid_mappings property
+    gms = ds.cf.grid_mappings
+    assert len(gms) == 1
+    gm = gms[0]
+    assert gm.name == "reduced_gaussian"
+    assert gm.crs.is_geographic
+
+    # Coordinates should include both reduced_gaussian_index and grid_points
+    assert "reduced_gaussian_index" in gm.coordinates
+    assert "grid_points" in gm.coordinates
+
+    # Verify compress structure
+    assert "grid_points" in ds.dims
+    assert ds.grid_points.attrs["compress"] == "reduced_gaussian_index"
+
+    # CRS earth parameters should match the grid mapping variable
+    gm_attrs = ds.reduced_gaussian.attrs
+    # The CRS should be built from semi_major/minor_axis
+    assert gm.crs.ellipsoid is not None
+    assert gm.crs.ellipsoid.semi_major_metre == gm_attrs["semi_major_axis"]
+
+
+@requires_pyproj
+def test_reduced_gaussian_crs_properties():
+    """Test that the CRS built for reduced_gaussian has correct properties."""
+    from ..datasets import reduced_gaussian_global_ds as ds
+
+    gm = ds.cf.grid_mappings[0]
+    crs = gm.crs
+
+    # Must be geographic (lat/lon on a sphere)
+    assert crs.is_geographic
+    assert not crs.is_projected
+
+    # Earth shape parameters from the grid mapping variable
+    assert crs.ellipsoid.semi_major_metre == 6371229.0
+    assert crs.ellipsoid.semi_minor_metre == 6371229.0
+
+    # Should not have an EPSG code (custom sphere)
+    assert crs.to_epsg() is None
+
+
+@requires_pyproj
 def test_bad_grid_mapping_attribute():
     ds = rotds.copy(deep=False)
     ds.temp.attrs["grid_mapping"] = "foo"
@@ -1310,6 +1436,8 @@ def test_healpix_grid_mapping():
     assert gm.array.name == "healpix"
     assert gm.array.shape == ()  # scalar variable
     assert isinstance(gm.coordinates, tuple)
+    # Should detect healpix_index via standard_name
+    assert "healpix_index" in gm.coordinates
 
     # DataArray grid_mappings should also work
     da_gms = da.cf.grid_mappings

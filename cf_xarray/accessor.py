@@ -589,7 +589,44 @@ def _create_grid_mapping(
     cf_name = var.attrs.get("grid_mapping_name", var_name)
 
     # Create CRS from the grid mapping variable
-    if cf_name == "healpix":
+    if cf_name == "reduced_gaussian":
+        # pyproj does not recognize "reduced_gaussian" as a grid mapping name,
+        # but the grid uses geographic (lat/lon) coordinates on a sphere or
+        # spheroid. Build a geographic CRS from the earth shape parameters.
+        crs = pyproj.CRS.from_json_dict(
+            {
+                "$schema": "https://proj.org/schemas/v0.6/projjson.schema.json",
+                "type": "GeographicCRS",
+                "name": "Reduced Gaussian Grid",
+                "datum": {
+                    "type": "GeodeticReferenceFrame",
+                    "name": "Unknown",
+                    "ellipsoid": {
+                        "name": "Custom",
+                        "semi_major_axis": var.attrs.get("semi_major_axis", 6371229.0),
+                        "semi_minor_axis": var.attrs.get("semi_minor_axis", 6371229.0),
+                    },
+                },
+                "coordinate_system": {
+                    "subtype": "ellipsoidal",
+                    "axis": [
+                        {
+                            "name": "Latitude",
+                            "abbreviation": "lat",
+                            "direction": "north",
+                            "unit": "degree",
+                        },
+                        {
+                            "name": "Longitude",
+                            "abbreviation": "lon",
+                            "direction": "east",
+                            "unit": "degree",
+                        },
+                    ],
+                },
+            }
+        )
+    elif cf_name == "healpix":
         # pyproj does not recognize "healpix" as a grid mapping name,
         # but the grid uses geographic (lat/lon) coordinates on a sphere.
         # Build a geographic CRS from the earth_radius parameter.
@@ -640,19 +677,46 @@ def _create_grid_mapping(
     # """
     if not coordinates and len(grid_mapping_dict) == 1:
         if cf_name == "healpix":
-            # For HEALPix grids, coordinates are typically latitude/longitude
-            # (if present), but pixel indices are the primary indexing mechanism.
-            xname, yname = "longitude", "latitude"
-        elif crs.to_cf().get("grid_mapping_name") == "rotated_latitude_longitude":
-            xname, yname = "grid_longitude", "grid_latitude"
-        elif crs.is_geographic:
-            xname, yname = "longitude", "latitude"
-        elif crs.is_projected:
-            xname, yname = "projection_x_coordinate", "projection_y_coordinate"
+            # For HEALPix grids, the primary coordinate is the pixel index.
+            coords_found = apply_mapper(
+                _get_with_standard_name, ds, "healpix_index", error=False, default=[[]]
+            )
+            coordinates = list(itertools.chain(coords_found))
+        elif cf_name == "reduced_gaussian":
+            # For reduced gaussian grids, the primary coordinate is the grid
+            # point index. For compressed subsets, also look for the gather
+            # variable (with compress attribute).
+            idx_coords = apply_mapper(
+                _get_with_standard_name,
+                ds,
+                "reduced_gaussian_index",
+                error=False,
+                default=[[]],
+            )
+            coordinates = list(itertools.chain(idx_coords))
+            # Also find any compress/gather variable that references
+            # the detected index coordinate(s)
+            for vname in ds.coords:
+                if "compress" in ds[vname].attrs:
+                    compress_target = ds[vname].attrs["compress"]
+                    if any(c in compress_target for c in coordinates):
+                        if vname not in coordinates:
+                            coordinates.append(vname)
+        else:
+            if crs.to_cf().get("grid_mapping_name") == "rotated_latitude_longitude":
+                xname, yname = "grid_longitude", "grid_latitude"
+            elif crs.is_geographic:
+                xname, yname = "longitude", "latitude"
+            elif crs.is_projected:
+                xname, yname = "projection_x_coordinate", "projection_y_coordinate"
 
-        x = apply_mapper(_get_with_standard_name, ds, xname, error=False, default=[[]])
-        y = apply_mapper(_get_with_standard_name, ds, yname, error=False, default=[[]])
-        coordinates = list(itertools.chain(x, y))
+            x = apply_mapper(
+                _get_with_standard_name, ds, xname, error=False, default=[[]]
+            )
+            y = apply_mapper(
+                _get_with_standard_name, ds, yname, error=False, default=[[]]
+            )
+            coordinates = list(itertools.chain(x, y))
 
     return GridMapping(name=cf_name, crs=crs, array=da, coordinates=tuple(coordinates))
 

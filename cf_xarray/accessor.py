@@ -589,7 +589,45 @@ def _create_grid_mapping(
     cf_name = var.attrs.get("grid_mapping_name", var_name)
 
     # Create CRS from the grid mapping variable
-    crs = pyproj.CRS.from_cf(var.attrs)
+    if cf_name == "reduced_gaussian":
+        # pyproj does not recognize "reduced_gaussian" as a grid mapping name,
+        # but the grid uses geographic (lat/lon) coordinates on a sphere or
+        # spheroid. Build a geographic CRS from the earth shape parameters.
+        crs = pyproj.CRS.from_json_dict(
+            {
+                "$schema": "https://proj.org/schemas/v0.6/projjson.schema.json",
+                "type": "GeographicCRS",
+                "name": "Reduced Gaussian Grid",
+                "datum": {
+                    "type": "GeodeticReferenceFrame",
+                    "name": "Unknown",
+                    "ellipsoid": {
+                        "name": "Custom",
+                        "semi_major_axis": var.attrs.get("semi_major_axis", 6371229.0),
+                        "semi_minor_axis": var.attrs.get("semi_minor_axis", 6371229.0),
+                    },
+                },
+                "coordinate_system": {
+                    "subtype": "ellipsoidal",
+                    "axis": [
+                        {
+                            "name": "Latitude",
+                            "abbreviation": "lat",
+                            "direction": "north",
+                            "unit": "degree",
+                        },
+                        {
+                            "name": "Longitude",
+                            "abbreviation": "lon",
+                            "direction": "east",
+                            "unit": "degree",
+                        },
+                    ],
+                },
+            }
+        )
+    else:
+        crs = pyproj.CRS.from_cf(var.attrs)
 
     # Get associated coordinate variables, fallback to dimension names
     coordinates: list[Hashable] = grid_mapping_dict.get(var_name, [])
@@ -600,7 +638,12 @@ def _create_grid_mapping(
     #     The appropriate values of the standard_name depend on the grid mapping and are given in Appendix F, Grid Mappings.
     # """
     if not coordinates and len(grid_mapping_dict) == 1:
-        if crs.to_cf().get("grid_mapping_name") == "rotated_latitude_longitude":
+        if cf_name == "reduced_gaussian":
+            # For reduced gaussian grids, look for latitude/longitude by standard name.
+            # The latitude dimension is typically present; longitude may not exist yet
+            # (it often needs to be computed from the pl vector).
+            xname, yname = "longitude", "latitude"
+        elif crs.to_cf().get("grid_mapping_name") == "rotated_latitude_longitude":
             xname, yname = "grid_longitude", "grid_latitude"
         elif crs.is_geographic:
             xname, yname = "longitude", "latitude"

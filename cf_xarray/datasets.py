@@ -815,3 +815,144 @@ def encoded_point_dataset():
         {"geometry": "geometry_container"},
     )
     return ds
+
+
+# --- Reduced Gaussian Grid test fixtures ---
+# A tiny O2 octahedral reduced gaussian grid with 4 latitudes and 40 total points.
+
+
+def _create_reduced_gaussian_global():
+    """Create a small O2 reduced gaussian grid dataset (full global)."""
+    lat = np.array([59.44, 19.47, -19.47, -59.44])
+    pl = np.array([8, 12, 12, 8], dtype=np.int32)
+    total = int(np.sum(pl))  # 40
+
+    rng = np.random.default_rng(42)
+    temp_data = rng.standard_normal((1, 1, total)).astype(np.float32)
+
+    ds = xr.Dataset(
+        {
+            "air_temperature": xr.DataArray(
+                temp_data,
+                dims=["time", "height", "reduced_gaussian_index"],
+                attrs={
+                    "grid_mapping": "reduced_gaussian",
+                    "coordinates": "reduced_gaussian_index",
+                    "standard_name": "air_temperature",
+                    "units": "K",
+                },
+            ),
+            "reduced_gaussian": xr.DataArray(
+                np.int32(0),
+                attrs={
+                    "grid_mapping_name": "reduced_gaussian",
+                    "grid_subtype": "octahedral",
+                    "points_per_latitude": "pl",
+                    "latitude_dimension": "lat",
+                    "semi_major_axis": 6371229.0,
+                    "semi_minor_axis": 6371229.0,
+                },
+            ),
+        },
+        coords={
+            "lat": xr.DataArray(
+                lat,
+                dims=["lat"],
+                attrs={"standard_name": "latitude", "units": "degrees_north"},
+            ),
+            "pl": xr.DataArray(
+                pl,
+                dims=["lat"],
+                attrs={"long_name": "number of points per latitude"},
+            ),
+            "reduced_gaussian_index": xr.DataArray(
+                np.arange(total, dtype=np.int32),
+                dims=["reduced_gaussian_index"],
+            ),
+            "time": xr.DataArray(
+                [0.0], dims=["time"], attrs={"units": "hours since 2024-01-01"}
+            ),
+            "height": xr.DataArray([2.0], dims=["height"], attrs={"units": "m"}),
+        },
+    )
+    return ds
+
+
+def _create_reduced_gaussian_land():
+    """Create a small O2 reduced gaussian grid with compression by gathering (land subset)."""
+    global_ds = _create_reduced_gaussian_global()
+    land_indices = np.array([2, 5, 10, 15, 20, 25, 30, 35], dtype=np.int32)
+
+    rng = np.random.default_rng(43)
+    temp_data = rng.standard_normal((1, 1, len(land_indices))).astype(np.float32)
+
+    ds = xr.Dataset(
+        {
+            "air_temperature": xr.DataArray(
+                temp_data,
+                dims=["time", "height", "grid_points"],
+                attrs={
+                    "grid_mapping": "reduced_gaussian",
+                    "coordinates": "time height reduced_gaussian_index",
+                },
+            ),
+            "reduced_gaussian": global_ds["reduced_gaussian"],
+        },
+        coords={
+            "lat": global_ds["lat"],
+            "pl": global_ds["pl"],
+            "reduced_gaussian_index": global_ds["reduced_gaussian_index"],
+            "grid_points": xr.DataArray(
+                land_indices,
+                dims=["grid_points"],
+                attrs={"compress": "reduced_gaussian_index"},
+            ),
+            "time": global_ds["time"],
+            "height": global_ds["height"],
+        },
+    )
+    return ds
+
+
+def _create_reduced_gaussian_region():
+    """Create a small O2 reduced gaussian grid with compression (regional subset)."""
+    global_ds = _create_reduced_gaussian_global()
+    region_indices = np.array([8, 9, 10, 11, 12, 13, 14], dtype=np.int32)
+
+    rng = np.random.default_rng(44)
+    temp_data = rng.standard_normal((1, 1, len(region_indices))).astype(np.float32)
+
+    ds = xr.Dataset(
+        {
+            "air_temperature": xr.DataArray(
+                temp_data,
+                dims=["time", "height", "grid_points"],
+                attrs={
+                    "grid_mapping": "reduced_gaussian",
+                    "coordinates": "time height reduced_gaussian_index",
+                },
+            ),
+            "reduced_gaussian": global_ds["reduced_gaussian"],
+        },
+        coords={
+            "lat": global_ds["lat"],
+            "pl": global_ds["pl"],
+            "reduced_gaussian_index": global_ds["reduced_gaussian_index"],
+            "grid_points": xr.DataArray(
+                region_indices,
+                dims=["grid_points"],
+                attrs={
+                    "standard_name": "reduced_gaussian_index",
+                    "compress": "reduced_gaussian_index",
+                },
+            ),
+            "time": global_ds["time"],
+            "height": global_ds["height"],
+        },
+    )
+    return ds
+
+
+reduced_gaussian_global_ds = _create_reduced_gaussian_global()
+reduced_gaussian_land_ds = _create_reduced_gaussian_land()
+reduced_gaussian_region_ds = _create_reduced_gaussian_region()

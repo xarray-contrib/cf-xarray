@@ -626,6 +626,44 @@ def _create_grid_mapping(
                 },
             }
         )
+    elif cf_name == "healpix":
+        # pyproj does not recognize "healpix" as a grid mapping name,
+        # but the grid uses geographic (lat/lon) coordinates on a sphere.
+        # Build a geographic CRS from the earth_radius parameter.
+        earth_radius = var.attrs.get("earth_radius", 6371229.0)
+        crs = pyproj.CRS.from_json_dict(
+            {
+                "$schema": "https://proj.org/schemas/v0.6/projjson.schema.json",
+                "type": "GeographicCRS",
+                "name": "HEALPix Grid",
+                "datum": {
+                    "type": "GeodeticReferenceFrame",
+                    "name": "Unknown",
+                    "ellipsoid": {
+                        "name": "Custom",
+                        "semi_major_axis": earth_radius,
+                        "semi_minor_axis": earth_radius,
+                    },
+                },
+                "coordinate_system": {
+                    "subtype": "ellipsoidal",
+                    "axis": [
+                        {
+                            "name": "Latitude",
+                            "abbreviation": "lat",
+                            "direction": "north",
+                            "unit": "degree",
+                        },
+                        {
+                            "name": "Longitude",
+                            "abbreviation": "lon",
+                            "direction": "east",
+                            "unit": "degree",
+                        },
+                    ],
+                },
+            }
+        )
     else:
         crs = pyproj.CRS.from_cf(var.attrs)
 
@@ -642,6 +680,10 @@ def _create_grid_mapping(
             # For reduced gaussian grids, look for latitude/longitude by standard name.
             # The latitude dimension is typically present; longitude may not exist yet
             # (it often needs to be computed from the pl vector).
+            xname, yname = "longitude", "latitude"
+        elif cf_name == "healpix":
+            # For HEALPix grids, coordinates are typically latitude/longitude
+            # (if present), but pixel indices are the primary indexing mechanism.
             xname, yname = "longitude", "latitude"
         elif crs.to_cf().get("grid_mapping_name") == "rotated_latitude_longitude":
             xname, yname = "grid_longitude", "grid_latitude"
@@ -839,7 +881,6 @@ def _guess_bounds(da, dim=None, out_dim="bounds"):
                 f"If dim is None, variable {da.name} must be 1D or 2D. Received {da.ndim}D variable instead."
             )
         dim = da.dims
-
     if not isinstance(dim, str):
         if len(dim) > 2:
             raise NotImplementedError(

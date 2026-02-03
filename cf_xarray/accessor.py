@@ -694,11 +694,12 @@ def _create_grid_mapping(
                 default=[[]],
             )
             coordinates = list(itertools.chain(idx_coords))
-            # Also find any compress/gather variable
+            # Also find any compress/gather variable that references
+            # the detected index coordinate(s)
             for vname in ds.coords:
                 if "compress" in ds[vname].attrs:
                     compress_target = ds[vname].attrs["compress"]
-                    if "reduced_gaussian_index" in compress_target:
+                    if any(c in compress_target for c in coordinates):
                         if vname not in coordinates:
                             coordinates.append(vname)
         else:

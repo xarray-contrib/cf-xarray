@@ -1282,6 +1282,69 @@ def test_bad_grid_mapping_attribute():
     assert grid_mappings == ()  # No valid grid mappings since 'foo' doesn't exist
 
 
+@requires_pyproj
+def test_healpix_grid_mapping():
+    """Test GridMapping integration for HEALPix grids."""
+    from ..datasets import healpix_ds as ds
+
+    # Grid mapping discovery
+    assert ds.cf.grid_mapping_names == {"healpix": ["healpix"]}
+
+    # Grid mapping propagation to data variables
+    da = ds.cf["air_temperature"]
+    assert "healpix" in da.coords
+
+    # grid_mapping_name property
+    assert da.cf.grid_mapping_name == "healpix"
+
+    # .cf.grid_mappings property on Dataset
+    gms = ds.cf.grid_mappings
+    assert len(gms) == 1
+    gm = gms[0]
+    assert gm.name == "healpix"
+    assert gm.crs is not None
+    assert gm.crs.is_geographic
+    assert gm.array.name == "healpix"
+    assert gm.array.shape == ()  # scalar variable
+    assert isinstance(gm.coordinates, tuple)
+
+    # DataArray grid_mappings should also work
+    da_gms = da.cf.grid_mappings
+    assert len(da_gms) == 1
+    assert da_gms[0].name == "healpix"
+    assert da_gms[0].crs.is_geographic
+
+    # Repr should include healpix
+    assert "healpix" in ds.cf.__repr__()
+
+
+@requires_pyproj
+def test_healpix_crs_properties():
+    """Test that the CRS built for HEALPix has correct properties."""
+    from ..datasets import healpix_ds as ds
+
+    gm = ds.cf.grid_mappings[0]
+    crs = gm.crs
+
+    # Must be geographic (lat/lon on a sphere)
+    assert crs.is_geographic
+    assert not crs.is_projected
+
+    # Earth shape parameters from the grid mapping variable
+    assert crs.ellipsoid.semi_major_metre == 6371000
+    assert crs.ellipsoid.semi_minor_metre == 6371000
+
+    # Should not have an EPSG code (custom sphere)
+    assert crs.to_epsg() is None
+
+    # Verify HEALPix-specific attributes are preserved in the grid mapping array
+    gm_attrs = gm.array.attrs
+    assert gm_attrs["grid_mapping_name"] == "healpix"
+    assert gm_attrs["refinement_level"] == 1
+    assert gm_attrs["indexing_scheme"] == "nested"
+    assert gm_attrs["earth_radius"] == 6371000
+
+
 def test_docstring() -> None:
     assert "One of ('X'" in airds.cf.groupby.__doc__
     assert "Time variable accessor e.g. 'T.month'" in airds.cf.groupby.__doc__

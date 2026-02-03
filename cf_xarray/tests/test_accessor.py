@@ -1294,8 +1294,8 @@ def test_reduced_gaussian_grid_mapping_global():
     assert gm.array.name == "reduced_gaussian"
     assert gm.array.shape == ()  # scalar variable
     assert isinstance(gm.coordinates, tuple)
-    # Should detect lat via standard_name="latitude"
-    assert "lat" in gm.coordinates
+    # Should detect reduced_gaussian_index via standard_name
+    assert "reduced_gaussian_index" in gm.coordinates
 
     # DataArray grid_mappings should also work
     da_gms = da.cf.grid_mappings
@@ -1327,6 +1327,9 @@ def test_reduced_gaussian_grid_mapping_land():
     assert gm.crs.is_geographic
     assert gm.array.attrs["grid_subtype"] == "octahedral"
 
+    # Coordinates should include the compress/gather variable
+    assert "grid_points" in gm.coordinates
+
     # Verify the dataset structure: data on grid_points, with compress attribute
     assert "grid_points" in ds.dims
     assert "compress" in ds.grid_points.attrs
@@ -1351,6 +1354,10 @@ def test_reduced_gaussian_grid_mapping_region():
     gm = gms[0]
     assert gm.name == "reduced_gaussian"
     assert gm.crs.is_geographic
+
+    # Coordinates should include both reduced_gaussian_index and grid_points
+    assert "reduced_gaussian_index" in gm.coordinates
+    assert "grid_points" in gm.coordinates
 
     # Verify compress structure
     assert "grid_points" in ds.dims
@@ -1429,6 +1436,8 @@ def test_healpix_grid_mapping():
     assert gm.array.name == "healpix"
     assert gm.array.shape == ()  # scalar variable
     assert isinstance(gm.coordinates, tuple)
+    # Should detect healpix_index via standard_name
+    assert "healpix_index" in gm.coordinates
 
     # DataArray grid_mappings should also work
     da_gms = da.cf.grid_mappings

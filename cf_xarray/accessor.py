@@ -676,25 +676,46 @@ def _create_grid_mapping(
     #     The appropriate values of the standard_name depend on the grid mapping and are given in Appendix F, Grid Mappings.
     # """
     if not coordinates and len(grid_mapping_dict) == 1:
-        if cf_name == "reduced_gaussian":
-            # For reduced gaussian grids, look for latitude/longitude by standard name.
-            # The latitude dimension is typically present; longitude may not exist yet
-            # (it often needs to be computed from the pl vector).
-            xname, yname = "longitude", "latitude"
-        elif cf_name == "healpix":
-            # For HEALPix grids, coordinates are typically latitude/longitude
-            # (if present), but pixel indices are the primary indexing mechanism.
-            xname, yname = "longitude", "latitude"
-        elif crs.to_cf().get("grid_mapping_name") == "rotated_latitude_longitude":
-            xname, yname = "grid_longitude", "grid_latitude"
-        elif crs.is_geographic:
-            xname, yname = "longitude", "latitude"
-        elif crs.is_projected:
-            xname, yname = "projection_x_coordinate", "projection_y_coordinate"
+        if cf_name == "healpix":
+            # For HEALPix grids, the primary coordinate is the pixel index.
+            coords_found = apply_mapper(
+                _get_with_standard_name, ds, "healpix_index", error=False, default=[[]]
+            )
+            coordinates = list(itertools.chain(coords_found))
+        elif cf_name == "reduced_gaussian":
+            # For reduced gaussian grids, the primary coordinate is the grid
+            # point index. For compressed subsets, also look for the gather
+            # variable (with compress attribute).
+            idx_coords = apply_mapper(
+                _get_with_standard_name,
+                ds,
+                "reduced_gaussian_index",
+                error=False,
+                default=[[]],
+            )
+            coordinates = list(itertools.chain(idx_coords))
+            # Also find any compress/gather variable
+            for vname in ds.coords:
+                if "compress" in ds[vname].attrs:
+                    compress_target = ds[vname].attrs["compress"]
+                    if "reduced_gaussian_index" in compress_target:
+                        if vname not in coordinates:
+                            coordinates.append(vname)
+        else:
+            if crs.to_cf().get("grid_mapping_name") == "rotated_latitude_longitude":
+                xname, yname = "grid_longitude", "grid_latitude"
+            elif crs.is_geographic:
+                xname, yname = "longitude", "latitude"
+            elif crs.is_projected:
+                xname, yname = "projection_x_coordinate", "projection_y_coordinate"
 
-        x = apply_mapper(_get_with_standard_name, ds, xname, error=False, default=[[]])
-        y = apply_mapper(_get_with_standard_name, ds, yname, error=False, default=[[]])
-        coordinates = list(itertools.chain(x, y))
+            x = apply_mapper(
+                _get_with_standard_name, ds, xname, error=False, default=[[]]
+            )
+            y = apply_mapper(
+                _get_with_standard_name, ds, yname, error=False, default=[[]]
+            )
+            coordinates = list(itertools.chain(x, y))
 
     return GridMapping(name=cf_name, crs=crs, array=da, coordinates=tuple(coordinates))
 

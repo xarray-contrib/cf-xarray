@@ -914,6 +914,7 @@ def _create_reduced_gaussian_global():
             "reduced_gaussian_index": xr.DataArray(
                 np.arange(total, dtype=np.int32),
                 dims=["reduced_gaussian_index"],
+                attrs={"standard_name": "reduced_gaussian_index"},
             ),
             "time": xr.DataArray(
                 [0.0], dims=["time"], attrs={"units": "hours since 2024-01-01"}

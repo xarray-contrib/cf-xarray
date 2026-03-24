@@ -839,6 +839,36 @@ def test_add_bounds(dims):
     _check_unchanged(original, ds)
 
 
+def test_add_irregularly_spaced_bounds_do_not_overlap() -> None:
+    # Test that added bounds with irregular spacing do not overlap.
+    ds = airds
+    original = ds.copy(deep=True)
+    ds["time"] = ds["time"].copy(data=pd.date_range("2013-01", "2013-04", freq="MS"))
+    expected = xr.DataArray(
+        data=[
+            pd.to_datetime(t)
+            for t in [
+                ["2012-12-16T12", "2013-01-16T12"],
+                ["2013-01-16T12", "2013-02-15T00"],
+                ["2013-02-15T00", "2013-03-16T12"],
+                ["2013-03-16T12", "2013-04-16T12"],
+            ]
+        ],
+        dims=["time", "bounds"],
+        name="time_bounds",
+        coords={"time": ds.time.data},
+    )
+    added = ds.copy(deep=False)
+    added = added.cf.add_bounds("time")
+
+    name = "time_bounds"
+    assert name in added.coords
+    assert added["time"].attrs["bounds"] == name
+    assert_allclose(added[name].reset_coords(drop=True), expected)
+
+    _check_unchanged(original, ds)
+
+
 def test_add_bounds_multiple() -> None:
     # Test multiple dimensions
     assert not {"x1_bounds", "x2_bounds"} <= set(multiple.variables)
@@ -882,11 +912,11 @@ def test_add_bounds_nd_variable() -> None:
     expected = (
         xr.concat([ds.z - 1.5, ds.z + 1.5], dim="bounds")
         .rename("z_bounds")
-        .transpose("bounds", "y", "x")
+        .transpose(..., "bounds")
     )
 
     actual = ds.cf.add_bounds("z", dim="x").z_bounds.reset_coords(drop=True)
-    xr.testing.assert_identical(expected.transpose(..., "bounds"), actual)
+    xr.testing.assert_identical(expected, actual)
 
     # Requesting bounds on a non-variable dimension
     with pytest.raises(ValueError, match="are dimensions with no index."):

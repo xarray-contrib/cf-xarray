@@ -23,15 +23,16 @@ def _guess_bounds_1d(da, dim):
         da = da.assign_coords({dim: da[dim]})
         ADDED_INDEX = True
 
-    diff = da.diff(dim)
-    lower = da - diff / 2
-    upper = da + diff / 2
-    bounds = xr.concat([lower, upper], dim="bounds")
+    bound_position = 0.5
+    diff = da.diff(dim).pad({dim: (1, 1)}, mode="edge").reset_index(dim)
+    lower = (
+        da.reset_index(dim) - bound_position * diff.isel({dim: slice(0, -1)})
+    ).assign_coords({dim: da[dim]})
+    upper = (
+        da.reset_index(dim) + bound_position * diff.isel({dim: slice(1, None)})
+    ).assign_coords({dim: da[dim]})
+    result = xr.concat([lower, upper], dim="bounds").transpose(..., "bounds")
 
-    first = (bounds.isel({dim: 0}) - diff.isel({dim: 0})).assign_coords(
-        {dim: da[dim][0]}
-    )
-    result = xr.concat([first, bounds], dim=dim).transpose(..., "bounds")
     if ADDED_INDEX:
         result = result.drop_vars(dim)
     return result.drop_attrs(deep=False)

@@ -11,7 +11,26 @@
 Contributing
 ------------
 
-This section will be expanded later. For now it lists docstrings for a number of internal variables, classes and functions.
+This section will be expanded later. For now it tells you how to get setup to
+run the tests and lists docstrings for a number of internal variables, classes
+and functions.
+
+Running the tests
+~~~~~~~~~~~~~~~~~
+
+The simplest way is using conda/mamba (same as in the CI). Create yourself a
+conda/mamba environment (e.g. ``mamba create -f ci/environment.yml``).
+Activate your environment. Next install the local version of ``cf-xarray``,
+``python -m pip install --no-deps -e .``. Now you are ready to run the tests
+with ``pytest``.
+
+Pre-commit
+~~~~~~~~~~
+
+If you want the pre-commit hook too, after installing your environment as
+above, simply install pre-commit (``pip install pre-commit``) and then run
+``pre-commit install``. Now each time you commit you'll get the pre-commit
+checks for free.
 
 Variables
 ~~~~~~~~~

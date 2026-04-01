@@ -21,11 +21,16 @@ def _guess_bounds_1d(da, dim):
     bound_position = 0.5
 
     diff = da.diff(dim).pad({dim: (1, 1)}, mode="edge")
-    lower = da.data - bound_position * diff.isel({dim: slice(0, -1)}).data
-    upper = da.data + bound_position * diff.isel({dim: slice(1, None)}).data
+    lower = da.copy(
+        deep=False,
+        data=da.data - bound_position * diff.isel({dim: slice(0, -1)}).data,
+    )
+    upper = da.copy(
+        deep=False,
+        data=da.data + bound_position * diff.isel({dim: slice(1, None)}).data,
+    )
     return (
-        da.expand_dims({"bounds": 2})
-        .copy(deep=False, data=[lower, upper])
+        xr.concat([lower, upper], dim="bounds")
         .transpose(..., "bounds")
         .drop_attrs(deep=False)
     )

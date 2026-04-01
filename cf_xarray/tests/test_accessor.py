@@ -3,6 +3,7 @@ import pickle
 import warnings
 from textwrap import dedent
 
+import dask.array
 import matplotlib as mpl
 import numpy as np
 import pandas as pd
@@ -836,6 +837,21 @@ def test_add_bounds(dims):
             # The CF axes shouldn't have changed
             assert added.cf.axes["Y"] == ["lat"]
 
+    _check_unchanged(original, ds)
+
+
+def test_add_bounds_preserves_array_type() -> None:
+    # Test that the array type of the bounds variable is the same as the original variable.
+    ds = airds
+    original = ds.copy(deep=True)
+    ds = ds.drop_indexes("lat").rename_dims(lat="x")
+    ds["lat"] = ds.lat.copy(data=dask.array.asarray(ds.lat.data))
+    added = ds.cf.add_bounds("lat")
+
+    assert isinstance(added.lat.data, dask.array.Array)
+    assert isinstance(added.lat_bounds.data, dask.array.Array)
+
+    assert isinstance(ds.lat.data, dask.array.Array)
     _check_unchanged(original, ds)
 
 

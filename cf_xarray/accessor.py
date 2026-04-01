@@ -1814,10 +1814,6 @@ class CFAccessor:
                         for k, v in value.items()
                     )
                 )
-
-            elif value is Ellipsis:
-                pass
-
             else:
                 # things like sum which have dim
                 newvalue = [

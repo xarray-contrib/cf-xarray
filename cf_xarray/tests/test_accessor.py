@@ -899,7 +899,7 @@ def test_add_bounds_nd_variable() -> None:
 
     # 2D
     expected = (
-        vertices_to_bounds(  # type: ignore[misc]
+        vertices_to_bounds(
             xr.DataArray(
                 np.arange(0, 13, 3).reshape(5, 1) + np.arange(-2, 2).reshape(1, 4),
                 dims=("x", "y"),
@@ -907,7 +907,7 @@ def test_add_bounds_nd_variable() -> None:
             out_dims=("bounds", "x", "y"),
         )
         .rename("z_bounds")
-        .assign_coords(**ds.coords)
+        .assign_coords(**ds.coords)  # type: ignore[arg-type]
     )
     actual = ds.cf.add_bounds("z").z_bounds.reset_coords(drop=True)
     xr.testing.assert_identical(actual, expected)

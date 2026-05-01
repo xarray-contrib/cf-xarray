@@ -2835,14 +2835,38 @@ class CFDatasetAccessor(CFAccessor):
         """
 
         obj = self._obj
-        keys = self.keys() | set(obj.variables)
+        variables = obj._variables
 
-        vardict = {
-            key: self._drop_missing_variables(
-                apply_mapper(_get_bounds, obj, key, error=False)
-            )
-            for key in keys
-        }
+        # Single linear scan to discover which variables in the dataset have
+        # a ``bounds`` attribute pointing at another existing variable. The
+        # naive implementation called ``apply_mapper(_get_bounds, ...)`` for
+        # every key in ``self.keys() | set(variables)``, which itself fans
+        # out through ``_get_all`` and runs the regex criteria against every
+        # variable's attrs. That is O(num_keys × num_vars × num_criteria)
+        # for an answer that is structurally a single attribute lookup.
+        var_to_bounds: dict[Hashable, Hashable] = {}
+        for name, var in variables.items():
+            attrs_or_encoding = ChainMap(var.attrs, var.encoding)
+            bounds_name = attrs_or_encoding.get("bounds")
+            if bounds_name is not None and bounds_name in variables:
+                var_to_bounds[name] = bounds_name
+
+        if not var_to_bounds:
+            return {}
+
+        vardict: dict[Hashable, set[Hashable]] = {}
+        # Direct variable-name keys: O(1) lookup, no mapper machinery.
+        for name, bounds_name in var_to_bounds.items():
+            vardict[name] = {bounds_name}
+
+        # CF keys (axes, coordinate names, custom criteria, ...): resolve to
+        # their target variable names once, then read the precomputed
+        # ``var_to_bounds`` map. ``_get_bounds`` is no longer invoked.
+        for key in self.keys() - set(variables):
+            target_vars = apply_mapper(_get_all, obj, key, error=False, default=[])
+            bounds_vars = {var_to_bounds[v] for v in target_vars if v in var_to_bounds}
+            if bounds_vars:
+                vardict[key] = bounds_vars
 
         return {k: sort_maybe_hashable(v) for k, v in vardict.items() if v}
 

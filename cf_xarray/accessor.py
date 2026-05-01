@@ -48,6 +48,11 @@ except ImportError:
         Weighted,
     )
 
+try:
+    from regex import match as regex_match
+except ImportError:
+    from re import match as regex_match  # type: ignore[no-redef]
+
 
 from . import parametric, sgrid
 from .criteria import (
@@ -305,12 +310,6 @@ def _get_custom_criteria(
     List[str]
         Variable name(s) in parent xarray object that matches axis, coordinate, or custom ``key``
     """
-
-    try:
-        from regex import match as regex_match
-    except ImportError:
-        from re import match as regex_match  # type: ignore[no-redef]
-
     if criteria is None:
         if not OPTIONS["custom_criteria"]:
             return []

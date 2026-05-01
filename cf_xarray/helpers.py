@@ -17,25 +17,23 @@ def _guess_bounds_1d(da, dim):
     """
     if dim not in da.dims:
         (dim,) = da.cf.axes[dim]
-    ADDED_INDEX = False
-    if dim not in da.coords:
-        # For proper alignment in the lines below, we need an index on dim.
-        da = da.assign_coords({dim: da[dim]})
-        ADDED_INDEX = True
 
     bound_position = 0.5
-    diff = da.diff(dim).pad({dim: (1, 1)}, mode="edge").reset_index(dim)
-    lower = (
-        da.reset_index(dim) - bound_position * diff.isel({dim: slice(0, -1)})
-    ).assign_coords({dim: da[dim]})
-    upper = (
-        da.reset_index(dim) + bound_position * diff.isel({dim: slice(1, None)})
-    ).assign_coords({dim: da[dim]})
-    result = xr.concat([lower, upper], dim="bounds").transpose(..., "bounds")
 
-    if ADDED_INDEX:
-        result = result.drop_vars(dim)
-    return result.drop_attrs(deep=False)
+    diff = da.diff(dim).pad({dim: (1, 1)}, mode="edge")
+    lower = da.copy(
+        deep=False,
+        data=da.data - bound_position * diff.isel({dim: slice(0, -1)}).data,
+    )
+    upper = da.copy(
+        deep=False,
+        data=da.data + bound_position * diff.isel({dim: slice(1, None)}).data,
+    )
+    return (
+        xr.concat([lower, upper], dim="bounds")
+        .transpose(..., "bounds")
+        .drop_attrs(deep=False)
+    )
 
 
 def _guess_bounds_2d(da, dims):

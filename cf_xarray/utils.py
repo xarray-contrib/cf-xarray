@@ -1,13 +1,15 @@
+import functools
 import inspect
 import os
 import warnings
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from typing import Any
 from xml.etree import ElementTree
 
 import numpy as np
 from xarray import DataArray
+from xarray.core.utils import Frozen
 
 try:
     import cftime
@@ -64,9 +66,16 @@ def _is_datetime_like(da: DataArray) -> bool:
     return False
 
 
-def parse_cell_methods_attr(attr: str) -> dict[str, str]:
+@functools.lru_cache(maxsize=256)
+def parse_cell_methods_attr(attr: str) -> Mapping[str, str]:
     """
     Parse cell_methods attributes (format is 'measure: name').
+
+    The result is memoized per attribute string and returned as a read-only
+    ``Frozen`` mapping. ``cell_measures`` strings are typically shared across
+    many variables in a dataset (e.g., every CMIP variable carries the same
+    ``area: areacella volume: ...``), so parsing once and reusing avoids
+    repeated string splitting in the hot path of ``_get_measure``.
 
     Parameters
     ----------
@@ -75,14 +84,14 @@ def parse_cell_methods_attr(attr: str) -> dict[str, str]:
 
     Returns
     -------
-    Dictionary mapping measure to name
+    Read-only mapping from measure to name.
     """
     strings = [s for scolons in attr.split(":") for s in scolons.split()]
     if len(strings) % 2 != 0:
         raise ValueError(f"attrs['cell_measures'] = {attr!r} is malformed.")
 
-    return dict(
-        zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)], strict=False)
+    return Frozen(
+        dict(zip(strings[slice(0, None, 2)], strings[slice(1, None, 2)], strict=False))
     )
 
 

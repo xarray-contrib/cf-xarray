@@ -1077,9 +1077,14 @@ def _getitem(
     """
 
     obj = accessor._obj
-    all_bounds = obj.cf.bounds if isinstance(obj, Dataset) else {}
     kind = str(type(obj).__name__)
     scalar_key = isinstance(key, Hashable)
+    # obj.cf.bounds is expensive; only compute it when scalar lookup on a
+    # Dataset actually needs to drop bounds variables.
+    if not isinstance(obj, DataArray) and scalar_key:
+        all_bounds = obj.cf.bounds
+    else:
+        all_bounds = {}
 
     key_iter: Iterable[Hashable]
     if isinstance(key, Hashable):  # using scalar_key breaks mypy type narrowing
@@ -1125,29 +1130,30 @@ def _getitem(
             grid_mapping_names = []
     grid_mapping_names.append("grid_mapping")
 
-    standard_names = accessor.standard_names
     custom_criteria = ChainMap(*OPTIONS["custom_criteria"])
 
-    # Fast path: every key is a direct variable name and matches no CF special key
-    reserved: set[Hashable] = set(_AXIS_NAMES).union(
-        _COORD_NAMES,
-        _GEOMETRY_TYPES,
-        ("geometry",),
-        measures,
-        grid_mapping_names,
-        custom_criteria,
-        cf_role_criteria,
-    )
+    # Fast path: when every key is just a plain variable in the Dataset (no CF
+    # special meaning), skip the per-key classification loop below. Test the
+    # cheap predicates first and only build the reserved-name set / consult
+    # accessor.standard_names (a full attrs scan) if those could pass — the
+    # common ds.cf["X"] / ds.cf["longitude"] paths must not pay that cost.
     fast_path = (
         isinstance(obj, Dataset)
         and not skip
-        and all(
-            k in obj._variables
-            and k not in reserved
-            and standard_names.get(k, [k]) == [k]
-            for k in key_iter
-        )
+        and all(k in obj._variables for k in key_iter)
     )
+    if fast_path:
+        reserved: set[Hashable] = set(_AXIS_NAMES).union(
+            _COORD_NAMES,
+            _GEOMETRY_TYPES,
+            ("geometry",),
+            measures,
+            grid_mapping_names,
+            custom_criteria,
+            cf_role_criteria,
+        )
+        standard_names = accessor.standard_names
+        fast_path = all(k not in reserved and k not in standard_names for k in key_iter)
 
     varnames: list[Hashable]
     coords: list[Hashable]
@@ -2071,7 +2077,7 @@ class CFAccessor:
             ]
         as_dataset = self._maybe_to_dataset().reset_coords()
 
-        keys = {}
+        keys: dict[str, str] = {}
         for attr in set(all_attrs):
             try:
                 keys.update(parse_cell_methods_attr(attr))

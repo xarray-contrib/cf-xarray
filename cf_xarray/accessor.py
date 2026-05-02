@@ -1125,62 +1125,91 @@ def _getitem(
             grid_mapping_names = []
     grid_mapping_names.append("grid_mapping")
 
+    standard_names = accessor.standard_names
     custom_criteria = ChainMap(*OPTIONS["custom_criteria"])
 
-    varnames: list[Hashable] = []
-    coords: list[Hashable] = []
-    successful = dict.fromkeys(key_iter, False)
-    for k in key_iter:
-        if "coords" not in skip and k in _AXIS_NAMES + _COORD_NAMES:
-            names = _get_all(obj, k)
-            names = drop_bounds(names)
-            check_results(names, k)
-            successful[k] = bool(names)
-            coords.extend(names)
-        elif "measures" not in skip and k in measures:
-            measure = _get_all(obj, k)
-            check_results(measure, k)
-            successful[k] = bool(measure)
-            if measure:
-                varnames.extend(measure)
-        elif "grid_mapping_names" not in skip and k in grid_mapping_names:
-            grid_mapping = _get_all(obj, k)
-            check_results(grid_mapping, k)
-            successful[k] = bool(grid_mapping)
-            if grid_mapping:
-                varnames.extend(grid_mapping)
-        elif "geometries" not in skip and (k == "geometry" or k in _GEOMETRY_TYPES):
-            geometries = _get_all(obj, k)
-            if geometries and k in _GEOMETRY_TYPES:
-                new = itertools.chain(
-                    _parse_related_geometry_vars(
-                        ChainMap(obj[g].attrs, obj[g].encoding)
+    # Fast path: every key is a direct variable name and matches no CF special key
+    reserved: set[Hashable] = set(_AXIS_NAMES).union(
+        _COORD_NAMES,
+        _GEOMETRY_TYPES,
+        ("geometry",),
+        measures,
+        grid_mapping_names,
+        custom_criteria,
+        cf_role_criteria,
+    )
+    fast_path = (
+        isinstance(obj, Dataset)
+        and not skip
+        and all(
+            k in obj._variables
+            and k not in reserved
+            and standard_names.get(k, [k]) == [k]
+            for k in key_iter
+        )
+    )
+
+    varnames: list[Hashable]
+    coords: list[Hashable]
+    if fast_path:
+        varnames = list(key_iter)
+        coords = []
+        successful = dict.fromkeys(key_iter, True)
+    else:
+        varnames = []
+        coords = []
+        successful = dict.fromkeys(key_iter, False)
+        for k in key_iter:
+            if "coords" not in skip and k in _AXIS_NAMES + _COORD_NAMES:
+                names = _get_all(obj, k)
+                names = drop_bounds(names)
+                check_results(names, k)
+                successful[k] = bool(names)
+                coords.extend(names)
+            elif "measures" not in skip and k in measures:
+                measure = _get_all(obj, k)
+                check_results(measure, k)
+                successful[k] = bool(measure)
+                if measure:
+                    varnames.extend(measure)
+            elif "grid_mapping_names" not in skip and k in grid_mapping_names:
+                grid_mapping = _get_all(obj, k)
+                check_results(grid_mapping, k)
+                successful[k] = bool(grid_mapping)
+                if grid_mapping:
+                    varnames.extend(grid_mapping)
+            elif "geometries" not in skip and (k == "geometry" or k in _GEOMETRY_TYPES):
+                geometries = _get_all(obj, k)
+                if geometries and k in _GEOMETRY_TYPES:
+                    new = itertools.chain(
+                        _parse_related_geometry_vars(
+                            ChainMap(obj[g].attrs, obj[g].encoding)
+                        )
+                        for g in geometries
                     )
-                    for g in geometries
-                )
-                geometries.extend(*new)
-            if len(geometries) > 1 and scalar_key:
-                raise ValueError(
-                    f"CF geometries must be represented by an Xarray Dataset. To request a Dataset in return please pass `[{k!r}]` instead."
-                )
-            successful[k] = bool(geometries)
-            if geometries:
-                varnames.extend(geometries)
-        elif k in custom_criteria or k in cf_role_criteria:
-            names = _get_all(obj, k)
-            check_results(names, k)
-            successful[k] = bool(names)
-            varnames.extend(names)
-        else:
-            stdnames = set(_get_with_standard_name(obj, k))
-            objcoords = set(obj.coords)
-            stdnames = drop_bounds(stdnames)
-            if "coords" in skip:
-                stdnames -= objcoords
-            check_results(stdnames, k)
-            successful[k] = bool(stdnames)
-            varnames.extend(stdnames - objcoords)
-            coords.extend(stdnames & objcoords)
+                    geometries.extend(*new)
+                if len(geometries) > 1 and scalar_key:
+                    raise ValueError(
+                        f"CF geometries must be represented by an Xarray Dataset. To request a Dataset in return please pass `[{k!r}]` instead."
+                    )
+                successful[k] = bool(geometries)
+                if geometries:
+                    varnames.extend(geometries)
+            elif k in custom_criteria or k in cf_role_criteria:
+                names = _get_all(obj, k)
+                check_results(names, k)
+                successful[k] = bool(names)
+                varnames.extend(names)
+            else:
+                stdnames = set(_get_with_standard_name(obj, k))
+                objcoords = set(obj.coords)
+                stdnames = drop_bounds(stdnames)
+                if "coords" in skip:
+                    stdnames -= objcoords
+                check_results(stdnames, k)
+                successful[k] = bool(stdnames)
+                varnames.extend(stdnames - objcoords)
+                coords.extend(stdnames & objcoords)
 
     # these are not special names but could be variable names in underlying object
     # we allow this so that we can return variables with appropriate CF auxiliary variables

@@ -1012,7 +1012,11 @@ def _getattr(
             newmap.update(dict.fromkeys(inverted[key], value))
         newmap.update({key: attribute[key] for key in unused_keys})
 
-        skip: dict[str, list[Literal["coords", "measures"]] | None] = {
+        skip: dict[
+            str,
+            list[Literal["coords", "measures", "grid_mapping_names", "geometries"]]
+            | None,
+        ] = {
             "data_vars": ["coords"],
             "coords": None,
         }
@@ -1053,7 +1057,8 @@ def _getattr(
 def _getitem(
     accessor: CFAccessor,
     key: Hashable,
-    skip: list[Literal["coords", "measures"]] | None = None,
+    skip: list[Literal["coords", "measures", "grid_mapping_names", "geometries"]]
+    | None = None,
 ) -> DataArray: ...
 
 
@@ -1061,14 +1066,16 @@ def _getitem(
 def _getitem(
     accessor: CFAccessor,
     key: Iterable[Hashable],
-    skip: list[Literal["coords", "measures"]] | None = None,
+    skip: list[Literal["coords", "measures", "grid_mapping_names", "geometries"]]
+    | None = None,
 ) -> Dataset: ...
 
 
 def _getitem(
     accessor: CFAccessor,
     key: Hashable | Iterable[Hashable],
-    skip: list[Literal["coords", "measures"]] | None = None,
+    skip: list[Literal["coords", "measures", "grid_mapping_names", "geometries"]]
+    | None = None,
 ):
     """
     Index into obj using key. Attaches CF associated variables.

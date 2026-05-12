@@ -71,12 +71,6 @@ def parse_cell_methods_attr(attr: str) -> Mapping[str, str]:
     """
     Parse cell_methods attributes (format is 'measure: name').
 
-    The result is memoized per attribute string and returned as a read-only
-    ``Frozen`` mapping. ``cell_measures`` strings are typically shared across
-    many variables in a dataset (e.g., every CMIP variable carries the same
-    ``area: areacella volume: ...``), so parsing once and reusing avoids
-    repeated string splitting in the hot path of ``_get_measure``.
-
     Parameters
     ----------
     attr : str

@@ -497,7 +497,9 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
 
 
 @functools.lru_cache(maxsize=256)
-def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[Hashable]]:
+def _parse_grid_mapping_attribute(
+    grid_mapping_attr: str,
+) -> Mapping[str, list[Hashable]]:
     """
     Parse a grid_mapping attribute that may contain multiple grid mappings.
 
@@ -509,11 +511,12 @@ def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[Hash
     - Multiple: "spatial_ref: crs_4326: latitude longitude crs_27700: x27700 y27700"
       -> {"spatial_ref": [], "crs_4326": ["latitude", "longitude"], "crs_27700": ["x27700", "y27700"]}
 
-    Returns a dictionary mapping grid mapping variable names to their associated coordinate variables.
+    Returns a read-only mapping from grid mapping variable name to its associated
+    coordinate variables. The result is memoized, so callers must not mutate it.
     """
     # Check if there are colons indicating multiple mappings
     if ":" not in grid_mapping_attr:
-        return {grid_mapping_attr.strip(): []}
+        return Frozen({grid_mapping_attr.strip(): []})
 
     # Use regex to parse the format
     # First, find all grid mapping variables (words before colons)
@@ -521,7 +524,7 @@ def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[Hash
     grid_mappings = re.findall(grid_pattern, grid_mapping_attr)
 
     if not grid_mappings:
-        return {grid_mapping_attr.strip(): []}
+        return Frozen({grid_mapping_attr.strip(): []})
 
     result: dict[str, list[Hashable]] = {}
 
@@ -556,7 +559,7 @@ def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[Hash
 def _create_grid_mapping(
     var_name: str,
     ds: Dataset,
-    grid_mapping_dict: dict[str, list[Hashable]],
+    grid_mapping_dict: Mapping[str, list[Hashable]],
 ) -> GridMapping:
     """
     Create a GridMapping dataclass instance from a grid mapping variable.

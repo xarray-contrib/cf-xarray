@@ -27,6 +27,7 @@ import xarray as xr
 from xarray import DataArray, Dataset
 from xarray.core.groupby import GroupBy
 from xarray.core.resample import Resample
+from xarray.core.utils import Frozen
 
 try:
     from xarray.core.rolling import (  # type:ignore[import-not-found,no-redef,unused-ignore]
@@ -495,6 +496,7 @@ def _get_bounds(obj: DataArray | Dataset, key: Hashable) -> list[Hashable]:
     return list(results)
 
 
+@functools.lru_cache(maxsize=256)
 def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[Hashable]]:
     """
     Parse a grid_mapping attribute that may contain multiple grid mappings.
@@ -548,7 +550,7 @@ def _parse_grid_mapping_attribute(grid_mapping_attr: str) -> dict[str, list[Hash
         else:
             result[gm] = []
 
-    return result
+    return Frozen(result)
 
 
 def _create_grid_mapping(

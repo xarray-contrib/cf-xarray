@@ -61,6 +61,23 @@ only `xi_u`, `eta_u` are listed in the repr even though the attributes on the `g
 variable `grid` list many more dimension names.
 ```
 
+### Coordinate variables
+
+`cf_xarray` also follows the `node_coordinates`, `face_coordinates`,
+`edge1_coordinates`, `edge2_coordinates`, and `volume_coordinates` attributes
+on the `grid_topology` variable. When you select a data variable that
+references a `grid_topology` via its `grid` attribute, the referenced
+coordinate variables are pulled in alongside it:
+
+```python
+ds.cf[["u"]]  # includes `grid`, lon_psi/lat_psi, lon_rho/lat_rho, ...
+```
+
+Only names actually present in the dataset are propagated. For the
+`DataArray` form (`ds.cf["u"]`) xarray only attaches coordinates whose
+dimensions are compatible with the variable, so e.g. only `lon_u`/`lat_u`
+appear as coords on `u`.
+
 ## UGRID
 
 ### Topology variable

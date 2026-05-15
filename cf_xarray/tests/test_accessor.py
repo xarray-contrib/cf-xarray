@@ -2484,6 +2484,43 @@ def test_sgrid():
     }
 
 
+def test_sgrid_includes_topology_coordinates():
+    """Variables referenced in node/face/edge/volume_coordinates of the
+    grid_topology variable should be pulled in by ds.cf[[var]]."""
+    roms = sgrid_roms.copy()
+    for pos in ("psi", "rho", "u", "v"):
+        roms[f"lon_{pos}"] = ((f"xi_{pos}", f"eta_{pos}"), np.zeros((2, 2)))
+        roms[f"lat_{pos}"] = ((f"xi_{pos}", f"eta_{pos}"), np.zeros((2, 2)))
+
+    expected_coord_vars = {
+        "lon_psi",
+        "lat_psi",
+        "lon_rho",
+        "lat_rho",
+        "lon_u",
+        "lat_u",
+        "lon_v",
+        "lat_v",
+    }
+    assoc = roms.cf.get_associated_variable_names("u")
+    assert expected_coord_vars.issubset(set(assoc["coordinates"]))
+
+    subset = roms.cf[["u"]]
+    assert "grid" in subset.variables
+    assert expected_coord_vars.issubset(set(subset.variables))
+
+    # only dim-compatible coords attach to the DataArray form
+    u_da = roms.cf["u"]
+    assert {"lon_u", "lat_u"}.issubset(set(u_da.coords))
+
+    delft = sgrid_delft.copy()
+    delft["node_lon"] = (("inode", "jnode"), np.zeros((2, 2)))
+    delft["node_lat"] = (("inode", "jnode"), np.zeros((2, 2)))
+    delft["foo"] = (("icell", "jcell"), np.ones((2, 2)), {"grid": "grid"})
+    delft_subset = delft.cf[["foo"]]
+    assert {"grid", "node_lon", "node_lat"}.issubset(set(delft_subset.variables))
+
+
 def test_ancillary_variables_extra_dim():
     ds = xr.Dataset(
         {

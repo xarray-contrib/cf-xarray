@@ -116,7 +116,7 @@ def bounds_to_vertices(
     order: str | None = "counterclockwise",
 ) -> DataArray:
     """
-    Convert bounds variable to vertices.
+    Convert a CF-compliant bounds variable to vertices.
 
     There are 2 covered cases:
      - 1D coordinates, with bounds of shape (N, 2),
@@ -145,6 +145,23 @@ def bounds_to_vertices(
     DataArray
         Either of shape (N+1,) or (N+1, M+1). New vertex dimensions are named
         from the initial dimension and suffix "_vertices".
+
+    See Also
+    --------
+    vertices_to_bounds : The inverse operation.
+
+    Examples
+    --------
+    >>> import xarray as xr
+    >>> bounds = xr.DataArray(
+    ...     [[0.0, 1], [1, 2], [2, 3]],
+    ...     dims=("x", "bounds"),
+    ...     coords={"x": [0.5, 1.5, 2.5]},
+    ... )
+    >>> bounds_to_vertices(bounds, "bounds")
+    <xarray.DataArray (x_vertices: 4)> Size: 32B
+    array([0., 1., 2., 3.])
+    Dimensions without coordinates: x_vertices
 
     Notes
     -----
@@ -487,7 +504,22 @@ def vertices_to_bounds(
     Returns
     -------
     DataArray
-        Either of shape (2, N) or (4, N, M).
+        The CF-compliant bounds, either of shape (2, N) or (4, N, M).
+
+    See Also
+    --------
+    bounds_to_vertices : The inverse operation.
+
+    Examples
+    --------
+    >>> import xarray as xr
+    >>> vertices = xr.DataArray([0, 1, 2, 3], dims="x")
+    >>> vertices_to_bounds(vertices)
+    <xarray.DataArray (x: 3, bounds: 2)> Size: 48B
+    array([[0, 1],
+           [1, 2],
+           [2, 3]])
+    Dimensions without coordinates: x, bounds
 
     References
     ----------

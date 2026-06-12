@@ -2434,6 +2434,58 @@ def test_grid_topology() -> None:
     assert "T" in ds.cf.axes
 
 
+def test_ugrid_includes_topology_variables() -> None:
+    """The mesh_topology variable, its connectivity, and its coordinate
+    variables should be pulled in by ds.cf[[var]] for a UGRID data variable."""
+    ds = xr.Dataset(
+        data_vars={
+            "h": (
+                "face",
+                np.zeros(2),
+                {"mesh": "mesh", "location": "face"},
+            ),
+        },
+        coords={
+            "mesh": (
+                tuple(),
+                1,
+                {
+                    "cf_role": "mesh_topology",
+                    "topology_dimension": 2,
+                    "node_coordinates": "node_lon node_lat",
+                    "face_node_connectivity": "face_nodes",
+                    "edge_node_connectivity": "edge_nodes",
+                    "face_coordinates": "face_lon face_lat",
+                },
+            ),
+            "node_lon": ("node", np.zeros(4)),
+            "node_lat": ("node", np.zeros(4)),
+            "face_lon": ("face", np.zeros(2)),
+            "face_lat": ("face", np.zeros(2)),
+            "face_nodes": (("face", "nvertex"), np.zeros((2, 3))),
+            "edge_nodes": (("edge", "two"), np.zeros((3, 2))),
+        },
+    )
+
+    assoc = ds.cf.get_associated_variable_names("h")
+    assert {"mesh", "face_nodes", "edge_nodes"}.issubset(set(assoc["mesh"]))
+    assert {"node_lon", "node_lat", "face_lon", "face_lat"}.issubset(
+        set(assoc["coordinates"])
+    )
+
+    expected = {
+        "mesh",
+        "face_nodes",
+        "edge_nodes",
+        "node_lon",
+        "node_lat",
+        "face_lon",
+        "face_lat",
+    }
+    subset = ds.cf[["h"]]
+    assert expected.issubset(set(subset.variables))
+
+
 @requires_scipy
 def test_curvefit() -> None:
     from cf_xarray.datasets import airds

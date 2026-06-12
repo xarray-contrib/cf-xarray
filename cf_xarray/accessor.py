@@ -55,7 +55,7 @@ except ImportError:
     from re import match as regex_match  # type: ignore[no-redef]
 
 
-from . import parametric, sgrid
+from . import parametric, sgrid, ugrid
 from .criteria import (
     _DSG_ROLES,
     _GEOMETRY_TYPES,
@@ -2235,6 +2235,7 @@ class CFAccessor:
             4. "coordinates"
             5. "grid_mapping"
             6. "grid"
+            7. "mesh"
 
         Parameters
         ----------
@@ -2247,7 +2248,7 @@ class CFAccessor:
         -------
         names : dict
             Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds",
-            "grid_mapping", "grid".
+            "grid_mapping", "grid", "mesh".
         """
         keys = [
             "ancillary_variables",
@@ -2256,6 +2257,7 @@ class CFAccessor:
             "bounds",
             "grid_mapping",
             "grid",
+            "mesh",
             "geometry",
         ]
 
@@ -2299,6 +2301,13 @@ class CFAccessor:
             coords["grid"] = [grid]
             if isinstance(self._obj, Dataset):
                 coords["coordinates"].extend(sgrid.get_topology_coords(self._obj, grid))
+
+        if mesh := attrs_or_encoding.get("mesh", None):
+            coords["mesh"] = [mesh]
+            if isinstance(self._obj, Dataset):
+                connectivity, mesh_coords = ugrid.get_mesh_variables(self._obj, mesh)
+                coords["mesh"].extend(connectivity)
+                coords["coordinates"].extend(mesh_coords)
 
         if grid_mapping_attr := attrs_or_encoding.get("grid_mapping", None):
             # Parse grid mapping variables and their coordinates

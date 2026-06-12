@@ -2300,6 +2300,8 @@ class CFAccessor:
 
         if grid := attrs_or_encoding.get("grid", None):
             coords["grid"] = [grid]
+            if isinstance(self._obj, Dataset):
+                coords["coordinates"].extend(sgrid.get_topology_coords(self._obj, grid))
 
         if grid_mapping_attr := attrs_or_encoding.get("grid_mapping", None):
             # Parse grid mapping variables and their coordinates

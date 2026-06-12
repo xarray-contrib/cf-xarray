@@ -11,6 +11,31 @@ SGRID_DIM_ATTRS = [
     # "edge3_dimensions",
 ]
 
+SGRID_COORD_ATTRS = [
+    "node_coordinates",
+    "face_coordinates",
+    "edge1_coordinates",
+    "edge2_coordinates",
+    "volume_coordinates",
+]
+
+
+def get_topology_coords(ds, grid_var_name):
+    """Return coordinate variable names referenced by an SGRID topology variable.
+
+    Reads ``node_coordinates``, ``face_coordinates``, ``edge{1,2}_coordinates``,
+    and ``volume_coordinates`` from the topology variable's attrs and filters
+    to names that are actually present in ``ds``.
+    """
+    if grid_var_name not in ds.variables:
+        return []
+    grid_attrs = ds[grid_var_name].attrs
+    names: list[str] = []
+    for attr_name in SGRID_COORD_ATTRS:
+        if coord_str := grid_attrs.get(attr_name):
+            names.extend(n for n in coord_str.split() if n in ds.variables)
+    return names
+
 
 def parse_axes(ds):
     import re

@@ -1255,6 +1255,44 @@ def test_grid_mappings_property():
 
 
 @requires_pyproj
+def test_grid_mappings_crs_construction_is_cached(monkeypatch):
+    """``pyproj.CRS.from_cf`` is memoized per grid-mapping attrs.
+
+    Building the CRS re-parses the datum/ellipsoid on every call. A dataset
+    references the same grid mapping from many variables and the property may
+    be accessed repeatedly, so each distinct grid mapping should be built once.
+    """
+    import pyproj
+
+    from ..accessor import _crs_from_cf_attrs
+
+    _crs_from_cf_attrs.cache_clear()
+
+    from ..datasets import hrrrds
+
+    ds = hrrrds
+
+    calls = {"n": 0}
+    orig = pyproj.CRS.from_cf
+
+    def counting_from_cf(*args, **kwargs):
+        calls["n"] += 1
+        return orig(*args, **kwargs)
+
+    monkeypatch.setattr(pyproj.CRS, "from_cf", staticmethod(counting_from_cf))
+
+    # Repeated property accesses, including via a DataArray, must not rebuild
+    # the same CRS: hrrrds has 3 distinct grid mappings, each built once.
+    ds.cf.grid_mappings
+    ds.cf.grid_mappings
+    ds.foo.cf.grid_mappings
+
+    assert calls["n"] == 3
+
+    _crs_from_cf_attrs.cache_clear()
+
+
+@requires_pyproj
 def test_grid_mappings_coordinates_attribute():
     """Test that coordinates attribute is always populated correctly for DataArray grid mappings."""
     from ..datasets import hrrrds

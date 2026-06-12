@@ -556,6 +556,37 @@ def _parse_grid_mapping_attribute(
     return Frozen(result)
 
 
+def _hashable_attrs(attrs: Mapping[Any, Any]) -> tuple:
+    """Return a hashable, order-independent representation of an attrs mapping.
+
+    List- and array-valued attributes (e.g. ``standard_parallel``) are coerced
+    to tuples so the result can be used as an ``lru_cache`` key.
+    """
+    frozen = []
+    for key, value in attrs.items():
+        if hasattr(value, "tolist"):  # numpy scalars/arrays
+            value = value.tolist()
+        if isinstance(value, list | tuple):
+            value = tuple(value)
+        frozen.append((key, value))
+    frozen.sort(key=lambda kv: repr(kv[0]))
+    return tuple(frozen)
+
+
+@functools.lru_cache(maxsize=256)
+def _crs_from_cf_attrs(attrs_items: tuple) -> Any:
+    """Build a ``pyproj.CRS`` from frozen CF grid-mapping attrs (memoized).
+
+    ``pyproj.CRS.from_cf`` re-parses the datum/ellipsoid on every call, which is
+    expensive for grid mappings carrying explicit ellipsoid parameters (e.g.
+    geostationary). A dataset routinely references the same grid mapping from
+    many variables, so cache on the attribute items.
+    """
+    import pyproj
+
+    return pyproj.CRS.from_cf(dict(attrs_items))
+
+
 def _create_grid_mapping(
     var_name: str,
     ds: Dataset,
@@ -669,7 +700,7 @@ def _create_grid_mapping(
             }
         )
     else:
-        crs = pyproj.CRS.from_cf(var.attrs)
+        crs = _crs_from_cf_attrs(_hashable_attrs(var.attrs))
 
     # Get associated coordinate variables, fallback to dimension names
     coordinates: list[Hashable] = grid_mapping_dict.get(var_name, [])
@@ -2076,17 +2107,14 @@ class CFAccessor:
         """
 
         obj = self._obj
-        all_attrs = [
-            ChainMap(da.attrs, da.encoding).get("cell_measures", "")
-            for da in obj.coords.values()
-        ]
         if isinstance(obj, DataArray):
-            all_attrs += [ChainMap(obj.attrs, obj.encoding).get("cell_measures", "")]
-        elif isinstance(obj, Dataset):
-            all_attrs += [
-                ChainMap(da.attrs, da.encoding).get("cell_measures", "")
-                for da in obj.data_vars.values()
-            ]
+            variables = [*obj.coords.variables.values(), obj.variable]
+        else:
+            variables = list(obj.variables.values())
+        all_attrs = [
+            ChainMap(var.attrs, var.encoding).get("cell_measures", "")
+            for var in variables
+        ]
         as_dataset = self._maybe_to_dataset().reset_coords()
 
         keys: dict[str, str] = {}

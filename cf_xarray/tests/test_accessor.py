@@ -1785,10 +1785,8 @@ def test_decode_vertical_coords() -> None:
     # Fixes 'UnboundLocalError: cannot access local variable 'romsds' where it is not associated with a value'
     from ..datasets import romsds
 
-    # needs standard names on `eta` and `depth` to derive computed standard name
-    romsds.h.attrs["standard_name"] = "sea_floor_depth_below_geopotential_datum"
-    romsds.zeta.attrs["standard_name"] = "sea_surface_height_above_geopotential_datum"
-
+    # romsds already carries standard names on `eta` and `depth`, so the
+    # computed standard name can be derived without any extra setup.
     romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
     assert romsds.z_rho.shape == (2, 30)

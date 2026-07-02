@@ -55,7 +55,7 @@ except ImportError:
     from re import match as regex_match  # type: ignore[no-redef]
 
 
-from . import parametric, sgrid
+from . import parametric, sgrid, ugrid
 from .criteria import (
     _DSG_ROLES,
     _GEOMETRY_TYPES,
@@ -556,6 +556,37 @@ def _parse_grid_mapping_attribute(
     return Frozen(result)
 
 
+def _hashable_attrs(attrs: Mapping[Any, Any]) -> tuple:
+    """Return a hashable, order-independent representation of an attrs mapping.
+
+    List- and array-valued attributes (e.g. ``standard_parallel``) are coerced
+    to tuples so the result can be used as an ``lru_cache`` key.
+    """
+    frozen = []
+    for key, value in attrs.items():
+        if hasattr(value, "tolist"):  # numpy scalars/arrays
+            value = value.tolist()
+        if isinstance(value, list | tuple):
+            value = tuple(value)
+        frozen.append((key, value))
+    frozen.sort(key=lambda kv: repr(kv[0]))
+    return tuple(frozen)
+
+
+@functools.lru_cache(maxsize=256)
+def _crs_from_cf_attrs(attrs_items: tuple) -> Any:
+    """Build a ``pyproj.CRS`` from frozen CF grid-mapping attrs (memoized).
+
+    ``pyproj.CRS.from_cf`` re-parses the datum/ellipsoid on every call, which is
+    expensive for grid mappings carrying explicit ellipsoid parameters (e.g.
+    geostationary). A dataset routinely references the same grid mapping from
+    many variables, so cache on the attribute items.
+    """
+    import pyproj
+
+    return pyproj.CRS.from_cf(dict(attrs_items))
+
+
 def _create_grid_mapping(
     var_name: str,
     ds: Dataset,
@@ -669,7 +700,7 @@ def _create_grid_mapping(
             }
         )
     else:
-        crs = pyproj.CRS.from_cf(var.attrs)
+        crs = _crs_from_cf_attrs(_hashable_attrs(var.attrs))
 
     # Get associated coordinate variables, fallback to dimension names
     coordinates: list[Hashable] = grid_mapping_dict.get(var_name, [])
@@ -2076,17 +2107,14 @@ class CFAccessor:
         """
 
         obj = self._obj
-        all_attrs = [
-            ChainMap(da.attrs, da.encoding).get("cell_measures", "")
-            for da in obj.coords.values()
-        ]
         if isinstance(obj, DataArray):
-            all_attrs += [ChainMap(obj.attrs, obj.encoding).get("cell_measures", "")]
-        elif isinstance(obj, Dataset):
-            all_attrs += [
-                ChainMap(da.attrs, da.encoding).get("cell_measures", "")
-                for da in obj.data_vars.values()
-            ]
+            variables = [*obj.coords.variables.values(), obj.variable]
+        else:
+            variables = list(obj.variables.values())
+        all_attrs = [
+            ChainMap(var.attrs, var.encoding).get("cell_measures", "")
+            for var in variables
+        ]
         as_dataset = self._maybe_to_dataset().reset_coords()
 
         keys: dict[str, str] = {}
@@ -2207,6 +2235,7 @@ class CFAccessor:
             4. "coordinates"
             5. "grid_mapping"
             6. "grid"
+            7. "mesh"
 
         Parameters
         ----------
@@ -2219,7 +2248,7 @@ class CFAccessor:
         -------
         names : dict
             Dictionary with keys "ancillary_variables", "cell_measures", "coordinates", "bounds",
-            "grid_mapping", "grid".
+            "grid_mapping", "grid", "mesh".
         """
         keys = [
             "ancillary_variables",
@@ -2228,6 +2257,7 @@ class CFAccessor:
             "bounds",
             "grid_mapping",
             "grid",
+            "mesh",
             "geometry",
         ]
 
@@ -2271,6 +2301,13 @@ class CFAccessor:
             coords["grid"] = [grid]
             if isinstance(self._obj, Dataset):
                 coords["coordinates"].extend(sgrid.get_topology_coords(self._obj, grid))
+
+        if mesh := attrs_or_encoding.get("mesh", None):
+            coords["mesh"] = [mesh]
+            if isinstance(self._obj, Dataset):
+                connectivity, mesh_coords = ugrid.get_mesh_variables(self._obj, mesh)
+                coords["mesh"].extend(connectivity)
+                coords["coordinates"].extend(mesh_coords)
 
         if grid_mapping_attr := attrs_or_encoding.get("grid_mapping", None):
             # Parse grid mapping variables and their coordinates

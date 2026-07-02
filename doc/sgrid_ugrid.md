@@ -84,6 +84,22 @@ appear as coords on `u`.
 
 `cf_xarray` supports identifying the `mesh_topology` variable using the `cf_role` attribute.
 
+### Connectivity and coordinate variables
+
+When a data variable references a `mesh_topology` variable through its `mesh`
+attribute, `cf_xarray` follows that attribute when subsetting with `.cf`. The
+mesh topology variable, its connectivity variables (`face_node_connectivity`,
+`edge_node_connectivity`, `face_edge_connectivity`, `face_face_connectivity`,
+`edge_face_connectivity`, `boundary_node_connectivity`), and its coordinate
+variables (`node_coordinates`, `edge_coordinates`, `face_coordinates`) are
+pulled in alongside the data variable:
+
+```python
+ds.cf[["h"]]  # includes `mesh`, face_nodes, node_lon/node_lat, ...
+```
+
+Only names actually present in the dataset are propagated.
+
 ## More?
 
 Further support for interpreting the SGRID and UGRID conventions can be added. Contributions are welcome!

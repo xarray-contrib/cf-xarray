@@ -129,6 +129,7 @@ romsds["s_rho"] = (
 # fmt: on
 romsds.coords["hc"] = 20.0
 romsds.coords["h"] = 603.9
+romsds.h.attrs["standard_name"] = "sea_floor_depth_below_geopotential_datum"
 romsds.coords["Vtransform"] = 2.0
 # fmt: off
 romsds.coords["Cs_r"] = (
@@ -143,7 +144,11 @@ romsds.coords["Cs_r"] = (
      -5.20560097e-04, -5.75774004e-05],
 )
 # fmt: on
-romsds["zeta"] = ("ocean_time", [-0.155356, -0.127435])
+romsds["zeta"] = (
+    "ocean_time",
+    [-0.155356, -0.127435],
+    {"standard_name": "sea_surface_height_above_geopotential_datum"},
+)
 romsds["temp"] = (
     ("ocean_time", "s_rho"),
     [np.linspace(20, 30, 30)] * 2,

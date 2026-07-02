@@ -1255,6 +1255,44 @@ def test_grid_mappings_property():
 
 
 @requires_pyproj
+def test_grid_mappings_crs_construction_is_cached(monkeypatch):
+    """``pyproj.CRS.from_cf`` is memoized per grid-mapping attrs.
+
+    Building the CRS re-parses the datum/ellipsoid on every call. A dataset
+    references the same grid mapping from many variables and the property may
+    be accessed repeatedly, so each distinct grid mapping should be built once.
+    """
+    import pyproj
+
+    from ..accessor import _crs_from_cf_attrs
+
+    _crs_from_cf_attrs.cache_clear()
+
+    from ..datasets import hrrrds
+
+    ds = hrrrds
+
+    calls = {"n": 0}
+    orig = pyproj.CRS.from_cf
+
+    def counting_from_cf(*args, **kwargs):
+        calls["n"] += 1
+        return orig(*args, **kwargs)
+
+    monkeypatch.setattr(pyproj.CRS, "from_cf", staticmethod(counting_from_cf))
+
+    # Repeated property accesses, including via a DataArray, must not rebuild
+    # the same CRS: hrrrds has 3 distinct grid mappings, each built once.
+    ds.cf.grid_mappings
+    ds.cf.grid_mappings
+    ds.foo.cf.grid_mappings
+
+    assert calls["n"] == 3
+
+    _crs_from_cf_attrs.cache_clear()
+
+
+@requires_pyproj
 def test_grid_mappings_coordinates_attribute():
     """Test that coordinates attribute is always populated correctly for DataArray grid mappings."""
     from ..datasets import hrrrds
@@ -1747,10 +1785,8 @@ def test_decode_vertical_coords() -> None:
     # Fixes 'UnboundLocalError: cannot access local variable 'romsds' where it is not associated with a value'
     from ..datasets import romsds
 
-    # needs standard names on `eta` and `depth` to derive computed standard name
-    romsds.h.attrs["standard_name"] = "sea_floor_depth_below_geopotential_datum"
-    romsds.zeta.attrs["standard_name"] = "sea_surface_height_above_geopotential_datum"
-
+    # romsds already carries standard names on `eta` and `depth`, so the
+    # computed standard name can be derived without any extra setup.
     romsds.cf.decode_vertical_coords(outnames={"s_rho": "z_rho"})
 
     assert romsds.z_rho.shape == (2, 30)
@@ -2394,6 +2430,58 @@ def test_grid_topology() -> None:
     assert_identical(ds.cf["grid_topology"], ds.grid.reset_coords(drop=True))
     assert_identical(ds.cf["mesh_topology"], ds.mesh.reset_coords(drop=True))
     assert "T" in ds.cf.axes
+
+
+def test_ugrid_includes_topology_variables() -> None:
+    """The mesh_topology variable, its connectivity, and its coordinate
+    variables should be pulled in by ds.cf[[var]] for a UGRID data variable."""
+    ds = xr.Dataset(
+        data_vars={
+            "h": (
+                "face",
+                np.zeros(2),
+                {"mesh": "mesh", "location": "face"},
+            ),
+        },
+        coords={
+            "mesh": (
+                tuple(),
+                1,
+                {
+                    "cf_role": "mesh_topology",
+                    "topology_dimension": 2,
+                    "node_coordinates": "node_lon node_lat",
+                    "face_node_connectivity": "face_nodes",
+                    "edge_node_connectivity": "edge_nodes",
+                    "face_coordinates": "face_lon face_lat",
+                },
+            ),
+            "node_lon": ("node", np.zeros(4)),
+            "node_lat": ("node", np.zeros(4)),
+            "face_lon": ("face", np.zeros(2)),
+            "face_lat": ("face", np.zeros(2)),
+            "face_nodes": (("face", "nvertex"), np.zeros((2, 3))),
+            "edge_nodes": (("edge", "two"), np.zeros((3, 2))),
+        },
+    )
+
+    assoc = ds.cf.get_associated_variable_names("h")
+    assert {"mesh", "face_nodes", "edge_nodes"}.issubset(set(assoc["mesh"]))
+    assert {"node_lon", "node_lat", "face_lon", "face_lat"}.issubset(
+        set(assoc["coordinates"])
+    )
+
+    expected = {
+        "mesh",
+        "face_nodes",
+        "edge_nodes",
+        "node_lon",
+        "node_lat",
+        "face_lon",
+        "face_lat",
+    }
+    subset = ds.cf[["h"]]
+    assert expected.issubset(set(subset.variables))
 
 
 @requires_scipy

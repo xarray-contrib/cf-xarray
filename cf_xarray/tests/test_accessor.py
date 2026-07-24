@@ -517,6 +517,42 @@ def test_kwargs_methods(obj):
     assert_identical(expected, actual)
 
 
+@pytest.mark.parametrize("obj", objects)
+def test_dictionary_indexing(obj):
+    with raise_if_dask_computes():
+        expected = obj.isel(time=0)
+        actual = obj.cf[{"T": 0}]
+    assert_identical(expected, actual)
+
+
+@pytest.mark.parametrize("obj", objects)
+def test_loc_indexing(obj):
+    label = obj.time.values[0]
+    with raise_if_dask_computes():
+        expected = obj.loc[{"time": label}]
+        actual = obj.cf.loc[{"T": label}]
+    assert_identical(expected, actual)
+
+
+@pytest.mark.parametrize("obj", objects)
+def test_loc_assignment(obj):
+    expected = obj.copy()
+    actual = obj.copy()
+    label = obj.time.values[0]
+
+    expected.loc[{"time": label}] = -1
+    actual.cf.loc[{"T": label}] = -1
+
+    assert_identical(expected, actual)
+
+
+def test_dictionary_indexing_expands_multiple_dimensions():
+    expected = multiple.isel(x1=5, x2=5)
+    actual = multiple.cf[{"X": 5}]
+
+    assert_identical(expected, actual)
+
+
 def test_pos_args_methods() -> None:
     expected = airds.transpose("lon", "time", "lat")
     actual = airds.cf.transpose("longitude", "T", "latitude")

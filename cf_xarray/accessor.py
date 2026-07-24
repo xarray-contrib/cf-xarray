@@ -1406,6 +1406,31 @@ class _CFWrappedClass:
         return iter(self.wrapped)
 
 
+class _CFWrappedLocIndexer:
+    """Wrap xarray's label-based indexer with CF name translation."""
+
+    def __init__(self, accessor: CFAccessor):
+        self.accessor = accessor
+
+    def _translate_indexers(self, key):
+        if not isinstance(key, Mapping):
+            return key
+
+        _, arguments = self.accessor._process_signature(
+            self.accessor._obj.sel,
+            (key,),
+            {},
+            dict(_DEFAULT_KEY_MAPPERS),
+        )
+        return arguments["indexers"]
+
+    def __getitem__(self, key):
+        return self.accessor._obj.loc[self._translate_indexers(key)]
+
+    def __setitem__(self, key, value):
+        self.accessor._obj.loc[self._translate_indexers(key)] = value
+
+
 class _CFWrappedPlotMethods:
     """
     This class wraps DataArray.plot
@@ -1941,6 +1966,11 @@ class CFAccessor:
         Check whether item is a valid key for indexing with .cf
         """
         return item in self.keys()
+
+    @property
+    def loc(self):
+        """Label-based indexer that understands CF names."""
+        return _CFWrappedLocIndexer(self)
 
     @property
     def plot(self):
@@ -2803,13 +2833,15 @@ class CFAccessor:
 
 @xr.register_dataset_accessor("cf")
 class CFDatasetAccessor(CFAccessor):
-    def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray | Dataset:
+    def __getitem__(
+        self, key: Hashable | Iterable[Hashable] | Mapping[Hashable, Any]
+    ) -> DataArray | Dataset:
         """
         Index into a Dataset making use of CF attributes.
 
         Parameters
         ----------
-        key : str, Iterable[str], optional
+        key : str, Iterable[str], or Mapping, optional
             One of
               - axes names: "X", "Y", "Z", "T"
               - coordinate names: "longitude", "latitude", "vertical", "time"
@@ -2835,6 +2867,9 @@ class CFDatasetAccessor(CFAccessor):
 
         Add additional keys by specifying "custom criteria". See :ref:`custom_criteria` for more.
         """
+        if isinstance(key, Mapping):
+            return self.isel(key)
+
         return _getitem(self, key)
 
     @property
@@ -3468,13 +3503,15 @@ class CFDataArrayAccessor(CFAccessor):
         # Return the single grid mapping name
         return next(iter(grid_mapping_names.keys()))
 
-    def __getitem__(self, key: Hashable | Iterable[Hashable]) -> DataArray:
+    def __getitem__(
+        self, key: Hashable | Iterable[Hashable] | Mapping[Hashable, Any]
+    ) -> DataArray:
         """
         Index into a DataArray making use of CF attributes.
 
         Parameters
         ----------
-        key : str, Iterable[str], optional
+        key : str, Iterable[str], or Mapping, optional
             One of
               - axes names: "X", "Y", "Z", "T"
               - coordinate names: "longitude", "latitude", "vertical", "time"
@@ -3502,6 +3539,9 @@ class CFDataArrayAccessor(CFAccessor):
 
         Add additional keys by specifying "custom criteria". See :ref:`custom_criteria` for more.
         """
+
+        if isinstance(key, Mapping):
+            return self.isel(key)
 
         if not isinstance(key, Hashable):
             raise KeyError(

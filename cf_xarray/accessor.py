@@ -2039,6 +2039,12 @@ class CFAccessor:
         varnames.extend(list(self.cell_measures))
         varnames.extend(list(self.standard_names))
         varnames.extend(list(self.cf_roles))
+        custom_criteria = ChainMap(*OPTIONS["custom_criteria"])
+        varnames.extend(
+            key
+            for key in custom_criteria
+            if _get_custom_criteria(self._obj, key, custom_criteria)
+        )
         if isinstance(self._obj, xr.Dataset):
             varnames.extend(list(self.grid_mapping_names))
         else:

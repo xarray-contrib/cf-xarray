@@ -2174,6 +2174,20 @@ def test_custom_criteria() -> None:
         assert_identical(ds.cf["temp"], ds["temperature"])
 
 
+def test_custom_criteria_membership() -> None:
+    custom_criteria = {
+        "salt": {"standard_name": "salinity"},
+        "ssh": {"standard_name": "sea_surface_height"},
+    }
+    ds = xr.Dataset({"salinity": ("time", [34.5, 35.0], {"standard_name": "salinity"})})
+
+    with cf_xarray.set_options(custom_criteria=custom_criteria):
+        assert "salt" in ds.cf.keys()
+        assert "salt" in ds.cf
+        assert "ssh" not in ds.cf.keys()
+        assert "ssh" not in ds.cf
+
+
 @requires_regex
 def test_regex_match():
     # test that having a global regex expression flag later in the expression will work if

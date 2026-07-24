@@ -172,6 +172,7 @@ Mapper = Callable[[DataArray | Dataset, Hashable], list[Hashable]]
 
 # Type for decorators
 F = TypeVar("F", bound=Callable[..., Any])
+T_Default = TypeVar("T_Default")
 
 
 def sort_maybe_hashable(iterable: Iterable[Hashable]) -> list[Hashable]:
@@ -1543,6 +1544,38 @@ class CFAccessor:
 
     def __setstate__(self, d):
         self.__dict__ = d
+
+    @overload
+    def get(
+        self, key: Hashable | Iterable[Hashable], default: None = None
+    ) -> DataArray | Dataset | None: ...
+
+    @overload
+    def get(
+        self, key: Hashable | Iterable[Hashable], default: T_Default
+    ) -> DataArray | Dataset | T_Default: ...
+
+    def get(self, key: Hashable | Iterable[Hashable], default=None):
+        """
+        Access a variable using CF attributes, returning a default if not found.
+
+        Parameters
+        ----------
+        key : Hashable or Iterable of Hashable
+            Key passed to ``__getitem__``.
+        default : Any, optional
+            Value to return when ``key`` is not found.
+
+        Returns
+        -------
+        DataArray, Dataset, or Any
+            The object selected by ``key``, or ``default`` if selection raises
+            ``KeyError``.
+        """
+        try:
+            return self[key]  # type: ignore[index]
+        except KeyError:
+            return default
 
     def _assert_valid_other_comparison(self, other):
         # TODO cache this property

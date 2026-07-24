@@ -569,6 +569,43 @@ def test_keys(obj, expected):
     assert actual == expected
 
 
+@pytest.mark.parametrize(
+    ("key", "metadata"),
+    [
+        ("longitude", {"standard_name": "longitude"}),
+        ("X", {"axis": "X"}),
+        ("longitude", {"units": "degrees_east"}),
+    ],
+)
+def test_coordinate_criteria_in_encoding(key, metadata):
+    array = xr.DataArray([0, 1], dims="x", coords={"x": [0, 1]})
+    array.x.encoding.update(metadata)
+
+    assert_identical(array.cf[key], array.x)
+
+
+def test_coordinate_attrs_take_precedence_over_encoding():
+    array = xr.DataArray([0, 1], dims="x", coords={"x": [0, 1]})
+    array.x.attrs["axis"] = "X"
+    array.x.encoding["axis"] = "Y"
+
+    assert_identical(array.cf["X"], array.x)
+    with pytest.raises(KeyError):
+        array.cf["Y"]
+
+
+def test_standard_names_and_custom_criteria_in_encoding():
+    dataset = xr.Dataset({"temperature": ("time", [280.0, 281.0])})
+    dataset.temperature.encoding["standard_name"] = "air_temperature"
+
+    assert dataset.cf.standard_names == {"air_temperature": ["temperature"]}
+    assert_identical(dataset.cf["air_temperature"], dataset.temperature)
+
+    criteria = {"temperature": {"standard_name": "air_temp.*"}}
+    with cf_xarray.set_options(custom_criteria=criteria):
+        assert_identical(dataset.cf["temperature"], dataset.temperature)
+
+
 @pytest.mark.parametrize("obj", objects)
 def test_args_methods(obj):
     with raise_if_dask_computes():

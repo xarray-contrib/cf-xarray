@@ -38,7 +38,7 @@ convention could be used for either {py:class}`pandas.MultiIndex` objects or `py
 ### MultiIndex
 
 `cf_xarray` provides {py:func}`encode_multi_index_as_compress` and {py:func}`decode_compress_to_multi_index` to encode MultiIndex-ed
-dimensions using "compression by gethering".
+dimensions using "compression by gathering".
 
 Here's a test dataset
 

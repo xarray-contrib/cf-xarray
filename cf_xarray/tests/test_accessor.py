@@ -728,6 +728,22 @@ def test_getitem_errors(obj):
         obj2.cf["X"]
 
 
+@pytest.mark.parametrize("obj", objects)
+def test_get(obj):
+    assert_identical(obj.cf.get("longitude"), obj.cf["longitude"])
+    assert obj.cf.get("missing") is None
+
+    default = object()
+    assert obj.cf.get("missing", default) is default
+
+
+def test_get_iterable_key():
+    assert_identical(airds.cf.get(["longitude"]), airds.cf[["longitude"]])
+
+    default = object()
+    assert airds.air.cf.get(["longitude"], default) is default
+
+
 def test_bad_cell_measures_attribute() -> None:
     air2 = airds.copy(deep=False)
     air2.air.attrs["cell_measures"] = "--OPT"

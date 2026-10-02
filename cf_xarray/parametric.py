@@ -512,7 +512,7 @@ class OceanS(ParametricVerticalCoordinate):
             Decoded parametric vertical coordinate.
         """
         C = (1 - self.b) * np.sinh(self.a * self.s) / np.sinh(self.a) + self.b * (
-            np.tanh(self.a * (self.s + 0.5)) / 2 * np.tanh(0.5 * self.a) - 0.5
+            np.tanh(self.a * (self.s + 0.5)) / (2 * np.tanh(0.5 * self.a)) - 0.5
         )
 
         z = (
@@ -575,7 +575,7 @@ class OceanSG1(ParametricVerticalCoordinate):
         """
         S = self.depth_c * self.s + (self.depth - self.depth_c) * self.c
 
-        z = S + self.eta * (1 + self.s / self.depth)
+        z = S + self.eta * (1 + S / self.depth)
 
         return z.assign_attrs(standard_name=self.computed_standard_name)
 

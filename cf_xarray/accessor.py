@@ -326,7 +326,8 @@ def _get_custom_criteria(
     if key in criteria_map:
         for criterion, patterns in criteria_map[key].items():
             for var in variables:
-                if regex_match(patterns, variables[var].attrs.get(criterion, "")):
+                metadata = ChainMap(variables[var].attrs, variables[var].encoding)
+                if regex_match(patterns, metadata.get(criterion, "")):
                     results.update((var,))
                 # also check name specifically since not in attributes
                 elif (
@@ -393,9 +394,10 @@ def _get_axis_coord(obj: DataArray | Dataset, key: str) -> list[str]:
     results: set = set()
     for coord in search_in:
         var = crds[coord]
+        metadata = ChainMap(var.attrs, var.encoding)
         if key in coordinate_criteria:
             for criterion, expected in coordinate_criteria[key].items():
-                if var.attrs.get(criterion, None) in expected:
+                if metadata.get(criterion, None) in expected:
                     results.update((coord,))
                 if criterion == "units":
                     # deal with pint-backed objects
@@ -815,7 +817,7 @@ def _get_with_standard_name(
     if isinstance(obj, DataArray):
         obj = obj.coords.to_dataset()
     for vname, var in obj._variables.items():
-        stdname = var.attrs.get("standard_name", None)
+        stdname = ChainMap(var.attrs, var.encoding).get("standard_name", None)
         if stdname == name:
             varnames.append(vname)
 
@@ -2188,8 +2190,9 @@ class CFAccessor:
 
         vardict: dict[str, list[Hashable]] = {}
         for k, v in variables.items():
-            if "standard_name" in v.attrs:
-                std_name = v.attrs["standard_name"]
+            metadata = ChainMap(v.attrs, v.encoding)
+            if "standard_name" in metadata:
+                std_name = metadata["standard_name"]
                 vardict[std_name] = vardict.setdefault(std_name, []) + [k]
 
         return {std: sort_maybe_hashable(v) for std, v in vardict.items()}

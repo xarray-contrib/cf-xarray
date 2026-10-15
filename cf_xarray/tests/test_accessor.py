@@ -1291,6 +1291,29 @@ def test_grid_mappings_property():
 
 
 @requires_pyproj
+@pytest.mark.parametrize("multiple", [False, True])
+@pytest.mark.parametrize("as_dataarray", [False, True])
+def test_grid_mappings_decoded(multiple, as_dataarray):
+    from ..datasets import hrrrds
+
+    ds, name = (hrrrds, "foo") if multiple else (rotds, "temp")
+    expected = ds.cf.grid_mappings
+    decoded = xr.decode_cf(ds, decode_coords="all")
+    assert "grid_mapping" not in decoded[name].attrs
+    assert decoded[name].encoding["grid_mapping"] == ds[name].attrs["grid_mapping"]
+
+    obj = decoded[name] if as_dataarray else decoded
+    actual = obj.cf.grid_mappings
+    assert [(gm.array.name, gm.coordinates) for gm in actual] == [
+        (gm.array.name, gm.coordinates) for gm in expected
+    ]
+    for actual_gm, expected_gm in zip(actual, expected, strict=True):
+        assert actual_gm.name == expected_gm.name
+        assert actual_gm.crs == expected_gm.crs
+        assert_identical(actual_gm.array, expected_gm.array)
+
+
+@requires_pyproj
 def test_grid_mappings_crs_construction_is_cached(monkeypatch):
     """``pyproj.CRS.from_cf`` is memoized per grid-mapping attrs.
 

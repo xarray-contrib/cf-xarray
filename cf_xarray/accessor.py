@@ -2793,9 +2793,10 @@ class CFAccessor:
                 "Install with: conda install pyproj or pip install pyproj"
             ) from None
         # For DataArrays, preserve order from grid_mapping attribute
-        if isinstance(self._obj, DataArray) and "grid_mapping" in self._obj.attrs:
+        attrs_or_encoding = ChainMap(self._obj.attrs, self._obj.encoding)
+        if isinstance(self._obj, DataArray) and "grid_mapping" in attrs_or_encoding:
             grid_mapping_dict = _parse_grid_mapping_attribute(
-                self._obj.attrs["grid_mapping"]
+                attrs_or_encoding["grid_mapping"]
             )
             # Get grid mappings in the order they appear in the string
             ordered_var_names = list(grid_mapping_dict.keys())
@@ -2806,8 +2807,11 @@ class CFAccessor:
 
             # Search all data variables for grid_mapping attributes
             for _var_name, var in self._obj.data_vars.items():
-                if "grid_mapping" in var.attrs:
-                    parsed = _parse_grid_mapping_attribute(var.attrs["grid_mapping"])
+                attrs_or_encoding = ChainMap(var.attrs, var.encoding)
+                if "grid_mapping" in attrs_or_encoding:
+                    parsed = _parse_grid_mapping_attribute(
+                        attrs_or_encoding["grid_mapping"]
+                    )
                     grid_mapping_dict.update(parsed)
                     # Add variables in order they appear in this grid_mapping string
                     for gm_var in parsed.keys():

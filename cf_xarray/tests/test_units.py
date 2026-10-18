@@ -4,6 +4,7 @@ Reused with modification from MetPy under the terms of the BSD 3-Clause License.
 Copyright (c) 2017 MetPy Developers.
 """
 
+import numpy as np
 import pytest
 
 pytest.importorskip("pint")
@@ -90,7 +91,14 @@ def test_udunits_format(units, expected):
 
 @pytest.mark.parametrize(
     "alias",
-    [ureg("Celsius"), ureg("degC"), ureg("C"), ureg("deg_C"), ureg("degrees_Celsius")],
+    [ureg("Celsius"), ureg("degC"), ureg("deg_C"), ureg("degrees_Celsius")],
 )
 def test_temperature_aliases(alias):
     assert alias == ureg("celsius")
+
+
+def test_coulomb_symbol_survives_cf_units():
+    assert ureg("C") == ureg("coulomb")
+    speed = np.sqrt(100 * ureg.eV / ureg.m_e).to("km/s")
+    assert speed.units == ureg("km/s")
+    assert speed.magnitude == pytest.approx(4193.828809546234)

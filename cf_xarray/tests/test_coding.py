@@ -6,6 +6,29 @@ import xarray as xr
 import cf_xarray as cfxr
 
 
+@pytest.mark.parametrize("with_data", [False, True])
+def test_compression_preserves_unrelated_coordinates(with_data):
+    index = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=("x", "y"))
+    dataset = xr.Dataset(
+        coords=xr.Coordinates.from_pandas_multiindex(index, "point"),
+        attrs={"title": "coordinate preservation"},
+    ).assign_coords(
+        auxiliary=("point", [5, 6, 7, 8], {"long_name": "auxiliary coordinate"}),
+        independent=("other", [9, 10], {"units": "m"}),
+        scalar=xr.DataArray(42, attrs={"long_name": "scalar coordinate"}),
+    )
+    dataset.independent.encoding["dtype"] = "int32"
+    if with_data:
+        dataset["data"] = ("point", [1, 2, 3, 4])
+
+    encoded = cfxr.encode_multi_index_as_compress(dataset)
+    before = encoded.copy(deep=True)
+    decoded = cfxr.decode_compress_to_multi_index(encoded)
+    xr.testing.assert_identical(decoded, dataset)
+    assert decoded.independent.encoding == dataset.independent.encoding
+    xr.testing.assert_identical(encoded, before)
+
+
 @pytest.mark.parametrize(
     "mindex",
     [

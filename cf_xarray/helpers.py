@@ -482,7 +482,7 @@ def _sort_vertices(vertices: np.ndarray, order: str) -> np.ndarray:
 
 
 def vertices_to_bounds(
-    vertices: DataArray,
+    vertices: DataArray | np.ndarray,
     out_dims: Sequence[str] = ("bounds", "x", "y"),
     core_dims: Sequence[Hashable] | None = None,
 ) -> DataArray:

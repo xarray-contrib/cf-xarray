@@ -1791,6 +1791,53 @@ def test_missing_variable_in_coordinates() -> None:
         assert_identical(airds.time, airds.air.cf.mean(["X", "Y"]).cf["time"])
 
 
+@pytest.mark.parametrize("positive", ["up", "down"])
+@pytest.mark.parametrize("as_dataarray", [False, True])
+def test_cdm_vertical_direction(positive, as_dataarray):
+    ds = xr.Dataset(
+        {"data": ("level", [1, 2])},
+        coords={"level": ("level", [0, 1], {"_CoordinateZisPositive": positive})},
+    )
+    obj = ds["data"] if as_dataarray else ds
+    assert obj.cf.coordinates["vertical"] == ["level"]
+    xr.testing.assert_identical(obj.cf["vertical"], ds["level"])
+
+
+@pytest.mark.parametrize("value", ["sideways", "UP", "", "Vertical"])
+def test_cdm_invalid_vertical_direction(value):
+    ds = xr.Dataset(
+        coords={"level": ("level", [0, 1], {"_CoordinateZisPositive": value})}
+    )
+    assert "vertical" not in ds.cf.coordinates
+
+
+@pytest.mark.parametrize(
+    ("axis_type", "axis"),
+    [
+        ("Lat", "latitude"),
+        ("Lon", "longitude"),
+        ("GeoX", "X"),
+        ("GeoY", "Y"),
+        ("GeoZ", "Z"),
+        ("Height", "Z"),
+        ("Pressure", "Z"),
+        ("Time", "T"),
+    ],
+)
+def test_existing_cdm_axis_types(axis_type, axis):
+    ds = xr.Dataset(
+        coords={"coord": ("coord", [0, 1], {"_CoordinateAxisType": axis_type})}
+    )
+    xr.testing.assert_identical(ds.cf[axis], ds["coord"])
+
+
+def test_cdm_transform_is_not_vertical_coordinate():
+    ds = xr.Dataset(
+        {"transform": xr.DataArray(0, attrs={"_CoordinateTransformType": "Vertical"})}
+    )
+    assert "vertical" not in ds.cf.coordinates
+
+
 def test_Z_vs_vertical_ROMS() -> None:
     from ..datasets import romsds
 

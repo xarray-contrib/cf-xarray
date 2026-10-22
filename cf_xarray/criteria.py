@@ -102,6 +102,7 @@ coordinate_criteria: MutableMapping[str, MutableMapping[str, tuple]] = {
             "height_above_mean_sea_level",
         ),
         "positive": ("up", "down"),
+        "_CoordinateZisPositive": ("up", "down"),
     },
     "X": {
         "standard_name": (

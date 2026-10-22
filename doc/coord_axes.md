@@ -57,6 +57,12 @@ This table lists these internal criteria
 
 Any DataArray that has `standard_name: "latitude"` or `_CoordinateAxisType: "Lat"` or `"units": "degrees_north"` in its `attrs` will be identified as the `"latitude"` variable by cf-xarray. Similarly for other coordinate names.
 
+The Unidata [CDM coordinate attributes](https://docs.unidata.ucar.edu/netcdf-java/current/userguide/coord_attr_conv.html)
+`_CoordinateAxisType` and `_CoordinateZisPositive` are also recognized.
+`_CoordinateZisPositive: "up"` or `"down"` identifies a `"vertical"` coordinate,
+just like the CF `positive` attribute. This does not implement CDM coordinate
+transforms or interpret `_CoordinateAxes` references.
+
 ## Axis Names
 
 Similar criteria exist for the concept of "axes".

@@ -23,6 +23,12 @@ def encode_multi_index_as_compress(ds, idxnames=None):
     xarray.Dataset
         Encoded Dataset with ``name`` as a integer coordinate with a ``"compress"`` attribute.
 
+    Raises
+    ------
+    ValueError
+        If a MultiIndex level name contains whitespace, which cannot be
+        represented in the space-separated ``"compress"`` attribute.
+
     References
     ----------
     CF conventions on `compression by gathering <http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#compression-by-gathering>`_
@@ -46,6 +52,13 @@ def encode_multi_index_as_compress(ds, idxnames=None):
     encoded = ds.reset_index(idxnames)
     for idxname in idxnames:
         mindex = ds.indexes[idxname]
+        for name in mindex.names:
+            if isinstance(name, str) and any(char.isspace() for char in name):
+                raise ValueError(
+                    f"MultiIndex level name {name!r} contains whitespace and "
+                    "cannot be represented in a CF 'compress' attribute. "
+                    "Rename the level before encoding."
+                )
         coords = dict(zip(mindex.names, mindex.levels, strict=False))
         encoded.update(coords)
         for c in coords:

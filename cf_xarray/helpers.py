@@ -482,7 +482,9 @@ def _sort_vertices(vertices: np.ndarray, order: str) -> np.ndarray:
 
 
 def vertices_to_bounds(
-    vertices: DataArray, out_dims: Sequence[str] = ("bounds", "x", "y")
+    vertices: DataArray | np.ndarray,
+    out_dims: Sequence[str] = ("bounds", "x", "y"),
+    core_dims: Sequence[Hashable] | None = None,
 ) -> DataArray:
     """
     Convert vertices to CF-compliant bounds.
@@ -496,10 +498,14 @@ def vertices_to_bounds(
     Parameters
     ----------
     vertices : DataArray
-        The vertices to convert. Must be of shape (N + 1) or (N + 1, M + 1).
+        The vertices to convert. Core dimensions must have shape (N + 1)
+        or (N + 1, M + 1). Other dimensions are broadcast over.
     out_dims : Sequence[str],
         The name of the dimension in the output. The first is the 'bounds'
         dimension and the following are the coordinate dimensions.
+    core_dims : Sequence[Hashable], optional
+        The one or two vertex dimensions to convert. Defaults to all dimensions.
+        Dask-backed inputs must have a single chunk along each core dimension.
 
     Returns
     -------
@@ -525,22 +531,47 @@ def vertices_to_bounds(
     ----------
     Please refer to the CF conventions document : http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#cell-boundaries.
     """
-    if vertices.ndim == 1:
-        bnd_vals = np.stack((vertices[:-1], vertices[1:]), axis=0)
-    elif vertices.ndim == 2:
-        bnd_vals = np.stack(
-            (
-                vertices[:-1, :-1],
-                vertices[:-1, 1:],
-                vertices[1:, 1:],
-                vertices[1:, :-1],
-            ),
-            axis=0,
-        )
-    else:
+    if not isinstance(vertices, DataArray):
+        vertices = DataArray(vertices)
+    if core_dims is None:
+        core_dims = list(vertices.dims)
+    n_core_dims = len(core_dims)
+    if n_core_dims not in (1, 2):
         raise ValueError(
             f"vertices format not understood. Got {vertices.dims} with shape {vertices.shape}."
         )
-    return xr.DataArray(bnd_vals, dims=out_dims[: vertices.ndim + 1]).transpose(
-        ..., out_dims[0]
+    if len(out_dims) < n_core_dims + 1:
+        raise ValueError("out_dims must name the bounds and each core dimension.")
+
+    output_dims = list(out_dims[1 : n_core_dims + 1]) + [out_dims[0]]
+    output_sizes = {
+        out_dim: vertices.sizes[dim] - 1
+        for dim, out_dim in zip(core_dims, output_dims, strict=False)
+    }
+    output_sizes[out_dims[0]] = 2**n_core_dims
+    return xr.apply_ufunc(
+        _vertices_helper,
+        vertices,
+        input_core_dims=[list(core_dims)],
+        output_core_dims=[output_dims],
+        exclude_dims=set(core_dims),
+        kwargs={"n_core_dims": n_core_dims},
+        dask="parallelized",
+        dask_gufunc_kwargs={"output_sizes": output_sizes},
+        output_dtypes=[vertices.dtype],
     )
+
+
+def _vertices_helper(vertices, n_core_dims):
+    if n_core_dims == 1:
+        return np.stack((vertices[..., :-1], vertices[..., 1:]), axis=-1)
+    else:
+        return np.stack(
+            (
+                vertices[..., :-1, :-1],
+                vertices[..., :-1, 1:],
+                vertices[..., 1:, 1:],
+                vertices[..., 1:, :-1],
+            ),
+            axis=-1,
+        )

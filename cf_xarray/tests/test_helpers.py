@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import xarray as xr
 from numpy.testing import assert_array_equal
 from xarray.testing import assert_equal
@@ -123,6 +124,71 @@ def test_vertices_to_bounds() -> None:
     # 2D case
     lon_b = cfxr.vertices_to_bounds(mollwds.lon_vertices, out_dims=("bounds", "x", "y"))
     assert_array_equal(mollwds.lon_bounds, lon_b)
+
+
+@pytest.mark.parametrize("ndim", [1, 2])
+@pytest.mark.parametrize("chunked", [False, True])
+def test_vertices_to_bounds_broadcast_dimensions(ndim, chunked):
+    core_dims = ["a", "b"][:ndim]
+    shape = (2,) + (4,) * ndim
+    vertices = xr.DataArray(
+        np.arange(np.prod(shape)).reshape(shape),
+        dims=["time", *core_dims],
+        coords={"time": [10, 20]},
+    ).transpose(*core_dims, "time")
+    if chunked:
+        pytest.importorskip("dask.array")
+        vertices = vertices.chunk({"time": 1})
+    out_dims = ["bounds", "x", "y"][: ndim + 1]
+
+    result = cfxr.vertices_to_bounds(vertices, out_dims=out_dims, core_dims=core_dims)
+
+    expected = xr.concat(
+        [
+            cfxr.vertices_to_bounds(vertices.isel(time=i), out_dims=out_dims)
+            for i in range(2)
+        ],
+        dim=vertices.time,
+    )
+    assert_equal(result, expected)
+    assert result.dtype == vertices.dtype
+    assert result.dims == ("time", *out_dims[1:], "bounds")
+    if chunked:
+        assert isinstance(result.data, DaskArray)
+        assert result.chunks[0] == (1, 1)
+
+
+def test_vertices_to_bounds_same_core_dimension_name():
+    vertices = xr.DataArray(np.arange(12).reshape(3, 4), dims=("time", "depth"))
+
+    result = cfxr.vertices_to_bounds(
+        vertices, out_dims=("bounds", "depth"), core_dims=["depth"]
+    )
+
+    assert result.sizes == {"time": 3, "depth": 3, "bounds": 2}
+    assert_array_equal(result[..., 0], vertices[:, :-1])
+    assert_array_equal(result[..., 1], vertices[:, 1:])
+
+
+def test_vertices_to_bounds_datetime_broadcast():
+    dates = np.arange("2000-01-01", "2000-01-05", dtype="datetime64[D]")
+    vertices = xr.DataArray(dates, dims="edge").expand_dims(time=[1, 2])
+
+    result = cfxr.vertices_to_bounds(
+        vertices, out_dims=("bounds", "depth"), core_dims=["edge"]
+    )
+
+    assert result.dtype == vertices.dtype
+    assert_array_equal(result[0, :, 0], dates[:-1])
+    assert_array_equal(result[0, :, 1], dates[1:])
+
+
+def test_vertices_to_bounds_invalid_dimensions():
+    vertices = xr.DataArray(np.ones((2, 3, 4)), dims=("a", "b", "c"))
+    with pytest.raises(ValueError, match="vertices format not understood"):
+        cfxr.vertices_to_bounds(vertices)
+    with pytest.raises(ValueError, match="out_dims"):
+        cfxr.vertices_to_bounds(vertices, out_dims=["bounds"], core_dims=["c"])
 
 
 @requires_cftime

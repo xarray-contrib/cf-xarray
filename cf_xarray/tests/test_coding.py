@@ -21,6 +21,28 @@ def test_compression_rejects_whitespace_level_names(name, idxnames):
     xr.testing.assert_identical(dataset, before)
 
 
+def test_compression_preserves_unrelated_spaced_variable_names():
+    index = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=("lat", "lon"))
+    dataset = xr.Dataset(coords=xr.Coordinates.from_pandas_multiindex(index, "point"))
+    dataset["unrelated variable"] = xr.DataArray(42)
+    encoded = cfxr.encode_multi_index_as_compress(dataset)
+    xr.testing.assert_identical(cfxr.decode_compress_to_multi_index(encoded), dataset)
+
+
+def test_compression_only_validates_selected_indexes():
+    selected = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=("lat", "lon"))
+    unselected = pd.MultiIndex.from_product(
+        [["a", "b"], [0, 1]], names=("site label", "site type")
+    )
+    dataset = xr.Dataset(
+        coords=xr.Coordinates.from_pandas_multiindex(selected, "point")
+    ).assign_coords(xr.Coordinates.from_pandas_multiindex(unselected, "station"))
+    before = dataset.copy(deep=True)
+    encoded = cfxr.encode_multi_index_as_compress(dataset, "point")
+    xr.testing.assert_identical(encoded["station"], dataset["station"])
+    xr.testing.assert_identical(dataset, before)
+
+
 def test_compression_allows_unicode_level_names():
     index = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=("lat_α", "lon_β"))
     dataset = xr.Dataset(coords=xr.Coordinates.from_pandas_multiindex(index, "point"))

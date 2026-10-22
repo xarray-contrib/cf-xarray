@@ -6,6 +6,24 @@ import xarray as xr
 import cf_xarray as cfxr
 
 
+@pytest.mark.parametrize(
+    "name", ["lat name", " leading", "trailing ", "tab\tname", "line\nname", ""]
+)
+@pytest.mark.parametrize("level", [0, 1])
+def test_compression_rejects_ambiguous_level_names(name, level):
+    names = ["lat", "lon"]
+    names[level] = name
+    index = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=names)
+    dataset = xr.Dataset(
+        {"data": ("point", [1, 2, 3, 4])},
+        coords=xr.Coordinates.from_pandas_multiindex(index, "point"),
+    )
+    before = dataset.copy(deep=True)
+    with pytest.raises(ValueError, match="nonempty strings without whitespace"):
+        cfxr.encode_multi_index_as_compress(dataset)
+    xr.testing.assert_identical(dataset, before)
+
+
 @pytest.mark.parametrize("with_data", [False, True])
 def test_compression_preserves_unrelated_coordinates(with_data):
     index = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=("x", "y"))

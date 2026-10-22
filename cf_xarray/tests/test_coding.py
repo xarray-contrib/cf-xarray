@@ -63,3 +63,19 @@ def test_compression_by_gathering_multi_index_roundtrip(mindex, idxnames):
     dataset[dim].attrs["compress"] = "lat lon"
     with pytest.raises(ValueError):
         cfxr.encode_multi_index_as_compress(dataset, idxnames)
+
+
+@pytest.mark.parametrize("shared_dims", [("lat",), ("lon",), ("lat", "lon")])
+def test_compression_shared_level_dimensions(shared_dims):
+    index = pd.MultiIndex.from_product([["a", "b"], [1, 2]], names=("lat", "lon"))
+    dataset = xr.Dataset(
+        {"data": ("point", [1, 2, 3, 4])},
+        coords=xr.Coordinates.from_pandas_multiindex(index, "point"),
+    )
+    for dim in shared_dims:
+        dataset[f"data_on_{dim}"] = (dim, [10, 20], {"long_name": f"data on {dim}"})
+    encoded = cfxr.encode_multi_index_as_compress(dataset)
+    before = encoded.copy(deep=True)
+    decoded = cfxr.decode_compress_to_multi_index(encoded)
+    xr.testing.assert_identical(decoded, dataset)
+    xr.testing.assert_identical(encoded, before)

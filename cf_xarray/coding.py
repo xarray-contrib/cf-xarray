@@ -46,6 +46,11 @@ def encode_multi_index_as_compress(ds, idxnames=None):
     encoded = ds.reset_index(idxnames)
     for idxname in idxnames:
         mindex = ds.indexes[idxname]
+        if any(any(char.isspace() for char in name) for name in mindex.names):
+            raise ValueError(
+                f"MultiIndex level names for {idxname!r} must not contain whitespace: "
+                f"{mindex.names!r}. Rename the levels before encoding."
+            )
         coords = dict(zip(mindex.names, mindex.levels, strict=False))
         encoded.update(coords)
         for c in coords:

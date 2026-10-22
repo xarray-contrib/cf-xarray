@@ -6,6 +6,25 @@ import xarray as xr
 import cf_xarray as cfxr
 
 
+@pytest.mark.parametrize("level_name", ["north south", "lat\titude", "lat\nitude"])
+@pytest.mark.parametrize("idxnames", [None, "point"])
+def test_compression_rejects_whitespace_in_level_names(level_name, idxnames):
+    index = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=(level_name, "lon"))
+    dataset = xr.Dataset(coords=xr.Coordinates.from_pandas_multiindex(index, "point"))
+    before = dataset.copy(deep=True)
+    with pytest.raises(ValueError, match="whitespace"):
+        cfxr.encode_multi_index_as_compress(dataset, idxnames)
+    xr.testing.assert_identical(dataset, before)
+
+
+def test_compression_preserves_noncompressed_names_with_spaces():
+    index = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=("lat", "lon"))
+    dataset = xr.Dataset(coords=xr.Coordinates.from_pandas_multiindex(index, "point"))
+    dataset["unrelated variable"] = xr.DataArray(42)
+    encoded = cfxr.encode_multi_index_as_compress(dataset)
+    xr.testing.assert_identical(cfxr.decode_compress_to_multi_index(encoded), dataset)
+
+
 @pytest.mark.parametrize("with_data", [False, True])
 def test_compression_preserves_unrelated_coordinates(with_data):
     index = pd.MultiIndex.from_product([[1, 2], [3, 4]], names=("x", "y"))

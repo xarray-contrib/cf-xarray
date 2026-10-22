@@ -40,6 +40,10 @@ convention could be used for either {py:class}`pandas.MultiIndex` objects or `py
 `cf_xarray` provides {py:func}`encode_multi_index_as_compress` and {py:func}`decode_compress_to_multi_index` to encode MultiIndex-ed
 dimensions using "compression by gathering".
 
+MultiIndex level names must not contain whitespace, because the CF `compress`
+attribute stores them as a space-separated list. Rename such levels before encoding;
+unrelated variables are not subject to this restriction.
+
 Here's a test dataset
 
 ```{code-cell}

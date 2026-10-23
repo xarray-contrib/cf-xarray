@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 from collections.abc import Hashable, Sequence
 
 import numpy as np
@@ -238,34 +237,9 @@ def _get_core_dim_orders(core_dim_coords: dict[str, np.ndarray]) -> dict[str, st
     core_dim_orders = {}
 
     for dim, coords in core_dim_coords.items():
-        if coords.size <= 1:
-            # A single value, same as all values are equal, treat as ascending
+        if np.all(coords[1:] >= coords[:-1]):
             core_dim_orders[dim] = "ascending"
-            continue
-
-        diffs = np.diff(coords)
-
-        # Handle datetime64 and timedelta64 safely for both numpy 1.26.4 and numpy 2
-        if np.issubdtype(coords.dtype, np.datetime64) or np.issubdtype(
-            coords.dtype, np.timedelta64
-        ):
-            # Cast to float64 for safe comparison
-            diffs_float = diffs.astype("float64")
-            nonzero_diffs = diffs_float[diffs_float != 0]
-        elif isinstance(diffs[0], datetime.timedelta):
-            # For datetime timedelta, we use the total_seconds method
-            diffs_float = np.array([x.total_seconds() for x in diffs])
-            nonzero_diffs = diffs_float[diffs_float != 0]
-        else:
-            zero = 0
-            nonzero_diffs = diffs[diffs != zero]
-
-        if nonzero_diffs.size == 0:
-            # All values are equal, treat as ascending
-            core_dim_orders[dim] = "ascending"
-        elif np.all(nonzero_diffs > 0):
-            core_dim_orders[dim] = "ascending"
-        elif np.all(nonzero_diffs < 0):
+        elif np.all(coords[1:] <= coords[:-1]):
             core_dim_orders[dim] = "descending"
         else:
             core_dim_orders[dim] = "mixed"
@@ -387,28 +361,8 @@ def _is_bounds_monotonic(bounds: np.ndarray) -> bool:
     bool
         True if the flattened array is increasing or decreasing, False otherwise.
     """
-    # NOTE: Python 3.10 uses numpy 1.26.4. If the input is a datetime64 array,
-    # numpy 1.26.4 may raise: numpy.core._exceptions._UFuncInputCastingError:
-    # Cannot cast ufunc 'greater' input 0 from dtype('<m8[ns]') to dtype('<m8')
-    # with casting rule 'same_kind' To avoid this, always cast to float64 before
-    # np.diff.
-
-    diffs = np.diff(bounds.flatten())
-
-    if isinstance(diffs[0], datetime.timedelta):
-        # For datetime timedelta, we use the total_seconds method
-        diffs_float = np.array([x.total_seconds() for x in diffs])
-
-    else:
-        diffs_float = diffs.astype("float64")
-
-    nonzero_diffs = diffs_float[diffs_float != 0]
-
-    # All values are equal, treat as monotonic
-    if nonzero_diffs.size == 0:
-        return True
-
-    return bool(np.all(nonzero_diffs > 0) or np.all(nonzero_diffs < 0))
+    flat = bounds.ravel()
+    return bool(np.all(flat[1:] >= flat[:-1]) or np.all(flat[1:] <= flat[:-1]))
 
 
 def _get_order_of_core_dims(core_dim_orders: dict[str, str]) -> str:

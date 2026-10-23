@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import xarray as xr
 from numpy.testing import assert_array_equal
 from xarray.testing import assert_equal
@@ -156,3 +157,29 @@ def test_bounds_to_vertices_cftime() -> None:
     time_c = cfxr.bounds_to_vertices(ds.time_bounds, "bounds")
     time_b = cfxr.vertices_to_bounds(time_c, out_dims=("bounds", "time"))
     assert_array_equal(ds.time_bounds, time_b)
+
+
+@pytest.mark.parametrize("coord_dtype", ["uint8", "uint64", "int64"])
+@pytest.mark.parametrize("bounds_dtype", ["uint8", "uint64", "int64"])
+def test_bounds_to_vertices_unsigned(coord_dtype, bounds_dtype) -> None:
+    bounds = xr.DataArray(
+        np.array([[25, 35], [15, 25], [5, 15]], dtype=bounds_dtype),
+        dims=("x", "bounds"),
+        coords={"x": np.array([30, 20, 10], dtype=coord_dtype)},
+    )
+    vertices = cfxr.bounds_to_vertices(bounds, "bounds")
+    assert_array_equal(vertices, [35, 25, 15, 5])
+    assert vertices.dtype == bounds.dtype
+
+
+@pytest.mark.parametrize("step", [1, -1])
+def test_bounds_to_vertices_signed_integer_overflow(step) -> None:
+    limits = np.iinfo("int64")
+    bounds = xr.DataArray(
+        [[limits.min, 0], [0, limits.max]],
+        dims=("x", "bounds"),
+        coords={"x": [-(2**62), 2**62]},
+    ).isel(x=slice(None, None, step))
+    vertices = cfxr.bounds_to_vertices(bounds, "bounds")
+    assert_array_equal(vertices, [limits.min, 0, limits.max][::step])
+    assert vertices.dtype == bounds.dtype

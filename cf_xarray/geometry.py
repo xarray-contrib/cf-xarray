@@ -519,6 +519,10 @@ def cf_to_shapely(ds: xr.Dataset, *, container: Hashable = GEOMETRY_CONTAINER_NA
         Must contain a ``geometry_container`` variable with attributes giving the geometry specifications.
         Must contain all variables needed to reconstruct the geometries listed in these specifications.
 
+    container : Hashable, optional
+        Name of the geometry container variable in ``ds``.
+        Defaults to ``"geometry_container"``.
+
     Returns
     -------
     da: xr.DataArray

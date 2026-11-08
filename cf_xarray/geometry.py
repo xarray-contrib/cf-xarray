@@ -458,6 +458,14 @@ def shapely_to_cf(
          - 'interior_ring' : Integer boolean indicating whether rings are interior or exterior. Only for Polygons with holes.
          - container_name : Empty variable with attributes describing the geometry type.
 
+    Examples
+    --------
+    >>> from shapely.geometry import Point
+    >>> import cf_xarray as cfxr
+    >>> encoded = cfxr.shapely_to_cf([Point(0, 0), Point(1, 1)], suffix="_a")
+    >>> "geometry_container_a" in encoded
+    True
+
     See Also
     --------
     cf_to_shapely : Convert CF-compliant geometry data to Shapely objects.

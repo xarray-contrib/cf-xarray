@@ -458,6 +458,10 @@ def shapely_to_cf(
          - 'interior_ring' : Integer boolean indicating whether rings are interior or exterior. Only for Polygons with holes.
          - container_name : Empty variable with attributes describing the geometry type.
 
+    See Also
+    --------
+    cf_to_shapely : Convert CF-compliant geometry data to Shapely objects.
+    
     References
     ----------
     Please refer to the CF conventions document: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#geometries
@@ -529,6 +533,10 @@ def cf_to_shapely(ds: xr.Dataset, *, container: Hashable = GEOMETRY_CONTAINER_NA
         A 1D DataArray of shapely objects.
         It has the same dimension as the ``node_count`` or the coordinates variables, or
         ``features`` if those were not present in ``ds``.
+
+    See Also
+    --------
+    shapely_to_cf : Convert Shapely geometries to CF-compliant data.
 
     References
     ----------

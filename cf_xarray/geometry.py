@@ -441,8 +441,11 @@ def shapely_to_cf(
         A CF grid mapping name. When given, coordinates and attributes are named and set accordingly.
         Defaults to None, in which case the coordinates are simply names "crd_x" and "crd_y".
 
-    container_name: str, optional
-        Name for the "geometry container" scalar variable in the encoded Dataset
+    suffix : str, optional
+        Suffix appended to generated geometry variable and
+        dimension names. For example, "_a" produces names
+        such as "geometry_container_a" and "node_a".
+        Defaults to an empty string.
 
     Returns
     -------
@@ -453,7 +456,20 @@ def shapely_to_cf(
          - 'node_count' : The number of nodes per feature. Always present for Lines and Polygons. For Points: only present if there are multipart geometries.
          - 'part_node_count' : The number of nodes per individual geometry. Only for Lines with multipart geometries and for Polygons with multipart geometries or holes.
          - 'interior_ring' : Integer boolean indicating whether rings are interior or exterior. Only for Polygons with holes.
-         - container_name : Empty variable with attributes describing the geometry type.
+         - 'geometry_container' (plus suffix, if specified) : Scalar
+           variable with attributes describing the geometry type.
+
+    Examples
+    --------
+    >>> from shapely.geometry import Point
+    >>> import cf_xarray as cfxr
+    >>> encoded = cfxr.shapely_to_cf([Point(0, 0), Point(1, 1)], suffix="_a")
+    >>> "geometry_container_a" in encoded
+    True
+
+    See Also
+    --------
+    cf_to_shapely : Convert CF-compliant geometry data to Shapely objects.
 
     References
     ----------
@@ -516,12 +532,29 @@ def cf_to_shapely(ds: xr.Dataset, *, container: Hashable = GEOMETRY_CONTAINER_NA
         Must contain a ``geometry_container`` variable with attributes giving the geometry specifications.
         Must contain all variables needed to reconstruct the geometries listed in these specifications.
 
+    container : Hashable, optional
+        Name of the geometry container variable in ``ds``.
+        Defaults to ``"geometry_container"``.
+
     Returns
     -------
     da: xr.DataArray
         A 1D DataArray of shapely objects.
         It has the same dimension as the ``node_count`` or the coordinates variables, or
         ``features`` if those were not present in ``ds``.
+
+    Examples
+    --------
+    >>> from shapely.geometry import Point
+    >>> import cf_xarray as cfxr
+    >>> encoded = cfxr.shapely_to_cf([Point(0, 0)], suffix="_a")
+    >>> decoded = cfxr.cf_to_shapely(encoded, container="geometry_container_a")
+    >>> decoded.values[0].equals(Point(0, 0))
+    True
+
+    See Also
+    --------
+    shapely_to_cf : Convert Shapely geometries to CF-compliant data.
 
     References
     ----------

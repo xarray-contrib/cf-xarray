@@ -456,7 +456,8 @@ def shapely_to_cf(
          - 'node_count' : The number of nodes per feature. Always present for Lines and Polygons. For Points: only present if there are multipart geometries.
          - 'part_node_count' : The number of nodes per individual geometry. Only for Lines with multipart geometries and for Polygons with multipart geometries or holes.
          - 'interior_ring' : Integer boolean indicating whether rings are interior or exterior. Only for Polygons with holes.
-         - container_name : Empty variable with attributes describing the geometry type.
+         - 'geometry_container' (plus suffix, if specified) : Scalar
+           variable with attributes describing the geometry type.
 
     Examples
     --------
@@ -469,7 +470,7 @@ def shapely_to_cf(
     See Also
     --------
     cf_to_shapely : Convert CF-compliant geometry data to Shapely objects.
-    
+
     References
     ----------
     Please refer to the CF conventions document: http://cfconventions.org/Data/cf-conventions/cf-conventions-1.8/cf-conventions.html#geometries

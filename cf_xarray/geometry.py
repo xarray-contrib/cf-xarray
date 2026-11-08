@@ -441,8 +441,11 @@ def shapely_to_cf(
         A CF grid mapping name. When given, coordinates and attributes are named and set accordingly.
         Defaults to None, in which case the coordinates are simply names "crd_x" and "crd_y".
 
-    container_name: str, optional
-        Name for the "geometry container" scalar variable in the encoded Dataset
+    suffix : str, optional
+        Suffix appended to generated geometry variable and
+        dimension names. For example, "_a" produces names
+        such as "geometry_container_a" and "node_a".
+        Defaults to an empty string.
 
     Returns
     -------

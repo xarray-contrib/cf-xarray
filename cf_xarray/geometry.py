@@ -542,6 +542,15 @@ def cf_to_shapely(ds: xr.Dataset, *, container: Hashable = GEOMETRY_CONTAINER_NA
         It has the same dimension as the ``node_count`` or the coordinates variables, or
         ``features`` if those were not present in ``ds``.
 
+    Examples
+    --------
+    >>> from shapely.geometry import Point
+    >>> import cf_xarray as cfxr
+    >>> encoded = cfxr.shapely_to_cf([Point(0, 0)], suffix="_a")
+    >>> decoded = cfxr.cf_to_shapely(encoded, container="geometry_container_a")
+    >>> decoded.values[0].equals(Point(0, 0))
+    True
+
     See Also
     --------
     shapely_to_cf : Convert Shapely geometries to CF-compliant data.

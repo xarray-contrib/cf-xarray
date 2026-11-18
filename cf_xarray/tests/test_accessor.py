@@ -728,6 +728,31 @@ def test_getitem_errors(obj):
         obj2.cf["X"]
 
 
+@pytest.mark.parametrize("attribute", ["coordinates", "ancillary_variables"])
+@pytest.mark.parametrize("location", ["attrs", "encoding"])
+@pytest.mark.parametrize(
+    "names", ["aux1 aux2", "aux1  aux2", " aux1 aux2", "aux1 aux2 ", "  aux1   aux2  "]
+)
+def test_associated_variables_blank_separated(attribute, location, names):
+    # CF blank-separated lists allow repeated, leading and trailing spaces.
+    ds = xr.Dataset(
+        {"data": ("x", [1, 2])},
+        coords={"x": [0, 1], "aux1": ("x", [3, 4]), "aux2": ("x", [5, 6])},
+    )
+    getattr(ds["data"], location)[attribute] = names
+    original = ds.copy(deep=True)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        associated = ds.cf.get_associated_variable_names("data")
+        actual = ds.cf["data"]
+
+    assert associated[attribute] == ["aux1", "aux2"]
+    assert_identical(actual, ds["data"])
+    assert_identical(ds, original)
+    assert getattr(ds["data"], location)[attribute] == names
+
+
 def test_bad_cell_measures_attribute() -> None:
     air2 = airds.copy(deep=False)
     air2.air.attrs["cell_measures"] = "--OPT"

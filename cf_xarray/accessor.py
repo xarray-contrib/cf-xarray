@@ -2303,7 +2303,7 @@ class CFAccessor:
         # Handles case where the coordinates attribute is None
         # This is used to tell xarray to not write a coordinates attribute
         if coordinates := attrs_or_encoding.get("coordinates", None):
-            coords["coordinates"] = coordinates.split(" ")
+            coords["coordinates"] = coordinates.split()
 
         if "cell_measures" in attrs_or_encoding:
             try:
@@ -2324,7 +2324,7 @@ class CFAccessor:
         if isinstance(self._obj, Dataset) and (
             anc := attrs_or_encoding.get("ancillary_variables", None)
         ):
-            coords["ancillary_variables"] = anc.split(" ")
+            coords["ancillary_variables"] = anc.split()
 
         if not skip_bounds:
             if bounds := attrs_or_encoding.get("bounds", None):

@@ -43,6 +43,7 @@ or using ``conda``
    :caption: User Guide
 
    quickstart
+   terminology
    howtouse
    faq
    coord_axes

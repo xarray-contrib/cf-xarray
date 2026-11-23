@@ -566,6 +566,14 @@ def test_pos_args_methods() -> None:
     assert_identical(actual, expected)
 
 
+@pytest.mark.parametrize("key", ["lon", "longitude", "X"])
+def test_pos_args_methods_single_argument(key) -> None:
+    # a single positional key used to be unpacked into its characters
+    da = airds.air.isel(time=0, lat=0)
+    assert da.dims == ("lon",)
+    assert_identical(da.cf.transpose(key), da)
+
+
 def test_preserve_unused_keys() -> None:
     ds = airds.copy(deep=False)
     ds.time.attrs.clear()

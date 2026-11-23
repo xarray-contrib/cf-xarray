@@ -1851,8 +1851,9 @@ class CFAccessor:
             for arg in var_args:
                 value = arguments.pop(arg, None)
                 if value:
-                    # value should always be Iterable
-                    posargs.extend(value)
+                    # _rewrite_values returns a bare name (not a list) when there is only one,
+                    # which extend would unpack into characters
+                    posargs.extend(always_iterable(value))
             # now unwrap the **kwargs type arguments
             for kw in var_kws:
                 value = arguments.pop(kw, None)

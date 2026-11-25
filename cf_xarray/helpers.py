@@ -379,7 +379,7 @@ def _is_bounds_monotonic(bounds: np.ndarray) -> bool:
 
     Parameters
     ----------
-    arr : np.ndarray
+    bounds : np.ndarray
         Numpy array to check, typically with shape (..., N, 2).
 
     Returns

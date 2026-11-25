@@ -599,7 +599,7 @@ def _create_grid_mapping(
     ----------
     var_name : str
         Name of the grid mapping variable
-    obj_dataset : Dataset
+    ds : Dataset
         Dataset containing the grid mapping variable
     grid_mapping_dict : dict[str, list[Hashable]]
         Dictionary mapping grid mapping variable names to their coordinate variables

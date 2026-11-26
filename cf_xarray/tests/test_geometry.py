@@ -493,6 +493,31 @@ def test_reshape_unique_geometries(geometry_ds):
 
 
 @requires_shapely
+@pytest.mark.parametrize("metadata_in_encoding", [False, True])
+def test_decode_geometries_preserves_input(polygon_geometry, metadata_in_encoding):
+    original = xr.Dataset(
+        coords=xr.Coordinates(
+            {"geoms": xr.Variable("geoms", polygon_geometry.data)}, indexes={}
+        ),
+        data_vars={"data": ("geoms", [1, 2], {"long_name": "sample values"})},
+    )
+    encoded = encode_geometries(original)
+    if metadata_in_encoding:
+        container = encoded["geometry_container"]
+        for name in ("geometry_type", "coordinates", "node_coordinates"):
+            container.encoding[name] = container.attrs.pop(name)
+    before = encoded.copy(deep=True)
+
+    for _ in range(2):
+        actual = decode_geometries(encoded)
+        xr.testing.assert_identical(actual, original)
+        assert np.shares_memory(actual["data"].data, encoded["data"].data)
+        xr.testing.assert_identical(encoded, before)
+        for name in encoded.variables:
+            assert encoded[name].encoding == before[name].encoding
+
+
+@requires_shapely
 def test_encode_decode(geometry_ds, polygon_geometry):
     geom_dim_ds = xr.Dataset()
     geom_dim_ds = geom_dim_ds.assign_coords(

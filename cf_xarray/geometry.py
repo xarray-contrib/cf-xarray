@@ -199,6 +199,8 @@ def decode_geometries(encoded: xr.Dataset) -> xr.Dataset:
     encode_geometries
     """
 
+    # Normalize metadata on a shallow copy without changing the caller's dataset.
+    encoded = encoded.copy(deep=False)
     containers = _get_geometry_containers(encoded)
     if not containers:
         raise NotImplementedError(

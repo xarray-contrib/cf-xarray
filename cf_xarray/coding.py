@@ -132,4 +132,10 @@ def decode_compress_to_multi_index(encoded, idxnames=None):
             decoded[coord].encoding = variable.encoding.copy()
         del decoded[idxname].attrs["compress"]
 
-    return decoded
+    return decoded.assign_coords(
+        {
+            name: coord.variable
+            for name, coord in encoded.coords.items()
+            if name not in decoded.coords
+        }
+    )
